@@ -1,0 +1,483 @@
+"""The roster.
+
+Eleven roles, mapped one-to-one onto the playbook's division of labour.  Each is
+a thin subclass of :class:`~qmine.agents.base.Agent` that knows how to assemble
+its evidence and what shape its answer must take.
+
+The interesting design work is not in any single role; it is in what each role
+is *denied*.  Researchers see one slice and no other researcher's findings.
+Annotators see the guide and no other annotator's labels.  Namers see member
+queries and nothing else at all.  The adversary is told to attack rather than
+verify.  Those restrictions are what make the aggregate trustworthy, and they
+are enforced by what ``build_user`` puts in the prompt — not by asking the model
+to forget.
+"""
+
+from __future__ import annotations
+
+import json
+from typing import Any, Literal, Sequence
+
+from pydantic import BaseModel, Field
+
+from ..memory.context import budget_text, render_card
+from ..records import (
+    AdjudicationRule,
+    LeafNaming,
+    NamingCard,
+    Taxonomy,
+    TaxonomyNode,
+    TreeAudit,
+)
+from .base import Agent
+
+
+# ==========================================================================
+# Phase 2a — research fan-out
+# ==========================================================================
+
+class CandidateCategory(BaseModel):
+    name: str
+    code: str = ""
+    definition: str
+    user_need: str = ""
+    evidence: list[str] = Field(default_factory=list)
+    estimated_share: float | None = None
+    pragmatic: bool = False
+    risk: bool = False
+    axis: Literal["intent", "domain", "facet"] = "intent"
+
+
+class ResearchSubmission(BaseModel):
+    angle: str = ""
+    candidates: list[CandidateCategory] = Field(default_factory=list)
+    observations: list[str] = Field(default_factory=list)
+    contradictions: list[str] = Field(
+        default_factory=list, description="Where the evidence contradicted an expectation."
+    )
+    open_questions: list[str] = Field(default_factory=list)
+
+
+#: The five standing research angles.  Deliberately non-overlapping: overlapping
+#: assignments produce three agents rediscovering the same obvious categories
+#: and nobody covering the awkward ones.
+RESEARCH_ANGLES: list[dict[str, str]] = [
+    {
+        "key": "log_reading",
+        "assignment": (
+            "Read your assigned slice of raw queries line by line and propose intent "
+            "categories grounded ONLY in what you actually read. You are the closest "
+            "thing this team has to direct observation — no other researcher is "
+            "reading raw rows. Quote real queries for every candidate."
+        ),
+    },
+    {
+        "key": "literature",
+        "assignment": (
+            "Draw on published query-intent taxonomies for this kind of corpus "
+            "(e.g. informational/navigational/transactional; e-commerce five-way "
+            "splits; question-intent taxonomies) and propose which of their "
+            "distinctions transfer here and which do not. Say explicitly where a "
+            "published distinction would NOT survive contact with this corpus — a "
+            "borrowed taxonomy that does not fit is worse than none."
+        ),
+    },
+    {
+        "key": "legacy_audit",
+        "assignment": (
+            "Audit the existing/legacy taxonomy in the evidence. For each legacy "
+            "class decide: inheritable structure, or unsorted traffic wearing a "
+            "label? Pay attention to classes defined by query SHAPE (length, script, "
+            "punctuation) rather than intent — those hide real categories inside "
+            "them, and recovering what is buried there is your main deliverable."
+        ),
+    },
+    {
+        "key": "pragmatic_intents",
+        "assignment": (
+            "Hunt specifically for intents that are INVISIBLE IN THE WORDING — where "
+            "two queries can be phrased near-identically and want opposite things "
+            "(verification vs definition; solve-this vs explain-this; navigate vs "
+            "learn). Unsupervised clustering will never recover these, so if you do "
+            "not find them, nobody will. This is the highest-leverage angle on the team."
+        ),
+    },
+    {
+        "key": "risk_compliance",
+        "assignment": (
+            "Identify categories with a safety, legal, or compliance dimension: "
+            "gambling probes, requests for individualised professional advice, fraud, "
+            "age-inappropriate content, rumour amplification. Volume is irrelevant to "
+            "whether a category belongs on this list."
+        ),
+    },
+]
+
+
+class ResearcherAgent(Agent):
+    role = "researcher"
+    prompt_name = "researcher"
+    schema = ResearchSubmission
+
+    def build_system(self, *, assignment: str = "", **kw: Any) -> str:
+        return super().build_system().replace("{{ASSIGNMENT}}", assignment)
+
+    def build_user(self, *, evidence: str = "", domain_notes: str = "", **kw: Any) -> str:
+        return (
+            f"## Domain\n{domain_notes}\n\n"
+            f"## Evidence for your angle\n{budget_text(evidence, 24000, tail=2000)}\n\n"
+            "Return your submission."
+        )
+
+
+# ==========================================================================
+# Phase 2a — synthesis and critique
+# ==========================================================================
+
+class TaxonomyDraft(BaseModel):
+    nodes: list[TaxonomyNode] = Field(default_factory=list)
+    rules: list[AdjudicationRule] = Field(default_factory=list)
+    labeling_guide: str = ""
+    design_notes: str = ""
+    dropped_candidates: list[dict[str, str]] = Field(
+        default_factory=list, description="[{name, why_dropped}] — kept for the failure-history section."
+    )
+
+
+class ArchitectAgent(Agent):
+    role = "taxonomy_architect"
+    prompt_name = "architect"
+    schema = TaxonomyDraft
+
+    def build_system(self, *, l1_range: tuple[int, int] = (15, 25), min_rules: int = 20, **kw: Any) -> str:
+        return (
+            super()
+            .build_system()
+            .replace("{{L1_MIN}}", str(l1_range[0]))
+            .replace("{{L1_MAX}}", str(l1_range[1]))
+            .replace("{{MIN_RULES}}", str(min_rules))
+        )
+
+    def build_user(
+        self, *, submissions: Sequence[ResearchSubmission] = (), domain_notes: str = "",
+        pragmatic_hints: Sequence[str] = (), memory_block: str = "", **kw: Any
+    ) -> str:
+        parts = [f"## Domain\n{domain_notes}"]
+        if pragmatic_hints:
+            parts.append(
+                "## Intents predicted to be invisible to clustering\n"
+                "These must be carried by this taxonomy — nothing downstream will find them:\n"
+                + "\n".join(f"- {h}" for h in pragmatic_hints)
+            )
+        if memory_block:
+            parts.append(memory_block)
+        for i, s in enumerate(submissions):
+            parts.append(
+                f"## Researcher {i + 1} — angle: {s.angle}\n"
+                + json.dumps(s.model_dump(), ensure_ascii=False, indent=1)[:9000]
+            )
+        parts.append("Synthesise one taxonomy. Return the draft.")
+        return "\n\n".join(parts)
+
+
+class CritiqueFinding(BaseModel):
+    kind: Literal["overlap", "gap", "catchall", "form_defined", "untestable", "missing_risk"]
+    classes: list[str] = Field(default_factory=list)
+    evidence_query: str = ""
+    defect: str
+    fix: str
+
+
+class CritiqueReport(BaseModel):
+    findings: list[CritiqueFinding] = Field(default_factory=list)
+    estimated_catchall_share: float | None = None
+    verdict: Literal["ship", "revise", "reject"] = "revise"
+    summary: str = ""
+
+
+class CriticAgent(Agent):
+    role = "taxonomy_critic"
+    prompt_name = "critic"
+    schema = CritiqueReport
+
+    def build_user(self, *, taxonomy: Taxonomy | TaxonomyDraft = None, sample_queries: Sequence[str] = (), **kw: Any) -> str:
+        nodes = taxonomy.nodes if taxonomy else []
+        rules = taxonomy.rules if taxonomy else []
+        return (
+            "## Taxonomy under review\n"
+            + json.dumps([n.model_dump() for n in nodes], ensure_ascii=False, indent=1)[:20000]
+            + "\n\n## Adjudication rules\n"
+            + json.dumps([r.model_dump() for r in rules], ensure_ascii=False, indent=1)[:8000]
+            + "\n\n## Sample queries to test it against\n"
+            + "\n".join(f"- {q}" for q in sample_queries[:120])
+            + "\n\nBreak it."
+        )
+
+
+# ==========================================================================
+# Phase 2b — annotation and adjudication
+# ==========================================================================
+
+class QueryLabel(BaseModel):
+    query: str
+    label: str
+    confidence: Literal["high", "medium", "low"] = "medium"
+    rule_cited: str = ""
+    rationale: str = ""
+
+
+class AnnotationBatch(BaseModel):
+    labels: list[QueryLabel] = Field(default_factory=list)
+
+
+class AnnotatorAgent(Agent):
+    role = "annotator"
+    prompt_name = "annotator"
+    schema = AnnotationBatch
+
+    def build_user(
+        self, *, queries: Sequence[str] = (), guide: str = "", classes: str = "", rules: str = "", **kw: Any
+    ) -> str:
+        return (
+            f"## Classes\n{budget_text(classes, 18000)}\n\n"
+            f"## Adjudication rules\n{budget_text(rules, 9000)}\n\n"
+            f"## Labelling guide\n{budget_text(guide, 6000)}\n\n"
+            f"## Queries to label ({len(queries)})\n"
+            + "\n".join(f"{i + 1}. {q}" for i, q in enumerate(queries))
+            + "\n\nLabel every one."
+        )
+
+
+class RefereeVerdict(BaseModel):
+    query: str
+    final_label: str
+    rule_cited: str = ""
+    rule_gap: bool = False
+    proposed_rule: str = ""
+    rationale: str = ""
+    both_defensible: bool = False
+
+
+class RefereeBatch(BaseModel):
+    verdicts: list[RefereeVerdict] = Field(default_factory=list)
+
+
+class RefereeAgent(Agent):
+    role = "referee"
+    prompt_name = "referee"
+    schema = RefereeBatch
+
+    def build_user(
+        self, *, disagreements: Sequence[dict[str, Any]] = (), classes: str = "", rules: str = "", **kw: Any
+    ) -> str:
+        rows = "\n".join(
+            f"{i + 1}. QUERY: {d['query']}\n   A said {d['label_a']} ({d.get('rationale_a', '')})"
+            f"\n   B said {d['label_b']} ({d.get('rationale_b', '')})"
+            for i, d in enumerate(disagreements)
+        )
+        return (
+            f"## Classes\n{budget_text(classes, 14000)}\n\n"
+            f"## Adjudication rules\n{budget_text(rules, 9000)}\n\n"
+            f"## Disagreements ({len(disagreements)})\n{rows}\n\nAdjudicate every one."
+        )
+
+
+# ==========================================================================
+# Phase 2d — adversarial validation
+# ==========================================================================
+
+class AttackResult(BaseModel):
+    query: str
+    assigned_label: str
+    attack: str
+    better_label: str = ""
+    verdict: Literal["wrong", "defensible", "correct"] = "correct"
+
+
+class AdversarialBatch(BaseModel):
+    results: list[AttackResult] = Field(default_factory=list)
+
+
+class AdversaryAgent(Agent):
+    role = "adversary"
+    prompt_name = "adversary"
+    schema = AdversarialBatch
+
+    def build_user(self, *, rows: Sequence[dict[str, str]] = (), classes: str = "", **kw: Any) -> str:
+        listing = "\n".join(f"{i + 1}. {r['query']}  →  labelled {r['label']}" for i, r in enumerate(rows))
+        return (
+            f"## Available classes\n{budget_text(classes, 12000)}\n\n"
+            f"## Labelled queries to attack ({len(rows)})\n{listing}\n\nAttack every one."
+        )
+
+
+# ==========================================================================
+# Phase 7 — blind naming and audit
+# ==========================================================================
+
+class NamerAgent(Agent):
+    """The blind namer.
+
+    ``build_user`` renders through the firewall, so a card carrying any label
+    vocabulary raises before it can reach the model.  The check is here rather
+    than at the call site because a call site can be forgotten.
+    """
+
+    role = "namer"
+    prompt_name = "namer"
+    schema = LeafNaming
+
+    def build_user(self, *, card: NamingCard = None, **kw: Any) -> str:
+        return render_card(card, firewall=self.ctx.firewall) + "\n\nName this group."
+
+    def postprocess(self, out: LeafNaming, *, card: NamingCard = None, **kw: Any) -> LeafNaming:
+        out.leaf_id = card.leaf_id
+        out.named_by = f"{self.role}{self.suffix}@{self.ctx.registry.provider}"
+        return out
+
+
+class AuditorAgent(Agent):
+    role = "tree_auditor"
+    prompt_name = "auditor"
+    schema = TreeAudit
+
+    def build_user(
+        self,
+        *,
+        namings: Sequence[LeafNaming] = (),
+        leaf_family: Sequence[int] = (),
+        leaf_sizes: Sequence[int] = (),
+        template_spread: dict[str, Any] | None = None,
+        centroid_similarity: list[dict[str, Any]] | None = None,
+        **kw: Any,
+    ) -> str:
+        rows = [
+            {
+                "leaf_id": n.leaf_id,
+                "name": n.name_zh,
+                "code": n.code,
+                "user_need": n.user_need,
+                "coherence": n.coherence,
+                "mix_notes": n.mix_notes,
+                "risk_flag": n.risk_flag,
+                "risk_reason": n.risk_reason,
+                "family_hint": int(leaf_family[n.leaf_id]) if n.leaf_id < len(leaf_family) else None,
+                "size": int(leaf_sizes[n.leaf_id]) if n.leaf_id < len(leaf_sizes) else None,
+            }
+            for n in namings
+        ]
+        parts = [
+            "## Every cluster, as named independently by blind reviewers\n"
+            + json.dumps(rows, ensure_ascii=False, indent=1)[:40000]
+        ]
+        if template_spread:
+            parts.append(
+                "## Phrasing families and where their members landed\n"
+                "A family spread across several clusters is direct evidence of a "
+                "cross-family twin — same intent, split by wording.\n"
+                + json.dumps(template_spread, ensure_ascii=False, indent=1)[:8000]
+            )
+        if centroid_similarity:
+            parts.append(
+                "## Most similar cluster pairs by centroid cosine\n"
+                + json.dumps(centroid_similarity[:40], ensure_ascii=False, indent=1)[:6000]
+            )
+        parts.append("Build the family layer, then audit it. Write prescriptions.")
+        return "\n\n".join(parts)
+
+
+# ==========================================================================
+# Risk, reporting, maintenance
+# ==========================================================================
+
+class RiskFinding(BaseModel):
+    category: str
+    cluster_ids: list[int] = Field(default_factory=list)
+    severity: Literal["low", "medium", "high"] = "medium"
+    rationale: str = ""
+    evidence: list[str] = Field(default_factory=list)
+    recommended_policy: Literal["isolate", "isolate_and_flag", "drop", "monitor"] = "isolate_and_flag"
+
+
+class RiskReport(BaseModel):
+    findings: list[RiskFinding] = Field(default_factory=list)
+    clean: bool = True
+    summary: str = ""
+
+
+class RiskSentinelAgent(Agent):
+    role = "risk_sentinel"
+    prompt_name = "risk_sentinel"
+    schema = RiskReport
+
+    def build_user(self, *, cluster_samples: dict[int, list[str]] = None, **kw: Any) -> str:
+        blocks = [
+            f"### Cluster {cid}\n" + "\n".join(f"- {s}" for s in samples[:12])
+            for cid, samples in (cluster_samples or {}).items()
+        ]
+        return "## Clusters to review\n\n" + "\n\n".join(blocks)[:40000] + "\n\nReport findings."
+
+
+class ReportSection(BaseModel):
+    heading: str
+    body_markdown: str
+
+
+class ReportDraft(BaseModel):
+    title: str = ""
+    executive_summary: str = ""
+    sections: list[ReportSection] = Field(default_factory=list)
+    limitations: list[str] = Field(default_factory=list)
+
+
+class ReporterAgent(Agent):
+    role = "reporter"
+    prompt_name = "reporter"
+    schema = ReportDraft
+
+    def build_user(self, *, brief: str = "", evidence: str = "", **kw: Any) -> str:
+        return (
+            f"## What to write\n{brief}\n\n"
+            f"## Evidence available (every number must come from here)\n"
+            f"{budget_text(evidence, 60000, tail=6000)}"
+        )
+
+
+class DriftReport(BaseModel):
+    new_families: list[dict[str, Any]] = Field(default_factory=list)
+    disappeared_families: list[dict[str, Any]] = Field(default_factory=list)
+    grown: list[dict[str, Any]] = Field(default_factory=list)
+    shrunk: list[dict[str, Any]] = Field(default_factory=list)
+    novel_queries: list[str] = Field(default_factory=list)
+    alpha_recheck_needed: bool = False
+    config_changed: bool = False
+    recommended_actions: list[str] = Field(default_factory=list)
+    summary: str = ""
+
+
+class MaintainerAgent(Agent):
+    role = "maintainer"
+    prompt_name = "maintainer"
+    schema = DriftReport
+
+    def build_user(self, *, previous: str = "", current: str = "", novel: Sequence[str] = (), **kw: Any) -> str:
+        return (
+            f"## Previous run\n{budget_text(previous, 20000)}\n\n"
+            f"## Current run\n{budget_text(current, 20000)}\n\n"
+            f"## Queries far from every centroid\n" + "\n".join(f"- {q}" for q in novel[:60])
+        )
+
+
+ALL_ROLES = {
+    "researcher": ResearcherAgent,
+    "taxonomy_architect": ArchitectAgent,
+    "taxonomy_critic": CriticAgent,
+    "annotator": AnnotatorAgent,
+    "referee": RefereeAgent,
+    "adversary": AdversaryAgent,
+    "namer": NamerAgent,
+    "tree_auditor": AuditorAgent,
+    "risk_sentinel": RiskSentinelAgent,
+    "reporter": ReporterAgent,
+    "maintainer": MaintainerAgent,
+}

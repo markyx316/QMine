@@ -1,0 +1,59 @@
+# News / politics (Part IV §4.3). Fastest-drifting of the five; entity-dominated.
+key: politics_zh
+display_name: "时政新闻搜索 Query"
+language: zh
+
+tokenizer: jieba
+char_ngram_range: [1, 3]
+word_ngram_range: [1, 2]
+
+# Light-first; add BAAI/bge-m3 (~2.3GB) explicitly if the log is multilingual.
+embedding_candidates:
+  - BAAI/bge-small-zh-v1.5
+  - BAAI/bge-base-zh-v1.5
+
+template_seeds:
+  - name: what_happened
+    pattern: "(发生了什么|怎么回事|最新进展|事件始末|来龙去脉)"
+    intent_hint: "求事件经过"
+  - name: fact_check
+    pattern: "(是真的吗|辟谣|真假|是否属实|谣言)"
+    intent_hint: "求真伪核实"
+  - name: who_is
+    pattern: "(是谁|个人简历|什么职务|担任|背景资料)"
+    intent_hint: "求人物档案"
+  - name: policy_meaning
+    pattern: "(政策解读|意味着什么|有什么影响|新规|如何解读)"
+    intent_hint: "求政策含义"
+  - name: schedule_procedure
+    pattern: "(什么时候|几号|流程是什么|怎么办理|需要什么材料)"
+    intent_hint: "求时间/办事流程"
+
+risk_categories:
+  - name: rumor_amplification
+    patterns: ["内部消息", "据说要", "秘闻", "内幕消息"]
+    keywords: []
+    rationale: "Unverified-claim amplification."
+    policy: isolate_and_flag
+  - name: inflammatory
+    patterns: []
+    keywords: []
+    rationale: >
+      Stance-inflaming and locally sensitive topics. Patterns are deliberately
+      EMPTY: this list must be filled per jurisdiction with local compliance
+      counsel, not copied from another market.
+    policy: isolate_and_flag
+
+expected_l1_range: [12, 20]
+expected_family_range: [10, 20]
+
+pragmatic_intents_hint:
+  - "立场求证 (seeking confirmation of a held view)"
+  - "谣言核实"
+  - "办事流程求助"
+
+domain_notes: >
+  Entity-dominated: without entity-linking features in the sparse block,
+  clustering organises by *person* rather than by intent — the same failure mode
+  as K12's sentence-making cluster following topic instead of task. Drift is
+  fast: run the maintenance loop biweekly and weight the novelty sentinel higher.

@@ -1,0 +1,134 @@
+# K12 Chinese education search log — the profile the playbook was distilled from.
+# Seeds here are priors, not answers: Phase 1 re-mines them against the actual
+# corpus and Phase 3c re-derives alpha. Nothing in this file is allowed to
+# survive contact with contradicting data.
+key: k12_zh
+display_name: "K12 中文搜索 Query"
+language: zh
+
+tokenizer: jieba
+char_ngram_range: [1, 3]
+word_ngram_range: [1, 2]
+
+embedding_candidates:
+  - BAAI/bge-small-zh-v1.5
+  - BAAI/bge-base-zh-v1.5
+  - BAAI/bge-large-zh-v1.5
+  - shibing624/text2vec-base-chinese
+instruction_prefix: null
+
+# Six phrasing families. Contract: everything matching is near-certainly the
+# same intent. Measured shares on the 50k sample are in the comments.
+template_seeds:
+  - name: pronunciation
+    pattern: "(的拼音|怎么读|读音|念什么|读什么|拼音是什么)"
+    intent_hint: "求一个字/词的读音"
+    expected_min_share: 0.10
+  - name: meaning
+    pattern: "(什么意思|啥意思|的意思|意思是什么|释义|何意)"
+    intent_hint: "求一个词/句的释义"
+    expected_min_share: 0.10
+  - name: word_formation
+    pattern: "(组词|怎么组词|能组什么词|的词语)"
+    intent_hint: "用一个字组出词语"
+    expected_min_share: 0.01
+  - name: lexical_relation
+    pattern: "(近义词|反义词|同义词|相近的词)"
+    intent_hint: "求近义/反义关系"
+    expected_min_share: 0.01
+  - name: stroke_order
+    pattern: "(笔顺|笔画|怎么写|几画|部首|偏旁)"
+    intent_hint: "求字形写法"
+    expected_min_share: 0.01
+  - name: verse_continuation
+    pattern: "(的下一句|下一句是什么|上一句|的全诗|全诗是什么)"
+    intent_hint: "报出半句求原文续句"
+    expected_min_share: 0.005
+  - name: char_riddle
+    # Deliberately separate from zodiac_gambling: "打一字" is a legitimate
+    # word puzzle, "打一生肖" is a lottery probe wearing the same costume.
+    pattern: "打一(?:字|成语|词|地名|物|数字)"
+    intent_hint: "字谜/成语谜求谜底"
+    expected_min_share: 0.002
+
+# Principle 10: these never blend into a normal family, at any cluster count.
+risk_categories:
+  - name: zodiac_gambling
+    # Broad on purpose. "十二生肖的成语" is legitimate content and will be caught
+    # too; over-isolating a compliant query costs a routing hop, under-isolating
+    # a gambling probe costs a child seeing a betting answer. The audit agent
+    # narrows this, never the screen.
+    patterns: ["生肖", "打一(?:准确|正确|最准)?生肖", "三大生肖", "特码", "开奖", "六合彩"]
+    keywords: []
+    rationale: >
+      Lottery/gambling probes wearing riddle clothing. In pure semantic space
+      they embed next to classical-poetry riddles and would otherwise be served
+      as children's content.
+    policy: isolate_and_flag
+  - name: adult_or_offtopic
+    # Revised 2026-08-17 after a blind naming panel found this category and the
+    # original patterns matched ZERO rows. The real signal is not "adult-flavoured
+    # phrasing" but rare-character and classical-word lookups whose dictionary
+    # senses are adult: 娈童, 人彘, 芣苢. A rare-character lookup surface will
+    # surface them verbatim unless the serving layer is told not to.
+    patterns: ["情感语录", "伤感说说", "土味情话", "娈童", "人彘", "淫", "妓", "娼"]
+    keywords: []
+    rationale: >
+      Adult-audience content arriving in a K12 surface, mostly via rare-character
+      and classical-vocabulary lookups rather than via adult phrasing.
+    policy: isolate_and_flag
+
+  # --- The three categories below were DISCOVERED by the Phase 7 blind naming
+  # panel, not anticipated here. That is the loop working as intended: the
+  # profile is a prior, the panel is an observation, and the observation wins.
+  - name: textbook_copyright
+    patterns: ["电子课本", "课本原文", "人教版.*(试卷|下载)", "苏教版.*(试卷|下载)", "教材全解"]
+    keywords: []
+    rationale: >
+      Requests for full textbook text and complete exam papers from named
+      publishers. Reproducing the full work is a rights problem; cite the source
+      and point at a licensed channel instead.
+    policy: isolate_and_flag
+
+  - name: school_ranking_and_admissions
+    patterns: ["排名", "分数线", "录取线", "升学率", "重点班", "哪个学校好", "几中好"]
+    keywords: []
+    rationale: >
+      School rankings, admission score lines and "which school is better"
+      judgments. Two problems at once: the facts change yearly and vary by
+      locality, so answering from memory misinforms a high-stakes decision; and
+      promoting school rankings and admission rates is restricted content for
+      education providers in mainland China.
+    policy: isolate_and_flag
+
+  - name: high_stakes_dates_and_entities
+    patterns: ["中考.*(时间|几月|哪天)", "高考.*(时间|几月|哪天)", "开学.*(时间|几号)", "官网", "招生电话"]
+    keywords: []
+    rationale: >
+      Exam dates, term dates, and specific school contact details. Jurisdiction-
+      specific and time-sensitive; a confidently wrong answer here has real
+      consequences, so these should route to a retrieval path rather than be
+      generated.
+    policy: isolate
+
+expected_l1_range: [15, 25]
+expected_family_range: [15, 25]
+
+# Principle 1: the intents clustering is structurally blind to. Listing them
+# here is not a prediction to be tested later — it is an assignment of
+# responsibility to the top-down route before work starts.
+pragmatic_intents_hint:
+  - "解题求答案 (content looks identical to a concept question)"
+  - "用法判断/对错验证 ('X和Y哪个对')"
+  - "谜语/脑筋急转弯"
+  - "手工/活动做法"
+  - "育儿/家长咨询"
+  - "导航到具体站点或应用"
+  - "闲聊与噪声"
+
+domain_notes: >
+  Chinese K12 search. Queries are short (median 7 chars) and heavily templated
+  around character-level lookups. The legacy taxonomy sorts ~46% of traffic into
+  shape-defined buckets ("5-9字短语", "含数字"), so it is a reference, not a
+  skeleton to inherit. Subject axis: 语文 dominates (~56%), then 数学, 英语,
+  policy/entity queries, and a noise tail.

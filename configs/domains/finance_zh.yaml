@@ -1,0 +1,73 @@
+# Finance query log (Part IV §4.2). Compliance is the difference that matters:
+# a mis-served finance query is a regulatory event, not a bad search result.
+key: finance_zh
+display_name: "金融搜索 Query"
+language: zh
+
+tokenizer: jieba
+char_ngram_range: [1, 3]
+word_ngram_range: [1, 2]
+
+# Light-first: the bake-off encodes with every candidate, so heavy multilingual
+# models belong in the list only when the corpus actually needs them.
+# Opt-in for multilingual or terminology-dense logs:
+#   - BAAI/bge-m3 (~2.3GB) · Qwen/Qwen3-Embedding-0.6B (~1.2GB)
+embedding_candidates:
+  - BAAI/bge-small-zh-v1.5
+  - BAAI/bge-base-zh-v1.5
+instruction_prefix: null
+
+template_seeds:
+  - name: quote_lookup
+    pattern: "(股价|股票价格|市值|今天涨跌|收盘价|开盘价)"
+    intent_hint: "求某标的的行情数字"
+  - name: term_definition
+    pattern: "(是什么意思|什么是|的定义|通俗解释)"
+    intent_hint: "求金融术语释义"
+  - name: howto_transact
+    pattern: "(怎么买|怎么开户|如何购买|怎么赎回|怎么转出|开户流程)"
+    intent_hint: "求操作步骤"
+  - name: rate_lookup
+    pattern: "(汇率|利率|收益率|年化|手续费多少)"
+    intent_hint: "求利率/汇率数字"
+  - name: comparison
+    pattern: "(和.{1,12}哪个好|与.{1,12}区别|哪个更划算|对比)"
+    intent_hint: "两个产品/标的的比较"
+  - name: news_latest
+    pattern: "(最新消息|今天|最新公告|发生了什么|为什么涨|为什么跌)"
+    intent_hint: "求时效性事件"
+
+risk_categories:
+  - name: stock_tipping
+    patterns: ["推荐.{0,4}股", "买什么股", "牛股", "内幕", "带单", "跟单", "老师带"]
+    keywords: ["涨停板预测", "明天买什么"]
+    rationale: >
+      Solicitation of specific buy/sell recommendations. Must be isolated and
+      routed to a general-information-only response path.
+    policy: isolate_and_flag
+  - name: personalized_advice
+    patterns: ["我该不该买", "帮我看看仓位", "我的.{0,6}要不要卖", "全仓"]
+    keywords: []
+    rationale: "Requests for individualised investment advice — licensed activity."
+    policy: isolate_and_flag
+  - name: fraud_gambling
+    patterns: ["杀猪盘", "刷单", "博彩", "澳门", "洗钱", "外汇黑平台"]
+    keywords: []
+    rationale: "Fraud and gambling probes."
+    policy: isolate_and_flag
+
+expected_l1_range: [15, 22]
+expected_family_range: [12, 22]
+
+pragmatic_intents_hint:
+  - "个性化投资建议求证 (looks like a normal question, is a compliance event)"
+  - "操作步骤指引"
+  - "账户/客服问题求助"
+  - "亏损情绪宣泄"
+
+domain_notes: >
+  Strong recency axis ("今天", "最新", a year number). Treat time markers as a
+  facet feature rather than letting them drive clustering, or every family
+  splits into a dated and an undated half. Entity density is high (tickers,
+  fund codes, institution names) — consider entity normalisation in the sparse
+  block before the alpha sweep.

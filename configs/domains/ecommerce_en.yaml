@@ -1,0 +1,72 @@
+# English e-commerce (Part IV §4.5 language migration + Sondhi et al. SIGIR'18
+# five-way taxonomy as a prior).
+key: ecommerce_en
+display_name: "E-commerce search queries (English)"
+language: en
+
+tokenizer: whitespace
+char_ngram_range: [3, 5]      # Latin scripts need longer char n-grams than CJK
+word_ngram_range: [1, 2]
+
+# Ordered light-first, and deliberately so. The bake-off downloads and encodes
+# with EVERY candidate, so putting multi-gigabyte multilingual models in the
+# default list means a first run on a new corpus stalls for tens of minutes
+# before producing anything. These three are ~90-450MB combined and are enough
+# to pick a base for an English corpus.
+#
+# For production, or for a genuinely multilingual log, add the heavy candidates
+# explicitly and expect a long first run:
+#   - BAAI/bge-m3                  (~2.3GB, dense+sparse+multi-vector)
+#   - Qwen/Qwen3-Embedding-0.6B    (~1.2GB, strongest open multilingual)
+embedding_candidates:
+  - sentence-transformers/all-MiniLM-L6-v2
+  - BAAI/bge-small-en-v1.5
+  - BAAI/bge-base-en-v1.5
+instruction_prefix: null
+
+template_seeds:
+  - name: howto
+    pattern: "(?i)^(how to|how do i|how can i)\\b"
+    intent_hint: "procedural request"
+  - name: comparison
+    pattern: "(?i)\\b(vs\\.?|versus|compared to|better than|difference between)\\b"
+    intent_hint: "compare two products"
+  - name: best_of
+    pattern: "(?i)^(best|top|cheapest|most affordable)\\b"
+    intent_hint: "ranked recommendation"
+  - name: compatibility
+    pattern: "(?i)\\b(compatible with|does .+ fit|work(s)? with|will .+ fit)\\b"
+    intent_hint: "fitment / compatibility check"
+  - name: order_status
+    pattern: "(?i)\\b(where is my order|track (my )?order|return policy|refund)\\b"
+    intent_hint: "post-purchase support"
+  - name: spec_lookup
+    pattern: "(?i)\\b(dimensions|size chart|how many|weight of|battery life)\\b"
+    intent_hint: "attribute lookup"
+
+risk_categories:
+  - name: restricted_goods
+    patterns: ["(?i)\\b(vape|nicotine|firearm|ammo|prescription only|steroid)\\b"]
+    keywords: []
+    rationale: "Regulated categories that must not be recommended generically."
+    policy: isolate_and_flag
+  - name: counterfeit_seeking
+    patterns: ["(?i)\\b(replica|knock ?off|fake|dupe|1:1 copy)\\b"]
+    keywords: []
+    rationale: "Counterfeit-seeking intent — policy-relevant."
+    policy: isolate_and_flag
+
+expected_l1_range: [12, 20]
+expected_family_range: [10, 20]
+
+pragmatic_intents_hint:
+  - "purchase-decision validation"
+  - "post-purchase support"
+  - "navigational (brand or site name only)"
+  - "price-hunting"
+
+domain_notes: >
+  Sondhi et al. (SIGIR'18) give a five-way prior (shopping / product-info /
+  comparison / support / navigational) — use it as one researcher's evidence,
+  not as the answer. Bare brand-or-model queries are the analogue of K12's
+  1-4-character lookups: the intent lives in the session, not the string.

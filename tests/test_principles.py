@@ -1,0 +1,296 @@
+"""Tests for the playbook principles that this codebase claims to *enforce*.
+
+These are the highest-value tests in the suite. A clustering bug produces worse
+numbers; a failure here produces numbers that look fine and are not trustworthy,
+which is far more expensive. Each test names the principle it guards.
+"""
+
+from __future__ import annotations
+
+import operator
+from typing import Annotated, TypedDict
+
+import numpy as np
+import pytest
+
+from qmine.memory.context import BlindnessFirewall, BlindnessViolation, render_card
+from qmine.ops.governance import GovernanceError, apply_merges, assert_all_settled, execute_prescriptions
+from qmine.ops.panel import UniformPanel
+from qmine.records import METRIC_AUTHORITY, MetricRecord, NamingCard, Prescription, Taxonomy, TaxonomyNode
+
+
+# -- Principle 3: metrics must not betray the objective --------------------
+
+def test_silhouette_can_never_decide_anything():
+    """An advisory metric must be structurally incapable of selecting a candidate."""
+    panel = UniformPanel(600, subsample=300)
+    panel.add_external("a", "silhouette", 0.9)
+    panel.add_external("b", "silhouette", 0.1)
+    with pytest.raises(ValueError, match="cannot decide"):
+        panel.decisive_ranking("silhouette")
+
+
+def test_decisive_metrics_can_decide():
+    panel = UniformPanel(600, subsample=300)
+    panel.add_external("a", "stability_ari", 0.5)
+    panel.add_external("b", "stability_ari", 0.9)
+    assert panel.decisive_ranking("stability_ari")[0]["subject"] == "b"
+
+
+def test_lower_is_better_metrics_rank_ascending():
+    panel = UniformPanel(600, subsample=300)
+    panel.add_external("tight", "template_fragmentation", 1.2)
+    panel.add_external("shattered", "template_fragmentation", 3.4)
+    assert panel.decisive_ranking("template_fragmentation")[0]["subject"] == "tight"
+
+
+def test_authority_table_covers_every_metric_the_panel_emits():
+    for name in ("stability_ari", "template_fragmentation", "silhouette",
+                 "heldout_reproduction", "nmi_reference", "ambiguous_rate"):
+        assert name in METRIC_AUTHORITY
+
+
+# -- Principle 5: blind review ---------------------------------------------
+
+def test_firewall_blocks_an_annotation_field_smuggled_onto_a_card():
+    """The check that actually stops anchoring: a card may carry member queries
+    and n-grams, and nothing else. A `legacy_label` or `taxonomy_hint` field
+    cannot pass whatever it contains."""
+    fw = BlindnessFirewall().add_reference_labels(["怎么读/读音/拼音"])
+    card = {
+        "leaf_id": 1, "size": 10, "share": 0.1,
+        "center_samples": ["氢怎么读"], "random_samples": [], "edge_samples": [],
+        "top_ngrams": ["怎么读"], "length_stats": {},
+        "legacy_label": "怎么读/读音/拼音",          # <- the smuggled annotation
+    }
+    with pytest.raises(BlindnessViolation, match="not part of the blind card contract"):
+        fw.assert_card_blind(card)
+
+
+def test_firewall_does_not_flag_a_domain_word_appearing_in_a_real_query():
+    """The false positive that made a lexical-only firewall unusable.
+
+    Good category names come from their domain's own vocabulary, so legacy
+    labels and ordinary query words overlap. On the real corpus the legacy label
+    "作文" appears inside the genuine query "我的自画像作文350字". Treating that
+    row as a leak silently dropped ten clusters from the naming pass.
+
+    A member query cannot anchor a namer — it is the thing being judged.
+    """
+    fw = BlindnessFirewall().add_reference_labels(["作文", "翻译", "成语"])
+    card = NamingCard(
+        leaf_id=1, size=900, share=0.02,
+        center_samples=["我的自画像作文350字", "六一作文450字左右"],
+        random_samples=["三年级作文我的妈妈"], edge_samples=["手抄报模板"],
+        top_ngrams=["作文", "0字"],
+    )
+    rendered = render_card(card, firewall=fw)      # must not raise
+    assert "我的自画像作文350字" in rendered
+
+
+def test_firewall_blocks_legacy_labels():
+    fw = BlindnessFirewall().add_reference_labels(["生肖/打一(疑似博彩)", "怎么读/读音/拼音"])
+    with pytest.raises(BlindnessViolation):
+        fw.assert_blind({"note": "this cluster is 生肖/打一(疑似博彩)"})
+
+
+def test_firewall_blocks_peer_agent_outputs():
+    from qmine.records import LeafNaming
+
+    peer = LeafNaming(leaf_id=1, name_zh="汉字组词查询", code="word_formation",
+                      user_need="x", coherence=5)
+    fw = BlindnessFirewall().add_peer_outputs([peer])
+    with pytest.raises(BlindnessViolation):
+        fw.assert_blind({"hint": "probably 汉字组词查询"})
+
+
+def test_firewall_allows_a_clean_card_through():
+    tax = Taxonomy(nodes=[TaxonomyNode(code="PRONUNCIATION", name="读音查询", definition="x")])
+    fw = BlindnessFirewall().add_taxonomy(tax)
+    clean = NamingCard(leaf_id=1, size=10, share=0.1,
+                       center_samples=["氢怎么读", "钦州的拼音"], top_ngrams=["怎么读"])
+    assert "氢怎么读" in render_card(clean, firewall=fw)
+
+
+def test_firewall_still_catches_labels_in_non_corpus_payloads():
+    """Exempting corpus text must not disarm the general check — an auditor
+    prompt or a memory block carrying a taxonomy name is still a leak."""
+    tax = Taxonomy(nodes=[TaxonomyNode(code="PRONUNCIATION", name="读音查询", definition="x")])
+    fw = BlindnessFirewall().add_taxonomy(tax)
+    with pytest.raises(BlindnessViolation):
+        fw.assert_blind({"context_note": "this cluster is probably 读音查询"})
+
+
+def test_send_payload_is_the_workers_entire_state():
+    """The structural half of the anti-anchoring guarantee.
+
+    A Send worker must not be able to read parent state. If this ever regresses
+    in LangGraph, blind naming silently stops being blind.
+    """
+    from langgraph.graph import END, START, StateGraph
+    from langgraph.types import Send
+
+    def fan(state):
+        return [Send("w", {"cid": i}) for i in range(3)]
+
+    def w(payload):
+        return {"seen": [sorted(payload.keys())]}
+
+    g = StateGraph(_SendProbeState)
+    g.add_node("start", lambda s: {})
+    g.add_node("w", w)
+    g.add_conditional_edges("start", fan, ["w"])
+    g.add_edge("w", END)
+    g.add_edge(START, "start")
+    out = g.compile().invoke({"secret_labels": ["LEAK"], "seen": []})
+    assert all(keys == ["cid"] for keys in out["seen"]), out["seen"]
+
+
+class _SendProbeState(TypedDict, total=False):
+    """Module-level so the TypedDict's forward references resolve."""
+
+    secret_labels: list[str]
+    seen: Annotated[list, operator.add]
+
+
+# -- Principle 6: governance is executed, not recorded ---------------------
+
+def test_unexecuted_prescription_fails_the_gate():
+    ps = [Prescription(id="P1", kind="merge_families", targets=[1, 2])]
+    with pytest.raises(GovernanceError, match="never reached the data"):
+        assert_all_settled(ps)
+
+
+def test_executed_and_declined_both_count_as_settled():
+    ps = [
+        Prescription(id="P1", kind="merge_families", targets=[1, 2], status="executed"),
+        Prescription(id="P2", kind="keep_as_is", targets=[3], status="declined",
+                     decline_reason="a real distinction"),
+    ]
+    assert assert_all_settled(ps)["n_total"] == 2
+
+
+def test_merge_chains_resolve_to_a_root():
+    lf = np.arange(12)
+    merged, detail = apply_merges(lf, {10: 6, 6: 0})
+    assert merged[10] == merged[6] == merged[0]
+    assert detail["n_families_after"] == 10
+
+
+def test_execution_stamps_evidence_on_every_prescription():
+    ps = [Prescription(id="P1", kind="merge_families", targets=[1, 2])]
+    _, ps, _ = execute_prescriptions(ps, np.arange(6), metrics_before={"m": 1.0},
+                                     recompute=lambda f: {"m": 0.5})
+    assert ps[0].status == "executed"
+    assert ps[0].evidence["column"] == "family_final"
+    assert ps[0].evidence["metric_deltas"]["m"] == -0.5
+
+
+# -- Principle 7: uniform panel, deterministic display ---------------------
+
+def test_panel_refuses_to_mix_measurement_configurations():
+    p1 = UniformPanel(1000, subsample=500, seed=0)
+    p2 = UniformPanel(1000, subsample=200, seed=7)
+    assert p1.panel_id != p2.panel_id
+    p1.add_external("a", "silhouette", 0.5)
+    p1._sets["b"] = p2.__class__(1000, subsample=200, seed=7).sets().get("x") or __import__(
+        "qmine.records", fromlist=["MetricSet"]
+    ).MetricSet(subject="b", panel_id=p2.panel_id)
+    with pytest.raises(ValueError, match="different panels"):
+        p1.comparison_table()
+
+
+def test_exemplar_selection_is_a_pure_function_of_the_hit_set():
+    from qmine.determinism import median_index_exemplar
+
+    hits = [93, 4, 17, 62, 31]
+    assert median_index_exemplar(hits) == median_index_exemplar(list(reversed(hits))) == 31
+
+
+def test_subsampling_is_reproducible():
+    from qmine.determinism import deterministic_subsample
+
+    a = deterministic_subsample(10_000, 500, 0)
+    b = deterministic_subsample(10_000, 500, 0)
+    assert np.array_equal(a, b)
+    assert not np.array_equal(a, deterministic_subsample(10_000, 500, 1))
+
+
+# -- Principle 12: honest reporting ----------------------------------------
+
+def test_distillation_metric_carries_its_own_disclaimer():
+    m = MetricRecord.make("distill_accuracy", 0.95, note="measures learnability, not correctness")
+    assert m.authority == "diagnostic"
+    assert "learnab" in m.note.lower()
+
+
+def test_panel_footnotes_state_what_the_numbers_do_not_mean():
+    notes = " ".join(UniformPanel(100, subsample=50).footnotes()).lower()
+    assert "advisory" in notes
+    assert "learnab" in notes
+    assert "negatively correlated" in notes
+
+
+def test_an_agent_cannot_declare_its_own_prescription_executed():
+    """Status and evidence belong to the pipeline, not the proposer.
+
+    A real failure: the auditor returned a prescription already marked
+    `executed` with an empty evidence pointer, which is exactly the
+    "recommended but never applied" state the Phase 8 gate exists to catch —
+    arriving through the gate's own front door.
+    """
+    from qmine.ops.governance import assert_all_settled
+
+    claimed = Prescription(id="P1", kind="split_leaf", targets=[0], status="executed",
+                           executed_at=0.62, evidence={})
+    # the ingest path must reset it
+    claimed.status, claimed.executed_at, claimed.evidence = "proposed", None, {}
+    with pytest.raises(Exception, match="never reached the data"):
+        assert_all_settled([claimed])
+
+
+def test_split_prescriptions_are_executed_or_declined_with_a_reason(toy_embedding):
+    """An audit finding must never silently vanish, even when the mechanism to
+    apply it is unavailable."""
+    import numpy as np
+
+    from qmine.ops.cluster import kmeans_labels
+    from qmine.ops.governance import execute_prescriptions
+
+    labels = kmeans_labels(toy_embedding, 3, seed=0)
+    fam = np.arange(3)
+    ps = [Prescription(id="P1", kind="split_leaf", targets=[0])]
+
+    # with the data available: executed, pointing at the column it changed
+    _, done, detail = execute_prescriptions(list(ps), fam, X=toy_embedding, leaf_labels=labels)
+    assert done[0].status == "executed"
+    assert done[0].evidence["column"] == "bu_leaf"
+    assert "leaf_labels" in detail
+
+    # without it: declined, with a reason — never dropped
+    _, done2, _ = execute_prescriptions(
+        [Prescription(id="P1", kind="split_leaf", targets=[0])], fam)
+    assert done2[0].status == "declined" and done2[0].decline_reason
+
+
+def test_no_prescription_kind_can_slip_through_unhandled():
+    """Exhaustive by construction: an unknown kind is declined with a reason,
+    never left `proposed` (which halts the run) and never dropped (which is the
+    failure Principle 6 names). A `relabel` with no replacement name is the case
+    that found this."""
+    import numpy as np
+
+    from qmine.ops.governance import assert_all_settled, execute_prescriptions
+
+    ps = [
+        Prescription(id="P1", kind="relabel", targets=[2, 4]),                     # no names
+        Prescription(id="P2", kind="relabel", targets=[1], target_names=["读音查询"]),
+        Prescription(id="P3", kind="keep_as_is", targets=[0]),
+    ]
+    _, done, detail = execute_prescriptions(ps, np.arange(6))
+    assert assert_all_settled(done)["n_total"] == 3
+    by_id = {p.id: p for p in done}
+    assert by_id["P1"].status == "declined" and by_id["P1"].decline_reason
+    assert by_id["P2"].status == "executed"
+    assert by_id["P2"].evidence["column"] == "bu_leaf_name"
+    assert detail["relabelled"] == {"1": "读音查询"}
