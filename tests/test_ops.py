@@ -101,7 +101,38 @@ def test_heldout_reproduction_is_near_perfect_on_clean_structure(toy_embedding):
     assert heldout_reproduction(toy_embedding, labels)["agreement"] > 0.95
 
 
-def test_triangulation_takes_the_stability_peak_not_the_silhouette_peak():
+def test_k_is_located_by_intent_alignment_and_only_filtered_by_stability():
+    """Stability rejects; alignment with the phrasing groups locates.
+
+    Stability cannot rank K here — its seed-to-seed sd (~0.10) exceeds the gaps
+    between adjacent K (~0.05), and its curve still climbs below the grid, so
+    ranking by it reads noise and trends toward a degenerate two-way split.
+    """
+    sweep = [
+        # k=10 is the most stable, but alignment says it merges distinct intents.
+        {"k": 10, "stability_ari": 0.95, "silhouette": 0.10, "intent_alignment_ami": 0.50},
+        {"k": 20, "stability_ari": 0.70, "silhouette": 0.05, "intent_alignment_ami": 0.72},
+        {"k": 40, "stability_ari": 0.65, "silhouette": 0.30, "intent_alignment_ami": 0.60},
+    ]
+    tri = triangulate_k(sweep, {"k_estimate": 60}, (15, 25))
+    assert tri["chosen_family_k"] == 20, "the most STABLE k won — stability is ranking again"
+    assert tri["locator"] == "intent_alignment_ami"
+    assert tri["silhouette_disagrees"] is True
+
+    # Stability's only job is rejection: an irreproducible k is dropped even when
+    # its alignment is the best on the board.
+    unstable = [
+        {"k": 10, "stability_ari": 0.20, "silhouette": 0.10, "intent_alignment_ami": 0.95},
+        {"k": 20, "stability_ari": 0.80, "silhouette": 0.05, "intent_alignment_ami": 0.60},
+    ]
+    tri2 = triangulate_k(unstable, {"k_estimate": 60}, (15, 25))
+    assert tri2["chosen_family_k"] == 20, "an irreproducible k survived the floor"
+    assert tri2["n_rejected_as_unstable"] == 1
+
+
+def test_triangulation_falls_back_to_stability_only_without_phrasing_groups():
+    """No phrasing groups mined means nothing to align against. The old rule then
+    applies, and the artifact must say the evidence is weak."""
     sweep = [
         {"k": 10, "stability_ari": 0.90, "silhouette": 0.10},
         {"k": 20, "stability_ari": 0.95, "silhouette": 0.05},
@@ -109,7 +140,7 @@ def test_triangulation_takes_the_stability_peak_not_the_silhouette_peak():
     ]
     tri = triangulate_k(sweep, {"k_estimate": 60}, (15, 25))
     assert tri["chosen_family_k"] == 20
-    assert tri["silhouette_disagrees"] is True
+    assert "stability_ari" in tri["locator"] and "weak" in tri["locator"]
 
 
 def test_hierarchy_is_two_levels_and_respects_the_minimum_leaf_size(toy_embedding):

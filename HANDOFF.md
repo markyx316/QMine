@@ -1,37 +1,103 @@
 # QMine — 交接说明 / Handoff
 
-**Last session: 2026-08-18, evening.** 130 tests pass; `ruff --select F` clean apart
-from three pre-existing warnings (one unused import, one unused local, one f-string
-without placeholders — all harmless, all predate today).
+> **How to maintain this file** (the contract `CLAUDE.md` refers to):
+> - **§1 Status** — overwrite every session. It must always describe *now*.
+> - **§2 Open questions** — **edit, never append.** Resolve an item → delete it here and
+>   record the resolution in that session's section below.
+> - **§3 Durable notes** — things worth not re-learning. Rarely changes.
+> - **§4+ Session log** — append a new dated section per session. Never edit old ones.
+>
+> This file is a **log, not a specification.** When it disagrees with the code or the
+> tests, the code and tests are right. Verify before relying on anything here.
 
 ---
 
-## 1. Where to pick up
+## 1. Status — last updated 2026-08-19
 
-**One thing is unfinished: no live run has ever completed all twelve phases.**
-The furthest any has reached is the Phase 2b gate, which correctly refuses to pass a
-gold set at κ 0.83 against a 0.90 bar.
-Phases 3–12 have only ever executed under the deterministic offline stand-in.
-Everything below is background for finishing that.
+| | |
+|---|---|
+| Tests | **138 passing**; `ruff --select F` clean but for 3 pre-existing style warnings |
+| Verified **live** (real agents) | phases p0–p2b only, on a **12k subsample** |
+| Verified **offline** (stand-in) | all 12 phases, incl. reports, notebook, 11 figures |
+| Never run | the full 50k corpus with live agents |
+| Live spend to date | ~$38 across 4 attempts |
+
+**Next action:** the full-50k live run. Everything since `live20` — the AMI-based K
+rule, `partition_stability`, battery-as-probe, gold sizing 600→3000, the audit trail,
+the annotator-ceiling pilot — has only ever run offline.
 
 ```bash
-# The playbook-faithful run (3,000-row gold set, pilot gate armed).
-# Budget ~45-70 min and roughly $25-30. Warm the cache first — it saves ~35 min
-# of live web research in Phase 2a.
 cd "/Users/mayouxuan/Documents/Claude/Search Query Mining Agent Team/QMine"
-mkdir -p runs/live21 && cp -r runs/live20/llm_cache runs/live21/llm_cache
+mkdir -p runs/live21 && cp -r runs/live20/llm_cache runs/live21/llm_cache   # saves ~35 min
 HF_HOME=$(pwd)/.hf caffeinate -i .venv/bin/qmine run \
   --input data/raw/k12_queries_50k.csv --domain k12_zh \
-  --reference-columns legacy_l1,legacy_l2 --sample 12000 \
+  --reference-columns legacy_l1,legacy_l2 \
   --provider router --run-id live21 --plain
 ```
 
-Drop `--plain` for the Rich live dashboard. `qmine models` shows the routing plan
-and its cost estimate without spending anything.
+---
+
+## 2. Open questions — EDIT THIS SECTION, DO NOT APPEND
+
+1. **Does the guide repair help? First clean answer: no measurable effect.**
+   `live20` produced the first uncontaminated comparison — both rounds at **n=596**,
+   full annotator coverage on both sides, all 28 repair rules delivered:
+
+   ```json
+   [{"round": 1, "kappa": 0.8335, "n": 596, "raw_agreement": 0.849, "sample": "initial"},
+    {"round": 2, "kappa": 0.8311, "n": 596, "raw_agreement": 0.849, "sample": "fresh"}]
+   ```
+
+   **Δκ = −0.002**, against a standard error of roughly 0.016 at this n — about
+   0.1 SE, i.e. flat. Raw agreement is identical to four decimal places (0.849 both
+   rounds), which is the more striking number: the two rounds are indistinguishable.
+
+   So the machinery works — 8 of 8 open boundaries decided, 28 of 28 rules delivered,
+   the guide rewritten, a fresh disjoint sample annotated — and **agreement does not
+   move**. The honest reading is that marker-based boundary rules are not the binding
+   constraint on annotator agreement here, which is consistent with the earlier
+   finding that this corpus's disagreement is *diffuse* across ~40 pairs rather than
+   concentrated in a few.
+
+   Open for tomorrow: is the effect genuinely zero, or too small to see at 596? At
+   3,000 rows the resolvable effect size drops to roughly 0.015. Worth one run to
+   find out — and if it is still flat, the repair loop should probably be demoted
+   from a gate remedy to a diagnostic that reports contested boundaries without
+   claiming to fix them.
+2. **The comparison design is still confounded.** Round 1 is scored on sample A and
+   round 2 on sample B, so the delta mixes "guide improved" with "sample differed".
+   The clean fix is a **control arm** — annotate sample B with the *old* guide too —
+   at the cost of one extra annotation pass. Not built; the code now at least refuses
+   to present the two numbers as comparable (`comparable: false` in the artifact).
+3. **`_dedupe_rules` cannot see semantic contradictions.** It catches lexical
+   duplicates; two rules that mean the same thing in different words slip through.
+   The serialized referee is the mitigation, not the filter.
+4. **Three domain profiles are untested on real data:** `finance_zh`, `sports_zh`,
+   `politics_zh`.
+5. **`n_prescriptions` is 0 on every halt so far.** A halted run tells the operator
+   what failed but issues no structured prescription for fixing it.
 
 ---
 
-## 2. What changed today
+## 3. Durable notes — worth not re-learning
+
+- `runs/*/llm_cache` is keyed on `(role, provider, model, system, user, schema)` and
+  **not** on `max_tokens` — so token-budget changes do not invalidate it. Copying a
+  cache directory into a new run is a legitimate way to skip replayable work.
+  Web-research calls will still miss, because the fetched content differs each time.
+- The offline stand-in produces a **degenerate taxonomy** (one node,
+  `[offline-heuristic] code`), so `td_l1_name` is legitimately empty in offline runs.
+  The code reports that rather than shipping a column of blanks.
+- `completed_phases` uses an `operator.add` reducer — it cannot be pruned via
+  `update_state`. Rewind by graph **position** (`as_node=<predecessor>`) instead.
+- `qmine` has no `new-generation` command; `runner.new_generation()` exists but is
+  not exposed on the CLI.
+- Verify a live run really used live agents: `run_summary.json` →
+  `llm_usage.provider` must read `routed`, not `offline`.
+
+---
+
+## 4. Session 1 (2026-08-18) — deliverables, providers, guide repair
 
 ### Deliverables now match the reference documents
 
@@ -131,7 +197,7 @@ disjoint sample**.
 
 ---
 
-## 3. Session log — what each live attempt cost and taught
+### Live attempts — what each cost and taught
 
 | run | outcome | cost | lesson |
 |---|---|---|---|
@@ -145,67 +211,7 @@ fixed with regression tests.
 
 ---
 
-## 4. Open questions for tomorrow
-
-1. **Does the guide repair help? First clean answer: no measurable effect.**
-   `live20` produced the first uncontaminated comparison — both rounds at **n=596**,
-   full annotator coverage on both sides, all 28 repair rules delivered:
-
-   ```json
-   [{"round": 1, "kappa": 0.8335, "n": 596, "raw_agreement": 0.849, "sample": "initial"},
-    {"round": 2, "kappa": 0.8311, "n": 596, "raw_agreement": 0.849, "sample": "fresh"}]
-   ```
-
-   **Δκ = −0.002**, against a standard error of roughly 0.016 at this n — about
-   0.1 SE, i.e. flat. Raw agreement is identical to four decimal places (0.849 both
-   rounds), which is the more striking number: the two rounds are indistinguishable.
-
-   So the machinery works — 8 of 8 open boundaries decided, 28 of 28 rules delivered,
-   the guide rewritten, a fresh disjoint sample annotated — and **agreement does not
-   move**. The honest reading is that marker-based boundary rules are not the binding
-   constraint on annotator agreement here, which is consistent with the earlier
-   finding that this corpus's disagreement is *diffuse* across ~40 pairs rather than
-   concentrated in a few.
-
-   Open for tomorrow: is the effect genuinely zero, or too small to see at 596? At
-   3,000 rows the resolvable effect size drops to roughly 0.015. Worth one run to
-   find out — and if it is still flat, the repair loop should probably be demoted
-   from a gate remedy to a diagnostic that reports contested boundaries without
-   claiming to fix them.
-2. **The comparison design is still confounded.** Round 1 is scored on sample A and
-   round 2 on sample B, so the delta mixes "guide improved" with "sample differed".
-   The clean fix is a **control arm** — annotate sample B with the *old* guide too —
-   at the cost of one extra annotation pass. Not built; the code now at least refuses
-   to present the two numbers as comparable (`comparable: false` in the artifact).
-3. **`_dedupe_rules` cannot see semantic contradictions.** It catches lexical
-   duplicates; two rules that mean the same thing in different words slip through.
-   The serialized referee is the mitigation, not the filter.
-4. **Three domain profiles are untested on real data:** `finance_zh`, `sports_zh`,
-   `politics_zh`.
-5. **`n_prescriptions` is 0 on every halt so far.** A halted run tells the operator
-   what failed but issues no structured prescription for fixing it.
-
----
-
-## 5. Things worth not re-learning
-
-- `runs/*/llm_cache` is keyed on `(role, provider, model, system, user, schema)` and
-  **not** on `max_tokens` — so token-budget changes do not invalidate it. Copying a
-  cache directory into a new run is a legitimate way to skip replayable work.
-  Web-research calls will still miss, because the fetched content differs each time.
-- The offline stand-in produces a **degenerate taxonomy** (one node,
-  `[offline-heuristic] code`), so `td_l1_name` is legitimately empty in offline runs.
-  The code reports that rather than shipping a column of blanks.
-- `completed_phases` uses an `operator.add` reducer — it cannot be pruned via
-  `update_state`. Rewind by graph **position** (`as_node=<predecessor>`) instead.
-- `qmine` has no `new-generation` command; `runner.new_generation()` exists but is
-  not exposed on the CLI.
-- Verify a live run really used live agents: `run_summary.json` →
-  `llm_usage.provider` must read `routed`, not `offline`.
-
----
-
-## 6. Session 2 (2026-08-19) — decision architecture and the audit trail
+## 5. Session 2 (2026-08-19) — decision architecture, audit trail, portability
 
 **Verdict on the playbook: mostly right, targeted repair — not redesign.** Five
 independent audits agreed. The phase ORDER is correct and a joint grid search is
