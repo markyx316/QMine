@@ -510,15 +510,31 @@ class ModelRegistry:
         u["estimated_cost_usd"] = round(self.ledger.estimated_cost_usd(), 2)
         return u
 
-    def provenance_note(self) -> str:
-        """The sentence every report must carry about who actually judged things."""
+    def provenance_note(self, language: str = "en") -> str:
+        """The sentence every report must carry about who actually judged things.
+
+        Rendered in the deliverable's language: this line is the reader's only
+        warning that names and definitions may have come from a stand-in rather
+        than a model, and a warning nobody can read is not a warning.
+        """
+        zh = language == "zh"
         if self.is_offline:
             return (
+                "本次运行中所有需要 LLM 判断的环节, 均由**确定性离线启发式替身**产出, "
+                "**并非语言模型**。这些环节给出的名称、定义与标签由 n-gram 与正则证据算得, "
+                "并以 `offline-heuristic` 标注。定量结果 (嵌入、聚类、各项指标) 不受影响, 完全真实。"
+                if zh else
                 "LLM-judgment steps in this run were produced by the deterministic "
                 "offline heuristic stand-in, NOT by a language model. Names, definitions "
                 "and labels from those steps are computed from n-gram and regex evidence "
                 "and are marked `offline-heuristic`. Quantitative results (embeddings, "
                 "clustering, metrics) are unaffected and fully real."
+            )
+        if zh:
+            return (
+                f"需要 LLM 判断的环节使用了 {self.model_name('deep')} (深层) 与 "
+                f"{self.model_name('fast')} (快层), temperature={self.cfg.temperature}, "
+                "响应按内容哈希缓存以保证可复现。"
             )
         return (
             f"LLM-judgment steps used {self.model_name('deep')} (deep tier) and "

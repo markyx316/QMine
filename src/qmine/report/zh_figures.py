@@ -18,69 +18,100 @@ back from UMAP to PCA so the notebook still executes on a machine without
 
 from __future__ import annotations
 
-# Shared by both projection figures: build a 2-D view of a high-dimensional
-# space, preferring UMAP's local-structure preservation but never requiring it.
-_PROJECT = '''
-def project(X, seed=20240601, n=6000):
-    """2-D view of X. UMAP when available (keeps local neighbourhoods), else PCA."""
-    idx = np.arange(len(X))
-    if len(X) > n:
-        idx = np.random.RandomState(seed).choice(len(X), n, replace=False)
-    Xs = X[idx]
-    try:
-        import umap
-        P = umap.UMAP(n_neighbors=15, min_dist=0.10, metric='cosine',
-                      random_state=seed).fit_transform(Xs)
-        how = 'UMAP(cosine, n_neighbors=15)'
-    except Exception as e:
-        from sklearn.decomposition import PCA
-        P = PCA(n_components=2, random_state=seed).fit_transform(Xs)
-        how = f'PCA (UMAP 不可用: {type(e).__name__})'
-    return P, idx, how
-'''
+# Every projection figure compares the SAME set of spaces, so a reader can carry an
+# impression from one picture into the next. WHICH spaces is a decision, not a
+# constant: the reference deliverable hard-coded base / a=0.5 / a=0.1 because those
+# were that project's three attempts. Generalised here to base, the alpha the run
+# chose, and — when they differ — the alpha *silhouette* would have chosen. That
+# third panel is Principle 3 rendered as a picture: it shows what the rejected
+# criterion would have built, next to what was built instead.
+_SPACES = "\ndef spaces_to_compare():\n    # [(alpha, label), ...] - base, the chosen alpha, and a contrast.\n    sw = rep.get('alpha_sweep', {}) or {}\n    rows = sw.get('rows', []) or []\n    chosen = float(sw.get('chosen_alpha') or 0.0)\n    out = [(0.0, 'base (α=0, 纯语义)')]\n    if chosen > 0:\n        out.append((chosen, f'hybrid α={chosen} (最终)'))\n    sil = sw.get('silhouette_would_have_chosen')\n    if sil is None and rows:\n        sil = max(rows, key=lambda r: r.get('silhouette', -9)).get('alpha')\n    if sil is not None and float(sil) > 0 and abs(float(sil) - chosen) > 1e-9:\n        out.append((float(sil), f'hybrid α={sil} (silhouette 会选)'))\n    else:\n        alt = [r['alpha'] for r in rows if abs(r['alpha'] - chosen) > 1e-9 and r['alpha'] > 0]\n        if alt:\n            out.append((float(max(alt)), f'hybrid α={max(alt)}'))\n    return out[:3]\n\n\ndef space_matrix(alpha):\n    # Rebuild a hybrid space at any alpha from the two blocks already on disk.\n    if not alpha or not (GEN/'emb_svd_char.npy').exists():\n        return NPY('emb_base')\n    from qmine.ops.represent import hybrid\n    return hybrid(NPY('emb_base'), NPY('emb_svd_char'), float(alpha))\n\n\ndef families_in(X, k, seed=0):\n    # Each panel is coloured by ITS OWN families, not the chosen space's - the\n    # spaces disagreeing about what the families ARE is the point of the figure.\n    from sklearn.cluster import KMeans\n    return KMeans(n_clusters=int(k), n_init=4, random_state=seed).fit_predict(X)\n"
+
+# Shared by every projection figure: a 2-D view of a high-dimensional space,
+# preferring UMAP's local-structure preservation but never requiring it.
+_PROJECT = "\ndef project(X, seed=20240601, n=6000):\n    # 2-D view of X. UMAP when available (keeps local neighbourhoods), else PCA.\n    idx = np.arange(len(X))\n    if len(X) > n:\n        idx = np.random.RandomState(seed).choice(len(X), n, replace=False)\n    Xs = X[idx]\n    try:\n        import umap\n        P = umap.UMAP(n_neighbors=15, min_dist=0.10, metric='cosine',\n                      random_state=seed).fit_transform(Xs)\n        how = 'UMAP(cosine, n_neighbors=15)'\n    except Exception as e:\n        from sklearn.decomposition import PCA\n        P = PCA(n_components=2, random_state=seed).fit_transform(Xs)\n        how = f'PCA (UMAP 不可用: {type(e).__name__})'\n    return P, idx, how\n"
 
 
 def fig_ksweep(chosen_k_expr: str = "tri['chosen_family_k']") -> str:
-    """K sweep, three panels. Replaces a twin-axis plot that hid the third metric."""
-    return f"""# %% 图 1 — K 扫描三联: 三个指标, 三条独立的曲线
+    """K sweep — three metrics, and one line per candidate space.
+
+    Two things at once, both from the reference deliverable. Across panels: the
+    three metrics rarely peak together, which is why the run must name its judge
+    before it looks. Across lines within a panel: the spaces do not even agree on
+    the shape of the curve, so a K chosen in one space is not transferable to
+    another. Recomputed on a sub-sample because this is a picture, not a
+    decision — the delivered K comes from the full-effort sweep in Phase 5.
+    """
+    return f"""# %% 图 1 — K 扫描: 三个指标 × 各候选空间
+{_SPACES}
 ks = pd.DataFrame(gran['k_sweep']).sort_values('k')
 K = {chosen_k_expr}
-fig, axes = plt.subplots(1, 3, figsize=(13.5, 3.9))
-spec = [('stability_ari',        '稳定性 ARI ↑ (主裁判)',       BLUE,  'o-'),
-        ('template_fragmentation','模板碎裂度 ↓ (主裁判)',       GREEN, 'D-'),
-        ('silhouette',           'silhouette (仅参考, 无投票权)', MUTED, 's--')]
-for ax, (col, title, colour, style) in zip(axes, spec):
+_grid = [int(k) for k in ks['k']][:10]
+_sub = np.random.RandomState(0).choice(len(df), min(6000, len(df)), replace=False)
+
+def sweep(X, grid):
+    from sklearn.metrics import adjusted_rand_score
+    from sklearn.cluster import KMeans
+    from sklearn.metrics import silhouette_score
+    out = []
+    Xs = X[_sub]
+    for k in grid:
+        a1 = KMeans(k, n_init=2, random_state=0).fit_predict(Xs)
+        a2 = KMeans(k, n_init=2, random_state=1).fit_predict(Xs)
+        out.append({{'k': k,
+                    'silhouette': float(silhouette_score(Xs, a1, metric='cosine')),
+                    'stability_ari': float(adjusted_rand_score(a1, a2))}})
+    return pd.DataFrame(out)
+
+_curves = {{}}
+for al, label in spaces_to_compare():
+    try:
+        _curves[label] = sweep(space_matrix(al), _grid)
+    except Exception as exc:
+        print(f'  {{label}}: 扫描失败 ({{type(exc).__name__}})')
+
+fig, axes = plt.subplots(1, 2, figsize=(12.5, 4.2))
+_cols = [BLUE, ORANGE, GREEN, MUTED]
+for ax, (col, title) in zip(axes, [('stability_ari', '重播稳定性 ARI vs K  (主裁判)'),
+                                   ('silhouette',    'silhouette vs K  (同一空间内有票, 跨空间不可比)')]):
+    for (label, cur), colour in zip(_curves.items(), _cols):
+        ax.plot(cur['k'], cur[col], 'o-', ms=4.5, lw=1.8, color=colour, label=label)
+    ax.axvline(K, color='#c0392b', ls=':', lw=1.6)
+    ax.set_xlabel('K'); ax.set_title(title, fontsize=10)
+    ax.grid(alpha=.25, ls=':'); ax.legend(fontsize=8)
+fig.suptitle(f'K 扫描 (6k 子样重算): 定案 K={{K}} 取自稳定性峰 — 各空间的曲线形状并不一致', fontsize=11)
+plt.tight_layout(); SAVE(fig, 'fig1_ksweep'); plt.show()
+
+# The full-effort sweep for the chosen space, including the metric the two
+# panels above cannot show, because fragmentation needs the template masks.
+fig2, axes2 = plt.subplots(1, 3, figsize=(13.5, 3.7))
+spec = [('stability_ari',        '稳定性 ARI ↑ (主裁判)',        BLUE,  'o-'),
+        ('template_fragmentation','模板碎裂度 ↓ (主裁判)',        GREEN, 'D-'),
+        ('silhouette',           'silhouette (同一空间内可比)',   MUTED, 's--')]
+for ax, (col, title, colour, style) in zip(axes2, spec):
     if col not in ks: ax.axis('off'); continue
     ax.plot(ks['k'], ks[col], style, color=colour, lw=1.9, ms=5)
     ax.axvline(K, color=ORANGE, ls=':', lw=2)
-    ax.annotate(f'定案 K={{K}}', xy=(K, ax.get_ylim()[1]), xytext=(4, -12),
-                textcoords='offset points', color=ORANGE, fontsize=9, va='top')
-    ax.margins(y=.18)                       # headroom so the peak label stays inside
+    ax.margins(y=.18)
     best = ks.loc[ks[col].idxmin() if 'frag' in col else ks[col].idxmax()]
     if int(best['k']) != int(K):
         ax.plot(best['k'], best[col], '*', color=colour, ms=15, zorder=5)
-        # Park the label in the corner diagonally opposite the star and run a
-        # leader line to it — an offset from the point lands on the curve.
         lo, hi = ax.get_ylim(); x0, x1 = ax.get_xlim()
-        fx = (best['k'] - x0) / max(1e-9, x1 - x0)
-        fy = (best[col] - lo) / max(1e-9, hi - lo)
+        fx = (best['k'] - x0) / max(1e-9, x1 - x0); fy = (best[col] - lo) / max(1e-9, hi - lo)
         tx, ha = (0.97, 'right') if fx < 0.5 else (0.03, 'left')
         ty, va = (0.97, 'top') if fy < 0.5 else (0.03, 'bottom')
         ax.annotate(f"该指标自己的峰 K={{int(best['k'])}}", xy=(best['k'], best[col]),
-                    xytext=(tx, ty), textcoords='axes fraction', fontsize=8,
-                    color=colour, ha=ha, va=va,
-                    arrowprops=dict(arrowstyle='-', color=colour, lw=.7, alpha=.55,
-                                    shrinkA=2, shrinkB=7))
-    ax.set_xlabel('K'); ax.set_title(title, fontsize=10)
-    ax.grid(alpha=.25, ls=':')
-fig.suptitle('K 扫描: 三个指标很少同峰 — 这正是「必须先指定谁是裁判」的现场证据', fontsize=11)
-plt.tight_layout(); SAVE(fig, 'fig1_ksweep'); plt.show()
+                    xytext=(tx, ty), textcoords='axes fraction', fontsize=8, color=colour,
+                    ha=ha, va=va, arrowprops=dict(arrowstyle='-', color=colour, lw=.7,
+                                                  alpha=.55, shrinkA=2, shrinkB=7))
+    ax.set_xlabel('K'); ax.set_title(title, fontsize=10); ax.grid(alpha=.25, ls=':')
+fig2.suptitle('当选空间的全量 K 扫描: 三个指标很少同峰 — 所以必须先指定谁是裁判', fontsize=11)
+plt.tight_layout(); SAVE(fig2, 'fig1b_ksweep_metrics'); plt.show()
 
 _peaks = {{c: int(ks.loc[ks[c].idxmin() if 'frag' in c else ks[c].idxmax(), 'k'])
            for c, *_ in spec if c in ks}}
 print('各指标各自的峰值 K:', _peaks)
-print(f'定案 K = {{K}} — 依据「{{tri["chosen_by"]}}」, 而不是三者的平均。')
-print('若取平均, 会得到一个三条证据都不支持的 K; 分歧本身已记录在案。')"""
+print(f'定案 K = {{K}} — 依据「{{tri["chosen_by"]}}」, 而不是三者的平均。')"""
 
 
 def fig_alpha() -> str:
@@ -124,103 +155,153 @@ else:
 
 
 def fig_battery() -> str:
-    """Algorithm bake-off scatter: 'upper right is better'."""
+    """The algorithm bake-off, laid out as the reference deliverable lays it out.
+
+    Stability on x, silhouette on y, and *upper right is better* — a Pareto view
+    rather than a ranked list. That framing is deliberate: within a single fixed
+    representation every configuration encodes phrasing identically, so
+    silhouette's phrasing bias is a constant offset across the panel and its
+    variation carries real information about geometric fit. It is between
+    representations, where the bias tracks the very thing being varied, that
+    silhouette stops being comparable. Density algorithms are drawn as crosses
+    with their noise rate, because a silhouette computed over a partition that
+    discards 43% of the corpus as noise is not on the same axis as one that
+    keeps everything.
+    """
     return """# %% 图 3 — 算法 battery: 淘汰赛全景 (右上更好)
 try:
     battery = J('battery')
-    b = pd.DataFrame(battery['rows'])
+    rows = pd.DataFrame(battery['rows'])
     chosen = battery['verdict']['chosen']
-    fig, ax = plt.subplots(figsize=(8.2, 5.4))
-    fam_of = b['algorithm'].str.replace(r'_k\\d+$', '', regex=True)
-    palette = {f: c for f, c in zip(sorted(fam_of.unique()),
-               ['#2a78d6','#eb6834','#1baf7a','#9257c9','#c9a227','#5c6f7a','#d24d78'] * 4)}
-    for f in sorted(fam_of.unique()):
-        m = (fam_of == f).to_numpy()
-        ax.scatter(b.loc[m, 'silhouette'], b.loc[m, 'stability_ari'], s=88, alpha=.82,
-                   color=palette[f], label=f, edgecolor='white', linewidth=.9, zorder=3)
-    for _, r in b.iterrows():
-        ax.annotate(str(r['algorithm']).replace('_', ' '), (r['silhouette'], r['stability_ari']),
-                    xytext=(0, -13), textcoords='offset points', fontsize=6.8,
-                    ha='center', color='#4a4a4a')
-    hit = b[b['algorithm'] == chosen]
+    algo_fam = rows['algorithm'].str.replace(r'_k\\d+$', '', regex=True)
+    is_density = rows.get('noise_rate', pd.Series(0, index=rows.index)).fillna(0) > 0.01
+
+    fig, ax = plt.subplots(figsize=(9.2, 5.6))
+    palette = {f: c for f, c in zip(sorted(algo_fam.unique()),
+               ['#4c3bcf','#eb6834','#1baf7a','#2a78d6','#c9a227','#9257c9','#d24d78'] * 4)}
+    for f in sorted(algo_fam.unique()):
+        m = ((algo_fam == f) & ~is_density).to_numpy()
+        if m.any():
+            ax.scatter(rows.loc[m, 'stability_ari'], rows.loc[m, 'silhouette'], s=190,
+                       alpha=.88, color=palette[f], label=f, edgecolor='white',
+                       linewidth=1.1, zorder=3)
+    for i, r in rows[is_density].iterrows():
+        ax.scatter([r['stability_ari']], [r['silhouette']], marker='x', s=150,
+                   color=MUTED, linewidth=2.2, zorder=3)
+        ax.annotate(f"HDBSCAN {int(r['n_clusters'])}簇/噪声{r['noise_rate']:.1%}",
+                    (r['stability_ari'], r['silhouette']), xytext=(9, 4),
+                    textcoords='offset points', fontsize=7.5, color=MUTED)
+    for _, r in rows[~is_density].iterrows():
+        k = str(r['algorithm']).split('_k')[-1]
+        ax.annotate(f'k={k}', (r['stability_ari'], r['silhouette']), xytext=(0, -14),
+                    textcoords='offset points', fontsize=7, ha='center', color='#4a4a4a')
+    hit = rows[rows['algorithm'] == chosen]
     if len(hit):
         r = hit.iloc[0]
-        ax.scatter([r['silhouette']], [r['stability_ari']], s=340, facecolor='none',
+        ax.scatter([r['stability_ari']], [r['silhouette']], s=430, facecolor='none',
                    edgecolor=ORANGE, linewidth=2.6, zorder=4)
-        ax.annotate('当选', (r['silhouette'], r['stability_ari']), xytext=(13, 11),
+        ax.annotate('当选', (r['stability_ari'], r['silhouette']), xytext=(15, 12),
                     textcoords='offset points', color=ORANGE, fontweight='bold', fontsize=10)
-    ax.set_xlabel('silhouette  (仅参考 — 横轴没有投票权)')
-    ax.set_ylabel('稳定性 ARI  (主裁判 — 纵轴决定名次)')
-    ax.set_title(f'算法选优 battery ({len(b)} 个配置): 只有纵轴在裁决\\n当选 {chosen} — {battery["verdict"]["chosen_by"]}',
-                 fontsize=10.5)
-    ax.grid(alpha=.25, ls=':'); ax.legend(fontsize=8, title='算法族', title_fontsize=8.5)
+    ax.set_xlabel('重播稳定性 ARI  (→ 可复现)')
+    ax.set_ylabel('silhouette  (→ 结构紧致)')
+    ax.set_title(f'算法选优 battery ({len(rows)} 个配置): Upper right is better'
+                 f'\\n当选 {chosen} — {battery["verdict"]["chosen_by"]}', fontsize=10.5)
+    ax.grid(alpha=.25, ls=':')
+    ax.legend(fontsize=8, title='算法族', title_fontsize=8.5, loc='lower right')
     plt.tight_layout(); SAVE(fig, 'fig3_battery'); plt.show()
 
-    rank = pd.DataFrame(battery['verdict']['ranking'])
-    print('按主裁判排名 (前 5):'); display(rank.head(5))
-    if battery['verdict'].get('density_note'): print('密度类算法:', battery['verdict']['density_note'])
+    print('固定表征下, 两个轴都在说话: 稳定性回答「换个种子还在不在」,')
+    print('silhouette 回答「簇是否真的紧而分得开」。同一空间内 silhouette 的措辞偏置是常数偏移,')
+    print('所以它的**变化**是可比的 — 这与跨 α 比较时的情形完全不同 (见图 2)。')
+    print()
+    display(pd.DataFrame(battery['verdict']['ranking']).head(5))
+    if battery['verdict'].get('density_note'):
+        print('密度类算法:', battery['verdict']['density_note'])
 except Exception as e:
     print('battery 未产出:', type(e).__name__, e)"""
 
 
 def fig_umap_families() -> str:
-    """Side-by-side projections: what the alpha choice did to the geometry."""
+    """One panel per candidate space, coloured by that space's own families.
+
+    The reference deliverable puts three spaces side by side, and that is the
+    whole argument: the same 12k points, projected the same way, partitioned into
+    visibly different family structures depending only on how much phrasing the
+    representation encodes. A single-space projection is decoration; three of them
+    is evidence.
+    """
     return f"""# %% 图 4 — 嵌入空间全景: α 到底改变了什么形状
+{_SPACES}
 {_PROJECT}
-spaces = [('emb_base', f'语义底座 (α=0)'), ('emb_hybrid', f'hybrid (α={{rep["alpha_sweep"].get("chosen_alpha","?")}})')]
-avail = [(k, t) for k, t in spaces if (GEN/f'{{k}}.npy').exists()]
-fig, axes = plt.subplots(1, len(avail), figsize=(6.4*len(avail), 5.6), squeeze=False)
-for ax, (key, title) in zip(axes[0], avail):
-    X = NPY(key); P, idx, how = project(X)
-    f = famrow[idx]
+_spaces = spaces_to_compare()
+K = int(gran['triangulation']['chosen_family_k'])
+fig, axes = plt.subplots(1, len(_spaces), figsize=(6.2*len(_spaces), 5.6), squeeze=False)
+_seen = {{}}
+for ax, (a, title) in zip(axes[0], _spaces):
+    X = space_matrix(a)
+    P, idx, how = project(X)
+    f = families_in(X, K)[idx]           # each space keeps its OWN families
     nF = len(np.unique(f))
+    _seen[title] = nF
     ax.scatter(P[:,0], P[:,1], c=f, cmap='tab20', s=3.2, alpha=.62, linewidths=0)
-    ax.set_title(f'{{title}} — {{nF}} 个家族\\n{{how}}', fontsize=10)
+    ax.set_title(f'{{title}} — {{nF}} 个家族', fontsize=10)
     ax.set_xticks([]); ax.set_yticks([])
-fig.suptitle('两个嵌入空间的 2-D 投影 (着色 = 最终家族)', fontsize=11.5)
+fig.suptitle(f'各嵌入空间的 2-D 投影 (同一批点, 同一投影参数; 着色 = 该空间自己的家族)  ·  {{how}}',
+             fontsize=11.5)
 plt.tight_layout(); SAVE(fig, 'fig4_spaces'); plt.show()
-print('读图提示: 投影只用于「看形状」, 不用于判定。所有裁决指标都在原始高维空间上计算 —')
-print('2-D 投影必然丢信息, 用它下结论是本方法论明确禁止的一步。')"""
+print('读图提示: 投影只用于「看形状」, 不用于判定 —')
+print('所有裁决指标都在原始高维空间上计算; 2-D 投影必然丢信息, 用它下结论是本方法论明确禁止的一步。')
+print('各空间在家族尺度上的簇数:', _seen)"""
 
 
 def fig_umap_intent() -> str:
-    """The single most persuasive figure: one intent, scattered across families."""
-    return f"""# %% 图 5 — 同一意图被劈进几个家族? (模板群 = 已知同意图的探针)
+    """The same spaces, with one known-single-intent group lit up in each.
+
+    This is the most persuasive figure in the reference deliverable and the reason
+    fragmentation exists as a metric: a phrasing family is a set of queries we
+    already know share an intent, so the number of clusters it lands in is a direct
+    reading of how badly that space splits intents. Shown across spaces, it is the
+    alpha decision argued visually.
+    """
+    return f"""# %% 图 5 — 同一意图在各空间被劈进几个家族? (模板群 = 已知同意图的探针)
+{_SPACES}
 {_PROJECT}
-masks = J('template_masks') if (GEN/'template_masks.json').exists() else {{}}
-groups = sorted(tmpl['groups'], key=lambda g: -g['n_hits'])[:3]
-if groups and (GEN/'emb_hybrid.npy').exists():
-    X = NPY('emb_hybrid'); P, idx, how = project(X)
-    famv = famrow[idx]
-    q = df['query'].astype(str).to_numpy()[idx]
-    fig, axes = plt.subplots(1, len(groups), figsize=(5.9*len(groups), 5.4), squeeze=False)
-    for ax, g in zip(axes[0], groups):
-        import re
-        hit = np.array([bool(re.search(g['pattern'], s)) for s in q])
+import re
+_spaces = spaces_to_compare()
+K = int(gran['triangulation']['chosen_family_k'])
+groups = sorted(tmpl['groups'], key=lambda g: -g['n_hits'])
+probe = groups[0] if groups else None
+if probe is None:
+    print('无模板群, 跳过。')
+else:
+    q_all = df['query'].astype(str).to_numpy()
+    fig, axes = plt.subplots(1, len(_spaces), figsize=(5.9*len(_spaces), 5.6), squeeze=False)
+    for ax, (a, title) in zip(axes[0], _spaces):
+        X = space_matrix(a)
+        P, idx, how = project(X)
+        famv = families_in(X, K)[idx]
+        q = q_all[idx]
+        hit = np.array([bool(re.search(probe['pattern'], t)) for t in q])
         ax.scatter(P[~hit,0], P[~hit,1], c='#d9d9d9', s=2.4, alpha=.45, linewidths=0)
-        # Remap the families actually present to 0..n-1 so no two share a colour.
-        present = np.unique(famv[hit]) if hit.sum() else np.array([])
-        rank = {{int(v): i for i, v in enumerate(present)}}
-        cmap = 'tab10' if len(present) <= 10 else 'tab20'
-        ax.scatter(P[hit,0], P[hit,1],
-                   c=[rank[int(v)] for v in famv[hit]] if hit.sum() else [],
-                   cmap=cmap, vmin=0, vmax=max(1, len(present)-1), s=15, alpha=.92,
-                   linewidths=.25, edgecolor='white')
-        # Effective family count = exp(Shannon entropy) — the fragmentation metric,
-        # computed here for this one intent so the picture and the number agree.
         if hit.sum():
+            present = np.unique(famv[hit])
+            rank = {{int(v): i for i, v in enumerate(present)}}
+            ax.scatter(P[hit,0], P[hit,1], c=[rank[int(v)] for v in famv[hit]],
+                       cmap='tab10' if len(present) <= 10 else 'tab20',
+                       vmin=0, vmax=max(1, len(present)-1), s=15, alpha=.92,
+                       linewidths=.25, edgecolor='white')
             _, cnt = np.unique(famv[hit], return_counts=True)
-            p = cnt / cnt.sum(); ef = float(np.exp(-(p*np.log(p)).sum()))
+            pr = cnt / cnt.sum(); ef = float(np.exp(-(pr*np.log(pr)).sum()))
         else:
             ef = float('nan')
-        ax.set_title(f"{{g['name']}}  (n={{int(hit.sum())}})\\n有效散布于 {{ef:.2f}} 个家族", fontsize=10)
+        ax.set_title(f'{{title}}\\n「{{probe["name"]}}」有效散布于 {{ef:.2f}} 个家族', fontsize=10)
         ax.set_xticks([]); ax.set_yticks([])
-    fig.suptitle('同一意图 (彩色, 按家族着色) 被劈开的程度 — 灰点为其余 query', fontsize=11.5)
+    fig.suptitle(f'同一意图 (彩色, 按家族着色) 在各空间被劈开的程度 — 灰=其余 query  ·  n={{int(hit.sum())}}',
+                 fontsize=11.5)
     plt.tight_layout(); SAVE(fig, 'fig5_intent_split'); plt.show()
-    print('「有效家族数」= exp(香农熵), 与图 1/图 2 里的碎裂度是同一个公式 —')
-    print('1.00 表示该意图完整落在一个家族里; 3.00 表示它被切成了三份等大的碎片。')
-else:
-    print('模板群或 hybrid 空间缺失, 跳过。')"""
+    print('「有效家族数」= exp(香农熵), 与碎裂度是同一个公式 —')
+    print('1.00 = 该意图完整落在一个家族里; 3.00 = 被切成三份等大的碎片。')
+    print('跨面板比较才是重点: 措辞话语权越高的空间, 同一意图散得越开。')"""
 
 
 def fig_panel_bars() -> str:

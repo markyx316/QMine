@@ -19,6 +19,7 @@ import numpy as np
 
 from ..artifacts import ArtifactRef
 from ..ops import viz
+from .i18n import decision_question
 from ..state import PipelineState
 
 
@@ -81,6 +82,7 @@ def build_all_reports(state: PipelineState, deps: Any) -> dict[str, ArtifactRef]
 #: have no `viz` equivalent and are additions.
 NOTEBOOK_FIGURES = {
     "fig1_ksweep":       "fig_k_sweep",
+    "fig1b_ksweep_metrics": "fig_k_sweep_metrics",
     "fig2_alpha":        "fig_alpha",
     "fig3_battery":      "fig_battery",
     "fig4_spaces":       "fig_umap",
@@ -158,6 +160,21 @@ def _build_figures(state: PipelineState, deps: Any, have: set[str] | None = None
             deps.store.put_figure_path("fig_template_spread"), language=lang))
 
     _try(None, "template_spread", _spread)
+
+    # The audit-trail figures. Their inputs are the run's own decision and gate
+    # records, so they need no artifacts and cannot fail on a partial run.
+    _try(None, "decision_chain", lambda: _reg(
+        "fig_decision_chain", viz.plot_decision_chain(
+            [d.model_dump() if hasattr(d, "model_dump") else dict(d)
+             for d in state.get("decisions", [])],
+            deps.store.put_figure_path("fig_decision_chain"), language=lang,
+            localise=(lambda x: decision_question(x, lang)))))
+
+    _try(None, "gates", lambda: _reg(
+        "fig_gates", viz.plot_gates(
+            {k: (g.model_dump() if hasattr(g, "model_dump") else dict(g))
+             for k, g in (state.get("gates", {}) or {}).items()},
+            deps.store.put_figure_path("fig_gates"), language=lang)))
 
     def _umap() -> None:
         fam, labels = deps.leaf_family_final(), deps.leaf_labels_final()

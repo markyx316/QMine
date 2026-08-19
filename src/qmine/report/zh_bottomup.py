@@ -21,12 +21,13 @@ shorter and less trustworthy at the same time.
 from __future__ import annotations
 
 import json
+import re
 from pathlib import Path
 from typing import Any
 
 import numpy as np
 
-from .i18n import num, pct, stars, vocab
+from .i18n import decision_question, num, pct, prose, stars, vocab
 
 
 def _t(d: dict[str, Any] | None, *path: str, default: Any = None) -> Any:
@@ -64,7 +65,7 @@ def build(state: Any, deps: Any, figs: dict[str, Any]) -> str:
         f"**数据**: {n_rows:,} 条 query · **运行**: `{state.get('run_id')}` / {gen_dir} · "
         f"**领域**: `{deps.cfg.domain.key}` · **配置指纹**: `{deps.cfg.config_hash}`",
         "",
-        f"> {deps.registry.provenance_note()}",
+        f"> {deps.registry.provenance_note('zh')}",
         "",
     ]
 
@@ -228,11 +229,26 @@ def build(state: Any, deps: Any, figs: dict[str, Any]) -> str:
                      f"{num(r['silhouette'])} | {pct(r.get('noise_rate'),1)} |")
         L.append("")
         verdict = _t(battery, "verdict", default={})
-        if verdict.get("chosen"):
-            L += [f"**当选: `{verdict['chosen']}`** — {verdict.get('chosen_by','')}。", "",
+        if verdict.get("role"):
+            L += ["> **这一步不是选举, 是证伪检验。** 交付的树**始终**由 KMeans 构建 "
+                  "(`build_hierarchy`)。此处跑其他算法, 是为了回答一个不同的问题: "
+                  "**结构换一种算法还在不在?** 在, 说明它是语料的性质; 不在, 说明它是 "
+                  "KMeans「簇近似球形」这一假设的产物。", ""]
+            alt, mg = verdict.get("best_alternative"), verdict.get("alternative_beats_reference_by")
+            L += [f"| 参照 (交付所用) | 最强替代算法 | 稳定性差距 | 结论 |", "|---|---|---|---|",
+                  f"| `{verdict.get('reference_algorithm')}` | `{alt}` | "
+                  f"{num(mg) if mg is not None else '—'} | "
+                  f"{'⚠️ 假设被质疑' if verdict.get('kmeans_assumption_contradicted') else '✅ 未被证伪'} |", ""]
+            # The artifact keeps the English note for machine readers; the report
+            # renders the same judgement in the deliverable's language.
+            L += ["> " + ("**KMeans 的球形簇假设在此处被质疑**: 一个结构上完全不同的算法比它"
+                          "更可复现 (差距 > 0.10 ARI)。家族层应按**暂定**读取, 并在报告中明说。"
+                          if verdict.get("kmeans_assumption_contradicted") else
+                          "**未被证伪**: 没有任何结构上不同的算法比 KMeans 明显更可复现, "
+                          "因此这套划分不是「簇近似球形」这一假设的产物, 而是语料本身的性质。"), "",
                   "> **机制原因**: L2 归一化后 embedding 分布近似球面, 余弦几何下簇近似各向同性, "
                   "正中 KMeans 假设。BisectingKMeans 的早期错切不可逆; HDBSCAN 受制于 embedding "
-                  "空间密度不均 — 落选后**保留为新颖性哨兵** (Phase 12)。", ""]
+                  "空间密度不均 — 保留为**新颖性哨兵** (Phase 12)。", ""]
         if verdict.get("density_note"):
             L += [f"> {verdict['density_note']}", ""]
 
@@ -247,12 +263,36 @@ def build(state: Any, deps: Any, figs: dict[str, Any]) -> str:
         for k, val in tri["estimates"].items():
             L.append(f"| {label.get(k,k)} | {val} |")
         L += ["", f"**定案 K = {tri.get('chosen_family_k')}** — {tri.get('chosen_by','')}", ""]
+
+        # The tie set is not a caveat appended to the answer; when it has more than
+        # one member it IS the answer. Reporting a single K whose margin sits inside
+        # the measurement error tells the reader something the data does not support.
+        ties = tri.get("tie_set") or []
+        if len(ties) > 1:
+            L += [f"### 2.2.1 同样站得住的 K ({len(ties)} 个)", "",
+                  "以下 K 值在**测量误差以内彼此无法区分** — 报告单一 K 会把一个测不出来的差别"
+                  "说成结论。定案取其中**最简单的一个**(K 最小), 但下列每一个都同样有据:", "",
+                  "| K | 意图对齐 AMI (定位指标) | 重播稳定性 (筛选指标) | 模板碎裂度 |", "|---|---|---|---|"]
+            for t in ties:
+                mark = " **←定案**" if t["k"] == tri.get("chosen_family_k") else ""
+                L.append(f"| {t['k']}{mark} | {num(t.get('intent_alignment_ami'))} | "
+                         f"{num(t.get('stability_ari'))} | {num(t.get('template_fragmentation'))} |")
+            L += ["", "> 若某个 K 更契合业务侧的粒度直觉, **可以直接改用它而无需重跑选型** — "
+                  "证据并不偏向定案的那一个。", ""]
+        if tri.get("n_rejected_as_unstable"):
+            L += [f"> 另有 **{tri['n_rejected_as_unstable']} 个 K 因重播稳定性低于 "
+                  f"{tri.get('stability_floor')} 被直接剔除** — 稳定性在此只做否决, 不做排序: "
+                  "它在本语料上的种子间标准差 (~0.10) 大于相邻 K 之间的差距 (~0.05), "
+                  "用它排序等于读噪声。", ""]
         if tri.get("divergence_note"):
             L += [f"> ⚠️ {tri['divergence_note']}", ""]
     L.append(_fig(figs, "fig_battery",
                   "算法 battery: 纵轴 (稳定性) 裁决, 横轴 (silhouette) 只旁听"))
     L.append(_fig(figs, "fig_k_sweep",
-                  "K 扫描三联: 三个指标各有各的峰 — 所以必须先指定谁是裁判"))
+                  "K 扫描: 各候选空间的稳定性与 silhouette 曲线 — 形状并不一致, "
+                  "所以一个空间选出的 K 不能搬到另一个空间"))
+    L.append(_fig(figs, "fig_k_sweep_metrics",
+                  "当选空间的全量 K 扫描: 三个指标各有各的峰 — 所以必须先指定谁是裁判"))
 
     # ------------------------------------------------------------- 3 层级
     L += [f"## 3. {v['hierarchy']}", "",
@@ -375,12 +415,31 @@ def build(state: Any, deps: Any, figs: dict[str, Any]) -> str:
         L.append("")
 
     # ------------------------------------------------------------- 9 失败
-    L += [f"## 9. {v['failure_history']}", "",
+    # The audit trail sits BEFORE the failure history and the caveats, because a
+    # reader asking "how did this tree come to exist" should not have to reach the
+    # appendix to find out. Everything below was already recorded on every run and
+    # simply never rendered.
+    L += ["## 9. 全流程决策链 (完整推理链路)", "",
+          "本节回答一个问题: **这棵树是怎么来的。** 每一个参数、每一次取舍、"
+          "每一个被否决的方案, 按发生顺序排列并附当时的数字。", ""]
+    L.append(_decision_chain(state))
+    L.append(_fig(figs, "fig_decision_chain",
+                  "决策链: 每个环节考虑了多少候选、淘汰了多少、由哪个指标裁定"))
+
+    L += ["## 10. 质量门总账", ""]
+    L.append(_gate_ledger(state))
+    L.append(_fig(figs, "fig_gates", "质量门: 实测值与门槛的距离 (归一化), 颜色为判定结果"))
+
+    gov_ledger = _governance_ledger(state, gov)
+    if gov_ledger:
+        L += ["## 11. 治理台账 (每条处方的最终去向)", "", gov_ledger]
+
+    L += [f"## 12. {v['failure_history']}", "",
           "被否决的表征/选型写成独立小节 — 这是说服力的来源, 不是丢脸的历史。", ""]
     L += [_failure_history(state)]
 
     # ------------------------------------------------------------ 10 局限
-    L += ["", f"## 10. {v['limits']}", "",
+    L += ["", f"## 13. {v['limits']}", "",
           f"- **{v['distill_caveat']}**",
           f"- **silhouette 全程仅参考**: {v['silhouette_no_vote']}",
           f"- **碎裂度须与簇数同看**: {v['fairness_note']}",
@@ -393,7 +452,7 @@ def build(state: Any, deps: Any, figs: dict[str, Any]) -> str:
               f"{langp.get('rationale','')}", ""]
 
     # ------------------------------------------------------------ 11 档案
-    L += [f"## 11. {v['leaf_catalogue']}", "",
+    L += [f"## 14. {v['leaf_catalogue']}", "",
           "每叶四字段: `name_zh` / `code` / **`user_need`** (一句话定义) / `coherence` + 杂质备注。"
           "**名字会歧义, 定义句不会** — `user_need` 同时是标注指南、验收标准、下游产品需求说明。", ""]
     L += _leaf_catalogue(deps, naming, meta)
@@ -489,13 +548,116 @@ def _leaf_catalogue(deps: Any, naming: dict, meta: dict) -> list[str]:
     return out
 
 
+def _decision_chain(state: Any) -> str:
+    """Every parameter decision, in order, with what lost and on what evidence.
+
+    The pipeline records this in full — question, candidates, winner, who decided,
+    which metric was decisive, and each rejected option with the numbers it had at
+    the time — and the report was surfacing about half of it, split across sections
+    organised by topic rather than by the order things actually happened. A reader
+    trying to answer "how did this tree come to exist?" had to reassemble the chain
+    themselves. This is that chain, once, in sequence.
+    """
+    rows = list(state.get("decisions", []))
+    if not rows:
+        return "_本次运行未记录任何决策 — 这本身是个缺陷。_"
+    # Sub-phases are recorded as p3a / p3c, so sort on (number, suffix) rather than
+    # on a lookup of whole names — an unmatched name used to fall to the end, which
+    # put representation selection *after* the K it fed into.
+    def _order(phase: str) -> tuple[int, str]:
+        m = re.match(r"p(\d+)([a-z]*)", str(phase))
+        return (int(m.group(1)), m.group(2)) if m else (99, "")
+
+    rows.sort(key=lambda d: _order(d.phase))
+
+    out = ["下表按**实际发生顺序**列出每一个参数决策: 试了什么、选了什么、"
+           "**由谁**依据**哪个指标**裁定, 以及被否决的方案当时的数字。",
+           "每一行都可以独立追问 — 这是整条链路可复核的最小单元。", "",
+           "| # | 阶段 | 决策问题 | 结论 | 裁定者 | 决定性指标 | 可逆? |",
+           "|---|---|---|---|---|---|---|"]
+    for i, d in enumerate(rows, 1):
+        metrics = ", ".join(f"`{m}`" for m in (d.decisive_metrics or [])) or "—"
+        rev = "是" if getattr(d, "reversible", False) else "否"
+        out.append(f"| {i} | `{d.phase}` | {decision_question(d.question)} | "
+                   f"**{d.choice}** | {d.decided_by} | {metrics} | {rev} |")
+    out.append("")
+
+    # The rationale is where the reasoning lives; a table cell truncates it.
+    out += ["#### 每个决策的完整理由", ""]
+    for i, d in enumerate(rows, 1):
+        out.append(f"**{i}. [{d.phase}] {decision_question(d.question)}** → `{d.choice}`")
+        if getattr(d, "rationale", ""):
+            out += ["", f"> {prose(d.rationale)}"]
+        ev = getattr(d, "evidence", None)
+        if ev:
+            shown = ", ".join(f"`{k}` = {num(v) if isinstance(v, (int, float)) else v}"
+                              for k, v in list(ev.items())[:6])
+            out += ["", f"证据: {shown}"]
+        if getattr(d, "rejected", None):
+            out += ["", f"落选 {len(d.rejected)} 个方案 (详见 §{'9'} 失败史)。"]
+        out.append("")
+    return "\n".join(out)
+
+
+def _gate_ledger(state: Any) -> str:
+    """Every quality gate with its observed value, its bar, and what to do if it failed.
+
+    Gates are the only place the pipeline says "this is not good enough", and the
+    `remediation` field is the only place it says what to do about it. Both were
+    computed on every run and neither reached the reader.
+    """
+    gates = state.get("gates", {}) or {}
+    if not gates:
+        return "_本次运行未评估任何质量门。_"
+    icon = {"passed": "✅ 通过", "warned": "⚠️ 警告", "failed": "❌ 未通过",
+            "rejected": "⛔ 人工否决", "skipped": "— 跳过"}
+    out = ["质量门是整条流水线唯一会说「这还不够好」的地方。下表列出**每一道门**: "
+           "实测值、门槛、是否阻断, 以及未通过时的**处置建议**。", "",
+           "| 质量门 | 阶段 | 结果 | 阻断? | 实测 | 门槛 |", "|---|---|---|---|---|---|"]
+    failed = []
+    for name, g in sorted(gates.items(), key=lambda kv: str(kv[1].phase)):
+        obs = json.dumps(g.observed, ensure_ascii=False) if g.observed else "—"
+        thr = json.dumps(g.threshold, ensure_ascii=False) if g.threshold else "—"
+        out.append(f"| `{name}` | `{g.phase}` | {icon.get(g.status, g.status)} | "
+                   f"{'是' if g.blocking else '否'} | {obs[:80]} | {thr[:60]} |")
+        if g.status in ("failed", "warned", "rejected") and g.remediation:
+            failed.append((name, g))
+    out.append("")
+    if failed:
+        out += ["#### 未通过/警告的门 — 处置建议", ""]
+        for name, g in failed:
+            out += [f"**`{name}`** — {g.message}", "", f"> {prose(g.remediation)}", ""]
+    missing = state.get("declared_gates_never_evaluated") or []
+    if missing:
+        out += [f"> ⚠️ **声明为阻断但从未实际评估的门**: {', '.join(f'`{m}`' for m in missing)} — "
+                "一道从不触发的门与一道通过的门在报告里长得一模一样, 因此这里单独列出。", ""]
+    return "\n".join(out)
+
+
+def _governance_ledger(state: Any, gov: dict) -> str:
+    """Every prescription: who proposed it, what happened to it, and why."""
+    rx = list(state.get("prescriptions", []))
+    if not rx:
+        return ""
+    out = ["治理的要求是**执行, 不是记录**。下表列出每一条处方的**最终去向** — "
+           "已执行、被拒绝、或仍在提出状态 (后者会让运行直接失败)。", "",
+           "| 处方 | 类型 | 目标 | 提出者 | 状态 | 理由 / 拒绝原因 |", "|---|---|---|---|---|---|"]
+    for r in rx:
+        why = getattr(r, "decline_reason", "") or getattr(r, "rationale", "") or "—"
+        tgt = ", ".join(str(t) for t in (getattr(r, "target_names", None) or r.targets or [])[:4])
+        out.append(f"| `{r.id}` | {r.kind} | {tgt} | {r.proposed_by} | "
+                   f"**{r.status}** | {why[:110]} |")
+    out.append("")
+    return "\n".join(out)
+
+
 def _failure_history(state: Any) -> str:
     rows = [d for d in state.get("decisions", []) if getattr(d, "rejected", None)]
     if not rows:
         return "_本次运行没有记录被否决的方案 — 这通常意味着尝试得不够多。_"
     parts: list[str] = []
     for d in rows:
-        parts.append(f"**{d.question}** → 选定 `{d.choice}`")
+        parts.append(f"**{decision_question(d.question)}** → 选定 `{d.choice}`")
         parts.append("")
         parts.append("| 被否决方案 | 原因 | 当时指标 |")
         parts.append("|---|---|---|")

@@ -122,7 +122,13 @@ class RepresentationConfig(BaseModel):
     tfidf_sublinear: bool = True
     #: Phase 3c.  Re-run per domain; never inherit the K12 answer.
     alpha_grid: list[float] = Field(default_factory=lambda: [0.0, 0.1, 0.2, 0.3, 0.5])
-    alpha_sweep_k: int = 20
+    #: The K at which the encoder bake-off and the alpha sweep are judged. ``None``
+    #: derives it from the domain's expected family range, which is where a prior
+    #: about granularity belongs; a bare 20 was a K12 artefact standing in for that
+    #: prior on every corpus. Measured on the reference run the choice was benign —
+    #: the alpha picked at K=20 was still optimal at the final K=25 — but "benign on
+    #: the corpus it came from" is exactly the property that does not travel.
+    alpha_sweep_k: int | None = None
     bakeoff_subsample: int = 15000
 
 
@@ -161,7 +167,12 @@ class TaxonomyConfig(BaseModel):
     gold_min_fraction_small_corpus: float = 0.30
     #: Never annotate more than this share of the corpus, whatever the rules say.
     gold_max_fraction: float = 0.60
-    pilot_sample_size: int = 50
+    #: The playbook says 50. Measured against its own downstream bar, 50 rows have
+    #: no power: at kappa 0.83 the 95% upper bound is 0.924, so a guide that will
+    #: fail the 0.90 gate sails through the pilot. n=100 is the break-even and 200
+    #: gives margin — 16 LLM calls against the ~240 the gold set costs, so the
+    #: cheap-early-check economics are untouched.
+    pilot_sample_size: int = 200
     pilot_agreement_threshold: float = 0.85
     kappa_threshold: float = 0.90
     #: Playbook 2b: "达不到先修指南再重标" — if kappa misses, repair the guide and
@@ -189,14 +200,34 @@ class NamingConfig(BaseModel):
 class GateConfig(BaseModel):
     """Quality gates.  ``blocking`` gates stop the run; the rest warn."""
 
+    #: Retained for reporting and the report's narrative; NOT gated on. A coverage
+    #: share is a property of how templated a corpus is — this K12 window flagged
+    #: the e-commerce corpus at 0.534 for no defect at all.
     template_coverage_range: tuple[float, float] = (0.20, 0.40)
+    #: What the gate actually requires: enough grouped rows for the fragmentation
+    #: and intent-alignment metrics to be computed on signal rather than noise.
+    min_template_rows: int = 400
+    min_template_row_fraction: float = 0.05
     pilot_agreement: float = 0.85
     kappa: float = 0.90
     #: Fraction of the intended gold sample that both annotators must actually
     #: label before kappa is treated as a measurement at all.
     min_annotation_coverage: float = 0.90
+    #: Absolute ceiling on the demand. The effective bar is the LOWER of this and
+    #: `heldout_share_of_ceiling` x the partition's own in-sample reproducibility,
+    #: because a partition cannot generalise better than it self-replicates and the
+    #: achievable value is corpus- and K-dependent (0.973-0.991 across three corpora).
     heldout_reproduction: float = 0.98
+    #: How much of its own in-sample ceiling a partition must retain out of sample.
+    heldout_share_of_ceiling: float = 0.97
+    #: Reported, not gated. Rater calibration varies by model and domain — the same
+    #: tree scored 3.93 and 4.27 on two runs of one corpus.
     coherence: float = 4.0
+    #: A leaf at or below this on the raters' 1-5 scale is "weak".
+    coherence_weak_below: float = 3.0
+    #: How much of the tree may be weak before the tree is not deliverable. A mean
+    #: cannot express this: 20 good leaves and 5 incoherent ones pass on average.
+    coherence_max_weak_share: float = 0.15
     require_risk_independently_found: bool = True
     require_governance_executed: bool = True
     blocking: list[str] = Field(
@@ -384,3 +415,20 @@ def gold_size_for(n_rows: int, cfg: "TaxonomyConfig") -> int:
         target = max(target, int(n_rows * cfg.gold_min_fraction_small_corpus))
     target = min(target, hi, int(n_rows * cfg.gold_max_fraction))
     return max(50, target)
+
+
+def alpha_sweep_k_for(cfg: "QMineConfig") -> int:
+    """The K at which representation candidates are compared.
+
+    Any fixed K is a stand-in for a prior about how coarse the intent axis is, so
+    take it from the place that prior is actually declared — the domain's expected
+    family range — instead of from a constant carried over from one corpus. The
+    midpoint is used because the comparison only needs a scale at which the
+    candidates are distinguishable, not the eventual answer: the real K is chosen
+    later, in Phase 5, against the representation this step selects.
+    """
+    explicit = cfg.representation.alpha_sweep_k
+    if explicit:
+        return int(explicit)
+    lo, hi = cfg.domain.expected_family_range
+    return max(2, int(round((lo + hi) / 2)))

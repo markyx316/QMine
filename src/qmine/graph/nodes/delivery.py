@@ -60,7 +60,9 @@ def p9_panel(state: PipelineState, deps: Deps) -> dict[str, Any]:
         from ...ops.cluster import kmeans_labels
         from ...ops.represent import hybrid
 
-        k = state.get("family_k") or cfg.representation.alpha_sweep_k
+        from ...config import alpha_sweep_k_for
+
+        k = state.get("family_k") or alpha_sweep_k_for(cfg)
         for a in cfg.representation.alpha_grid:
             Ha = hybrid(dense, svd, a)
             panel.measure(f"alpha_{a}", Ha, kmeans_labels(Ha, k, seed=cfg.seed_metric),

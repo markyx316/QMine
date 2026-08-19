@@ -21,13 +21,60 @@ from qmine.records import METRIC_AUTHORITY, MetricRecord, NamingCard, Prescripti
 
 # -- Principle 3: metrics must not betray the objective --------------------
 
-def test_silhouette_can_never_decide_anything():
-    """An advisory metric must be structurally incapable of selecting a candidate."""
+def test_silhouette_cannot_decide_through_the_panel():
+    """An advisory metric must be structurally incapable of selecting a candidate
+    *through the panel API*.
+
+    Note the scope. This test passed for months while two code paths chose k by
+    silhouette alone — they call `cosine_silhouette` directly and never touch the
+    panel, so this guard rail protected a door neither of them walked through.
+    `test_local_k_is_not_decided_by_silhouette_alone` covers those.
+    """
     panel = UniformPanel(600, subsample=300)
     panel.add_external("a", "silhouette", 0.9)
     panel.add_external("b", "silhouette", 0.1)
     with pytest.raises(ValueError, match="cannot decide"):
         panel.decisive_ranking("silhouette")
+
+
+def test_local_k_is_not_decided_by_silhouette_alone():
+    """Where silhouette DOES rank — choosing k inside one fixed representation —
+    it must still clear two tests it cannot itself supply.
+
+    Its bias is a constant offset within a single space, so its variation is
+    informative there and it keeps a real vote. What it cannot do is say "this
+    group has no structure" (it is undefined at k=1) or notice that its own lead
+    is inside its noise. A shipped sub-intent took k=6 at silhouette 0.0749 /
+    replay ARI 0.533 over k=2 at 0.0696 / 0.973 — 0.005 of silhouette bought with
+    0.44 of reproducibility.
+    """
+    import numpy as np
+
+    from qmine.ops.cluster import choose_local_k
+
+    rs = np.random.RandomState(0)
+
+    # A group with no structure must not be split at all.
+    noise = rs.normal(0, 1, (900, 32))
+    noise /= np.linalg.norm(noise, axis=1, keepdims=True)
+    flat = choose_local_k(noise, max_k=8, min_size=60)
+    assert flat["k"] == 1, f"split structureless data into {flat['k']}: {flat}"
+    assert "structureless reference" in flat["rejected_because"]
+
+    # A group with real structure must be split, and at the right granularity.
+    cent = np.eye(3, 32)
+    real = np.vstack([c + rs.normal(0, 0.18, (300, 32)) for c in cent])
+    real /= np.linalg.norm(real, axis=1, keepdims=True)
+    good = choose_local_k(real, max_k=8, min_size=60)
+    assert good["k"] == 3, f"expected 3 groups, got {good['k']}"
+    assert good["chosen"]["lift_over_null"] > 0.02
+
+    # Every candidate is disclosed, including what silhouette alone would have done.
+    assert good["candidates"] and all(
+        {"k", "silhouette", "stability_ari", "lift_over_null"} <= set(c)
+        for c in good["candidates"]
+    )
+    assert "silhouette_would_have_chosen" in good
 
 
 def test_decisive_metrics_can_decide():
@@ -294,3 +341,40 @@ def test_no_prescription_kind_can_slip_through_unhandled():
     assert by_id["P2"].status == "executed"
     assert by_id["P2"].evidence["column"] == "bu_leaf_name"
     assert detail["relabelled"] == {"1": "读音查询"}
+
+
+def test_the_panel_measures_the_partition_it_labels():
+    """`stability_ari` is the metric the methodology calls decisive, and the panel
+    attaches it to delivered candidates — leaves after refinement, families after
+    governance. It used to be computed as `replay_stability(X, k)`, a function of
+    the corpus and the cluster count only, so two structurally different partitions
+    with the same k received identical 'stability' and the delivered tree was
+    described by a number belonging to a fresh KMeans run."""
+    import numpy as np
+
+    from qmine.ops.panel import UniformPanel
+
+    rs = np.random.RandomState(0)
+    cent = np.eye(4, 24)
+    X = np.vstack([c + rs.normal(0, 0.16, (250, 24)) for c in cent])
+    X /= np.linalg.norm(X, axis=1, keepdims=True)
+
+    truth = np.repeat(np.arange(4), 250)
+    shuffled = rs.permutation(truth)          # same k, no structure at all
+
+    panel = UniformPanel(len(X), subsample=len(X))
+    good = panel.measure("real", X, truth, heldout=False)
+    bad = panel.measure("shuffled", X, shuffled, heldout=False)
+
+    g = good.get("stability_ari")
+    b = bad.get("stability_ari")
+    assert g is not None and b is not None
+    assert len(np.unique(truth)) == len(np.unique(shuffled)), "fixture must hold k fixed"
+    assert g > b + 0.30, (
+        f"a real partition ({g}) and a random one at the same k ({b}) got "
+        "indistinguishable stability — the metric is not reading the partition"
+    )
+
+    # The old corpus-level quantity is still available, under a name that says so,
+    # and it is exactly the thing that CANNOT tell these two apart.
+    assert good.get("kmeans_refit_stability") == bad.get("kmeans_refit_stability")

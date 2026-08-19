@@ -199,21 +199,42 @@ def p1_audit(state: PipelineState, deps: Deps) -> dict[str, Any]:
                                    summary=f"{risk['total_flagged']} rows pre-flagged")
     audit_ref = deps.store.put_json("data_audit", report, producer="p1", summary="corpus profile")
 
-    lo, hi = cfg.gates.template_coverage_range
+    # Gate on the thing that is actually required — enough labelled rows for the
+    # downstream metrics to mean anything — not on a coverage SHARE.
+    #
+    # The share was a K12 observation (20-40%) applied to every corpus, and it does
+    # not travel: the e-commerce corpus scores 0.534 and gets flagged for being more
+    # templated than K12, which is a fact about e-commerce queries rather than a
+    # defect. There is no reason high coverage is bad in itself. The risk the upper
+    # bound was reaching for — groups so broad they stop implying a shared intent —
+    # is already tested directly, per group, by the cohesion check that rejects a
+    # candidate whose members do not cluster together. A share cannot detect it and
+    # the cohesion check does not need it.
+    #
+    # The lower bound is real but belongs in rows: the fragmentation and alignment
+    # metrics are computed over grouped rows, so what matters is their count.
+    covered_rows = int(round(cov["union_coverage"] * report['n_rows']))
+    min_rows = max(cfg.gates.min_template_rows,
+                   int(cfg.gates.min_template_row_fraction * report['n_rows']))
     gate = deps.gate(
         "p1_template_coverage",
         "p1",
-        passed=lo <= cov["union_coverage"] <= hi,
-        observed={"union_coverage": cov["union_coverage"], "n_groups": len(groups)},
-        threshold={"range": [lo, hi]},
+        passed=covered_rows >= min_rows and len(groups) >= 2,
+        observed={"covered_rows": covered_rows, "union_coverage": cov["union_coverage"],
+                  "n_groups": len(groups)},
+        threshold={"min_covered_rows": min_rows, "min_groups": 2},
         message=(
-            f"{len(groups)} phrasing families cover {cov['union_coverage'] * 100:.1f}% of the corpus"
+            f"{len(groups)} phrasing families cover {covered_rows:,} rows "
+            f"({cov['union_coverage'] * 100:.1f}% of the corpus; the share is reported, "
+            "not gated — it is a property of the corpus)"
             + (f" — {selection['diagnosis']}" if selection.get("diagnosis") else "")
         ),
         remediation=(
-            "Coverage below the window means the fragmentation metric will rest on too "
-            "few rows — mine more affixes or loosen the seed patterns. Above it means the "
-            "groups have stopped implying shared intent and are matching the language itself."
+            "Too few grouped rows: every downstream interpretability metric — "
+            "fragmentation, and the intent-alignment score that locates K — is computed "
+            "over these rows, so below this count they measure noise. Mine more affixes "
+            "or loosen the seed patterns. Note that HIGH coverage is not a defect; "
+            "whether a group is too broad is tested per group by the cohesion check."
         ),
         warn_only=True,
     )

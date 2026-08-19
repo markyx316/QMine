@@ -200,3 +200,102 @@ def plot_refinement(history: list[dict[str, Any]], path: Path, language: str = "
     fig.savefig(path)
     plt.close(fig)
     return path
+
+
+def plot_decision_chain(decisions: list[dict[str, Any]], path: Path, language: str = "zh",
+                        localise: Any = None) -> Path:
+    """The parameter search as one picture: candidates considered, and survivors.
+
+    A reader can follow the decision table, but they cannot *see* it — and the
+    shape of this search is the most-asked question about the pipeline ("how many
+    things did you actually try?"). Drawn as a funnel per decision, with the
+    deciding metric named on each bar, the whole chain fits in one glance and the
+    steps that considered exactly one candidate become visibly conspicuous.
+    """
+    import matplotlib
+    matplotlib.use("Agg")
+    import matplotlib.pyplot as plt
+
+    zh = language == "zh"
+    rows = [d for d in decisions if d.get("question")]
+    if not rows:
+        return path
+    labels, tried, kept, metrics = [], [], [], []
+    for d in rows:
+        n_rej = len(d.get("rejected") or [])
+        q = str(d.get("question", ""))
+        if localise is not None:
+            q = localise(q)
+        labels.append(f"[{d.get('phase','?')}] {q[:24]}")
+        tried.append(n_rej + 1)
+        kept.append(1)
+        metrics.append(", ".join(d.get("decisive_metrics") or []) or ("—"))
+
+    h = max(3.2, 0.62 * len(rows))
+    fig, ax = plt.subplots(figsize=(11.5, h))
+    y = list(range(len(rows)))[::-1]
+    ax.barh(y, tried, color="#d6d9de", height=0.62,
+            label="考虑过的候选" if zh else "candidates considered")
+    ax.barh(y, kept, color="#2a78d6", height=0.62,
+            label="最终采纳" if zh else "adopted")
+    for yi, t, m, lab in zip(y, tried, metrics, labels):
+        ax.text(t + 0.12, yi, f"{t} 选 1" if zh else f"{t}→1", va="center", fontsize=8.5,
+                color="#333")
+        ax.text(t + 1.15, yi, f"裁定: {m}" if zh else f"by: {m}", va="center",
+                fontsize=7.8, color="#6a6a6a")
+    ax.set_yticks(y); ax.set_yticklabels(labels, fontsize=8.5)
+    ax.set_xlabel("候选数" if zh else "candidates")
+    ax.set_xlim(0, max(tried) + 4.5)
+    ax.set_title("决策链: 每个环节试了几个方案, 由哪个指标裁定"
+                 if zh else "Decision chain: candidates per step and the deciding metric",
+                 fontsize=11)
+    # Outside the axes: with a short chain the last bar reaches the lower right.
+    ax.legend(fontsize=8, loc="upper left", bbox_to_anchor=(1.005, 1.0), frameon=False)
+    ax.grid(axis="x", alpha=.25, ls=":")
+    fig.tight_layout(); fig.savefig(path, dpi=150, bbox_inches="tight"); plt.close(fig)
+    return path
+
+
+def plot_gates(gates: dict[str, Any], path: Path, language: str = "zh") -> Path:
+    """Every quality gate as distance from its own bar, on one normalised axis.
+
+    Gates carry incomparable units — a kappa, a coverage share, an agreement rate
+    — so the only way to show them together is as *headroom*: how far the observed
+    value sits above or below the threshold it was judged against, in units of that
+    threshold. Zero is the bar. Anything left of zero failed.
+    """
+    import matplotlib
+    matplotlib.use("Agg")
+    import matplotlib.pyplot as plt
+
+    zh = language == "zh"
+    colour = {"passed": "#1baf7a", "warned": "#c9a227", "failed": "#d24d78",
+              "rejected": "#8e44ad", "skipped": "#b0b0b0"}
+    rows = []
+    for name, g in gates.items():
+        obs = g.get("observed") if isinstance(g, dict) else getattr(g, "observed", None)
+        thr = g.get("threshold") if isinstance(g, dict) else getattr(g, "threshold", None)
+        st = g.get("status") if isinstance(g, dict) else getattr(g, "status", "")
+        o = next((v for v in (obs or {}).values() if isinstance(v, (int, float))), None)
+        t = next((v for v in (thr or {}).values() if isinstance(v, (int, float))), None)
+        if o is None or t in (None, 0):
+            continue
+        rows.append((name, (o - t) / abs(t), st, o, t))
+    if not rows:
+        return path
+    rows.sort(key=lambda r: r[1])
+
+    fig, ax = plt.subplots(figsize=(10.5, max(2.8, 0.5 * len(rows))))
+    y = list(range(len(rows)))
+    ax.barh(y, [r[1] for r in rows], color=[colour.get(r[2], "#888") for r in rows], height=0.6)
+    ax.axvline(0, color="#333", lw=1.4)
+    for yi, r in zip(y, rows):
+        ax.text(r[1] + (0.01 if r[1] >= 0 else -0.01), yi,
+                f"{r[3]:.3g} vs {r[4]:.3g}", va="center",
+                ha="left" if r[1] >= 0 else "right", fontsize=8, color="#333")
+    ax.set_yticks(y); ax.set_yticklabels([r[0] for r in rows], fontsize=8.5)
+    ax.set_xlabel("相对门槛的余量 (0 = 恰好达标)" if zh else "headroom relative to threshold")
+    ax.set_title("质量门: 每一道门离自己的门槛有多远" if zh else "Quality gates: headroom", fontsize=11)
+    ax.margins(x=.22); ax.grid(axis="x", alpha=.25, ls=":")
+    fig.tight_layout(); fig.savefig(path, dpi=150, bbox_inches="tight"); plt.close(fig)
+    return path

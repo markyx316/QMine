@@ -247,14 +247,40 @@ def p7_audit(state: PipelineState, deps: Deps) -> dict[str, Any]:
                     "cluster ships with no name, no user_need, and no coherence score.",
     )
     gates[g0.name] = g0
+    # A MEAN against an absolute bar is the wrong test twice over.
+    #
+    # First, raters are not calibrated across models or domains: the same tree
+    # scored 3.93 and 4.27 on two runs of the same corpus, so 4.0 decides on rater
+    # mood. Second, and worse, a mean hides the thing the gate is for. Twenty
+    # excellent leaves and five incoherent ones average out to a pass, and the five
+    # incoherent ones are precisely what must not ship — they are the clusters
+    # carrying more than one intent.
+    #
+    # So gate on the TAIL: what share of leaves the raters placed at the bottom of
+    # their own scale. That is comparable across raters who are systematically
+    # generous or harsh, because it asks where each rater put this leaf relative to
+    # the rest of their own judgements rather than against an imported number.
+    weak_floor = cfg.gates.coherence_weak_below
+    weak = [c for c in coherences if c < weak_floor]
+    weak_share = (len(weak) / len(coherences)) if coherences else 0.0
     g1 = deps.gate(
         "p7_coherence", "p7",
-        passed=(not coherences) or mean_coh >= cfg.gates.coherence,
-        observed={"mean_coherence": round(mean_coh, 3) if coherences else None, "n": len(coherences)},
-        threshold={"mean_coherence": cfg.gates.coherence},
-        message=f"mean blind coherence {mean_coh:.2f}/5" if coherences else "no coherence scores",
-        remediation="Low coherence means clusters are carrying more than one intent — "
-                    "split them in refinement or reduce K before delivering.",
+        passed=(not coherences) or weak_share <= cfg.gates.coherence_max_weak_share,
+        observed={"mean_coherence": round(mean_coh, 3) if coherences else None,
+                  "n": len(coherences), "n_weak": len(weak),
+                  "weak_share": round(weak_share, 4),
+                  "weak_below": weak_floor,
+                  "min": round(min(coherences), 2) if coherences else None},
+        threshold={"max_weak_share": cfg.gates.coherence_max_weak_share,
+                   "weak_below": weak_floor,
+                   "note": "mean is reported, not gated — it hides the incoherent tail"},
+        message=(f"blind coherence: mean {mean_coh:.2f}/5, "
+                 f"{len(weak)}/{len(coherences)} leaves ({weak_share:.0%}) below {weak_floor}"
+                 if coherences else "no coherence scores"),
+        remediation="Low coherence means those clusters are carrying more than one intent — "
+                    "split them in refinement or reduce K before delivering. Note the gate "
+                    "reads the weak tail, not the mean: a good average with a bad tail is "
+                    "exactly the case that must not ship.",
         warn_only=True,
     )
     gates[g1.name] = g1

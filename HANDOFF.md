@@ -202,3 +202,67 @@ fixed with regression tests.
   not exposed on the CLI.
 - Verify a live run really used live agents: `run_summary.json` →
   `llm_usage.provider` must read `routed`, not `offline`.
+
+---
+
+## 6. Session 2 (2026-08-19) — decision architecture and the audit trail
+
+**Verdict on the playbook: mostly right, targeted repair — not redesign.** Five
+independent audits agreed. The phase ORDER is correct and a joint grid search is
+measurably *worse* (held-out ARI 0.653 vs greedy 0.739 at 3.4-4.7x the cost;
+measured directly: 819 s for a 50-cell (alpha x K) surface on only 4k rows, and
+greedy's alpha was already optimal at the final K). The defect was never the
+sequence — it was **reading single noisy draws as truth**.
+
+### K selection was noise
+Replay stability's seed-to-seed sd is ~0.10; the gaps between adjacent K are ~0.05.
+Four draws at one K gave 0.63 / 0.60 / 0.38 / 0.69. A tie-aware selector returns
+**the whole grid**. It is also degenerate: K=2 scores ARI **1.0000** on both the 8k
+and the real 50k corpus, so only the `k_sweep` list's hardcoded lower bound stood
+between the pipeline and a two-way split. `expected_family_range` never constrained
+anything.
+
+**Now:** stability only *rejects* (a reproducibility floor — the role the literature
+gives it); K is *located* by **AMI against the phrasing groups**, the one metric here
+with a two-sided penalty and therefore an interior optimum (0.427 at K=2 → 0.724 at
+K=25 → 0.664 at K=100), and **~10x more precise** (sd 0.005-0.023). It yields a
+unique winner where stability ties everything. Runs now ship a **tie set** — the
+honest answer, and the "several equally-good results" deliverable.
+
+Dead ends not worth repeating: raw fragmentation is *structurally* monotone in K
+(rho +0.97…+1.00 in all 13 runs) so it prefers K=1; the chance-adjusted version
+(`adjusted_template_fragmentation`, implemented) prefers K=∞. Neither locates K.
+Both are valid at *fixed* K, which is why alpha selection was always sound.
+
+### Other confirmed defects, fixed
+- **The panel measured the wrong object.** `stability_ari` was `replay_stability(X, k)`
+  — corpus and cluster count only — so the "decisive" number on the delivered leaves
+  described a fresh KMeans run and was pessimistic by ~0.25 ARI. Now
+  `partition_stability`: half-sample centroid replay on the actual partition
+  (leaves 0.893 ± 0.007 vs the 0.640 previously reported).
+- **The algorithm battery was decorative** — `build_hierarchy` hardcodes KMeans, and
+  the report announced `gmm_diag_k15` as the winner while arguing why KMeans is
+  right. Now a falsification probe, and the report says so.
+- **The pilot gate was dropped on the floor** — `deps.gate(...)` called without
+  capturing the return, so it could never halt anything. My own
+  `declared_gates_never_evaluated` diagnostic named it in five runs.
+
+### The audit trail is now IN the deliverable
+Previously the run recorded 7 decisions, 10 gates, 5 prescriptions and 332 agent
+calls, and the report rendered roughly half the decisions and none of the rest.
+Added as sections 9-11, in execution order:
+- **§9 全流程决策链** — every decision with candidates, winner, who decided, decisive
+  metric, full rationale, and the rejected options with their numbers. Plus
+  `fig_decision_chain` (candidates → survivors per step).
+- **§10 质量门总账** — every gate with observed vs threshold and its remediation, plus
+  gates declared blocking that never fired. Plus `fig_gates` (headroom, normalised).
+- **§11 治理台账** — every prescription's final disposition.
+
+All authored rationale/remediation prose is translated via `report/i18n.prose()`,
+guarded by `test_every_authored_rationale_reaches_the_reader_in_the_report_language`
+which fails on any untranslated line reaching a Chinese report — it caught a string
+I added minutes later.
+
+**State:** 134 tests pass; report 15 sections / 664 lines / **0 lines of English**;
+11 figures; notebook executes with 0 errors.
+

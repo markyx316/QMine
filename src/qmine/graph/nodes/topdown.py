@@ -127,19 +127,76 @@ def p2a_taxonomy(state: PipelineState, deps: Deps) -> dict[str, Any]:
     # Discovering an ambiguous guide here rather than after 3,000 annotations is
     # the difference between a cheap redraft and an expensive one.
     pilot = _pilot_agreement(deps, ctx, df, taxonomy)
-    deps.gate(
+    # Capture it. `deps.gate` builds and returns a GateResult but does not write to
+    # state, so a gate that is not put in this node's returned `gates` dict is
+    # invisible to the router and can never halt anything — which is what happened
+    # to this one, in five complete runs, while `declared_gates_never_evaluated`
+    # named it every time.
+    # The pilot must be judged against the bar it exists to predict. The playbook
+    # sets it at 85% RAW agreement while the downstream gate wants kappa >= 0.90 —
+    # and those are not the same demand. Backing chance agreement out of six real
+    # runs, kappa 0.90 needs raw agreement of 0.91-0.93, so a pilot passing at 0.85
+    # waves through a guide that then fails kappa by a wide margin, which is exactly
+    # the expensive discovery the pilot exists to prevent. Judge it on kappa.
+    #
+    # At n=50 kappa is noisy, so the test is one-sided and generous: fail only when
+    # even the upper confidence bound falls short. "Even reading this sample
+    # charitably, this guide cannot reach the bar."
+    # Two ways to clear this gate, because there are two things it can discover.
+    #
+    #   (1) The guide already reaches the kappa target. Proceed.
+    #   (2) It does not, but it is at the ANNOTATOR'S OWN CEILING — this annotator
+    #       does not agree with itself any better either. Redrafting cannot close
+    #       that gap; only a stronger annotator can. Halting the run would demand a
+    #       repair the operator has no way to perform, so it warns loudly, records
+    #       the ceiling as the honest achievable bar, and lets the run continue with
+    #       every downstream number carrying that caveat.
+    #
+    # What still halts is the case the gate exists for: agreement well below what
+    # the annotator demonstrably can do, i.e. a guide with real slack in it.
+    # The ceiling only means something if a real annotator produced it. The offline
+    # stand-in is a deterministic function of its batch, so re-asking it in a
+    # different composition measures the stand-in's batching, not an annotator's
+    # reliability — and it would report "at ceiling" for any guide at all.
+    at_ceiling = (
+        not deps.registry.is_offline
+        and (pilot.get("share_of_ceiling_reached") or 0) >= 0.90
+    )
+    reaches_target = pilot["kappa_upper"] >= cfg.gates.kappa
+    pilot_gate = deps.gate(
         "p2a_pilot_agreement", "p2a",
-        passed=pilot["raw_agreement"] >= cfg.taxonomy.pilot_agreement_threshold,
-        observed={"raw_agreement": pilot["raw_agreement"], "n": pilot["n"],
-                  "kappa": pilot["kappa"]},
-        threshold={"raw_agreement": cfg.taxonomy.pilot_agreement_threshold},
-        message=(f"pilot: {pilot['raw_agreement']:.1%} raw agreement on {pilot['n']} queries"
+        passed=reaches_target or at_ceiling,
+        observed={"kappa": pilot["kappa"], "kappa_upper_95": pilot["kappa_upper"],
+                  "raw_agreement": pilot["raw_agreement"], "n": pilot["n"],
+                  "raw_agreement_implied_by_target": pilot["raw_needed_for_target"],
+                  "annotator_self_consistency_kappa": pilot.get("self_consistency_kappa"),
+                  "share_of_ceiling_reached": pilot.get("share_of_ceiling_reached"),
+                  "at_annotator_ceiling": at_ceiling},
+        threshold={"kappa": cfg.gates.kappa,
+                   "playbook_raw_agreement_floor": cfg.taxonomy.pilot_agreement_threshold},
+        message=(f"pilot: kappa {pilot['kappa']:.3f} (95% upper {pilot['kappa_upper']:.3f}) "
+                 f"on {pilot['n']} queries; raw agreement {pilot['raw_agreement']:.1%}, "
+                 f"but kappa {cfg.gates.kappa} needs about "
+                 f"{pilot['raw_needed_for_target']:.1%}"
+                 + (f"; annotator self-consistency kappa {pilot['self_consistency_kappa']} "
+                    f"({pilot.get('share_of_ceiling_reached')} of ceiling reached)"
+                    if pilot.get("self_consistency_kappa") is not None else "")
+                 + (" — AT THE ANNOTATOR CEILING: this is the achievable bar on this "
+                    "corpus with this annotator, not a fixable guide defect"
+                    if at_ceiling and not reaches_target else "")
                  + (f" — top confusions {pilot['top_confusions']}" if pilot["top_confusions"] else "")),
         remediation=(
-            "The guide is ambiguous before a single gold row has been paid for. Fix the "
+            pilot.get("ceiling_verdict", "")
+            + ". The guide is ambiguous before a single gold row has been paid for. Fix the "
             "definitions and adjudication rules for the confused pairs above and re-run "
             "2a — the playbook is explicit that this is the moment to redraft, not to "
             "start annotating (回炉改指南/裁决规则, 而非直接开标)."
+            if not at_ceiling else
+            "Inter-annotator agreement has reached this annotator's own self-consistency, "
+            "so no amount of guide repair will raise it — the remaining disagreement is "
+            "annotator noise, not guide ambiguity. To go higher, use a stronger model or "
+            "human annotators. Otherwise treat the self-consistency kappa as the honest "
+            "ceiling for this corpus and read every downstream number against it."
         ),
         warn_only=deps.registry.is_offline,
     )
@@ -194,7 +251,7 @@ def p2a_taxonomy(state: PipelineState, deps: Deps) -> dict[str, Any]:
     return {
         "phase": "p2b",
         "artifacts": {"taxonomy": tax_ref},
-        "gates": {gate.name: gate},
+        "gates": {gate.name: gate, pilot_gate.name: pilot_gate},
         "decisions": [decision],
         "completed_phases": ["p2a"],
         "events": [f"P2a: taxonomy with {n_l1} L1 intents and {len(taxonomy.rules)} rules"],
@@ -519,7 +576,27 @@ def p2b_gold(state: PipelineState, deps: Deps) -> dict[str, Any]:
 
 
 def _pilot_agreement(deps: Deps, ctx: Any, df: Any, taxonomy: Taxonomy) -> dict[str, Any]:
-    """A 50-query dry run of the annotation task, before the gold set is paid for."""
+    """A dry run of the annotation task, plus the ceiling it could possibly hit.
+
+    Two annotators disagreeing tells you something is wrong; it does not tell you
+    *what*. An ambiguous guide and an unreliable annotator produce the same number,
+    and they have opposite remedies — redraft the guide, or change the annotator.
+
+    So this also measures **self-consistency**: the same annotator, the same
+    queries, re-asked in a different batch composition. That is the ceiling any two
+    independent annotators could reach, because two annotators cannot agree with
+    each other more reliably than one agrees with itself. Comparing the two numbers
+    separates the cases:
+
+      inter << intra   the guide has slack — redraft it, the annotator can do better
+      inter ~= intra   the guide is as good as this annotator supports; a higher
+                       bar needs a stronger model or human annotation, not more rules
+
+    This is the piece that makes the phase portable. A fixed kappa bar imported
+    from one project silently assumes the new corpus and the new annotator resemble
+    the old ones — and on this corpus collapsing the taxonomy from 21 classes to 4
+    moved kappa only 0.808 to 0.832, so the ceiling was never the taxonomy.
+    """
     from collections import Counter
 
     cfg = deps.cfg
@@ -531,15 +608,57 @@ def _pilot_agreement(deps: Deps, ctx: Any, df: Any, taxonomy: Taxonomy) -> dict[
     lb = _annotate(ctx, "b", queries, classes_txt, rules_txt, taxonomy.labeling_guide, deps)
     agree = agreement([x["label"] for x in la], [x["label"] for x in lb])
 
+    # The ceiling: annotator A again, same queries, shuffled so the batches differ.
+    # The LLM cache is keyed on the rendered prompt, so a different batch
+    # composition is a genuine second draw rather than a replay.
+    order = rng(deps.cfg.seed_metric + 7).permutation(len(queries))
+    la2_raw = _annotate(ctx, "a", [queries[i] for i in order],
+                        classes_txt, rules_txt, taxonomy.labeling_guide, deps)
+    back = [None] * len(queries)
+    for pos, i in enumerate(order):
+        back[i] = la2_raw[pos]["label"]
+    self_agree = agreement([x["label"] for x in la], [str(v) for v in back])
+
     # Which pairs drove the disagreement — this is what a redraft needs to act on.
     conf = Counter(
         " × ".join(sorted((x["label"], y["label"])))
         for x, y in zip(la, lb) if x["label"] != y["label"]
     )
+    # Chance agreement backed out of the pair, so the pilot can state the raw
+    # agreement its own kappa target actually implies rather than a constant.
+    po, kp, n = agree["raw_agreement"], agree["kappa"], max(1, agree["n"])
+    pe = (po - kp) / (1 - kp) if kp < 1 else 0.0
+    target = deps.cfg.gates.kappa
+    raw_needed = target * (1 - pe) + pe
+    # One-sided upper bound on kappa at this n; se via the normal approximation.
+    se = ((po * (1 - po) / n) ** 0.5) / max(1e-6, 1 - pe)
+    ceiling = self_agree.get("kappa")
+    # How much of the gap to the ceiling the guide is responsible for. Near 1.0 the
+    # guide is already extracting everything this annotator can give.
+    headroom = None
+    if ceiling and ceiling > 0:
+        headroom = round(min(1.0, kp / ceiling), 4)
     return {
         "n": agree["n"],
-        "raw_agreement": agree["raw_agreement"],
-        "kappa": agree["kappa"],
+        "self_consistency_kappa": ceiling,
+        "self_consistency_raw": self_agree.get("raw_agreement"),
+        "share_of_ceiling_reached": headroom,
+        "ceiling_measured_on_real_annotator": not deps.registry.is_offline,
+        "ceiling_verdict": (
+            "guide has slack — inter-annotator agreement is well below what this "
+            "annotator achieves against itself, so redrafting should help"
+            if headroom is not None and headroom < 0.90 else
+            "at the annotator ceiling — a higher bar needs a stronger model or human "
+            "annotation, not more adjudication rules"
+            if headroom is not None else
+            "self-consistency unavailable"
+        ),
+        "raw_agreement": po,
+        "kappa": kp,
+        "kappa_se": round(se, 4),
+        "kappa_upper": round(min(1.0, kp + 1.645 * se), 4),
+        "chance_agreement": round(pe, 4),
+        "raw_needed_for_target": round(raw_needed, 4),
         "top_confusions": [f"{k} ({v})" for k, v in conf.most_common(3)],
     }
 

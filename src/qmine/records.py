@@ -35,6 +35,12 @@ MetricAuthority = Literal["decisive", "advisory", "diagnostic"]
 METRIC_AUTHORITY: dict[str, MetricAuthority] = {
     # decisive — these choose representations, K, and algorithms
     "stability_ari": "decisive",
+    #: The corpus-and-k quantity the panel used to mislabel as `stability_ari`.
+    #: Advisory: it cannot distinguish two candidates that share a k.
+    "kmeans_refit_stability": "advisory",
+    #: Two-sided alignment with the known-same-intent phrasing groups. The only
+    #: metric here with an interior optimum in k, and ~10x more precise than replay.
+    "intent_alignment_ami": "decisive",
     "template_fragmentation": "decisive",
     "heldout_reproduction": "decisive",
     "coherence": "decisive",

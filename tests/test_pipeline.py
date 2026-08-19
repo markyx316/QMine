@@ -300,3 +300,33 @@ def test_a_failed_gate_tells_the_operator_what_to_do(completed_run):
         "remediation dropped from the summary — the halt reason ships without the fix"
     )
     assert any(g.get("remediation") for g in gates.values()), "every remediation is empty"
+
+
+def test_every_authored_rationale_reaches_the_reader_in_the_report_language(completed_run):
+    """The audit trail is the reasoning content of the deliverable, so an
+    untranslated rationale defeats the reason for including it. This asserts
+    coverage rather than eyeballing: any authored prose that reaches a Chinese
+    report and has no translation shows up here, so edits to the English cannot
+    silently drop a mapping."""
+    import re
+    from pathlib import Path
+
+    from qmine.report.i18n import prose
+
+    gen = Path(completed_run["summary"]["artifact_root"])
+    md = (gen / BOTTOMUP_REPORT).read_text()
+
+    # Three consecutive long lowercase words is running English prose; Chinese
+    # reports legitimately carry identifiers, metric names and code spans.
+    english = [l for l in md.splitlines()
+               if re.search(r"[a-z]{6,}\s+[a-z]{6,}\s+[a-z]{6,}", l)]
+    assert not english, (
+        "untranslated prose reached the Chinese report:\n  "
+        + "\n  ".join(l[:120] for l in english[:6])
+    )
+
+    # And the mapping must actually be doing work, not vacuously passing because
+    # the report happens to contain no rationales at all.
+    assert prose("Low kappa means the guide is ambiguous, whatever follows") != \
+        "Low kappa means the guide is ambiguous, whatever follows"
+    assert prose("a string nobody has translated") == "a string nobody has translated"

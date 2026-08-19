@@ -125,7 +125,7 @@ def subdivide(
     expresses both. Classes too small or too uniform to subdivide keep a single
     child rather than being forced apart.
     """
-    from .cluster import cosine_silhouette, kmeans_labels
+    from .cluster import choose_local_k, kmeans_labels
 
     y = np.asarray(list(labels))
     sub = np.array(["" for _ in range(len(y))], dtype=object)
@@ -140,23 +140,33 @@ def subdivide(
             continue
 
         Xc = X[m]
-        best_k, best_score = 1, -1.0
-        for kk in range(2, max_sub + 1):
-            if n / kk < min_sub_size:
-                break
-            lab = kmeans_labels(Xc, kk, seed=seed)
-            sc = cosine_silhouette(Xc, lab, sample=min(silhouette_sample, n), seed=seed)
-            if not np.isnan(sc) and sc > best_score:
-                best_k, best_score = kk, sc
+        # The same policy the bottom-up leaf layer uses. It used to be a second
+        # copy of an argmax-silhouette loop, which meant the two routes could
+        # disagree about what silhouette is permitted to decide — and this copy
+        # carried no disclosure at all, so its choices reached `subintents.json`
+        # with no record of what they cost.
+        verdict = choose_local_k(Xc, max_k=max_sub, min_size=min_sub_size, seed=seed,
+                                 silhouette_sample=silhouette_sample)
+        best_k = verdict["k"]
 
         if best_k == 1:
             sub[m] = f"{c}__1"
-            detail[c] = {"n": n, "k": 1, "reason": "no split improved cohesion"}
+            detail[c] = {"n": n, "k": 1,
+                         "reason": verdict.get("rejected_because") or "no split improved cohesion",
+                         "candidates": verdict.get("candidates", [])}
         else:
             lab = kmeans_labels(Xc, best_k, seed=seed)
             for j in range(best_k):
                 sub[np.where(m)[0][lab == j]] = f"{c}__{j + 1}"
-            detail[c] = {"n": n, "k": best_k, "silhouette": round(best_score, 4)}
+            detail[c] = {
+                "n": n, "k": best_k,
+                "silhouette": verdict["chosen"]["silhouette"],
+                "stability_ari": verdict["chosen"]["stability_ari"],
+                "lift_over_null": verdict["chosen"]["lift_over_null"],
+                "silhouette_would_have_chosen": verdict.get("silhouette_would_have_chosen"),
+                "silhouette_disagrees": verdict.get("silhouette_disagrees", False),
+                "chosen_by": verdict.get("chosen_by", ""),
+            }
 
     return {
         "sub_labels": sub,

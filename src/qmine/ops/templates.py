@@ -450,3 +450,76 @@ def validate_group_cohesion(
             "the group is one intent, so it has to earn the claim."
         ),
     }
+
+
+def adjusted_template_fragmentation(
+    labels: np.ndarray,
+    masks: dict[str, np.ndarray],
+    *,
+    min_group_size: int = 30,
+) -> dict[str, Any]:
+    """Fragmentation with the chance component removed, so it is comparable across K.
+
+    Raw fragmentation cannot be compared between two partitions with different
+    cluster counts, for the same reason the Rand Index cannot: most of its
+    movement is the baseline. Scatter a group of *m* queries at random over *K*
+    clusters and the effective-cluster count rises with K no matter what the
+    structure is — measured on this project's corpora, the chance baseline is
+    exactly monotone in K (Spearman 1.000) and accounts for the overwhelming
+    majority of the across-K movement in the raw number.
+
+    So subtract it. With cluster sizes ``n_j`` summing to ``N``, a group of size
+    ``m`` scattered at random puts an expected ``m·n_j/N`` members in cluster j;
+    the effective-cluster count of that expected distribution is the baseline.
+    Reporting
+
+        adjusted = (expected − observed) / (expected − 1)
+
+    puts **1.0 at "the group landed in a single cluster"** and **0.0 at "no better
+    than chance"**, with negative values for worse-than-chance. Unlike the raw
+    number this is a statement about structure rather than about K, which is what
+    a reader comparing two trees needs.
+
+    The raw value is still returned, because it is the one the operator's
+    intuition is calibrated to and because within a fixed K the two agree.
+    """
+    labels = np.asarray(labels)
+    uniq, counts = np.unique(labels, return_counts=True)
+    n_total = int(counts.sum())
+    share = counts / max(1, n_total)
+
+    def effective(p: np.ndarray) -> float:
+        p = p[p > 0]
+        return float(np.exp(-(p * np.log(p)).sum())) if p.size else 1.0
+
+    per_group: list[dict[str, Any]] = []
+    for name, mask in masks.items():
+        m = int(np.asarray(mask).sum())
+        if m < min_group_size:
+            continue
+        grp = labels[np.asarray(mask)]
+        _, c = np.unique(grp, return_counts=True)
+        obs = effective(c / c.sum())
+        # The same group scattered in proportion to the cluster sizes.
+        exp = effective(share)
+        adj = (exp - obs) / (exp - 1.0) if exp > 1.0 else float("nan")
+        per_group.append({
+            "group": name, "n": m,
+            "effective_clusters": round(obs, 4),
+            "expected_by_chance": round(exp, 4),
+            "adjusted": round(adj, 4) if adj == adj else None,
+        })
+
+    if not per_group:
+        return {"mean_adjusted": float("nan"), "mean_fragmentation": float("nan"),
+                "per_group": [], "n_groups_scored": 0}
+    adj_vals = [g["adjusted"] for g in per_group if g["adjusted"] is not None]
+    return {
+        "mean_adjusted": round(float(np.mean(adj_vals)), 4) if adj_vals else float("nan"),
+        "mean_fragmentation": round(float(np.mean([g["effective_clusters"] for g in per_group])), 4),
+        "mean_expected_by_chance": round(float(np.mean([g["expected_by_chance"] for g in per_group])), 4),
+        "per_group": per_group,
+        "n_groups_scored": len(per_group),
+        "note": ("adjusted: 1.0 = every phrasing group landed in one cluster; 0.0 = chance. "
+                 "Comparable across different K; the raw effective-cluster count is not."),
+    }

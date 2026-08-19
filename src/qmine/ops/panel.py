@@ -76,7 +76,10 @@ class UniformPanel:
         """Measure one candidate.  Every metric lands in the same MetricSet."""
         from sklearn.metrics import normalized_mutual_info_score
 
-        from .cluster import cosine_silhouette, heldout_reproduction, margins, replay_stability
+        from .cluster import (
+            cosine_silhouette, heldout_reproduction, margins, partition_stability,
+            replay_stability,
+        )
         from .templates import template_fragmentation
 
         ms = MetricSet(subject=subject, panel_id=self.panel_id)
@@ -92,12 +95,30 @@ class UniformPanel:
             )
         )
         if compute_stability:
+            # Measure THIS partition, not a fresh KMeans run at the same k. The old
+            # call took only (X, k), so the "decisive" number attached to the
+            # delivered leaves described a partition nobody shipped — and it was
+            # pessimistic by about 0.25 ARI, because refinement and governance
+            # improve the tree and re-running KMeans throws that away.
+            ps = partition_stability(X, labels, sample=self.subsample, seed=self.seed)
             ms.add(
                 MetricRecord.make(
-                    "stability_ari",
+                    "stability_ari", ps["mean"], n=self.subsample,
+                    detail={"method": "half-sample centroid replay on this partition",
+                            "sd": ps["sd"], "n_splits": ps["n_splits"],
+                            "values": ps.get("values", [])},
+                )
+            )
+            # The old quantity, kept under a name that says what it is: a property
+            # of the corpus and k, useful for reading the K sweep, useless as a
+            # description of a delivered partition.
+            ms.add(
+                MetricRecord.make(
+                    "kmeans_refit_stability", 
                     replay_stability(X, k, seeds=self.replay_seeds, sample=self.subsample),
                     n=self.subsample,
-                    detail={"seeds": list(self.replay_seeds)},
+                    detail={"seeds": list(self.replay_seeds),
+                            "note": "re-runs KMeans at this k; does not depend on the candidate"},
                 )
             )
         if template_masks:

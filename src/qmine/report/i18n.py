@@ -155,3 +155,105 @@ def num(x: float | None, digits: int = 4) -> str:
     except (TypeError, ValueError):
         return "—"
     return f"{float(x):.{digits}g}"
+
+
+#: The decision ledger is recorded in English so the artifacts stay stable across
+#: report languages; the reader sees it in the deliverable's language. Only the
+#: seven questions the pipeline actually asks need an entry — an unmapped question
+#: falls through unchanged rather than being dropped, so adding a decision without
+#: a translation degrades to English instead of vanishing.
+DECISION_QUESTIONS_ZH = {
+    "Which base encoder?": "选哪个底座 encoder?",
+    "How much weight should phrasing get?": "措辞该占多大话语权 (α)?",
+    "Which clustering algorithm?": "用哪个聚类算法?",
+    "How many families?": "家族层切多少个 (K)?",
+    "What is the intent taxonomy?": "意图体系应该长什么样?",
+    "Which model family for the top-down classifier?": "自上而下分类器用哪类模型?",
+    "Which L1 classes can the representation actually carry?": "表征实际撑得起哪些 L1 类目?",
+}
+
+
+def decision_question(text: str, language: str = "zh") -> str:
+    """The decision's question in the report's language, or unchanged if unmapped."""
+    return DECISION_QUESTIONS_ZH.get(text, text) if language == "zh" else text
+
+
+#: Prose the pipeline authors in English — decision rationales and gate
+#: remediations — rendered in the deliverable's language. This is the reasoning
+#: content, so leaving it untranslated in a Chinese report defeats the point of
+#: including it. Matching is on a distinctive PREFIX rather than the full string,
+#: so small edits to the English tail do not silently drop a translation; a test
+#: asserts that everything reaching a real report is covered.
+PROSE_ZH: dict[str, str] = {
+    "Open a new generation":
+        "开一个新 generation 重新推导; **不要就地打补丁** — 被否决的产物本身也是证据。",
+    "A partition that only exists when it can see every row":
+        "只有在看得见全部数据时才存在的划分, 是对**这份样本**的描述, 而不是对现象的描述。"
+        "请降低粒度, 或补充更多数据后重跑。",
+    "A naming shard failed":
+        "有命名分片执行失败。请在运行日志中查异常 — 未命名的叶子会一路带到交付表, "
+        "看起来像「没有意图」而不是「没跑成」。",
+    "Low coherence means clusters are carrying more than one intent":
+        "内聚度偏低意味着簇里装了不止一个意图 — 这是**粒度问题, 不是命名问题**。"
+        "应回到层级构建重切, 而不是换个名字了事。",
+    "If only the seeded pre-screen finds risk content":
+        "如果只有预置种子筛出了风险内容, 那么这个发现来自**你给的清单**, 而不是来自数据。"
+        "需要一次不看清单的独立复核才能算数。",
+    "Every 'we recommend X' in a report must have a matching executed change":
+        "报告里每一句「建议合并 X」都必须对应一次**已执行**的改动。只提议不执行, "
+        "等于把工作留给了下一个人, 而交付物看起来却像已经做完了。",
+    "A minority language between 0.5% and 5%":
+        "占比在 0.5%–5% 之间的少数语言是**最危险的区间**: 小到撑不起自己的簇, "
+        "又大到足以污染别人的簇。需要分层抽样或单独的子意图处理。",
+    "Coverage below the window means the fragmentation metric":
+        "模板群覆盖率低于窗口, 意味着碎裂度指标建立在过少的行上 — 请继续挖掘模板群, "
+        "或明确接受这个指标此次证据偏弱。",
+    "The guide is ambiguous before a single gold row":
+        "在还没有为任何一行金标付费之前, 指南就已经有歧义了。请修正上面这些易混类目对的"
+        "定义与裁决规则, 然后重跑 2a — 手册明确要求此刻回炉, 而不是直接开标。",
+    "Too few classes and a catch-all swells":
+        "类目太少, 兜底类会膨胀到失去意义; 太多则标注一致性崩塌, 金标随之报废。"
+        "裁决规则太少则裁判无据可引, 仲裁沦为口味之争。",
+    "Increase gold_sample_size":
+        "请增大 gold_sample_size, 或检查标注环节是否真的产出了标签。",
+    "Low kappa means the guide is ambiguous":
+        "κ 偏低说明**指南有歧义, 而不是标注员不用心**。请把裁判起草的规则并入指南后重新标注, "
+        "再在此基础上训练任何模型。",
+    "Annotator coverage collapsed":
+        "标注覆盖率崩塌 — 在解读这个数字之前, 请先查运行日志里的服务商错误 (鉴权、限流、超时)。"
+        "服务恢复后重跑本阶段。",
+    "Replay stability only REJECTS here":
+        "重播稳定性在此**只负责否决**: 它在本语料上的种子间标准差 (~0.10 ARI) 大于相邻 K "
+        "之间的差距 (~0.05), 且曲线在网格下界之外仍在上升, 用它排序等于读噪声, 并会滑向"
+        "退化的二分。K 由**与模板群的对齐度 (AMI)** 定位 —— 这是此处唯一具备双向惩罚、"
+        "因而存在内部最优的指标。若多个 K 无法区分, 则报告整个并列集合并取其中最简单的一个。",
+    "This phase does not choose the algorithm":
+        "本阶段**不选择算法**: 交付的树始终由 KMeans 构建。这里跑的是一次**证伪检验** —— "
+        "把结构上完全不同的算法送进同一套度量 harness, 问的是「这套结构是语料的性质, "
+        "还是 KMeans『簇近似球形』这一假设的产物」。若某个替代算法明显更可复现, "
+        "那是一个「家族层应按暂定读取」的警告, 而不是中途换算法的理由。",
+    "Highest replay stability under an identical measurement harness":
+        "在完全相同的度量 harness 下重播稳定性最高。L2 归一化后点落在单位球面上, "
+        "余弦邻域与欧氏邻域一致, 簇近似各向同性 — 正中 KMeans 的假设。",
+    "Highest replay stability on this corpus's own clustering task":
+        "在**本语料自己的聚类任务**上重播稳定性最高 —— 而不是在公开检索榜单上。",
+    "Synthesised from":
+        "由多路独立研究综合而成; 评审员返回了若干条修订意见。",
+    "Tree ensembles must reconstruct directional similarity":
+        "树模型必须用轴对齐的切分去重建方向相似度, 并把有限的提升预算摊到很多类目上; "
+        "线性头在这种几何下更契合。",
+}
+
+
+def prose(text: str, language: str = "zh") -> str:
+    """Authored rationale/remediation prose in the report's language.
+
+    Falls through to the original when unmapped, so a new string degrades to
+    English rather than disappearing.
+    """
+    if language != "zh" or not text:
+        return text
+    for prefix, zh in PROSE_ZH.items():
+        if text.startswith(prefix):
+            return zh
+    return text

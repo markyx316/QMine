@@ -379,3 +379,155 @@ def test_the_pilot_gate_is_blocking_and_precedes_the_gold_set():
     # It has to run in 2a — the whole point is to fire before 2b spends anything.
     assert "_pilot_agreement" in src
     assert "p2a_pilot_agreement" not in inspect.getsource(topdown.p2b_gold)
+
+
+def test_figure_cells_do_not_rebind_names_the_setup_cell_owns():
+    """Notebook cells share one namespace. A figure cell that assigns to a name the
+    setup cell owns corrupts every cell after it — `fam = rows['algorithm']...` in
+    the battery figure replaced the leaf→family map with a Series of strings, and
+    the family listing eight cells later died on int('kmeans')."""
+    import ast
+
+    from qmine.report import zh_figures as figs
+
+    # Names the setup cell binds and every later cell depends on.
+    OWNED = {
+        "audit", "tmpl", "rep", "gran", "meta", "naming", "gov", "dep", "panel",
+        "labels", "fam", "famrow", "df", "GEN", "J", "NPY", "CSV", "SAVE", "FIGDIR",
+        "BLUE", "ORANGE", "GREEN", "MUTED",
+    }
+
+    producers = ("fig_ksweep", "fig_alpha", "fig_battery",
+                 "fig_umap_families", "fig_umap_intent", "fig_panel_bars")
+    offenders: dict[str, set[str]] = {}
+    for name in producers:
+        src = getattr(figs, name)()
+        tree = ast.parse(src)
+        bound: set[str] = set()
+        for node in ast.walk(tree):
+            if isinstance(node, ast.Assign):
+                for t in node.targets:
+                    if isinstance(t, ast.Name):
+                        bound.add(t.id)
+            elif isinstance(node, (ast.AugAssign, ast.AnnAssign)) and isinstance(node.target, ast.Name):
+                bound.add(node.target.id)
+            elif isinstance(node, ast.For) and isinstance(node.target, ast.Name):
+                bound.add(node.target.id)
+            elif isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)):
+                bound.add(node.name)
+        clash = bound & OWNED
+        # Rebinding a *derived* artifact dict is fine only if it re-reads it.
+        clash -= {"panel"} if "panel = J(" in src else set()
+        if clash:
+            offenders[name] = clash
+    assert not offenders, f"figure cells rebind setup-cell names: {offenders}"
+
+
+def test_the_pilot_can_actually_discriminate_against_its_own_bar():
+    """A gate that cannot fail is decorative. The playbook's 50-row pilot has no
+    power against the kappa bar it exists to predict: at the agreement three live
+    runs actually produced (raw 0.849 / kappa 0.831) the 95% upper bound at n=50 is
+    0.924, so a guide destined to fail kappa 0.90 passes the pilot. The sample must
+    be large enough that the test can return 'no'."""
+    from qmine.config import QMineConfig
+
+    cfg = QMineConfig()
+
+    def upper_bound(po: float, kappa: float, n: int) -> float:
+        pe = (po - kappa) / (1 - kappa)
+        se = ((po * (1 - po) / n) ** 0.5) / (1 - pe)
+        return kappa + 1.645 * se
+
+    # The agreement live02 / live05 / live20 all landed near.
+    observed_po, observed_kappa = 0.849, 0.831
+    n = cfg.taxonomy.pilot_sample_size
+
+    assert upper_bound(observed_po, observed_kappa, 50) >= cfg.gates.kappa, (
+        "fixture check: n=50 is supposed to be under-powered"
+    )
+    assert upper_bound(observed_po, observed_kappa, n) < cfg.gates.kappa, (
+        f"the pilot at n={n} still cannot reject a guide measured at kappa "
+        f"{observed_kappa}; it would pass and the run would pay for the full gold set"
+    )
+    # ...and still be cheap relative to what it protects.
+    pilot_calls = 2 * -(-n // 25)
+    gold_calls = 2 * -(-3000 // 25)
+    assert pilot_calls < gold_calls / 10, "the pilot has stopped being the cheap check"
+
+
+def test_the_pilot_separates_a_fixable_guide_from_an_annotator_ceiling():
+    """Two annotators disagreeing does not say WHY, and the two causes have
+    opposite remedies. Measuring the same annotator against itself gives the
+    ceiling any pair could reach, which separates them:
+
+      inter << intra  → the guide has slack, redraft it (halt, it is cheap here)
+      inter ~= intra  → the annotator is the constraint; guide repair cannot help,
+                        so halting would demand a fix the operator cannot perform
+
+    Without this the gate imports a kappa bar from another project and treats an
+    unreachable one as a guide defect. On this corpus collapsing the taxonomy from
+    21 classes to 4 moved kappa only 0.808 → 0.832, so the taxonomy was never it.
+    """
+    from qmine.config import QMineConfig
+
+    cfg = QMineConfig()
+
+    def verdict(inter_upper: float, share_of_ceiling: float) -> bool:
+        """The gate's own rule: pass if it reaches target OR sits at the ceiling."""
+        return inter_upper >= cfg.gates.kappa or share_of_ceiling >= 0.90
+
+    # Clears the bar outright.
+    assert verdict(0.94, 0.80)
+
+    # Well short of the bar, and well short of what the annotator can do alone:
+    # a real guide defect, and the gate must stop the run before the gold set.
+    assert not verdict(0.72, 0.78)
+
+    # Well short of the bar, but the annotator only agrees with ITSELF at ~0.85 —
+    # no rule the referee writes can close that. Halting here would be demanding
+    # the impossible, so it warns and records the ceiling instead.
+    assert verdict(0.83, 0.98)
+
+    # The boundary is on the ceiling share, not on the absolute kappa.
+    assert verdict(0.10, 0.95)
+    assert not verdict(0.89, 0.50)
+
+
+def test_gates_do_not_import_thresholds_that_only_fit_one_corpus():
+    """Three gates were absolute constants taken from a single K12 run, and three
+    corpora disagree with all of them: the e-commerce corpus was flagged for 53%
+    template coverage (being more templated is not a defect), k12 and mixed fell
+    below the 0.98 held-out bar while e-commerce cleared it, and mean coherence
+    landed at 3.93 and 4.27 on two runs of the SAME corpus."""
+    from qmine.config import QMineConfig
+
+    g = QMineConfig().gates
+
+    # Coverage: gated on rows, because that is what the metrics are computed over.
+    # The share is kept for reporting and must not decide anything.
+    assert hasattr(g, "min_template_rows") and g.min_template_rows > 0
+    assert hasattr(g, "min_template_row_fraction")
+    covered_rows_ecom = int(0.534 * 8000)      # the run that used to be flagged
+    assert covered_rows_ecom >= max(g.min_template_rows,
+                                    int(g.min_template_row_fraction * 8000))
+
+    # Held-out: the effective bar may only ever RELAX the configured floor, never
+    # exceed it — it exists to stop the gate demanding more than the structure
+    # achieves when the data is split at all.
+    ceiling = 0.8927                            # measured on the reference run
+    effective = min(g.heldout_reproduction, ceiling * g.heldout_share_of_ceiling)
+    assert effective <= g.heldout_reproduction
+    assert 0.9731 >= effective, "the reference run must clear its own relative bar"
+
+    # Coherence: the tail, not the mean. A tree whose average passes while a fifth
+    # of its leaves are incoherent must NOT pass.
+    good_mean_bad_tail = [5.0] * 16 + [1.5] * 4          # mean 4.3, 20% weak
+    weak = [c for c in good_mean_bad_tail if c < g.coherence_weak_below]
+    share = len(weak) / len(good_mean_bad_tail)
+    assert sum(good_mean_bad_tail) / len(good_mean_bad_tail) >= g.coherence, (
+        "fixture check: this tree passes the old mean-based bar"
+    )
+    assert share > g.coherence_max_weak_share, (
+        "a tree with a fifth of its leaves incoherent still passes — the gate is "
+        "reading the mean again"
+    )

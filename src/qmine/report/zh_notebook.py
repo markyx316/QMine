@@ -33,7 +33,7 @@ def cells(state: Any, deps: Any) -> list[tuple[str, str]]:
 本 notebook 面向汇报场景, 完整重现端到端方法、决策依据、**统一口径评分**、
 嵌入空间可视化, 以及完整的家族→叶子清单。**所有数字与图表均由 cell 现场计算**, 无一粘贴。
 
-> {deps.registry.provenance_note()}
+> {deps.registry.provenance_note('zh')}
 
 ## 端到端方法论
 

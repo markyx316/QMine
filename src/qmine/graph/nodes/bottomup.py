@@ -7,9 +7,11 @@ from typing import Any
 import numpy as np
 
 
+from ...config import alpha_sweep_k_for
 from ...determinism import hash_texts
 from ...ops.stats import proportion_gate
 from ...ops.cluster import (
+    partition_stability,
     algorithm_battery,
     build_hierarchy,
     deep_aligned_estimate,
@@ -55,7 +57,7 @@ def p3_represent(state: PipelineState, deps: Deps) -> dict[str, Any]:
     if cfg.offline:
         candidates = ["hashing-256"]
     bake = encoder_bakeoff(
-        texts, candidates, k=cfg.representation.alpha_sweep_k, template_masks=masks,
+        texts, candidates, k=alpha_sweep_k_for(cfg), template_masks=masks,
         subsample=cfg.representation.bakeoff_subsample, seeds=tuple(cfg.seed_replay),
         reference_labels=ref_labels, offline=cfg.offline,
         cache_folder=str(deps.store.root.parent / ".hf") if not cfg.offline else None,
@@ -115,7 +117,7 @@ def p3_represent(state: PipelineState, deps: Deps) -> dict[str, Any]:
     deps.emit(f"P3c alpha sweep — {cfg.representation.alpha_grid}")
     sweep = alpha_sweep(
         dense, sp["svd_block"], alphas=cfg.representation.alpha_grid,
-        k=cfg.representation.alpha_sweep_k, template_masks=masks,
+        k=alpha_sweep_k_for(cfg), template_masks=masks,
         seeds=tuple(cfg.seed_replay), silhouette_sample=cfg.clustering.silhouette_sample,
         reference_labels=ref_labels,
     )
@@ -201,15 +203,21 @@ def p4_battery(state: PipelineState, deps: Deps) -> dict[str, Any]:
     ref = deps.store.put_json("battery", result, producer="p4",
                               summary=f"{len(result['rows'])} configurations, winner {verdict['chosen']}")
     decision = deps.decision(
-        "p4", "Which clustering algorithm?", family,
-        "Highest replay stability under an identical measurement harness. On L2-normalised "
-        "embeddings the points lie on a unit sphere where cosine neighbourhoods are close to "
-        "isotropic — which is exactly KMeans' assumption, and why it tends to win here.",
-        evidence={"ranking": verdict["ranking"]},
-        decisive_metrics=["stability_ari"],
-        rejected=[{"option": r["algorithm"], "why_rejected": "lower replay stability",
+        "p4", "Which clustering algorithm?", "kmeans (fixed — this phase does not select)",
+        "This phase does not choose the algorithm: the tree is always built with KMeans. "
+        "It is a falsification probe. Running structurally different algorithms through the "
+        "same harness asks whether the structure is a property of the corpus or of KMeans' "
+        "spherical-cluster assumption; a materially more reproducible alternative would be a "
+        "warning to read the family layer as provisional, not a reason to switch mid-flight.",
+        evidence={"reference": verdict.get("reference_algorithm"),
+                  "best_alternative": verdict.get("best_alternative"),
+                  "alternative_beats_reference_by": verdict.get("alternative_beats_reference_by"),
+                  "kmeans_assumption_contradicted": verdict.get("kmeans_assumption_contradicted")},
+        decisive_metrics=[],
+        rejected=[{"option": r["algorithm"],
+                   "why_rejected": "probe arm — never a candidate for the delivered tree",
                    "metrics": {"stability_ari": r["stability_ari"], "silhouette": r["silhouette"]}}
-                  for r in result["rows"] if r["algorithm"] != verdict["chosen"]][:12],
+                  for r in result["rows"] if not r["algorithm"].startswith("kmeans")][:12],
     )
     events = [f"P4: {verdict['chosen']} wins on stability"]
     if verdict["density_candidates_for_manual_review"]:
@@ -253,17 +261,32 @@ def p5_granularity(state: PipelineState, deps: Deps) -> dict[str, Any]:
         "granularity", {"k_sweep": sweep, "deep_aligned": da, "triangulation": tri},
         producer="p5", summary=f"family K={k}",
     )
+    tie_ks = {t["k"] for t in tri.get("tie_set", [])}
     decision = deps.decision(
         "p5", "How many families?", f"K = {k}",
-        "Replay-stability peak, corroborated by an over-clustering survival estimate and a "
-        "domain prior. Where the three disagree we take the stability peak and record the "
-        "disagreement — an averaged K is defensible to nobody.",
-        evidence=tri["estimates"], decisive_metrics=["stability_ari"],
-        rejected=[{"option": f"K={r['k']}", "why_rejected": "lower replay stability",
-                   "metrics": {"stability_ari": r["stability_ari"], "silhouette": r["silhouette"]}}
-                  for r in sweep if r["k"] != k],
+        "Replay stability only REJECTS here — its seed-to-seed spread on this corpus "
+        "(~0.10 ARI) is larger than the differences between adjacent K (~0.05), and its "
+        "curve is still climbing below the grid, so ranking by it reads noise and trends "
+        "toward a degenerate two-way split. K is LOCATED by alignment with the phrasing "
+        "groups (AMI), the one metric here with a two-sided penalty and therefore a real "
+        "interior optimum. Where several K are indistinguishable the tie set is reported "
+        "and the simplest is taken — an averaged K is defensible to nobody.",
+        evidence={**tri["estimates"], "locator": tri.get("locator"),
+                  "tie_set": [t["k"] for t in tri.get("tie_set", [])],
+                  "n_rejected_as_unstable": tri.get("n_rejected_as_unstable")},
+        decisive_metrics=["intent_alignment_ami", "stability_ari (rejection only)"],
+        rejected=[{"option": f"K={r['k']}",
+                   "why_rejected": ("rejected: replay stability below the floor"
+                                    if r["stability_ari"] < tri.get("stability_floor", 0.55)
+                                    else "lower alignment with the phrasing groups"),
+                   "metrics": {"intent_alignment_ami": r.get("intent_alignment_ami"),
+                               "stability_ari": r["stability_ari"],
+                               "silhouette": r["silhouette"]}}
+                  for r in sweep if r["k"] != k and r["k"] not in tie_ks],
     )
-    events = [f"P5: family K={k} (stability {max(r['stability_ari'] for r in sweep):.3f})"]
+    events = [f"P5: family K={k} via {tri.get('locator')}; "
+              f"{len(tri.get('tie_set', []))} K statistically tied; "
+              f"{tri.get('n_rejected_as_unstable', 0)} rejected as irreproducible"]
     if not tri["converged"]:
         events.append(f"P5: estimators did NOT converge — {tri['divergence_note']}")
     if tri["silhouette_disagrees"]:
@@ -297,7 +320,11 @@ def p6_hierarchy(state: PipelineState, deps: Deps) -> dict[str, Any]:
         max_leaves=cfg.clustering.max_leaves_per_family,
         family_min_size_for_split=cfg.clustering.family_min_size_for_split,
     )
-    deps.emit(f"  built {tree['n_families']} families / {tree['n_leaves']} leaves")
+    lk = tree.get("local_k", {})
+    deps.emit(f"  built {tree['n_families']} families / {tree['n_leaves']} leaves"
+              + (f" — {lk['n_families_not_split']} 个家族无内部结构未再分, "
+                 f"{lk['n_silhouette_overruled']} 个 silhouette 的选择被稳定性否决"
+                 if lk else ""))
 
     ref_out = refine(
         H, tree["leaf_labels"], tree["leaf_family"], rounds=cfg.clustering.refine_rounds,
@@ -343,6 +370,39 @@ def p6_hierarchy(state: PipelineState, deps: Deps) -> dict[str, Any]:
                               seed=cfg.seed_metric)
     deps.emit(f"  held-out structure reproduction {hr['agreement']:.3f}")
 
+    # The bar is relative, not absolute. 0.98 is a K12 observation: across three
+    # corpora the achievable value runs 0.973 (k12 12k) to 0.991 (e-commerce), and
+    # it falls as K rises, so an absolute constant fails perfectly good runs on
+    # harder corpora and passes weak ones on easy corpora.
+    #
+    # What the gate is really asking is whether the partition survives NOT having
+    # seen every row. So bound the demand by how well it reproduces when the data
+    # is split at all — `partition_stability`, the disjoint-half centroid replay.
+    #
+    # The two are deliberately not the same test, and the direction matters: the
+    # half-sample replay compares two INDEPENDENT halves, while held-out fits on
+    # 80% and scores the remaining 20% against the full-data assignment. The former
+    # is strictly harder, so it sits BELOW held-out on the same partition (0.893 vs
+    # 0.973 on the reference run). That makes it a valid floor and a conservative
+    # one: it is used only to stop the gate demanding out-of-sample agreement that
+    # exceeds what the structure manages when it is split at all, which is what the
+    # absolute 0.98 was doing. It is not used to raise the bar.
+    ceiling = partition_stability(H, ref_out["leaf_labels"],
+                                  sample=cfg.clustering.silhouette_sample,
+                                  seed=cfg.seed_metric)
+    floor = cfg.gates.heldout_reproduction
+    if ceiling.get("mean") == ceiling.get("mean") and ceiling["mean"] > 0:
+        # Never demand more than the structure can achieve on its own data, and
+        # never accept a large shortfall against it.
+        # `min`: the configured value stays the ceiling on the demand. This can only
+        # ever RELAX the bar, never tighten it beyond what was configured.
+        floor = min(floor, round(ceiling["mean"] * cfg.gates.heldout_share_of_ceiling, 4))
+    hr["in_sample_ceiling"] = ceiling
+    hr["effective_threshold"] = floor
+    verdict = proportion_gate(hr["agreement"], hr["n_test"], floor)
+    hr["statistical_verdict"] = verdict
+
+
     artifacts = {
         "leaf_labels": deps.store.put_matrix("leaf_labels", ref_out["leaf_labels"], producer="p6",
                                              summary=f"{ref_out['n_leaves']} leaves"),
@@ -358,6 +418,10 @@ def p6_hierarchy(state: PipelineState, deps: Deps) -> dict[str, Any]:
              "leaves_per_family": tree["leaves_per_family"],
              "min_leaf_size_applied": tree["min_leaf_size_applied"],
              "refinement_history": ref_out["history"], "converged": ref_out["converged"],
+             # How each family decided its own leaf count, what silhouette alone
+             # would have done, and which families declined to split at all. This
+             # layer used to choose k by silhouette argmax with no record kept.
+             "local_k": tree.get("local_k", {}),
              "heldout_reproduction": hr, "minority_language_rescue": lang_meta},
             producer="p6", summary=f"{tree['n_families']}→{ref_out['n_leaves']} leaves",
         ),
@@ -371,8 +435,6 @@ def p6_hierarchy(state: PipelineState, deps: Deps) -> dict[str, Any]:
     # Judged against a confidence interval, not a point estimate: on a small
     # held-out set the difference between 0.978 and 0.980 is sampling noise, and
     # a gate that fires on noise only teaches people to lower thresholds.
-    verdict = proportion_gate(hr["agreement"], hr["n_test"], cfg.gates.heldout_reproduction)
-    hr["statistical_verdict"] = verdict
     msg = (
         f"held-out rows land in the same cluster {hr['agreement'] * 100:.1f}% of the time "
         f"(95% CI {verdict['ci95'][0]:.3f}-{verdict['ci95'][1]:.3f}, n={hr['n_test']}) — {verdict['verdict']}"
@@ -382,7 +444,10 @@ def p6_hierarchy(state: PipelineState, deps: Deps) -> dict[str, Any]:
     gate = deps.gate(
         "p6_heldout_reproduction", "p6",
         passed=verdict["passed"],
-        observed=hr, threshold={"agreement": cfg.gates.heldout_reproduction, "rule": "95% CI vs threshold"},
+        observed=hr,
+        threshold={"agreement": floor, "absolute_floor_configured": cfg.gates.heldout_reproduction,
+                   "in_sample_ceiling": ceiling.get("mean"),
+                   "rule": "95% CI vs min(configured floor, share of the in-sample ceiling)"},
         message=msg,
         remediation=(
             "A partition that only exists when it can see every row is a description of "

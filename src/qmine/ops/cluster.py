@@ -23,6 +23,7 @@ Three decisions live here, and each has a designated evidence source:
 from __future__ import annotations
 
 import logging
+from collections.abc import Callable
 from typing import Any, Sequence
 
 import numpy as np
@@ -315,10 +316,41 @@ def _battery_verdict(rows: list[dict[str, Any]]) -> dict[str, Any]:
         key=lambda r: (-r["stability_ari"], -r["silhouette"]),
     )
     density_sorted = sorted(density, key=lambda r: (r["noise_rate"], -r["n_clusters"]))
+    # The tree is built with KMeans - `build_hierarchy` hardcodes it - so an
+    # "election" here was fiction: in half the runs it crowned an algorithm the
+    # pipeline then ignored, and the report announced that winner as though it had
+    # produced the delivered tree. Reframed as what it can honestly be: a
+    # falsification probe. Does a structurally different algorithm, on the same
+    # data, find the same structure? If yes, the partition is a property of the
+    # corpus rather than of KMeans's spherical-cluster assumption. If no, that is a
+    # warning worth printing, not a reason to silently switch algorithms mid-flight.
+    km = [r for r in partitional if r["algorithm"].startswith("kmeans")]
+    reference = max(km, key=lambda r: r["stability_ari"]) if km else (ranked[0] if ranked else None)
+    best_other = ranked[0] if ranked else None
+    margin = (round(best_other["stability_ari"] - reference["stability_ari"], 4)
+              if reference and best_other else None)
+    contradicted = bool(
+        best_other and reference
+        and not best_other["algorithm"].startswith("kmeans")
+        and (margin or 0) > 0.10
+    )
     return {
-        "chosen": ranked[0]["algorithm"] if ranked else None,
-        "chosen_family": ranked[0]["algorithm"].split("_k")[0] if ranked else None,
-        "chosen_by": "stability_ari desc (silhouette breaks ties only)",
+        "role": "falsification probe - the delivered tree is always KMeans (build_hierarchy)",
+        "reference_algorithm": reference["algorithm"] if reference else None,
+        "best_alternative": best_other["algorithm"] if best_other else None,
+        "alternative_beats_reference_by": margin,
+        "kmeans_assumption_contradicted": contradicted,
+        "probe_note": (
+            "A structurally different algorithm is more than 0.10 ARI more reproducible "
+            "than KMeans here - the spherical-cluster assumption is doing visible work, "
+            "and the family layer should be read as provisional."
+            if contradicted else
+            "No structurally different algorithm is materially more reproducible than "
+            "KMeans, so the partition is not an artefact of its cluster-shape assumption."
+        ),
+        "chosen": reference["algorithm"] if reference else None,
+        "chosen_family": "kmeans",
+        "chosen_by": "not a selection - the tree is built with KMeans regardless",
         "ranking": [{"algorithm": r["algorithm"], "stability_ari": r["stability_ari"]} for r in ranked[:8]],
         "density_candidates_for_manual_review": [
             {"algorithm": r["algorithm"], "noise_rate": r["noise_rate"], "n_clusters": r["n_clusters"]}
@@ -335,6 +367,33 @@ def _battery_verdict(rows: list[dict[str, Any]]) -> dict[str, Any]:
 # ==========================================================================
 # Phase 5 — granularity
 # ==========================================================================
+
+def _intent_alignment(labels: np.ndarray, masks: dict[str, np.ndarray] | None) -> float:
+    """Adjusted mutual information between a partition and the phrasing groups.
+
+    The phrasing groups are the pipeline's only cheap source of *known* same-intent
+    rows, and template fragmentation already uses them — but one-sidedly, penalising
+    only over-splitting, which is why it falls monotonically as K rises and cannot
+    say where K should be. AMI penalises both directions and is adjusted for chance,
+    so it is comparable across K.
+
+    Returns NaN when there are no groups, which keeps it out of any ranking.
+    """
+    if not masks:
+        return float("nan")
+    from sklearn.metrics import adjusted_mutual_info_score
+
+    y = np.full(len(labels), -1, dtype=np.int64)
+    for i, m in enumerate(masks.values()):
+        m = np.asarray(m)
+        if m.shape[0] != len(labels):
+            return float("nan")
+        y[m & (y == -1)] = i
+    known = y >= 0
+    if known.sum() < 50 or len(np.unique(y[known])) < 2:
+        return float("nan")
+    return round(float(adjusted_mutual_info_score(y[known], np.asarray(labels)[known])), 4)
+
 
 def k_sweep(
     X: np.ndarray,
@@ -377,8 +436,17 @@ def k_sweep(
     for k in ks:
         model = kmeans_fit(Xf, k, seed=seeds[0], fast=fast)
         labels = model.predict(X) if len(Xf) < len(X) else model.labels_
+        # Alignment against the phrasing groups — queries already known to share an
+        # intent. This is the only metric in the sweep with a **two-sided** penalty
+        # and therefore the only one that can locate K rather than merely bound it:
+        # too few clusters and the groups get merged into unrelated traffic, too
+        # many and they get split, so it has a genuine interior optimum. It is also
+        # roughly ten times more precise than replay stability (seed sd ~0.01 vs
+        # ~0.10 on these corpora), which matters because the differences being
+        # resolved between adjacent K are about 0.05.
         row = {
             "k": int(k),
+            "intent_alignment_ami": _intent_alignment(labels, template_masks),
             "stability_ari": replay_stability(X, k, seeds=seeds, sample=silhouette_sample, fast=fast),
             "silhouette": cosine_silhouette(X, labels, sample=silhouette_sample),
         }
@@ -418,10 +486,15 @@ def triangulate_k(
     expert_range: tuple[int, int],
     *,
     leaf_ratio: int = 3,
+    #: Below this, a partition is rejected as irreproducible rather than ranked.
+    stability_floor: float = 0.55,
+    #: AMI differences at or under this are treated as ties. Measured, not assumed:
+    #: the seed-to-seed sd of AMI on these corpora is 0.005-0.023.
+    ami_tie_band: float = 0.02,
 ) -> dict[str, Any]:
-    """Reconcile three independent estimates of the family scale.
+    """Locate the family scale, and name every K the measurement cannot rule out.
 
-    The stability peak is the primary signal.  The DeepAligned survivor count
+    Stability rejects; alignment with the phrasing groups locates.  The DeepAligned survivor count
     estimates the *leaf* scale, so it enters the comparison divided by the
     expected leaves-per-family.  The expert range is a prior from someone who
     knows the vertical.  Agreement is strong evidence; disagreement is not
@@ -429,7 +502,43 @@ def triangulate_k(
     because a number nobody can defend is worse than a number with a caveat.
     """
     valid = [r for r in sweep if not np.isnan(r["stability_ari"])]
-    peak = max(valid, key=lambda r: r["stability_ari"])
+
+    # --- how K is actually located ------------------------------------------
+    # Replay stability used to rank K directly. It cannot. Two measurements say so:
+    #
+    #   * It is degenerate. On every completed run its curve is still climbing
+    #     below the grid — K=2 scores ARI 1.0000 on both the 8k and the 50k corpus,
+    #     beating every K the sweep considers. Only the grid's lower bound stands
+    #     between the pipeline and a two-way split, which makes an undocumented
+    #     config constant the real author of the granularity decision.
+    #   * It is too noisy to rank with. Four seed pairs at one K on this corpus
+    #     gave 0.63, 0.60, 0.38, 0.69 — sd 0.14, against inter-K differences of
+    #     about 0.05. Every K in the grid is inside every other K's error bar.
+    #
+    # That is precisely the role the stability literature gives it: a filter that
+    # can reject a partition as irreproducible, not a ranker that can order
+    # partitions. So it rejects here, and something else locates.
+    #
+    # The locator is alignment with the phrasing groups (AMI). It is two-sided —
+    # penalised for merging known-same-intent rows AND for splitting them — so it
+    # has an interior optimum, and it is ~10x more precise (sd ~0.01).
+    stable = [r for r in valid if r["stability_ari"] >= stability_floor] or valid
+    located = [r for r in stable if not np.isnan(r.get("intent_alignment_ami", float("nan")))]
+
+    if located:
+        best = max(located, key=lambda r: r["intent_alignment_ami"])
+        band = ami_tie_band
+        tie_set = [r for r in located
+                   if best["intent_alignment_ami"] - r["intent_alignment_ami"] <= band]
+        peak = min(tie_set, key=lambda r: r["k"])   # inside a tie, prefer the simpler tree
+        locator = "intent_alignment_ami"
+    else:
+        # No phrasing groups mined, so there is nothing to align against. Fall back
+        # to the old rule and say so — this is the one case where stability ranks,
+        # and it should be read as weak.
+        peak = max(valid, key=lambda r: r["stability_ari"])
+        tie_set = [peak]
+        locator = "stability_ari (no phrasing groups available — weak evidence)"
     sil_peak = max(valid, key=lambda r: r["silhouette"])
     da_family = deep_aligned["k_estimate"] / max(leaf_ratio, 1)
     lo, hi = expert_range
@@ -457,25 +566,36 @@ def triangulate_k(
     elif measured_agree:
         agreement = "measured_only"
         note = (
-            f"Both measured estimators land near K={peak['k']} (stability peak {peak['k']}, "
-            f"over-clustering survival implies {da_family:.1f}), but the domain prior expected "
-            f"{lo}-{hi}. Two independent measurements of THIS corpus agreeing outweighs a prior "
-            "carried in from elsewhere — the prior is the thing to revise. Worth checking that "
-            "the intent axis really is coarser here than expected, since the leaf layer, not the "
-            "family layer, carries fine distinctions."
+            f"两个实测估计都落在 K={peak['k']} 附近 (定案 {peak['k']}, 过聚类存活推出 "
+            f"{da_family:.1f}), 但领域先验期望 {lo}-{hi}。**对本语料的两个独立测量一致, "
+            "胜过从别处带来的先验** — 该修的是先验。值得复核: 这里的意图轴是否真的比预期更粗, "
+            "因为承载细分的是叶层而非家族层。"
         )
     else:
         agreement = "none"
         note = (
-            "The measured estimators disagree with each other. Taking the stability peak and "
-            "recording the disagreement rather than averaging: an averaged K is defensible to "
-            "nobody. Treat the family layer as provisional and lean on the leaf layer."
+            "两个实测估计彼此不一致。**记录分歧而不取平均** — 平均出来的 K 谁也说服不了。"
+            f"定案由「{locator}」给出 (稳定性只负责剔除不可复现的 K, 不负责排序); "
+            "家族层按暂定读取, 细分靠叶层。"
         )
 
     return {
         "estimates": estimates,
         "chosen_family_k": peak["k"],
-        "chosen_by": "stability peak (primary); other estimators used as corroboration only",
+        "locator": locator,
+        "stability_floor": stability_floor,
+        "n_rejected_as_unstable": len(valid) - len([r for r in valid if r["stability_ari"] >= stability_floor]),
+        # Every K the measurement cannot separate from the winner. When this has
+        # more than one entry the honest deliverable is the set, not the winner.
+        "tie_set": [{"k": r["k"],
+                     "intent_alignment_ami": r.get("intent_alignment_ami"),
+                     "stability_ari": r["stability_ari"],
+                     "template_fragmentation": r.get("template_fragmentation")}
+                    for r in sorted(tie_set, key=lambda r: r["k"])],
+        "chosen_by": (
+            f"stability >= {stability_floor} rejects irreproducible K; among survivors the "
+            f"highest {locator}; ties within {ami_tie_band} broken toward the simpler tree"
+        ),
         "converged": agreement == "full",
         "agreement": agreement,
         "measured_estimators_agree": bool(measured_agree),
@@ -519,6 +639,9 @@ def build_hierarchy(
     leaf_labels = np.full(len(X), -1, dtype=np.int64)
     leaf_family: list[int] = []
     leaf_local_k: dict[int, int] = {}
+    # Why each family split the way it did — silhouette's choice, the stability
+    # it would have cost, and the no-split test. Previously invisible.
+    local_k_detail: dict[int, dict[str, Any]] = {}
     next_leaf = 0
 
     for f in range(family_k):
@@ -529,17 +652,15 @@ def build_hierarchy(
             leaf_labels[mask] = next_leaf
             leaf_family.append(f)
             leaf_local_k[f] = 1
+            local_k_detail[f] = {"k": 1, "rejected_because":
+                                 f"family of {n} rows is below the split floor"}
             next_leaf += 1
             continue
 
-        best_k, best_score = 1, -1.0
-        for k in range(2, max_leaves + 1):
-            if n / k < min_leaf:
-                break
-            lab = kmeans_labels(Xf, k, seed=seed)
-            score = cosine_silhouette(Xf, lab, sample=min(silhouette_sample, n), seed=seed)
-            if not np.isnan(score) and score > best_score:
-                best_k, best_score = k, score
+        verdict = choose_local_k(Xf, max_k=max_leaves, min_size=min_leaf, seed=seed,
+                                 silhouette_sample=silhouette_sample)
+        best_k = verdict["k"]
+        local_k_detail[f] = verdict
 
         if best_k == 1:
             leaf_labels[mask] = next_leaf
@@ -555,7 +676,17 @@ def build_hierarchy(
             leaf_local_k[f] = best_k
 
     centroids = _centroids(X, leaf_labels, next_leaf)
+    n_sil_overruled = sum(1 for v in local_k_detail.values() if v.get("silhouette_disagrees"))
+    n_no_split = sum(1 for v in local_k_detail.values() if v.get("k") == 1)
     return {
+        "local_k": {
+            "detail": {int(k): v for k, v in local_k_detail.items()},
+            "n_families_not_split": n_no_split,
+            "n_silhouette_overruled": n_sil_overruled,
+            "note": ("leaf count inside each family is chosen by silhouette, but only "
+                     "after the split beats a structureless reference, and silhouette is "
+                     "overruled when a negligible lead costs real reproducibility"),
+        },
         "family_labels": fam,
         "family_centroids": normalize(fam_model.cluster_centers_),
         "leaf_labels": leaf_labels,
@@ -726,3 +857,307 @@ def margins(X: np.ndarray, centroids: np.ndarray) -> np.ndarray:
     sims = X @ centroids.T
     part = np.partition(sims, -2, axis=1)
     return part[:, -1] - part[:, -2]
+
+
+# ==========================================================================
+# Local granularity — one policy, used by every layer that subdivides a group
+# ==========================================================================
+
+def _shuffled_reference(X: np.ndarray, rs: Any) -> np.ndarray:
+    """`X` with each column independently permuted: same marginals, no structure."""
+    Z = np.array(X, dtype=np.float32, copy=True)
+    for j in range(Z.shape[1]):
+        rs.shuffle(Z[:, j])
+    return normalize(Z)
+
+
+def choose_local_k(
+    X: np.ndarray,
+    *,
+    max_k: int,
+    min_size: int,
+    seed: int = SEED_METRIC,
+    silhouette_sample: int = 6000,
+    stability_seeds: Sequence[int] = (0, 1),
+    null_margin: float = 0.02,
+    stability_floor: float = 0.55,
+    #: A silhouette difference at or under this is treated as noise, not signal.
+    sil_noise: float = 0.02,
+    #: ...and is overruled only by a stability gain of at least this much.
+    stability_gain: float = 0.15,
+    seed_metric: int = SEED_METRIC,
+) -> dict[str, Any]:
+    """How many sub-clusters a single group should be split into, if any.
+
+    Two layers ask this question — the bottom-up leaf layer inside a family, and
+    the top-down sub-intent layer inside an L1 class — and until now each had its
+    own copy of the same loop: ``argmax over k of cosine silhouette``, nothing
+    else. That loop has two defects that only show up at this scale.
+
+    **It cannot say "do not split."** ``best_score`` starts at -1.0, which is
+    below every attainable silhouette, so the first admissible k wins by default
+    and the ``k == 1`` branch is unreachable. Every group large enough to divide
+    therefore gets divided, whether or not it contains any structure. Silhouette
+    is undefined at k=1, so no amount of it can supply the missing test — the
+    absence of a no-split test is structural, not an oversight. Here the split
+    must first beat a **random relabelling of the same group at the same k**,
+    which is what silhouette looks like when there is nothing to find.
+
+    **It lets a rounding-error gain overrule a collapse in reproducibility.** On
+    the reference corpus one sub-intent took k=6 (silhouette 0.0749, replay ARI
+    0.533) over k=2 (silhouette 0.0696, ARI 0.973) — buying 0.005 of silhouette
+    with 0.44 of stability. So candidates must clear a stability floor, and among
+    those that do, a silhouette lead inside the noise band does not outrank a
+    materially more reproducible split.
+
+    Silhouette keeps a real vote here, and that is deliberate: within one fixed
+    representation every candidate encodes phrasing identically, so its bias is a
+    constant offset and its *variation* carries information. What it does not get
+    is the casting vote when the alternatives are indistinguishable to it.
+    """
+    n = len(X)
+    out: dict[str, Any] = {"k": 1, "candidates": [], "rejected_because": ""}
+    if n < 2 * min_size or max_k < 2:
+        out["rejected_because"] = f"group of {n} cannot yield two sub-groups of {min_size}"
+        return out
+
+    rng_null = rng(seed_metric)
+    cands: list[dict[str, Any]] = []
+    for k in range(2, max_k + 1):
+        if n / k < min_size:
+            break
+        lab = kmeans_labels(X, k, seed=seed)
+        sil = cosine_silhouette(X, lab, sample=min(silhouette_sample, n), seed=seed_metric)
+        if np.isnan(sil):
+            continue
+        # What silhouette looks like at this k when there is nothing to find.
+        # The null must be *the same clustering algorithm on structureless data*,
+        # not random labels on the real data: k-means optimises compactness and so
+        # beats a random relabelling even on isotropic noise, which made an earlier
+        # version of this test pass everything. Shuffling each column independently
+        # destroys the joint structure while preserving every marginal — the
+        # reference-distribution idea behind the gap statistic.
+        null = float(np.mean([
+            cosine_silhouette(Xn, kmeans_labels(Xn, k, seed=seed),
+                              sample=min(silhouette_sample, n), seed=seed_metric)
+            for Xn in (_shuffled_reference(X, rng_null) for _ in range(2))
+        ]))
+        stab = replay_stability(X, k, seeds=tuple(stability_seeds),
+                                sample=min(silhouette_sample, n))
+        cands.append({"k": k, "silhouette": round(float(sil), 4),
+                      "silhouette_null": round(null, 4),
+                      "lift_over_null": round(float(sil) - null, 4),
+                      "stability_ari": round(float(stab), 4)})
+    out["candidates"] = cands
+    if not cands:
+        out["rejected_because"] = "no admissible k produced a finite silhouette"
+        return out
+
+    # 1. The split must beat chance on this group. Silhouette cannot test this.
+    real = [c for c in cands if c["lift_over_null"] > null_margin]
+    if not real:
+        best = max(cands, key=lambda c: c["lift_over_null"])
+        out["rejected_because"] = (
+            f"no k beats a structureless reference by more than {null_margin}: best lift "
+            f"{best['lift_over_null']} at k={best['k']} — this group has no internal structure"
+        )
+        return out
+
+    # 2. Reproducible splits only; fall back if the floor excludes everything.
+    stable = [c for c in real if c["stability_ari"] >= stability_floor] or real
+
+    # 3. Silhouette ranks. It is overruled only on an explicitly bad trade: a
+    #    negligible silhouette lead bought with a large collapse in
+    #    reproducibility. The thresholds name the case this exists to prevent —
+    #    k=6 at silhouette 0.0749 / ARI 0.533 beating k=2 at 0.0696 / 0.973.
+    top = max(stable, key=lambda c: c["silhouette"])
+    pick = top
+    for c in stable:
+        d_sil = top["silhouette"] - c["silhouette"]
+        d_stab = c["stability_ari"] - pick["stability_ari"]
+        if d_sil <= sil_noise and d_stab >= stability_gain:
+            pick = c
+
+    out["k"] = pick["k"]
+    out["chosen"] = pick
+    out["silhouette_would_have_chosen"] = top["k"]
+    out["silhouette_disagrees"] = top["k"] != pick["k"]
+    out["chosen_by"] = (
+        f"beats a structureless reference by > {null_margin}; stability >= {stability_floor}; "
+        f"then highest silhouette, overruled only when a lead <= {sil_noise} costs "
+        f">= {stability_gain} of replay stability"
+    )
+    return out
+
+
+# ==========================================================================
+# Selection under measurement noise
+# ==========================================================================
+
+def stability_with_error(
+    X: np.ndarray,
+    k: int,
+    *,
+    n_pairs: int = 4,
+    sample: int = 8000,
+    algorithm: str = "kmeans",
+    fast: bool = False,
+) -> dict[str, float]:
+    """Replay stability as an estimate **with a standard error**, not a point.
+
+    The pipeline used to read a single seed pair as if it were the truth. On this
+    corpus the seed-to-seed spread of that number is about 0.08 ARI, while the
+    differences it was being asked to resolve between adjacent K are about 0.05 —
+    so more than half the "decisions" were reading noise. A rule that cannot see
+    its own error bar will always produce a confident answer, and confidently
+    reordering candidates that are statistically tied is worse than admitting the
+    tie, because it hides the tie from the reader.
+
+    Repeating the measurement is also the cheapest possible improvement: it costs
+    linear compute and it is the axis with real signal, whereas widening the
+    search grid costs multiplicatively and buys candidates that cannot be told
+    apart anyway.
+    """
+    vals: list[float] = []
+    for i in range(max(1, n_pairs)):
+        vals.append(replay_stability(X, k, seeds=(2 * i, 2 * i + 1), sample=sample,
+                                     algorithm=algorithm, fast=fast))
+    arr = np.asarray(vals, dtype=float)
+    arr = arr[~np.isnan(arr)]
+    if arr.size == 0:
+        return {"mean": float("nan"), "sd": float("nan"), "n_pairs": 0}
+    sd = float(arr.std(ddof=1)) if arr.size > 1 else 0.0
+    return {
+        "mean": round(float(arr.mean()), 4),
+        "sd": round(sd, 4),
+        "sem": round(sd / np.sqrt(arr.size), 4) if arr.size > 1 else 0.0,
+        "n_pairs": int(arr.size),
+        "values": [round(float(v), 4) for v in arr],
+    }
+
+
+def tie_aware_best(
+    rows: Sequence[dict[str, Any]],
+    *,
+    key: str,
+    error_key: str | None = None,
+    higher_is_better: bool = True,
+    absolute_floor: float = 0.0,
+    tiebreak: Callable[[dict[str, Any]], Any] | None = None,
+) -> dict[str, Any]:
+    """Pick a winner, and name everyone who is statistically indistinguishable from it.
+
+    Returns the winner plus the whole **tie set**. That set is not a diagnostic
+    afterthought — it is the honest answer whenever the leader's margin is inside
+    the measurement error, and it is what makes "here are the two or three
+    clusterings that are equally defensible" a deliverable rather than an excuse.
+
+    The tie band is the leader's own standard error when the caller supplies one,
+    so the threshold is measured rather than assumed.
+    """
+    usable = [r for r in rows if r.get(key) is not None and not _isnan(r.get(key))]
+    if not usable:
+        return {"winner": None, "tied": [], "band": 0.0, "note": "no candidate had a finite score"}
+
+    lead = max(usable, key=lambda r: r[key]) if higher_is_better else min(usable, key=lambda r: r[key])
+    band = float(lead.get(error_key) or 0.0) if error_key else 0.0
+    band = max(band, absolute_floor)
+
+    if higher_is_better:
+        tied = [r for r in usable if lead[key] - r[key] <= band]
+    else:
+        tied = [r for r in usable if r[key] - lead[key] <= band]
+
+    winner = min(tied, key=tiebreak) if tiebreak else lead
+    return {
+        "winner": winner,
+        "tied": tied,
+        "band": round(band, 4),
+        "n_tied": len(tied),
+        "decided_by_tiebreak": len(tied) > 1,
+        "note": (
+            f"{len(tied)} candidates lie within {band:.4f} of the leader on {key!r} — "
+            "the measurement cannot separate them"
+            if len(tied) > 1 else f"the leader on {key!r} is clear of the measurement error"
+        ),
+    }
+
+
+def _isnan(v: Any) -> bool:
+    try:
+        return bool(np.isnan(v))
+    except (TypeError, ValueError):
+        return False
+
+
+def partition_stability(
+    X: np.ndarray,
+    labels: np.ndarray,
+    *,
+    n_splits: int = 3,
+    sample: int = 8000,
+    seed: int = SEED_METRIC,
+) -> dict[str, float]:
+    """Does **this particular partition** reproduce from half the data?
+
+    `replay_stability` answers a different question — "if I re-run KMeans at this
+    k, do two seeds agree?" — and answering it requires only ``X`` and ``k``. That
+    made it the wrong instrument for the uniform panel, which attaches a stability
+    number to *delivered* partitions: leaves after refinement, families after
+    governance merges. Those are not KMeans output. Re-running KMeans and
+    reporting the result as their stability describes a partition nobody shipped.
+
+    The delivered partitions are defined by their centroids — the codebase's own
+    rule is that belonging to a group means being nearest to its centroid — so the
+    honest test is whether that geometry survives seeing only half the data:
+    derive each group's centroid from one half, from the other half independently,
+    then assign a common held-out sample under both and compare. It needs no
+    re-clustering, so it costs a few centroid computations rather than a second
+    Phase 6, and unlike the old number it is a function of the partition.
+
+    Repeated over several disjoint splits so it arrives with an error bar, because
+    a stability figure without one invites exactly the noise-reading this pipeline
+    has already been caught doing.
+    """
+    labels = np.asarray(labels)
+    ok = labels >= 0
+    if ok.sum() < 50 or len(np.unique(labels[ok])) < 2:
+        return {"mean": float("nan"), "sd": float("nan"), "n_splits": 0}
+
+    idx_all = np.flatnonzero(ok)
+    common = idx_all if len(idx_all) <= sample else deterministic_subsample(
+        len(idx_all), sample, seed)
+    common_idx = idx_all[common] if len(idx_all) > sample else idx_all
+    Xc = X[common_idx]
+    groups = np.unique(labels[ok])
+
+    def centroids_from(rows: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
+        cents, keep = [], []
+        for g in groups:
+            m = rows[labels[rows] == g]
+            if m.size:
+                cents.append(X[m].mean(axis=0))
+                keep.append(g)
+        return (normalize(np.vstack(cents)) if cents else np.empty((0, X.shape[1]))), np.asarray(keep)
+
+    vals: list[float] = []
+    for s in range(max(1, n_splits)):
+        perm = rng(seed + s).permutation(idx_all)
+        half = len(perm) // 2
+        ca, ga = centroids_from(perm[:half])
+        cb, gb = centroids_from(perm[half : 2 * half])
+        if ca.size == 0 or cb.size == 0:
+            continue
+        la = ga[np.argmax(Xc @ ca.T, axis=1)]
+        lb = gb[np.argmax(Xc @ cb.T, axis=1)]
+        vals.append(float(adjusted_rand_score(la, lb)))
+
+    if not vals:
+        return {"mean": float("nan"), "sd": float("nan"), "n_splits": 0}
+    arr = np.asarray(vals)
+    return {
+        "mean": round(float(arr.mean()), 4),
+        "sd": round(float(arr.std(ddof=1)), 4) if arr.size > 1 else 0.0,
+        "n_splits": int(arr.size),
+        "values": [round(float(v), 4) for v in arr],
+    }
