@@ -19,6 +19,15 @@ console = Console()
 CONFIG_DIR = Path(__file__).resolve().parents[2] / "configs"
 
 
+def _load_env() -> None:
+    """Pick up a .env before any provider detection runs."""
+    from .llm.env import load_dotenv
+
+    loaded = load_dotenv()
+    if loaded:
+        console.print(f"[dim]loaded {len(loaded)} key(s) from {next(iter(loaded.values()))}[/dim]")
+
+
 def _setup_logging(verbose: bool) -> None:
     logging.basicConfig(
         level=logging.INFO if verbose else logging.WARNING,
@@ -66,9 +75,12 @@ def run(
     provider: str = typer.Option("auto", "--provider", help="auto | anthropic | mock."),
     human_review: bool = typer.Option(False, "--human-review", help="Pause at reviewer sign-off points."),
     resume: bool = typer.Option(False, "--resume", help="Continue an existing run-id instead of restarting it."),
+    dashboard: bool = typer.Option(True, "--dashboard/--plain",
+                                   help="Live phase/agent/metric panel (needs a TTY)."),
     verbose: bool = typer.Option(True, "--verbose/--quiet"),
 ) -> None:
     """Run the full twelve-phase pipeline."""
+    _load_env()
     _setup_logging(verbose)
     from .runner import resume_run, run_pipeline
 
@@ -99,8 +111,27 @@ def run(
         cfg.llm.provider = "mock"  # type: ignore[assignment]
 
     console.rule(f"[bold]QMine[/bold] · domain [cyan]{cfg.domain.key}[/cyan] · config [dim]{cfg.config_hash}[/dim]")
-    result = run_pipeline(cfg, run_id=run_id, human_review=human_review,
-                          on_event=lambda m: console.print(f"  [dim]{m}[/dim]"))
+
+    # The dashboard needs a TTY and suppresses log output while it owns the
+    # screen; --plain (or --quiet, or a pipe) falls back to plain lines so CI and
+    # `tee` keep working.
+    use_dash = dashboard and verbose
+    if use_dash:
+        import logging as _logging
+
+        from .ui.live import LiveDashboard
+
+        _logging.getLogger("qmine").setLevel(_logging.WARNING)
+        dash = LiveDashboard(run_id=run_id or "", domain=cfg.domain.key,
+                             provider=cfg.llm.provider, language=cfg.report_language)
+        with dash:
+            if not dash.enabled:
+                _logging.getLogger("qmine").setLevel(_logging.INFO)
+            result = run_pipeline(cfg, run_id=run_id, human_review=human_review,
+                                  on_event=dash.handle)
+    else:
+        result = run_pipeline(cfg, run_id=run_id, human_review=human_review,
+                              on_event=lambda m: console.print(f"  [dim]{m}[/dim]"))
     _print_summary(result["summary"])
 
 
@@ -115,6 +146,7 @@ def resume(
     generation: int = typer.Option(1, "--generation"),
 ) -> None:
     """Resume a checkpointed run, optionally answering a pending review."""
+    _load_env()
     _setup_logging(True)
     from .runner import resume_run
 
@@ -386,9 +418,61 @@ def diff_cmd(
         console.print(g)
 
 
+@app.command("models")
+def models_cmd(
+    refresh: bool = typer.Option(False, "--refresh", help="Ignore the cache and refetch."),
+    offline: bool = typer.Option(False, "--offline", help="Never touch the network."),
+    budget: Optional[float] = typer.Option(None, "--budget", help="Flag if the plan exceeds this."),
+    chinese: bool = typer.Option(False, "--prefer-chinese-native",
+                                 help="Nudge multilingual roles toward Chinese-native labs."),
+    cache_dir: str = typer.Option(".cache", "--cache-dir"),
+) -> None:
+    """Show which providers are reachable and which model each agent role would use."""
+    _load_env()
+    _setup_logging(False)
+    from .llm.catalog import fetch
+    from .llm.providers import detect
+    from .llm.router import route
+
+    av = detect()
+    t = Table("provider", "kind", "via")
+    from .llm.providers import BY_KEY
+
+    for k in av.configured:
+        spec = BY_KEY[k]
+        t.add_row(spec.display, spec.kind, av.env_seen.get(k, ""))
+    if not av.configured:
+        t.add_row("[yellow]none configured[/yellow]", "", "set e.g. ANTHROPIC_API_KEY")
+    console.print(t)
+
+    cat = fetch(cache_dir=cache_dir, ttl=0 if refresh else 6 * 3600, allow_network=not offline)
+    console.print(f"\n[dim]catalogue: {len(cat.models)} models from {cat.sources or 'nothing'}, "
+                  f"{cat.age_hours:.1f}h old[/dim]")
+    if cat.degraded:
+        console.print(f"[yellow]{cat.degraded}[/yellow]")
+    if not av.configured:
+        console.print("\n[yellow]No API keys — nothing to route. Showing catalogue only.[/yellow]")
+        return
+
+    plan = route(cat, av.usable, budget_usd=budget, prefer_chinese_native=chinese)
+    r = Table("role", "model", "tier", "calls", "est. $", "fallback")
+    for role, a in sorted(plan.assignments.items(), key=lambda kv: -kv[1].estimated_cost_usd):
+        r.add_row(role, f"{a.provider}:{a.model}" if a.model else "[red]none[/red]",
+                  a.tier, str(a.estimated_calls), f"{a.estimated_cost_usd:.3f}",
+                  (a.fallbacks[:1] or [""])[0][:34])
+    console.print(r)
+    console.print(f"\n[bold]estimated total: ${plan.total_cost_usd:.2f}[/bold] per full run")
+    for n in plan.notes:
+        console.print(f"[yellow]{n}[/yellow]")
+    for role, a in plan.assignments.items():
+        for w in a.warnings:
+            console.print(f"[red]{role}: {w}[/red]")
+
+
 @app.command()
 def doctor() -> None:
     """Check the environment: packages, credentials, models, fonts."""
+    _load_env()
     _setup_logging(False)
     t = Table("check", "status", "detail")
 

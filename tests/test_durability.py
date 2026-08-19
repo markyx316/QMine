@@ -291,3 +291,33 @@ def test_drift_diff_refuses_to_compare_across_domains(tmp_path, deps):
         "n_families": 3, "leaf_names": {}}}), encoding="utf-8")
     found = _previous_baseline(deps)
     assert found is not None and found["baseline"]["run_id"] == "same-domain"
+
+
+def test_no_undefined_names_anywhere_in_the_package():
+    """A missing import inside a rarely-taken branch is this codebase's recurring bug.
+
+    It has now happened three times — `np` in a Phase 2e helper, `json` in the
+    drift lookup, `np` again in the minority-language branch. Each time the code
+    imported cleanly, passed every test that did not enter that branch, and then
+    failed at runtime deep into a long pipeline. Two of them were additionally
+    masked: one by a bare `except Exception`, one by a `warn_only` gate.
+
+    A static check costs milliseconds and catches the whole class, including in
+    branches no test exercises.
+    """
+    import shutil
+    import subprocess
+    import sys
+    from pathlib import Path
+
+    root = Path(__file__).resolve().parents[1]
+    ruff = shutil.which("ruff") or str(Path(sys.executable).parent / "ruff")
+    if not Path(ruff).exists():
+        import pytest
+
+        pytest.skip("ruff not installed")
+    out = subprocess.run(
+        [ruff, "check", str(root / "src"), "--select", "F821", "--no-cache"],
+        capture_output=True, text=True,
+    )
+    assert out.returncode == 0, f"undefined names found:\n{out.stdout}"

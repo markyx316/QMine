@@ -203,3 +203,179 @@ def test_offline_definition_matches_the_corpus_language():
     zh = _need(["氢怎么读", "钦州的拼音", "木加射读什么", "徜徉怎么读"])
     assert "the user asks" in en and "用户" not in en
     assert "用户" in zh
+
+
+def test_a_rule_naming_a_class_that_does_not_exist_is_caught():
+    """Rules are rendered verbatim into both annotators' prompts. A live run
+    shipped `R12 → 选 EXOD_INFO` against a taxonomy declaring `EXAM_INFO`; the
+    annotators could not choose it, and EXAM_INFO×POLICY_REGULATION became a
+    top-five disagreement pair."""
+    from qmine.graph.nodes.topdown import _validate_rules
+    from qmine.records import AdjudicationRule, Taxonomy, TaxonomyNode
+
+    emitted: list[str] = []
+
+    class _Deps:
+        @staticmethod
+        def emit(msg: str) -> None:
+            emitted.append(msg)
+
+    def _tax(*rules: AdjudicationRule) -> Taxonomy:
+        return Taxonomy(
+            nodes=[TaxonomyNode(code=c, name=c, definition=f"{c} 的需求")
+                   for c in ("EXAM_INFO", "WORD_MEANING", "POLICY_REGULATION")],
+            rules=list(rules),
+        )
+
+    # A near-miss with one dominant candidate is repaired.
+    t = _tax(AdjudicationRule(id="R12", when="考务数据", then="选 EXOD_INFO"))
+    health = _validate_rules(t, _Deps)
+    assert health["n_repaired"] == 1 and health["n_dropped"] == 0
+    assert t.rules[0].then == "选 EXAM_INFO"
+    assert any("EXOD_INFO" in m for m in emitted), "the repair must be reported, not silent"
+
+    # A target resembling nothing is dropped rather than guessed at.
+    t2 = _tax(AdjudicationRule(id="R99", when="x", then="选 TOTALLY_UNRELATED"))
+    health2 = _validate_rules(t2, _Deps)
+    assert health2["n_dropped"] == 1 and not t2.rules
+
+    # A valid rule is left exactly as it was.
+    t3 = _tax(AdjudicationRule(id="R01", when="x", then="选 WORD_MEANING"))
+    health3 = _validate_rules(t3, _Deps)
+    assert health3 == {"n_repaired": 0, "n_dropped": 0, "repaired": [], "dropped": []}
+    assert t3.rules[0].then == "选 WORD_MEANING"
+
+
+def test_rule_dedup_separates_a_second_marker_from_a_second_opinion():
+    """Two markers for one boundary pointing at opposite classes is what settling
+    a boundary looks like. Two rules on the SAME trigger giving different answers
+    is a contradiction. An earlier version compared the rendered `when` sentence,
+    where those two cases differ by about two characters in forty-five (0.957
+    similar) — so it withheld both halves of every legitimate pair and destroyed
+    32 of 41 rules on a live run."""
+    from qmine.graph.nodes.topdown import _dedupe_rules
+    from qmine.records import AdjudicationRule, Taxonomy, TaxonomyNode
+
+    emitted: list[str] = []
+
+    class _Deps:
+        @staticmethod
+        def emit(msg: str) -> None:
+            emitted.append(msg)
+
+    tax = Taxonomy(nodes=[TaxonomyNode(code=c, name=c, definition=c)
+                          for c in ("PRON", "STRUCT", "MEANING")], rules=[])
+
+    def rule(rid, trigger, then, classes=("PRON", "STRUCT")):
+        return AdjudicationRule(
+            id=rid, then=then, classes=list(classes), trigger=trigger,
+            when=f"查询包含「{trigger}」且候选类目为 {classes[0]} 或 {classes[1]}",
+        )
+
+    # Complementary: one boundary, two markers, opposite classes. Both must live.
+    pair = [rule("R1", "拼音", "PRON"), rule("R2", "偏旁", "STRUCT")]
+    kept = _dedupe_rules(pair, tax, _Deps)
+    assert len(kept) == 2, "a legitimate discriminating pair was destroyed"
+
+    # Genuine contradiction: same trigger, same boundary, different answer.
+    clash = [rule("R3", "拼音", "PRON"), rule("R4", "拼音", "STRUCT")]
+    emitted.clear()
+    kept = _dedupe_rules(clash, tax, _Deps)
+    assert kept == [], "a real contradiction was allowed through"
+    assert any("withheld" in m for m in emitted)
+
+    # Exact duplicate: same trigger, same answer — keep one, silently.
+    dup = [rule("R5", "拼音", "PRON"), rule("R6", "拼音", "PRON")]
+    assert len(_dedupe_rules(dup, tax, _Deps)) == 1
+
+    # The same marker on a DIFFERENT boundary is a different rule entirely.
+    cross = [rule("R7", "拼音", "PRON"), rule("R8", "拼音", "MEANING", ("MEANING", "STRUCT"))]
+    assert len(_dedupe_rules(cross, tax, _Deps)) == 2, "different boundaries must not collide"
+
+    # Referee rules carry no trigger, so they still fall back to text similarity.
+    prose = [AdjudicationRule(id="P1", when="当查询为单个汉字且无上下文时", then="PRON"),
+             AdjudicationRule(id="P2", when="当查询为单个汉字且无上下文时", then="STRUCT")]
+    emitted.clear()
+    assert _dedupe_rules(prose, tax, _Deps) == [], "prose contradiction slipped through"
+
+
+def test_kappa_is_not_reported_as_a_verdict_when_coverage_collapsed():
+    """kappa says something about annotator agreement only if the annotators
+    answered. A provider outage once left one annotator with 199 of 600 rows and
+    the gate reported "kappa 0.813" as a judgement on the labelling guide — it
+    was a judgement on whichever rows happened to survive."""
+    from qmine.config import QMineConfig
+
+    cfg = QMineConfig()
+    assert 0 < cfg.gates.min_annotation_coverage <= 1.0
+
+    # The shape the gate keys on, as `agreement()` reports it.
+    collapsed = {"n": 199, "n_submitted": 600, "kappa": 0.813}
+    healthy = {"n": 596, "n_submitted": 600, "kappa": 0.913}
+
+    def unsound(a):
+        return a["n"] / (a.get("n_submitted") or a["n"]) < cfg.gates.min_annotation_coverage
+
+    assert unsound(collapsed), "33% coverage must not be treated as a measurement"
+    assert not unsound(healthy), "99% coverage is a usable measurement"
+
+    # A collapsed sample must never pass, however flattering its kappa.
+    flattering = {"n": 8, "n_submitted": 600, "kappa": 0.99}
+    assert unsound(flattering)
+    assert not ((not unsound(flattering)) and flattering["kappa"] >= cfg.gates.kappa), (
+        "a run that lost 99% of its sample would have cleared the gate"
+    )
+
+
+def test_gold_set_size_follows_the_corpus_not_a_constant():
+    """The playbook asks for a stratified 3,000-5,000 (line 191) and separately
+    for a HIGHER proportion on a small corpus (line 119). This shipped with a
+    hardcoded 600, which satisfies neither: five times under spec on a large
+    corpus, and on a 2,000-row one it annotates 30% of the data by accident."""
+    from qmine.config import QMineConfig, gold_size_for
+
+    cfg = QMineConfig()
+    tax = cfg.taxonomy
+    assert tax.gold_sample_size is None, "the default must derive, not pin"
+    lo, hi = tax.gold_size_range
+    assert (lo, hi) == (3000, 5000), "playbook range"
+
+    # Large corpora get the playbook floor, not a proportion of everything.
+    for n in (50_000, 500_000):
+        assert gold_size_for(n, tax) == lo
+
+    # Small corpora get a larger SHARE, which is the rule that is easy to miss.
+    small, large = gold_size_for(3_000, tax), gold_size_for(50_000, tax)
+    assert small / 3_000 > large / 50_000, "small corpus must get a higher proportion"
+
+    # But a gold set that is most of the corpus has stopped being a sample.
+    for n in (500, 3_000, 12_000):
+        assert gold_size_for(n, tax) <= n * tax.gold_max_fraction + 1
+
+    # Monotone in corpus size, and never degenerate.
+    sizes = [gold_size_for(n, tax) for n in (200, 800, 3_000, 8_000, 12_000, 50_000)]
+    assert sizes == sorted(sizes), sizes
+    assert all(s >= 50 for s in sizes)
+
+    # Pinning it explicitly still wins, so a caller can force a cheap run.
+    tax.gold_sample_size = 600
+    assert (tax.gold_sample_size or gold_size_for(12_000, tax)) == 600
+
+
+def test_the_pilot_gate_is_blocking_and_precedes_the_gold_set():
+    """50 queries and 4 LLM calls, before hundreds are spent on the gold set.
+    It was declared in the blocking list and emitted by no node at all."""
+    import inspect
+
+    from qmine.config import QMineConfig
+    from qmine.graph.nodes import topdown
+
+    cfg = QMineConfig()
+    assert "p2a_pilot_agreement" in cfg.gates.blocking
+    assert cfg.taxonomy.pilot_agreement_threshold == 0.85, "playbook: 一致率 <85%"
+
+    src = inspect.getsource(topdown.p2a_taxonomy)
+    assert "p2a_pilot_agreement" in src, "the declared gate must actually be emitted"
+    # It has to run in 2a — the whole point is to fire before 2b spends anything.
+    assert "_pilot_agreement" in src
+    assert "p2a_pilot_agreement" not in inspect.getsource(topdown.p2b_gold)

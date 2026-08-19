@@ -102,6 +102,7 @@ def _wrap(fn: Callable, deps: Deps, name: str) -> Callable:
             )
             return {
                 "halted": True,
+                "halt_kind": "crash",
                 "halt_reason": f"{name}: {type(exc).__name__}: {exc}",
                 "errors": [f"{name}: {exc}"],
                 "phase_status": {name: "error"},
@@ -140,6 +141,7 @@ def _halt_node(state: PipelineState) -> dict[str, Any]:
     remediation = " | ".join(g.remediation for g in failed if g.remediation)
     return {
         "halted": True,
+        "halt_kind": "gate",
         "halt_reason": reason,
         "events": [f"HALTED by blocking gate: {reason}"]
                   + ([f"remediation: {remediation}"] if remediation else []),
@@ -212,6 +214,7 @@ def _make_review_node(deps: Deps, gate_name: str, node_name: str) -> Callable:
         return {
             "gates": {g.name: g},
             "halted": True,
+            "halt_kind": "review",
             "halt_reason": f"reviewer rejected {gate_name}: {reason}",
             "replan": {"rejected_gate": gate_name, "reason": reason, "action": "new_generation"},
             "events": [f"review[{gate_name}]: REJECTED — {reason}"],

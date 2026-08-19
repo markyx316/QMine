@@ -27,7 +27,6 @@ from typing import Any, Sequence
 
 import numpy as np
 from sklearn.cluster import (
-    AgglomerativeClustering,
     BisectingKMeans,
     HDBSCAN,
     KMeans,

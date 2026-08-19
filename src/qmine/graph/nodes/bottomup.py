@@ -4,6 +4,8 @@ from __future__ import annotations
 
 from typing import Any
 
+import numpy as np
+
 
 from ...determinism import hash_texts
 from ...ops.stats import proportion_gate
@@ -87,6 +89,28 @@ def p3_represent(state: PipelineState, deps: Deps) -> dict[str, Any]:
                                             f"{sp['n_components']}d SVD, evr {sp['explained_variance']:.3f}")
     deps.cache_put("emb_svd_char", sp["svd_block"])
 
+    # --- vet the phrasing families before they judge anything --------------
+    # These groups are about to decide alpha and to define the fragmentation
+    # metric, so they must actually be single-intent. A seeded group carries a
+    # human's assertion; a mined one carries nothing until it earns trust by
+    # being measurably tighter than random. Markers like "是什么" attach to every
+    # topic and score at chance — they are question forms, not intents.
+    from ...ops.templates import validate_group_cohesion
+
+    cohesion: dict[str, Any] = {}
+    if masks:
+        cohesion = validate_group_cohesion(masks, dense, seed=cfg.seed_metric)
+        seeded = {g["name"] for g in deps.load("template_groups")["groups"] if not g["discovered"]}
+        keep = set(cohesion["trusted"]) | seeded          # seeds keep their human vouch
+        dropped = [n for n in masks if n not in keep]
+        if dropped:
+            deps.emit(f"  dropped {len(dropped)} phrasing group(s) that were no tighter than "
+                      f"chance: {dropped[:4]}")
+        masks = {k: v for k, v in masks.items() if k in keep}
+        deps.cache_put("template_masks", masks)
+        cohesion["dropped"] = dropped
+        cohesion["kept_because_seeded"] = sorted(seeded - set(cohesion["trusted"]))
+
     # --- 3c: alpha sweep ---------------------------------------------------
     deps.emit(f"P3c alpha sweep — {cfg.representation.alpha_grid}")
     sweep = alpha_sweep(
@@ -103,7 +127,7 @@ def p3_represent(state: PipelineState, deps: Deps) -> dict[str, Any]:
 
     rep_ref = deps.store.put_json(
         "representation",
-        {"bakeoff": bake, "sparse": {k: v for k, v in sp.items() if k in ("vocab_size", "explained_variance", "n_components")},
+        {"bakeoff": bake, "template_cohesion": cohesion, "sparse": {k: v for k, v in sp.items() if k in ("vocab_size", "explained_variance", "n_components")},
          "alpha_sweep": sweep,
          "alpha_algebra": {
              "formula": "cos(H,H') = (cos_semantic + a^2 * cos_surface) / (1 + a^2)",
@@ -283,6 +307,38 @@ def p6_hierarchy(state: PipelineState, deps: Deps) -> dict[str, Any]:
     deps.emit(f"  refined to {ref_out['n_leaves']} leaves in {len(ref_out['history'])} rounds "
               f"(converged={ref_out['converged']})")
 
+    # --- minority-language families get a script-appropriate subdivision ---
+    lang_meta: dict[str, Any] = {}
+    langprof = deps.recover("language_profile", "language_profile")
+    row_lang = None
+    if deps.has("row_language"):
+        row_lang = [str(x) for x in deps.load("row_language")]
+    elif langprof and langprof.get("row_labels"):
+        row_lang = langprof["row_labels"]
+    if langprof and row_lang and langprof.get("posture") in ("minority_at_risk", "genuinely_multilingual"):
+        from ...ops.language import minority_sub_intents
+
+        res = minority_sub_intents(
+            deps.df[cfg.data.text_column].astype(str).tolist(), row_lang,
+            ref_out["leaf_labels"], ref_out["leaf_family"],
+            dominant=langprof["dominant"], seed=cfg.seed_metric,
+        )
+        if res["families_treated"]:
+            deps.cache_put("minority_sub_intent", res["sub_intent_facet"])
+            deps.store.put_matrix(
+                "minority_sub_intent",
+                np.asarray(res["sub_intent_facet"], dtype=object).astype("U32"),
+                producer="p6", summary=f"{res['n_sub_intents']} minority-language sub-intents",
+            )
+            lang_meta = {"families_treated": res["families_treated"],
+                         "n_sub_intents": res["n_sub_intents"],
+                         "contract": res["contract"]}
+            deps.emit(
+                f"  minority-language facet: {len(res['families_treated'])} family(ies) resolved "
+                f"into {res['n_sub_intents']} sub-intents (a column, not leaves — the hybrid "
+                "space cannot express intent within a minority language)"
+            )
+
     hr = heldout_reproduction(H, ref_out["leaf_labels"], fraction=cfg.clustering.heldout_fraction,
                               seed=cfg.seed_metric)
     deps.emit(f"  held-out structure reproduction {hr['agreement']:.3f}")
@@ -302,7 +358,7 @@ def p6_hierarchy(state: PipelineState, deps: Deps) -> dict[str, Any]:
              "leaves_per_family": tree["leaves_per_family"],
              "min_leaf_size_applied": tree["min_leaf_size_applied"],
              "refinement_history": ref_out["history"], "converged": ref_out["converged"],
-             "heldout_reproduction": hr},
+             "heldout_reproduction": hr, "minority_language_rescue": lang_meta},
             producer="p6", summary=f"{tree['n_families']}→{ref_out['n_leaves']} leaves",
         ),
     }
@@ -346,3 +402,16 @@ def p6_hierarchy(state: PipelineState, deps: Deps) -> dict[str, Any]:
             f"held-out reproduction {hr['agreement']:.3f}"
         ],
     }
+
+
+def _centroids_for(X, labels):
+    """Recompute unit centroids after leaves were added outside the refiner."""
+    from sklearn.preprocessing import normalize
+
+    n = int(labels.max()) + 1
+    cents = np.zeros((n, X.shape[1]), dtype=np.float32)
+    for c in range(n):
+        m = labels == c
+        if m.any():
+            cents[c] = X[m].mean(0)
+    return normalize(cents)

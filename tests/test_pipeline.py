@@ -9,6 +9,11 @@ offline stand-in could not fill.
 
 from __future__ import annotations
 
+#: Deliverables default to Chinese, so the bottom-up report ships under its
+#: Chinese name. Tests assert the *contract* (the report exists and states its
+#: limits), not the language it happens to be written in.
+BOTTOMUP_REPORT = "自下而上聚类最终报告.md"
+
 import json
 from pathlib import Path
 
@@ -67,7 +72,7 @@ def test_core_artifacts_exist_on_disk(completed_run):
                  "representation.json", "battery.json", "granularity.json",
                  "hierarchy_meta.json", "tree_naming.json", "governance.json",
                  "metrics_panel.json", "labels_full.csv", "deployment.json",
-                 "maintenance.json", "Report_BottomUp_Approach.md",
+                 "maintenance.json", BOTTOMUP_REPORT,
                  "Report_TopDown_Approach.md", "Leaf_Catalogue.md"):
         assert (gen / name).exists(), f"{name} not produced"
 
@@ -130,15 +135,28 @@ def test_decisions_record_what_was_rejected(completed_run):
 def test_reports_carry_the_provenance_note(completed_run):
     """An offline run must say so in every report it writes."""
     gen = Path(completed_run["summary"]["artifact_root"])
-    for name in ("Report_BottomUp_Approach.md", "Report_TopDown_Approach.md"):
+    for name in (BOTTOMUP_REPORT, "Report_TopDown_Approach.md"):
         text = (gen / name).read_text()
-        assert "offline heuristic" in text.lower() or "NOT by a language model" in text
+        assert (
+            "offline heuristic" in text.lower()
+            or "NOT by a language model" in text
+            or "offline-heuristic" in text
+        ), f"{name} does not disclose who produced its judgments"
 
 
 def test_reports_state_what_the_numbers_do_not_mean(completed_run):
-    text = (Path(completed_run["summary"]["artifact_root"]) / "Report_BottomUp_Approach.md").read_text()
-    assert "do not mean" in text.lower()
-    assert "learnab" in text.lower()
+    """The limits section is mandatory in whatever language the report is written.
+
+    Asserted on meaning rather than on an English phrase, so switching
+    `report_language` cannot silently drop the section that keeps the report
+    honest.
+    """
+    text = (Path(completed_run["summary"]["artifact_root"]) / BOTTOMUP_REPORT).read_text()
+    zh = "这些数字不代表什么" in text
+    en = "do not mean" in text.lower()
+    assert zh or en, "no limits section"
+    # the distillability caveat must be present either way
+    assert ("可蒸馏性" in text) or ("learnab" in text.lower())
 
 
 def test_manifest_pins_the_environment(completed_run):
@@ -201,3 +219,84 @@ def test_offline_run_is_reproducible(tmp_path):
     assert a["state"].get("chosen_alpha") == b["state"].get("chosen_alpha")
     assert a["state"].get("family_k") == b["state"].get("family_k")
     assert a["state"].get("leaf_count") == b["state"].get("leaf_count")
+
+
+# ==========================================================================
+# Deliverable figures
+# ==========================================================================
+
+def test_notebook_executes_and_draws_its_figures(completed_run):
+    """The notebook is the figure source, so a silent execution failure is a
+    silently figure-less report. Assert both halves of that contract."""
+    import nbformat
+
+    gen = Path(completed_run["summary"]["artifact_root"])
+    nb_path = gen / "自下而上聚类全流程.ipynb"
+    assert nb_path.exists(), "Chinese walkthrough notebook not produced"
+
+    nb = nbformat.read(nb_path, as_version=4)
+    errors = [o for c in nb.cells for o in (c.get("outputs") or [])
+              if o.get("output_type") == "error"]
+    assert not errors, (
+        f"{len(errors)} cell(s) raised: "
+        + "; ".join(f"{o.get('ename')}: {o.get('evalue')}" for o in errors[:3])
+    )
+
+    from qmine.report.builder import NOTEBOOK_FIGURES
+
+    # fig4/fig5 project the embedding space, which fast_mode skips; the rest are
+    # computed from JSON artifacts and must be present on every run.
+    always = {n for n in NOTEBOOK_FIGURES if n not in ("fig4_spaces", "fig5_intent_split")}
+    missing = [n for n in always if not (gen / f"{n}.png").exists()]
+    assert not missing, f"notebook executed but drew nothing for: {missing}"
+
+
+def test_report_embeds_figures_that_exist(completed_run):
+    """Every `![](...)` in the Chinese report must resolve next to it."""
+    import re
+
+    gen = Path(completed_run["summary"]["artifact_root"])
+    md = (gen / BOTTOMUP_REPORT).read_text()
+    embedded = re.findall(r"!\[[^\]]*\]\(([^)]+)\)", md)
+    assert embedded, "report embeds no figures at all"
+    dangling = [s for s in embedded if not (gen / s).exists()]
+    assert not dangling, f"report points at missing images: {dangling}"
+
+
+def test_one_figure_per_quantity(completed_run):
+    """Regression guard: the notebook and `ops.viz` can each draw the K sweep,
+    the alpha decision, the projection and the panel. Shipping both puts two
+    different pictures of one number in a single deliverable."""
+    from qmine.report.builder import NOTEBOOK_FIGURES
+
+    gen = Path(completed_run["summary"]["artifact_root"])
+    refs = completed_run["state"]["artifacts"]
+    for filename, slot in NOTEBOOK_FIGURES.items():
+        if not (gen / f"{filename}.png").exists() or slot not in refs:
+            continue
+        assert Path(refs[slot].path).name == f"{filename}.png", (
+            f"slot {slot!r} was filled by {Path(refs[slot].path).name} even though the "
+            f"notebook produced {filename}.png — both were drawn"
+        )
+
+
+def test_a_declared_blocking_gate_that_never_fires_is_reported(completed_run):
+    """A blocking gate that is declared and never emitted is indistinguishable
+    from one that passed. `p2a_pilot_agreement` sat in the blocking list, was
+    never emitted by any node, and nothing said so."""
+    summary = completed_run["summary"]
+    assert "declared_gates_never_evaluated" in summary, (
+        "run_summary must state which declared blocking gates never ran"
+    )
+    assert isinstance(summary["declared_gates_never_evaluated"], list)
+
+
+def test_a_failed_gate_tells_the_operator_what_to_do(completed_run):
+    """`remediation` is the only field that says how to fix a failure; it was
+    computed on every gate and then dropped from run_summary.json."""
+    gates = completed_run["summary"]["gates"]
+    assert gates, "no gates recorded"
+    assert all("remediation" in g for g in gates.values()), (
+        "remediation dropped from the summary — the halt reason ships without the fix"
+    )
+    assert any(g.get("remediation") for g in gates.values()), "every remediation is empty"

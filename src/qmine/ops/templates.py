@@ -377,3 +377,76 @@ def select_groups_for_coverage(
         "diagnosis": diagnosis,
     }
     return chosen, report
+
+
+# ==========================================================================
+# Zero-seed operation: earning trust instead of being given it
+# ==========================================================================
+
+def validate_group_cohesion(
+    masks: dict[str, np.ndarray],
+    X: np.ndarray,
+    *,
+    seed: int = 0,
+    sample: int = 400,
+    baseline_sample: int = 2000,
+    min_lift: float = 1.35,
+) -> dict[str, Any]:
+    """Test whether each mined group really is one intent, without any labels.
+
+    A seeded template group carries a human's assertion — *everything matching
+    this is the same intent* — and that assertion is what makes it usable as the
+    judge of the alpha sweep and the base of the fragmentation metric. When a
+    corpus arrives with no domain profile there are no seeds, so a mined group
+    has nobody vouching for it and cannot simply be trusted.
+
+    The substitute: a group must be **measurably tighter than chance**. Compare
+    the mean pairwise cosine among its members with the mean pairwise cosine of
+    random rows. A group of genuinely same-intent queries sits far above that
+    baseline; a group matching an incidental substring does not.
+
+    Deliberately circular-looking and deliberately fine: this uses the semantic
+    space to vet groups that later judge a *different* property of that space —
+    whether phrasing families stay intact across representations. A group that
+    is cohesive in the base embedding can still be shattered by a bad alpha, and
+    detecting that is the point.
+    """
+    rng = np.random.RandomState(seed)
+    n = len(X)
+    b_idx = rng.choice(n, size=min(baseline_sample, n), replace=False)
+    Xb = X[b_idx]
+    iu = np.triu_indices(len(Xb), 1)
+    baseline = float((Xb @ Xb.T)[iu].mean())
+
+    rows: list[dict[str, Any]] = []
+    for name, m in masks.items():
+        idx = np.where(m)[0]
+        if idx.size < 10:
+            rows.append({"group": name, "n": int(idx.size), "verdict": "too_small"})
+            continue
+        take = idx if idx.size <= sample else rng.choice(idx, size=sample, replace=False)
+        Xg = X[take]
+        iu_g = np.triu_indices(len(Xg), 1)
+        coh = float((Xg @ Xg.T)[iu_g].mean())
+        lift = coh / baseline if baseline > 0 else float("inf")
+        rows.append({
+            "group": name,
+            "n": int(idx.size),
+            "cohesion": round(coh, 4),
+            "lift_over_random": round(lift, 3),
+            "verdict": "trusted" if lift >= min_lift else "rejected",
+        })
+
+    trusted = [r["group"] for r in rows if r.get("verdict") == "trusted"]
+    return {
+        "baseline_cohesion": round(baseline, 4),
+        "min_lift": min_lift,
+        "groups": sorted(rows, key=lambda r: -(r.get("lift_over_random") or 0)),
+        "trusted": trusted,
+        "n_trusted": len(trusted),
+        "rule": (
+            f"a group is trusted only if its members are at least {min_lift}x more similar to "
+            "each other than random rows are. Without a seed there is no human assertion that "
+            "the group is one intent, so it has to earn the claim."
+        ),
+    }

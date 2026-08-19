@@ -25,11 +25,41 @@ from ..state import PipelineState
 def build_all_reports(state: PipelineState, deps: Any) -> dict[str, ArtifactRef]:
     """Write every figure, report, and the executed notebook."""
     refs: dict[str, ArtifactRef] = {}
-    figs = _build_figures(state, deps)
+    zh = getattr(deps.cfg, "report_language", "zh") == "zh"
+
+    # The notebook runs first because executing it *is* how the figure suite is
+    # produced. The report then embeds the very images a reader can regenerate by
+    # re-running a cell — the same figure, not a look-alike drawn by other code.
+    # `_build_figures` fills only the slots the notebook did not (or could not).
+    nb_ref, nb_figs = None, {}
+    try:
+        if zh:
+            from .zh_notebook import build as build_zh_nb
+
+            nb_ref = build_zh_nb(state, deps)
+            nb_figs = _register_notebook_figures(deps)
+        else:
+            from .notebook import build_walkthrough
+
+            nb_ref = build_walkthrough(state, deps)
+    except Exception as exc:  # noqa: BLE001
+        deps.emit(f"  notebook build skipped: {exc}")
+    if nb_ref is not None:
+        refs["notebook"] = nb_ref
+
+    figs = _build_figures(state, deps, have=set(nb_figs))
+    figs.update(nb_figs)          # notebook output wins any contested slot
     refs.update(figs)
-    refs["report_bottomup"] = deps.store.put_markdown(
-        "Report_BottomUp_Approach", bottomup_report(state, deps, figs),
-        producer="p11", summary="bottom-up route: representation → tree → governance → deployment")
+    if zh:
+        from .zh_bottomup import build as zh_bottomup
+
+        refs["report_bottomup"] = deps.store.put_markdown(
+            "自下而上聚类最终报告", zh_bottomup(state, deps, figs),
+            producer="p11", summary="自下而上路线: 表征 → 树 → 治理 → 部署")
+    else:
+        refs["report_bottomup"] = deps.store.put_markdown(
+            "Report_BottomUp_Approach", bottomup_report(state, deps, figs),
+            producer="p11", summary="bottom-up route: representation → tree → governance → deployment")
     refs["report_topdown"] = deps.store.put_markdown(
         "Report_TopDown_Approach", topdown_report(state, deps),
         producer="p11", summary="top-down route: taxonomy → gold → classifier → validation")
@@ -39,12 +69,6 @@ def build_all_reports(state: PipelineState, deps: Any) -> dict[str, ArtifactRef]
     refs["leaf_catalogue"] = deps.store.put_markdown(
         "Leaf_Catalogue", leaf_catalogue(state, deps),
         producer="p11", summary="every leaf with its user_need definition")
-    try:
-        from .notebook import build_walkthrough
-
-        refs["notebook"] = build_walkthrough(state, deps)
-    except Exception as exc:  # noqa: BLE001
-        deps.emit(f"  notebook build skipped: {exc}")
     return refs
 
 
@@ -52,7 +76,38 @@ def build_all_reports(state: PipelineState, deps: Any) -> dict[str, ArtifactRef]
 # Figures
 # ==========================================================================
 
-def _build_figures(state: PipelineState, deps: Any) -> dict[str, ArtifactRef]:
+#: Figures the executed notebook writes, and the report slot each one fills.
+#: The first four displace a `viz.*` drawing of the same quantity; the last two
+#: have no `viz` equivalent and are additions.
+NOTEBOOK_FIGURES = {
+    "fig1_ksweep":       "fig_k_sweep",
+    "fig2_alpha":        "fig_alpha",
+    "fig3_battery":      "fig_battery",
+    "fig4_spaces":       "fig_umap",
+    "fig5_intent_split": "fig_intent_split",
+    "fig6_panel":        "fig_panel",
+}
+
+
+def _register_notebook_figures(deps: Any) -> dict[str, ArtifactRef]:
+    """Register the PNGs the notebook wrote while executing."""
+    out: dict[str, ArtifactRef] = {}
+    for filename, slot in NOTEBOOK_FIGURES.items():
+        path = deps.store.gen_dir / f"{filename}.png"
+        if path.exists():
+            out[slot] = deps.store.register_file(slot, path, "figure", producer="p11-notebook")
+    if out:
+        deps.emit(f"  图表: notebook 现场生成 {len(out)} 张")
+    return out
+
+
+def _build_figures(state: PipelineState, deps: Any, have: set[str] | None = None) -> dict[str, ArtifactRef]:
+    """Draw the figures the notebook did not produce.
+
+    `have` names slots the executed notebook already filled; drawing them again
+    would put two different pictures of the same number in one deliverable.
+    """
+    have = have or set()
     out: dict[str, ArtifactRef] = {}
     lang = deps.cfg.domain.language
 
@@ -60,50 +115,59 @@ def _build_figures(state: PipelineState, deps: Any) -> dict[str, ArtifactRef]:
         if path and Path(path).exists():
             out[name] = deps.store.register_file(name, path, "figure", producer="p11")
 
-    try:
-        gran = deps.load("granularity")
-        _reg("fig_k_sweep", viz.plot_k_sweep(gran["k_sweep"], deps.store.put_figure_path("fig_k_sweep"),
-                                             chosen_k=state.get("family_k"), language=lang))
-    except Exception as exc:  # noqa: BLE001
-        deps.emit(f"  fig k_sweep skipped: {exc}")
-    try:
-        rep = deps.load("representation")
-        _reg("fig_alpha", viz.plot_alpha_decision(rep["alpha_sweep"]["rows"],
-                                                  deps.store.put_figure_path("fig_alpha"),
-                                                  chosen=state.get("chosen_alpha"), language=lang))
-    except Exception as exc:  # noqa: BLE001
-        deps.emit(f"  fig alpha skipped: {exc}")
-    try:
+
+    def _try(slot: str | None, label: str, fn) -> None:
+        """Draw one figure, unless the notebook already filled its slot."""
+        if slot and slot in have:
+            return
+        try:
+            fn()
+        except Exception as exc:  # noqa: BLE001
+            deps.emit(f"  fig {label} skipped: {exc}")
+
+    _try("fig_k_sweep", "k_sweep", lambda: _reg(
+        "fig_k_sweep", viz.plot_k_sweep(
+            deps.load("granularity")["k_sweep"], deps.store.put_figure_path("fig_k_sweep"),
+            chosen_k=state.get("family_k"), language=lang)))
+
+    _try("fig_alpha", "alpha", lambda: _reg(
+        "fig_alpha", viz.plot_alpha_decision(
+            deps.load("representation")["alpha_sweep"]["rows"],
+            deps.store.put_figure_path("fig_alpha"),
+            chosen=state.get("chosen_alpha"), language=lang)))
+
+    _try("fig_panel", "panel", lambda: _reg(
+        "fig_panel", viz.plot_panel(
+            deps.load("metrics_panel")["table"],
+            deps.store.put_figure_path("fig_panel"), language=lang)))
+
+    # No notebook equivalent: the refinement trace and the per-template spread
+    # answer questions none of the notebook figures cover, so they always draw.
+    _try(None, "refinement", lambda: _reg(
+        "fig_refinement", viz.plot_refinement(
+            deps.load("hierarchy_meta")["refinement_history"],
+            deps.store.put_figure_path("fig_refinement"), language=lang)))
+
+    def _spread() -> None:
         from ..ops.cards import template_spread
 
         masks = deps.template_masks(trusted=False)
-        labels = deps.leaf_labels_final()
-        fam = deps.leaf_family_final()
+        fam, labels = deps.leaf_family_final(), deps.leaf_labels_final()
         _reg("fig_template_spread", viz.plot_template_spread(
-            template_spread(masks, fam[labels]), deps.store.put_figure_path("fig_template_spread"), language=lang))
-    except Exception as exc:  # noqa: BLE001
-        deps.emit(f"  fig template_spread skipped: {exc}")
-    try:
-        panel = deps.load("metrics_panel")
-        _reg("fig_panel", viz.plot_panel(panel["table"], deps.store.put_figure_path("fig_panel"), language=lang))
-    except Exception as exc:  # noqa: BLE001
-        deps.emit(f"  fig panel skipped: {exc}")
-    try:
-        meta = deps.load("hierarchy_meta")
-        _reg("fig_refinement", viz.plot_refinement(meta["refinement_history"],
-                                                   deps.store.put_figure_path("fig_refinement"), language=lang))
-    except Exception as exc:  # noqa: BLE001
-        deps.emit(f"  fig refinement skipped: {exc}")
+            template_spread(masks, fam[labels]),
+            deps.store.put_figure_path("fig_template_spread"), language=lang))
+
+    _try(None, "template_spread", _spread)
+
+    def _umap() -> None:
+        fam, labels = deps.leaf_family_final(), deps.leaf_labels_final()
+        _reg("fig_umap", viz.plot_umap(
+            deps.embedding("emb_hybrid"), fam[labels], deps.store.put_figure_path("fig_umap"),
+            seed=deps.cfg.seed_viz, language=lang, title="Corpus layout, coloured by family"))
+
     if not deps.cfg.fast_mode:
-        try:
-            H = deps.embedding("emb_hybrid")
-            labels = deps.leaf_labels_final()
-            fam = deps.leaf_family_final()
-            _reg("fig_umap", viz.plot_umap(H, fam[labels], deps.store.put_figure_path("fig_umap"),
-                                           seed=deps.cfg.seed_viz, language=lang,
-                                           title="Corpus layout, coloured by family"))
-        except Exception as exc:  # noqa: BLE001
-            deps.emit(f"  fig umap skipped: {exc}")
+        _try("fig_umap", "umap", _umap)
+
     return out
 
 
@@ -207,7 +271,7 @@ def bottomup_report(state: PipelineState, deps: Any, figs: dict[str, ArtifactRef
     alpha = state.get("chosen_alpha", 0.0)
     surface = alpha ** 2 / (1 + alpha ** 2)
     p: list[str] = [_header(state, deps, "Bottom-Up Route",
-                            "Unsupervised structure discovery, blind naming, and executed governance")]
+                    "Unsupervised structure discovery, blind naming, and executed governance")]
 
     p += ["## 1. Executive summary", ""]
     if panel:

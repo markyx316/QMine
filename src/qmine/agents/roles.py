@@ -29,7 +29,7 @@ from ..records import (
     TaxonomyNode,
     TreeAudit,
 )
-from .base import Agent
+from .base import Agent, ToolAgent
 
 
 # ==========================================================================
@@ -61,9 +61,13 @@ class ResearchSubmission(BaseModel):
 #: The five standing research angles.  Deliberately non-overlapping: overlapping
 #: assignments produce three agents rediscovering the same obvious categories
 #: and nobody covering the awkward ones.
-RESEARCH_ANGLES: list[dict[str, str]] = [
+#: `web` marks angles whose evidence lives outside the corpus. The log-reading
+#: and pragmatic-intent angles are deliberately excluded: their value is direct
+#: observation of the rows, and a search box invites recall to replace it.
+RESEARCH_ANGLES: list[dict[str, Any]] = [
     {
         "key": "log_reading",
+        "web": False,
         "assignment": (
             "Read your assigned slice of raw queries line by line and propose intent "
             "categories grounded ONLY in what you actually read. You are the closest "
@@ -73,6 +77,7 @@ RESEARCH_ANGLES: list[dict[str, str]] = [
     },
     {
         "key": "literature",
+        "web": True,
         "assignment": (
             "Draw on published query-intent taxonomies for this kind of corpus "
             "(e.g. informational/navigational/transactional; e-commerce five-way "
@@ -84,6 +89,7 @@ RESEARCH_ANGLES: list[dict[str, str]] = [
     },
     {
         "key": "legacy_audit",
+        "web": False,
         "assignment": (
             "Audit the existing/legacy taxonomy in the evidence. For each legacy "
             "class decide: inheritable structure, or unsorted traffic wearing a "
@@ -94,6 +100,7 @@ RESEARCH_ANGLES: list[dict[str, str]] = [
     },
     {
         "key": "pragmatic_intents",
+        "web": False,
         "assignment": (
             "Hunt specifically for intents that are INVISIBLE IN THE WORDING — where "
             "two queries can be phrased near-identically and want opposite things "
@@ -104,6 +111,7 @@ RESEARCH_ANGLES: list[dict[str, str]] = [
     },
     {
         "key": "risk_compliance",
+        "web": True,
         "assignment": (
             "Identify categories with a safety, legal, or compliance dimension: "
             "gambling probes, requests for individualised professional advice, fraud, "
@@ -114,10 +122,19 @@ RESEARCH_ANGLES: list[dict[str, str]] = [
 ]
 
 
-class ResearcherAgent(Agent):
+class ResearcherAgent(ToolAgent):
+    """A taxonomy researcher, with web access on the angles that need it.
+
+    Only the literature and competitor angles get tools. The log-reading angle
+    deliberately does not: its whole value is that one agent forms its view from
+    the raw rows and nothing else, and giving it a search box invites it to
+    replace observation with recall.
+    """
+
     role = "researcher"
     prompt_name = "researcher"
     schema = ResearchSubmission
+    tools: list[Any] = []
 
     def build_system(self, *, assignment: str = "", **kw: Any) -> str:
         return super().build_system().replace("{{ASSIGNMENT}}", assignment)
@@ -268,16 +285,34 @@ class RefereeAgent(Agent):
     schema = RefereeBatch
 
     def build_user(
-        self, *, disagreements: Sequence[dict[str, Any]] = (), classes: str = "", rules: str = "", **kw: Any
+        self, *, disagreements: Sequence[dict[str, Any]] = (), classes: str = "", rules: str = "",
+        decided: Sequence[dict[str, str]] = (), **kw: Any
     ) -> str:
         rows = "\n".join(
             f"{i + 1}. QUERY: {d['query']}\n   A said {d['label_a']} ({d.get('rationale_a', '')})"
             f"\n   B said {d['label_b']} ({d.get('rationale_b', '')})"
             for i, d in enumerate(disagreements)
         )
+        # Rulings this referee already made on earlier batches. Without them each
+        # batch re-decides the same boundary from scratch and they contradict each
+        # other: one live run produced a rule sending bare single characters to
+        # CHITCHAT_NOISE and another sending them to CHAR_PRONUNCIATION.
+        prior = ""
+        if decided:
+            lines = "\n".join(
+                f"- {d['pair']} → **{d['final']}** (e.g. {d['example']})" for d in decided
+            )
+            prior = (
+                f"\n\n## Boundaries you have ALREADY decided in this session ({len(decided)})\n"
+                f"{budget_text(lines, 6000)}\n\n"
+                "These are binding. Rule the same way on the same boundary, and do not "
+                "propose a rule that contradicts one of them. If you believe an earlier "
+                "ruling was wrong, follow it anyway and say so in your rationale — "
+                "consistency across the gold set matters more than any single row."
+            )
         return (
             f"## Classes\n{budget_text(classes, 14000)}\n\n"
-            f"## Adjudication rules\n{budget_text(rules, 9000)}\n\n"
+            f"## Adjudication rules\n{budget_text(rules, 9000)}{prior}\n\n"
             f"## Disagreements ({len(disagreements)})\n{rows}\n\nAdjudicate every one."
         )
 
@@ -481,3 +516,62 @@ ALL_ROLES = {
     "reporter": ReporterAgent,
     "maintainer": MaintainerAgent,
 }
+
+
+# ==========================================================================
+# Phase 1 — domain scouting for an unknown vertical
+# ==========================================================================
+
+class CandidateSeed(BaseModel):
+    name: str
+    pattern: str = Field(description="Regex. Almost everything matching must share one intent.")
+    intent_hint: str = ""
+
+
+class CandidateRisk(BaseModel):
+    name: str
+    patterns: list[str] = Field(default_factory=list)
+    rationale: str = ""
+
+
+class DomainScoutReport(BaseModel):
+    vertical: str = ""
+    confidence: Literal["high", "medium", "low"] = "low"
+    spans_multiple_verticals: bool = False
+    verticals_present: list[str] = Field(default_factory=list)
+    candidate_template_seeds: list[CandidateSeed] = Field(default_factory=list)
+    candidate_risk_categories: list[CandidateRisk] = Field(default_factory=list)
+    pragmatic_intent_hints: list[str] = Field(default_factory=list)
+    notes: str = ""
+
+
+class DomainScoutAgent(Agent):
+    """Infers the vertical from a sample when no profile was supplied.
+
+    Runs before the taxonomy researchers and produces hypotheses rather than
+    conclusions — its seeds are statistically validated afterwards and dropped
+    if they do not hold, and its vertical is only ever a steer.
+    """
+
+    role = "domain_scout"
+    prompt_name = "domain_scout"
+    schema = DomainScoutReport
+
+    def build_user(
+        self, *, sample: Sequence[str] = (), profile: dict[str, Any] | None = None, **kw: Any
+    ) -> str:
+        parts = []
+        if profile:
+            parts.append(
+                "## What we already measured about this corpus\n"
+                + json.dumps(profile, ensure_ascii=False, indent=1)[:3000]
+            )
+        parts.append(
+            f"## Query sample ({len(sample)} rows, stratified)\n"
+            + "\n".join(f"- {q}" for q in sample)
+        )
+        parts.append("Work out what this corpus is.")
+        return "\n\n".join(parts)
+
+
+ALL_ROLES["domain_scout"] = DomainScoutAgent

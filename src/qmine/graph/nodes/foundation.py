@@ -136,6 +136,64 @@ def p1_audit(state: PipelineState, deps: Deps) -> dict[str, Any]:
         summary=f"{len(groups)} phrasing families covering {cov['union_coverage'] * 100:.1f}%",
     )
 
+    # --- language composition -------------------------------------------
+    # Run before anything chooses a tokeniser or an encoder, because both
+    # decisions depend on what scripts are actually present rather than on what
+    # the profile assumed.
+    from ...ops.language import char_ngram_for, profile_corpus, tokenizer_for
+
+    langprof = profile_corpus(df[cfg.data.text_column].astype(str).tolist())
+    deps.cache_put("language_profile", langprof)
+    lang_ref = deps.store.put_json(
+        "language_profile",
+        {k: v for k, v in langprof.items() if k != "row_labels"},
+        producer="p1",
+        summary=f"{langprof['dominant']} {langprof['dominant_share']:.1%}, "
+                f"posture {langprof['posture']}",
+    )
+    deps.store.put_matrix(
+        "row_language",
+        np.array(langprof["row_labels"], dtype=object).astype("U24"),
+        producer="p1", summary="per-row script label",
+    )
+
+    # If the profile's assumptions contradict the data, say so loudly. A Chinese
+    # tokeniser on a Latin corpus is not a subtle degradation.
+    implied_tok = tokenizer_for(langprof["dominant"])
+    implied_ngram = char_ngram_for(langprof["dominant"])
+
+    # Resolve `auto` now that we know what the corpus actually is, and record the
+    # resolution so the run manifest shows what was used rather than what was asked for.
+    if cfg.domain.tokenizer == "auto":
+        cfg.domain.tokenizer = implied_tok
+        cfg.domain.char_ngram_range = implied_ngram
+        deps.emit(f"  tokenizer auto-resolved to {implied_tok!r}, char n-grams {implied_ngram} "
+                  f"({langprof['dominant']}-dominant corpus)")
+        langprof["resolved_tokenizer"] = implied_tok
+        langprof["resolved_char_ngram_range"] = list(implied_ngram)
+    elif implied_tok != cfg.domain.tokenizer:
+        deps.emit(
+            f"  NOTE: corpus is {langprof['dominant']}-dominant, which implies tokenizer "
+            f"{implied_tok!r} and char n-grams {implied_ngram}, but the profile says "
+            f"{cfg.domain.tokenizer!r} / {tuple(cfg.domain.char_ngram_range)}"
+        )
+
+    lang_gate = deps.gate(
+        "p1_minority_language_risk", "p1",
+        passed=langprof["posture"] != "minority_at_risk",
+        observed={"dominant": langprof["dominant"], "dominant_share": langprof["dominant_share"],
+                  "minority": langprof["minority"], "posture": langprof["posture"]},
+        threshold={"minority_share_window": "under 0.5% (ignorable) or over 5% (handled explicitly)"},
+        message=langprof["rationale"],
+        remediation=(
+            "A minority language between 0.5% and 5% is the dangerous band: too small to earn "
+            "its own clusters at a normal K, too big to lose. Phase 6 will subdivide any "
+            "minority-dominated family in a language-appropriate representation; check the "
+            "minority_dilution metric in the Phase 9 panel to confirm it worked."
+        ),
+        warn_only=True,
+    )
+
     risk = screen_risk(df, cfg.domain.risk_categories, text_col=cfg.data.text_column)
     risk_ref = deps.store.put_json("risk_screen", risk, producer="p1",
                                    summary=f"{risk['total_flagged']} rows pre-flagged")
@@ -166,6 +224,8 @@ def p1_audit(state: PipelineState, deps: Deps) -> dict[str, Any]:
         f"P1: {len(groups)} template groups ({sum(g.trusted for g in groups)} trusted "
         f"to judge representations) → {cov['union_coverage'] * 100:.1f}% coverage",
         f"P1: risk pre-screen flagged {risk['total_flagged']} rows ({risk['total_share'] * 100:.2f}%)",
+        f"P1: language — {langprof['dominant']} {langprof['dominant_share']:.1%}, "
+        f"minority {langprof['minority_share']:.1%} ({langprof['posture']})",
     ]
     if report.get("reference_taxonomy"):
         for col, info in report["reference_taxonomy"].items():
@@ -179,8 +239,9 @@ def p1_audit(state: PipelineState, deps: Deps) -> dict[str, Any]:
     return {
         "phase": "p2",
         "artifacts": {"corpus": corpus_ref, "data_audit": audit_ref,
-                      "template_groups": tg_ref, "risk_screen": risk_ref},
-        "gates": {gate.name: gate},
+                      "template_groups": tg_ref, "risk_screen": risk_ref,
+                      "language_profile": lang_ref},
+        "gates": {gate.name: gate, lang_gate.name: lang_gate},
         "completed_phases": ["p1"],
         "events": events,
     }

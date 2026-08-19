@@ -265,7 +265,13 @@ def stratified_sample(
     if not strata_cols:
         return np.sort(rng(seed).choice(len(df), n, replace=False))
 
-    key = df[list(strata_cols)].astype(str).agg("|".join, axis=1)
+    # `.reset_index(drop=True)` is load-bearing: `groupby(...).groups` yields index
+    # LABELS, while the two early returns above yield POSITIONS. On a default
+    # RangeIndex the two coincide, which is why every caller that passes the full
+    # corpus has always worked — and why passing a slice (`df.iloc[subset]`, whose
+    # labels no longer start at 0) returned indices that overflowed the caller's
+    # array. Normalising here makes the return value positional in every branch.
+    key = df[list(strata_cols)].astype(str).agg("|".join, axis=1).reset_index(drop=True)
     groups: dict[str, np.ndarray] = {
         str(k): np.asarray(v, dtype=np.int64) for k, v in key.groupby(key).groups.items()
     }

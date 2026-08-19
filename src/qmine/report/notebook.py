@@ -194,11 +194,9 @@ def build_walkthrough(state: Any, deps: Any) -> ArtifactRef:
     executed = False
     error = ""
     try:
-        import nbclient
+        from .zh_notebook import _client
 
-        client = nbclient.NotebookClient(nb, kernel_name="python3", timeout=1200,
-                                         allow_errors=False, resources={"metadata": {"path": str(deps.store.gen_dir)}})
-        client.execute()
+        _client(nb, deps.store.gen_dir).execute()
         executed = True
     except Exception as exc:  # noqa: BLE001
         error = f"{type(exc).__name__}: {exc}"

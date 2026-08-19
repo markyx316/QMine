@@ -123,7 +123,29 @@ class Agent:
         raise NotImplementedError
 
     def build_system(self, **kwargs: Any) -> str:
-        return f"{self.charter}\n\n---\n\n{self.prompt_text}"
+        return f"{self.charter}\n{self._language_directive()}\n\n---\n\n{self.prompt_text}"
+
+    def _language_directive(self) -> str:
+        """Pin the output language to the one the deliverables are written in.
+
+        Without this, a model reading Chinese queries answers in English roughly
+        as often as not — and every category name, definition sentence and
+        rationale then has to be translated before it can be checked against the
+        corpus by the people who own it. Observed live: a researcher returned
+        "Character Pronunciation Lookup" for a corpus of 拼音 queries.
+
+        Field *names* and `code` values stay English; only human-readable prose
+        follows the corpus.
+        """
+        lang = getattr(self.ctx.cfg, "report_language", "zh")
+        if lang != "zh":
+            return ("\n3. WRITE IN ENGLISH. All names, definitions and rationales are read "
+                    "by the team that owns this corpus.")
+        return (
+            "\n3. 用中文书写。所有类目名称、定义句 (user_need)、理由、备注一律使用中文 — "
+            "这些文字要交给拥有该语料的团队直接使用, 换一种语言就无法与数据对照核验。"
+            "例外: 字段名与 `code` 字段保持英文 snake_case。"
+        )
 
     # -- the call -----------------------------------------------------------
     def run(self, **kwargs: Any) -> Any:
@@ -145,3 +167,59 @@ class Agent:
             "prompt_sha": self.prompt_sha,
             "provider": self.ctx.registry.provider,
         }
+
+
+class ToolAgent(Agent):
+    """An agent that can call tools before answering.
+
+    Phase 2a's literature angle instructs a researcher to ground its proposals in
+    published work. Without tools that instruction produces confident citations
+    the agent cannot have checked — worse than no literature angle, because the
+    design record then carries unverifiable evidence.
+
+    So this subclass runs a real tool loop via ``create_agent`` and still returns
+    a validated structured object. It degrades to the single-shot path whenever
+    tools are unavailable — offline mode, no provider, or a model without tool
+    support — and records which path it took, so a report can say whether its
+    citations were fetched or recalled.
+    """
+
+    tools: list[Any] = []
+    max_tool_iterations: int = 12
+
+    def run(self, **kwargs: Any) -> Any:
+        system = self.build_system(**kwargs)
+        user = self.build_user(**kwargs)
+        role = f"{self.role}{self.suffix}" if self.suffix else self.role
+
+        if not self.tools or self.ctx.registry.is_offline:
+            self.used_tools = False
+            out = self.ctx.registry.complete(role, system, user, schema=self.schema)
+            return self.postprocess(out, **kwargs)
+
+        try:
+            from langchain.agents import create_agent
+
+            model = self.ctx.registry.get(role)
+            agent = create_agent(
+                model, tools=self.tools, system_prompt=system,
+                response_format=self.schema,
+            )
+            result = agent.invoke(
+                {"messages": [{"role": "user", "content": user}]},
+                {"recursion_limit": self.max_tool_iterations * 2},
+            )
+            parsed = result.get("structured_response")
+            if parsed is None:
+                raise ValueError("tool agent returned no structured response")
+            self.used_tools = True
+            self.ctx.registry.ledger.record(role, output_tokens=0)
+            return self.postprocess(parsed, **kwargs)
+        except Exception as exc:  # noqa: BLE001
+            log.warning("tool loop failed for %s (%s); falling back to a single call",
+                        role, str(exc)[:140])
+            self.used_tools = False
+            out = self.ctx.registry.complete(role, system, user, schema=self.schema)
+            return self.postprocess(out, **kwargs)
+
+    used_tools: bool = False

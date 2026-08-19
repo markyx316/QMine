@@ -147,6 +147,72 @@ Everything checkpoints after every node. `qmine resume <run-id>` picks up where 
 crash left off; `qmine inspect <run-id> --what panel` reads a finished run
 without recomputing anything.
 
+### Deliverables are written in Chinese
+
+`report_language` defaults to `zh`. The bottom-up report and the walkthrough
+notebook follow the structure of the reference K12 deliverables: an executive
+summary whose table is the argument, every metric **derived on screen** rather
+than quoted (`① 模板群 → ② 家族分布 p → ③ H = −Σp·ln p → ④ exp(H)`), the full
+family→leaf tree, real queries traced through it, `user_need` definition
+sentences with ★ coherence ratings, and a mandatory 「这些数字不代表什么」 section.
+
+A `user_need` sentence is simultaneously the annotation guideline, the acceptance
+criterion and the downstream product spec — it can only do those jobs in the
+language the team that owns the corpus works in. Set `report_language: en` to
+switch.
+
+### Agents can research the web
+
+The Phase 2a literature and risk-compliance researchers get `web_search` and
+`fetch_url` tools and run a real tool loop. Without them, "ground this taxonomy
+in published work" produces citations the agent cannot have checked.
+
+DuckDuckGo is the default and needs **no key**; `TAVILY_API_KEY` or
+`BRAVE_API_KEY` are used when present. The log-reading and pragmatic-intent
+angles deliberately get *no* tools — their value is direct observation of the
+rows, and a search box invites recall to replace it.
+
+### Live dashboard
+
+`qmine run` shows a Rich panel: phase list with elapsed times, current agent
+activity, metrics as they land, gates as they fire, and running spend. Falls back
+to plain lines with `--plain`, `--quiet`, or no TTY.
+
+### Multi-provider model routing
+
+Supply whatever API keys you have; the system picks a model per agent role from a
+**live catalogue** (1,917 callable models across 18 providers, refreshed from
+LiteLLM and OpenRouter, no key needed to read) and balances capability against
+cost. Nothing is hardcoded, so it does not go stale.
+
+```bash
+# keys go in QMine/.env (see .env.example) or the environment
+# DEEPSEEK_API_KEY=...  ZHIPU_API_KEY=...  QWEN_API_KEY=...
+qmine models --prefer-chinese-native --budget 5    # inspect before spending
+qmine run -i queries.csv -d k12_zh --provider router
+```
+
+High-volume roles get cheap-but-capable models, run-critical roles get frontier
+ones, fallbacks span providers, and the two gold annotators are routed to
+*different* providers so their κ measures the labelling guide rather than shared
+architecture. Full design and its known limits: [docs/MODEL_ROUTING.md](docs/MODEL_ROUTING.md).
+
+### Mixed languages and unknown domains
+
+A minority language is the dangerous case: measured on a real corpus, at 2%
+English **97% of all English queries collapse into one cluster** — and swapping
+in a multilingual encoder does not fix it. Phase 1 measures the script mix and
+warns; Phase 6 resolves minority intents in a script-appropriate space and ships
+them as a column rather than faking tree leaves the deployed classifier cannot
+represent.
+
+For an unknown vertical, `--domain generic` carries universal risk categories and
+zero template seeds — the phrasing families are mined from the corpus and must
+each earn trust by being measurably tighter than random. On the K12 corpus with
+all seeds removed, that rediscovered five of the six hand-written families and
+correctly rejected "是什么", which attaches to every topic.
+Details: [docs/LANGUAGE_AND_DOMAIN.md](docs/LANGUAGE_AND_DOMAIN.md).
+
 ### Command reference
 
 | command | what it does |
@@ -157,6 +223,8 @@ without recomputing anything.
 | `qmine export-cards <run>` / `qmine import-namings <run> f.json` | run blind naming with an external panel |
 | `qmine promote --old A.csv --new B.csv` | referee protocol: let a challenger label set earn its place |
 | `qmine diff <run-a> <run-b>` | drift vs method change between two quarters |
+| `qmine models` | reachable providers, per-role model choice, estimated run cost |
+| `qmine run … --plain` | disable the live dashboard (CI, pipes) |
 | `qmine doctor` | environment, credentials, models, fonts |
 
 ### Handing Phase 7 to a stronger reviewer

@@ -258,6 +258,14 @@ class AdjudicationRule(BaseModel):
     classes: list[str] = Field(default_factory=list)
     added_in_round: int = 0
     added_because: str = Field(default="", description="Procedural memory: which disagreement created it.")
+    #: For machine-generated rules, the exact condition that fires them — a marker
+    #: substring, or ``"<no-marker>"`` for the fallback. Two rules conflict only
+    #: when the SAME trigger on the SAME class pair yields different labels;
+    #: comparing the rendered `when` sentence instead cannot tell "two markers for
+    #: one boundary" (legitimate, and the whole point) from "one trigger, two
+    #: answers" (a real contradiction), because both differ by a couple of
+    #: characters in an otherwise identical template.
+    trigger: str = ""
 
 
 class Taxonomy(BaseModel):
@@ -301,7 +309,10 @@ class GoldRow(BaseModel):
     rationale_b: str = ""
     referee_rationale: str = ""
     round: int = 1
-    source: Literal["stratified", "active_learning"] = "stratified"
+    #: `guide_repair` rows were labelled after the guide was rewritten, on a
+    #: sample disjoint from the one the repair was derived from — they are the
+    #: only rows whose kappa reflects the repaired guide rather than the original.
+    source: Literal["stratified", "active_learning", "guide_repair"] = "stratified"
 
 
 # ==========================================================================

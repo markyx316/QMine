@@ -171,3 +171,142 @@ def test_longer_markers_outrank_shorter_fragments_of_themselves(frame):
 def test_groups_reject_patterns_that_match_almost_nothing(frame):
     groups = build_groups(frame, seeds=[{"name": "impossible", "pattern": "ZZZZQQQQ", "intent_hint": ""}])
     assert not any(g.name == "impossible" for g in groups)
+
+
+# ==========================================================================
+# Defects found by the first full live run
+# ==========================================================================
+
+def test_active_learning_accepts_the_sparse_matrix_its_caller_passes():
+    """`len()` raises on scipy sparse, and the only caller passes a char-TFIDF
+    matrix. The TypeError was swallowed upstream, so the playbook's round-2
+    active learning had never once run."""
+    import numpy as np
+    from sklearn.feature_extraction.text import TfidfVectorizer
+    from sklearn.linear_model import LogisticRegression
+
+    from qmine.ops.classify import select_active_learning_batch
+
+    texts = [f"查询样本{i % 37}的内容" for i in range(200)]
+    X = TfidfVectorizer(analyzer="char", ngram_range=(2, 3), min_df=2).fit_transform(texts)
+    assert not isinstance(X, np.ndarray), "fixture must exercise the sparse path"
+    y = np.array(["A", "B"] * 100)
+    model = LogisticRegression(max_iter=200).fit(X[:100], y[:100])
+
+    for fraction in (0.0, 0.3):   # the diversity pass must survive sparse too
+        out = select_active_learning_batch(
+            model, X, already_labelled=list(range(100)), batch=10,
+            diversity_fraction=fraction,
+        )
+        assert out["selected"], f"nothing selected at diversity_fraction={fraction}"
+        assert not set(out["selected"]) & set(range(100)), "re-selected a labelled row"
+
+    dense = select_active_learning_batch(
+        model, X.toarray(), already_labelled=list(range(100)), batch=10)
+    sparse = select_active_learning_batch(
+        model, X, already_labelled=list(range(100)), batch=10)
+    assert dense["selected"] == sparse["selected"], "sparse and dense must agree"
+
+
+def test_a_missing_annotation_is_not_scored_as_a_disagreement():
+    """When an annotator's batch fails the caller fills UNLABELED. Counting that
+    as disagreement charges an infrastructure failure to the methodology and
+    depresses a blocking metric — it cost 0.008 kappa on the first live run."""
+    from qmine.ops.classify import UNLABELED, agreement
+
+    # Two labels, not one: with a single label kappa is undefined by design and
+    # this module deliberately scores that 0.0 (see `agreement`'s docstring).
+    b = (["X", "Y"] * 5)
+    a = list(b)
+    clean = agreement(a, b)
+    assert clean["kappa"] == 1.0 and clean["n_unscored_unlabelled"] == 0
+
+    a_missing = [UNLABELED, UNLABELED] + a[2:]
+    out = agreement(a_missing, b)
+    assert out["n"] == 8, "unlabelled rows must be excluded from the scored set"
+    assert out["n_submitted"] == 10
+    assert out["n_unscored_unlabelled"] == 2
+    assert out["n_disagreements"] == 0, "an omission is missing data, not disagreement"
+    assert out["kappa"] == 1.0
+
+    allmissing = agreement([UNLABELED] * 5, ["X", "Y", "X", "Y", "X"])
+    assert allmissing["n"] == 0, "must not claim agreement when nothing was labelled"
+
+
+def test_boundaries_are_decided_from_agreed_rows_not_from_a_second_opinion():
+    """The repair loop settles boundaries the referee resolved inconsistently.
+    It does so from the rows both annotators agreed on — the only labels in the
+    set with no arbitration in them — so the resulting rule is checkable rather
+    than another model's opinion."""
+    from qmine.ops.classify import (
+        boundary_default, contested_boundaries, discriminating_markers,
+    )
+
+    def row(q, a, b, final):
+        return type("R", (), {"query": q, "label_a": a, "label_b": b,
+                              "final": final, "agreed": a == b})()
+
+    rows = (
+        # Agreed evidence: the marker 意思 always means MEANING…
+        [row(f"词{i}的意思", "MEANING", "MEANING", "MEANING") for i in range(12)]
+        # …and marker-less bare strings mostly mean IDIOM. These must share no
+        # substring, or they would themselves become a marker and be excluded
+        # from the default — which is the correct behaviour, just not what this
+        # part of the test is about.
+        + [row(q, "IDIOM", "IDIOM", "IDIOM") for q in
+           ("飞檐走壁", "鳞次栉比", "南柯一梦", "似水流年", "喧宾夺主", "把持不住",
+            "梭天摸地", "画龙点睛", "守株待兔", "刻舟求剑", "亡羊补牢", "опять算了",
+            "杯弓蛇影", "掩耳盗铃", "叶公好龙", "买椟还珠", "滥竽充数", "囫囵吞枣",
+            "邯郸学步", "东施效颦", "望梅止渴", "指鹿为马")]
+        + [row(q, "MEANING", "MEANING", "MEANING") for q in
+           ("寝", "翘楚", "鬻", "饕餮")]
+        # The referee then sent this same pair both ways — an open boundary.
+        + [row("甲的意思", "IDIOM", "MEANING", "MEANING"),
+           row("乙", "IDIOM", "MEANING", "IDIOM")]
+    )
+
+    open_pairs = contested_boundaries(rows)
+    assert [p["pair"] for p in open_pairs] == [["IDIOM", "MEANING"]]
+    assert open_pairs[0]["resolved_as"] == {"MEANING": 1, "IDIOM": 1}
+
+    markers = discriminating_markers(rows, ["IDIOM", "MEANING"], min_support=4)
+    assert any(m["marker"] == "意思" and m["then"] == "MEANING" for m in markers), markers
+    assert all(m["precision"] >= 0.90 for m in markers)
+
+    default = boundary_default(rows, ["IDIOM", "MEANING"],
+                               [m["marker"] for m in markers])
+    assert default and default["then"] == "IDIOM", "marker-less rows lean IDIOM"
+
+    # A genuine coin flip must stay open rather than be closed on noise.
+    coin = ([row(f"x{i}", "A", "A", "A") for i in range(11)]
+            + [row(f"y{i}", "B", "B", "B") for i in range(11)])
+    assert boundary_default(coin, ["A", "B"]) is None
+
+
+def test_stratified_sample_returns_positions_even_for_a_sliced_frame():
+    """Two of the three branches returned positions and one returned index
+    labels. They agree on a default RangeIndex — which every caller happened to
+    pass — so a slice like `df.iloc[unseen]` silently produced out-of-range
+    indices, and the guide-repair round crashed with IndexError on a live run."""
+    import numpy as np
+    import pandas as pd
+
+    from qmine.ops.audit import stratified_sample
+
+    df = pd.DataFrame({"q": [f"q{i}" for i in range(400)],
+                       "stratum": [f"s{i % 7}" for i in range(400)]})
+    sliced = df.iloc[200:]          # labels 200..399, positions 0..199
+    assert sliced.index[0] != 0, "fixture must not have a RangeIndex starting at 0"
+
+    for cols in ([], ["stratum"]):
+        out = stratified_sample(sliced, 50, strata_cols=cols, seed=7)
+        assert len(out) == 50
+        assert out.min() >= 0 and out.max() < len(sliced), (
+            f"strata_cols={cols}: returned an index outside the frame it was given"
+        )
+        # Positional, so .iloc must resolve every one of them.
+        assert len(sliced.iloc[out]) == 50
+
+    # Stratification must still be doing its job, not merely staying in range.
+    strat = stratified_sample(sliced, 50, strata_cols=["stratum"], seed=7)
+    assert sliced.iloc[strat]["stratum"].nunique() == 7, "a stratum was dropped"

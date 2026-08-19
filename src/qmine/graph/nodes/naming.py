@@ -121,12 +121,25 @@ def p7_name_shard(payload: dict[str, Any], deps: Deps) -> dict[str, Any]:
     ctx = deps.agent_ctx()
     agent = NamerAgent(ctx, suffix=f"_{shard_id}")
 
-    out: list[LeafNaming] = []
-    for lid in leaf_ids:
+    def _name(lid: int) -> LeafNaming | None:
         card = cards.get(lid)
         if card is None:
-            continue
-        out.append(agent.run(card=card))
+            return None
+        try:
+            return agent.run(card=card)
+        except Exception as exc:  # noqa: BLE001
+            deps.emit(f"  namer[{shard_id}] leaf {lid} failed: {type(exc).__name__}")
+            return None
+
+    # Within a shard the clusters are independent too — the shard exists to keep
+    # agents from seeing each other's answers, not to serialise their work.
+    if len(leaf_ids) > 1 and not ctx.registry.is_offline:
+        from concurrent.futures import ThreadPoolExecutor
+
+        with ThreadPoolExecutor(max_workers=min(4, len(leaf_ids))) as pool:
+            out = [n for n in pool.map(_name, leaf_ids) if n is not None]
+    else:
+        out = [n for n in (_name(l) for l in leaf_ids) if n is not None]
     deps.emit(f"  namer[{shard_id}] named {len(out)} clusters")
     return {"namings": out}
 

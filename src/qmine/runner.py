@@ -14,6 +14,7 @@ import logging
 import time
 import uuid
 from pathlib import Path
+from collections.abc import Sequence
 from typing import Any, Iterator
 
 from .artifacts import ArtifactStore
@@ -153,6 +154,14 @@ def run_pipeline(
         if on_event:
             on_event(msg)
 
+    if on_event is not None and hasattr(on_event, "__self__"):
+        # A LiveDashboard: give it a handle on usage so it can show spend live.
+        dash = on_event.__self__
+        if hasattr(dash, "usage_fn"):
+            dash.usage_fn = registry.usage
+        if hasattr(dash, "provider"):
+            dash.provider = registry.provider
+
     with open_memory(Path(cfg.run_root) / "memory.sqlite", project="qmine", domain=cfg.domain.key) as memory:
         deps = Deps(cfg=cfg, store=store, registry=registry, memory=memory,
                     firewall=BlindnessFirewall(), run_id=run_id, on_event=_emit)
@@ -171,7 +180,8 @@ def run_pipeline(
             else:
                 final = graph.invoke(init, config=config)
 
-            summary = write_summary(final, store, registry, run_id=run_id,
+            summary = write_summary(final, store, registry,
+                                    declared_gates=cfg.gates.blocking, run_id=run_id,
                                     generation=generation, elapsed=time.time() - t0)
             return {"state": final, "summary": summary, "events": events, "deps": deps}
 
@@ -179,6 +189,7 @@ def run_pipeline(
 def write_summary(
     final: PipelineState, store: ArtifactStore, registry: ModelRegistry, *,
     run_id: str, generation: int, elapsed: float, resumed: bool = False,
+    declared_gates: Sequence[str] = (),
 ) -> dict[str, Any]:
     """Write ``run_summary.json``.
 
@@ -199,8 +210,18 @@ def write_summary(
         "completed_phases": final.get("completed_phases", []),
         "halted": final.get("halted", False),
         "halt_reason": final.get("halt_reason", ""),
-        "gates": {k: {"status": g.status, "blocking": g.blocking, "message": g.message}
+        # `remediation` is the only field that tells an operator what to DO about a
+        # failure; dropping it here left the halt reason visible and the fix
+        # invisible in every downstream view.
+        "gates": {k: {"status": g.status, "blocking": g.blocking, "message": g.message,
+                      "remediation": g.remediation}
                   for k, g in final.get("gates", {}).items()},
+        # A blocking gate that never fires is indistinguishable from one that
+        # passed. Declaring it and never emitting it is a silent hole in the
+        # quality bar, so the run states plainly which declared gates never ran.
+        "declared_gates_never_evaluated": sorted(
+            set(declared_gates) - set(final.get("gates", {}))
+        ),
         "artifacts": sorted(final.get("artifacts", {})),
         "llm_usage": registry.usage(),
         "artifact_root": str(store.gen_dir),
@@ -209,6 +230,48 @@ def write_summary(
     }
     store.put_json("run_summary", summary, producer="run", summary="end-of-run summary")
     return summary
+
+
+def _first_missing_phase(state: dict[str, Any]) -> str:
+    """The earliest phase node whose phase has not been recorded complete."""
+    from .graph.build import PHASE_NODES
+
+    done = set(state.get("completed_phases") or [])
+    for node, _ in PHASE_NODES:
+        # Node names are "<phase>_<slug>"; the phase id is the leading token.
+        phase = node.split("_", 1)[0]
+        if phase not in done:
+            return node
+    return ""
+
+
+def _node_before(node: str) -> str:
+    """The phase node that precedes `node`, or "" if it is first/unknown."""
+    from .graph.build import PHASE_NODES
+
+    order = [n for n, _ in PHASE_NODES]
+    if node not in order:
+        return ""
+    i = order.index(node)
+    return order[i - 1] if i > 0 else ""
+
+
+def _halt_kind(state: dict[str, Any]) -> str:
+    """Why the run halted: ``crash``, ``gate``, ``review``, or ``""``.
+
+    Reads the recorded field when present. Checkpoints written before that field
+    existed are classified from the evidence a crash leaves behind — the failing
+    node records ``phase_status[name] = "error"`` — rather than by pattern-matching
+    the reason string, which contains a user-supplied exception message.
+    """
+    kind = str(state.get("halt_kind") or "")
+    if kind:
+        return kind
+    reason = str(state.get("halt_reason") or "")
+    errored = [n for n, st in (state.get("phase_status") or {}).items() if st == "error"]
+    if any(reason.startswith(f"{n}:") for n in errored):
+        return "crash"
+    return "gate" if reason else ""
 
 
 def resume_run(cfg: QMineConfig, run_id: str, *, generation: int = 1, resume_value: Any = None) -> dict[str, Any]:
@@ -225,10 +288,63 @@ def resume_run(cfg: QMineConfig, run_id: str, *, generation: int = 1, resume_val
             graph = build_graph(cfg, deps, checkpointer=saver, human_review=True)
             config = {"configurable": {"thread_id": f"{run_id}-gen{generation}"},
                       "recursion_limit": cfg.llm.recursion_limit}
+            # A run that halted on a CRASH is halted because of a defect. Once
+            # that defect is fixed, resuming should retry the phase that raised —
+            # otherwise the checkpoint replays the halt forever and the only way
+            # forward is to re-run phases that already succeeded (37 minutes of
+            # web research, in the case that motivated this). A gate halt or a
+            # reviewer veto is the opposite: a deliberate judgement that resume
+            # must not quietly overturn.
+            snap = graph.get_state(config)
+            prev = dict(getattr(snap, "values", {}) or {})
+
+            # Where to restart is decided from what actually completed, not from
+            # the checkpoint's position pointer. Those two can disagree: a run
+            # whose halt flag is cleared without rewinding sits at END while most
+            # of the pipeline never ran, and a plain resume then reports success
+            # for a pipeline that stopped at phase three.
+            missing = _first_missing_phase(prev)
+            if missing and not prev.get("halted"):
+                back_to = _node_before(missing)
+                if back_to:
+                    graph.update_state(config, {"halted": False, "halt_kind": "",
+                                                "halt_reason": ""}, as_node=back_to)
+                    log.info("resume: %s never ran though the run is not halted — "
+                             "rewound to %s to continue", missing, back_to)
+
+            if prev.get("halted") and _halt_kind(prev) == "crash":
+                # Clearing the flag is not enough: the checkpoint also records
+                # *where* the graph is, and after a halt that position is past the
+                # failing phase — so a plain resume runs straight to the end and
+                # reports success having skipped the phase that crashed. Writing
+                # the state back `as_node=<predecessor>` puts the graph on that
+                # node's outgoing edge, which leads into the phase to retry.
+                crashed = str(prev.get("halt_reason", "")).split(":", 1)[0].strip()
+                back_to = _node_before(crashed)
+                cleared = {"halted": False, "halt_kind": "", "halt_reason": "",
+                           "phase_status": {crashed: "pending"}}
+                if back_to:
+                    graph.update_state(config, cleared, as_node=back_to)
+                    log.info("resuming past a crash in %s — rewound to %s to retry it "
+                             "(%s)", crashed, back_to, prev.get("halt_reason", "")[:100])
+                else:
+                    graph.update_state(config, cleared)
+                    log.warning("crash halt in %r, but its position in the phase order is "
+                                "unknown — resuming without rewinding, which may skip it",
+                                crashed)
+            elif prev.get("halted"):
+                log.warning(
+                    "run halted by %s and stays halted: %s. Resume does not overturn a "
+                    "deliberate refusal — fix the underlying issue and start a new "
+                    "generation, or answer the pending review.",
+                    _halt_kind(prev) or "a blocking gate", prev.get("halt_reason", "")[:160],
+                )
+
             payload = Command(resume=resume_value) if resume_value is not None else None
             t0 = time.time()
             final = graph.invoke(payload, config=config)
-            summary = write_summary(final, store, registry, run_id=run_id, generation=generation,
+            summary = write_summary(final, store, registry, declared_gates=cfg.gates.blocking,
+                                    run_id=run_id, generation=generation,
                                     elapsed=time.time() - t0, resumed=True)
             return {"state": final, "summary": summary, "state_summary": state_summary(final)}
 

@@ -151,16 +151,85 @@ def p10_deploy(state: PipelineState, deps: Deps) -> dict[str, Any]:
     )
     if td is not None:
         out["td_l1"] = td
+        # Name and definition, so the two routes read alike: the bottom-up leaf
+        # ships `bu_leaf_name` / `bu_user_need` and a bare `td_l1` code cannot be
+        # compared against them by anyone who does not have the taxonomy open.
+        try:
+            nodes = {n.code: n for n in deps.taxonomy().nodes}
+            hit = sum(1 for c in td if str(c) in nodes)
+            if hit >= 0.5 * len(td):
+                out["td_l1_name"] = [getattr(nodes.get(str(c)), "name", "") for c in td]
+                out["td_user_need"] = [getattr(nodes.get(str(c)), "definition", "") for c in td]
+            else:
+                # Emitting the columns anyway would ship blanks that read as
+                # missing data rather than as a taxonomy that does not describe
+                # the labels the classifier is producing. Say which it is.
+                deps.emit(f"  ⚠ 仅 {hit}/{len(td)} 个 td_l1 取值能在类目表中找到 — "
+                          "省略 td_l1_name/td_user_need 两列 (分类器与类目表不同源)")
+        except Exception as exc:  # noqa: BLE001
+            deps.emit(f"  td name columns unavailable: {type(exc).__name__}")
+    conf = deps.recover("topdown_confidence", "topdown_labels",
+                        rebuild=lambda d: d["confidence"].to_numpy())
+    if conf is not None:
+        out["td_confidence"] = np.round(conf, 5)
+    tdm = deps.recover("topdown_margin", "topdown_labels",
+                       rebuild=lambda d: d["margin"].to_numpy())
+    if tdm is not None:
+        out["td_margin"] = np.round(tdm, 5)
+        # Same threshold as the bottom-up flag, so "ambiguous" means one thing.
+        out["td_ambiguous"] = tdm < cfg.deployment.margin_threshold
+    dby = deps.recover("topdown_decided_by", "topdown_labels",
+                       rebuild=lambda d: d["decided_by"].to_numpy())
+    if dby is not None:
+        out["td_decided_by"] = [str(x) for x in dby]
     sub = deps.recover(
         "topdown_sub", "topdown_l2_labels", rebuild=lambda d: d["td_l2"].to_numpy()
     )
     if sub is not None:
         out["td_l2"] = sub
+    msi = deps.recover("minority_sub_intent", "minority_sub_intent")
+    if msi is not None:
+        # Intents inside a minority-language family, resolved in a script-appropriate
+        # space. A column rather than a leaf, because it is not a centroid region of
+        # the space the classifier deploys — see ops/language.minority_sub_intents.
+        out["minority_sub_intent"] = [str(x) for x in msi]
     for c in cfg.data.reference_label_columns:
         if c in df.columns:
             out[f"ref_{c}"] = df[c]
     out["run_id"] = deps.run_id
     out["generation"] = deps.store.generation
+
+    # Neither route is the answer key, so the useful artifact is not a score for
+    # each but a map of where they concur. Every bottom-up family gets its
+    # top-down composition and a concentration figure: a family that maps almost
+    # entirely onto one L1 is a place the two methodologies independently found
+    # the same intent, and a family that splays across five is a real
+    # disagreement worth a human's attention — in either direction, since the
+    # top-down class may be the one that is too coarse.
+    if "td_l1" in out.columns:
+        rows = []
+        for fam, grp in out.groupby("bu_family_final"):
+            comp = grp["td_l1"].astype(str).value_counts()
+            share = float(comp.iloc[0] / len(grp))
+            p_ = (comp / len(grp)).to_numpy()
+            rows.append({
+                "bu_family_final": int(fam),
+                "n": int(len(grp)),
+                "td_dominant": str(comp.index[0]),
+                "td_dominant_share": round(share, 4),
+                "td_classes_touched": int((comp > 0).sum()),
+                # exp(H): the same effective-count formula the fragmentation
+                # metric uses, so the two numbers are read the same way.
+                "td_effective_classes": round(float(np.exp(-(p_ * np.log(p_)).sum())), 3),
+                "verdict": ("routes agree" if share >= 0.80 else
+                            "partial overlap" if share >= 0.50 else "routes disagree"),
+            })
+        crosswalk = pd.DataFrame(rows).sort_values("td_dominant_share")
+        deps.store.put_table("route_crosswalk", crosswalk, fmt="csv", producer="p10",
+                             summary="bottom-up family × top-down L1 concordance")
+        agree = int((crosswalk["verdict"] == "routes agree").sum())
+        deps.emit(f"  路线对照: {agree}/{len(crosswalk)} 个家族与自上而下 L1 高度一致 "
+                  f"(≥80% 落在同一类目)")
 
     labels_ref = deps.store.put_table("labels_full", out, fmt="csv", producer="p10",
                                       summary=f"{len(out)} rows, both label systems side by side")

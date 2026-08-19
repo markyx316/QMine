@@ -1,0 +1,128 @@
+# The profile for a log with no known vertical — a general search engine, a
+# mixed all-encompassing log, or a vertical nobody has written a profile for.
+#
+# The design principle: a generic profile must supply what is genuinely
+# universal and must NOT invent what is domain-specific. So it carries risk
+# categories (which are universal, because harm is) and pragmatic-intent hints
+# (which are universal, because they are facts about language use, not about a
+# vertical) — and it deliberately carries ZERO template seeds, because a
+# phrasing family is exactly the thing that differs between verticals.
+#
+# Phase 1 mines candidate families from the corpus itself and Phase 3 makes each
+# one earn trust by being measurably tighter than random rows. On the K12 corpus
+# that procedure rediscovered five of the six hand-written families with no
+# seeds at all — and correctly rejected "是什么", which attaches to every topic
+# and scores at chance.
+key: generic
+display_name: "Unknown / mixed-vertical query log"
+
+# `auto` is resolved in Phase 1 from the corpus's actual script composition,
+# rather than assumed here. A Chinese tokeniser on a Latin corpus is not a
+# subtle degradation.
+language: multi
+tokenizer: auto
+char_ngram_range: [1, 3]      # overridden per corpus by the language audit
+word_ngram_range: [1, 2]
+
+# Light and multilingual, because we do not know the language yet. The bake-off
+# still decides, and the language audit may add a language-specific candidate.
+embedding_candidates:
+  - intfloat/multilingual-e5-small
+  - BAAI/bge-m3
+
+instruction_prefix: null
+
+# NO seeds. See the note above — these must be mined and validated per corpus.
+template_seeds: []
+
+# Universal risk categories. These are not domain knowledge; they are the
+# hazards that apply to any consumer-facing query surface. Patterns are given in
+# both Chinese and English because the dominant language is unknown at profile
+# time. This list is a floor to be extended per vertical and per jurisdiction —
+# never a ceiling, and never a substitute for local compliance review.
+risk_categories:
+  - name: gambling_and_lottery
+    patterns:
+      - "(?i)(lottery|betting odds|casino|jackpot|parlay)"
+      - "(生肖|特码|六合彩|开奖|赔率|盘口|押注)"
+    rationale: >
+      Gambling and lottery probes, including ones disguised as riddles or
+      folklore. Frequently small by volume and disproportionately costly to
+      mishandle.
+    policy: isolate_and_flag
+
+  - name: fraud_and_scams
+    patterns:
+      - "(?i)(get rich quick|guaranteed returns|money laundering|carding|fullz)"
+      - "(刷单|杀猪盘|洗钱|包过|代考|黑产)"
+    rationale: "Fraud, scam facilitation, and illicit-service solicitation."
+    policy: isolate_and_flag
+
+  - name: self_harm_and_crisis
+    patterns:
+      - "(?i)(how to kill myself|suicide method|want to die|self harm)"
+      - "(自杀方法|不想活了|怎么死|自残)"
+    rationale: >
+      Crisis content. Must never be answered from a generic information path;
+      route to a crisis-resource response regardless of cluster membership.
+    policy: isolate_and_flag
+
+  - name: minors_and_adult_content
+    patterns:
+      - "(?i)(child porn|underage|loli|jailbait)"
+      - "(未成年|萝莉|童奴|娈童)"
+    rationale: >
+      Sexual content involving minors, and adult content reaching a surface
+      minors use. Zero tolerance; isolation is not optional.
+    policy: isolate_and_flag
+
+  - name: regulated_professional_advice
+    patterns:
+      - "(?i)(should i (buy|sell|invest)|what dose of|is it legal for me to|diagnose my)"
+      - "(我该不该(买|卖|投资)|吃多少(毫克|片)|我这种情况能不能|帮我诊断)"
+    rationale: >
+      Requests for individualised financial, medical, or legal advice. The line
+      between general information and regulated advice is legal, not linguistic,
+      so these are isolated and served under a general-information-only policy.
+    policy: isolate_and_flag
+
+  - name: violence_and_weapons
+    patterns:
+      - "(?i)(how to make a bomb|build a gun|untraceable weapon|nerve agent)"
+      - "(制作炸药|自制枪支|制毒)"
+    rationale: "Weapons manufacture and mass-harm facilitation."
+    policy: isolate_and_flag
+
+  - name: personal_data_exposure
+    patterns:
+      - "(?i)(home address of|phone number of|social security number|passport number)"
+      - "(身份证号|开房记录|家庭住址|手机号查询)"
+    rationale: >
+      Attempts to obtain identifying information about a private individual.
+    policy: isolate_and_flag
+
+expected_l1_range: [12, 25]
+expected_family_range: [8, 25]
+
+# Universal because they are facts about how language encodes intent, not facts
+# about any vertical. In every corpus examined so far, some intents are visible
+# only in pragmatics: the wording and the content look ordinary and what the
+# user wants is carried by the situation. Clustering is structurally blind to
+# these, so the top-down route must own them.
+pragmatic_intents_hint:
+  - "verification / correctness checking (looks identical to a definition request)"
+  - "procedural how-to (looks identical to a concept question)"
+  - "navigational — the user wants a specific destination, not an answer"
+  - "transactional intent to act, not to learn"
+  - "troubleshooting a failure the user is currently experiencing"
+  - "opinion or recommendation seeking, as opposed to fact seeking"
+  - "chitchat, testing the system, and outright noise"
+
+domain_notes: >
+  The vertical is unknown. Do not assume one. Phase 1 mines phrasing families
+  from the corpus and Phase 3 discards any that are no tighter than random, so
+  the template machinery bootstraps itself. Phase 2a's researchers should spend
+  their first effort establishing WHAT THIS CORPUS IS ABOUT from the log slice
+  they are given, and should say plainly when the evidence does not support a
+  confident vertical — a taxonomy padded with plausible categories the data does
+  not contain is discovered later, at annotation time, after the expensive part.

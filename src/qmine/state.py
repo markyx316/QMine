@@ -148,6 +148,12 @@ class PipelineState(TypedDict, total=False):
     #: Set when a blocking gate fails or a human vetoes.  The router reads it.
     halted: bool
     halt_reason: str
+    #: ``"crash"`` (a node raised — a defect, retryable once fixed), ``"gate"``
+    #: (a blocking gate refused — a deliberate judgement), or ``"review"`` (a
+    #: human vetoed). Resume treats these differently, and parsing the reason
+    #: string to tell them apart is exactly the kind of guesswork that breaks
+    #: the first time an exception message contains a colon.
+    halt_kind: str
     #: Set by a human veto: re-run these phases in a fresh generation.
     replan: dict[str, Any]
 
@@ -176,6 +182,7 @@ def new_state(run_id: str, config_hash: str, domain: str, generation: int = 1) -
         llm_usage={"calls": 0, "input_tokens": 0, "output_tokens": 0},
         halted=False,
         halt_reason="",
+        halt_kind="",
         replan={},
     )
 

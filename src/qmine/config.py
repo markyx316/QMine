@@ -60,7 +60,10 @@ class DomainProfile(BaseModel):
     language: Literal["zh", "en", "multi"] = "zh"
 
     #: Tokenisation and n-gram ranges (Part IV section 4.5).
-    tokenizer: Literal["jieba", "whitespace", "none"] = "jieba"
+    #: ``auto`` is resolved in Phase 1 from the corpus's actual script mix. Use it
+    #: whenever the language is not known in advance — assuming a tokeniser is
+    #: one of the cheapest ways to quietly degrade every downstream phase.
+    tokenizer: Literal["jieba", "whitespace", "none", "auto"] = "jieba"
     char_ngram_range: tuple[int, int] = (1, 3)
     word_ngram_range: tuple[int, int] = (1, 2)
 
@@ -146,10 +149,29 @@ class TaxonomyConfig(BaseModel):
     n_researchers: int = 5
     l1_target_range: tuple[int, int] = (15, 25)
     min_adjudication_rules: int = 20
-    gold_sample_size: int = 600
+    #: ``None`` derives it from the corpus (see :func:`gold_size_for`), which is
+    #: what the playbook asks for. An explicit int pins it and skips the scaling.
+    gold_sample_size: int | None = None
+    #: The playbook's stratified gold range, 分层抽 3,000-5,000 条.
+    gold_size_range: tuple[int, int] = (3000, 5000)
+    #: Floor on the share of a small corpus that becomes gold. The playbook is
+    #: explicit that a small corpus needs a HIGHER proportion, not the same
+    #: absolute count — 「<1 万条 → 金标比例提高」 — because the tail shapes a
+    #: classifier must learn do not shrink proportionally with the corpus.
+    gold_min_fraction_small_corpus: float = 0.30
+    #: Never annotate more than this share of the corpus, whatever the rules say.
+    gold_max_fraction: float = 0.60
     pilot_sample_size: int = 50
     pilot_agreement_threshold: float = 0.85
     kappa_threshold: float = 0.90
+    #: Playbook 2b: "达不到先修指南再重标" — if kappa misses, repair the guide and
+    #: re-annotate rather than shipping an ambiguous gold set. Each round costs a
+    #: second full annotation pass, so the default is one.
+    kappa_repair_rounds: int = 1
+    #: The repair round scores a FRESH sample. Re-scoring the rows the repair was
+    #: derived from measures how well the rules fit those rows, not whether the
+    #: guide got clearer.
+    repair_on_fresh_sample: bool = True
     active_learning_rounds: int = 1
     active_learning_batch: int = 200
     rule_precision_floor: float = 0.98
@@ -170,6 +192,9 @@ class GateConfig(BaseModel):
     template_coverage_range: tuple[float, float] = (0.20, 0.40)
     pilot_agreement: float = 0.85
     kappa: float = 0.90
+    #: Fraction of the intended gold sample that both annotators must actually
+    #: label before kappa is treated as a measurement at all.
+    min_annotation_coverage: float = 0.90
     heldout_reproduction: float = 0.98
     coherence: float = 4.0
     require_risk_independently_found: bool = True
@@ -207,7 +232,10 @@ class LLMConfig(BaseModel):
       never engages and bulk labelling costs full price on every call.
     """
 
-    provider: Literal["anthropic", "openai", "mock", "auto"] = "auto"
+    #: ``router`` resolves a model per role from a live catalogue and whatever API
+    #: keys are present. ``auto`` keeps the simple two-tier behaviour. A named
+    #: provider pins everything to that one.
+    provider: Literal["anthropic", "openai", "mock", "auto", "router"] = "auto"
     deep_model: str = "claude-opus-5"
     fast_model: str = "claude-sonnet-5"
     temperature: float | None = Field(
@@ -217,11 +245,14 @@ class LLMConfig(BaseModel):
     #: thinking plus response together — a limit sized for a non-thinking model
     #: truncates mid-answer.
     max_tokens: int = 16000
-    max_concurrency: int = 4
+    max_concurrency: int = 8
     #: Kept low on purpose: the provider SDK already retries, and LangGraph node
     #: policies retry on top of that. Three layers at 3 attempts each is 27 calls
     #: for one logical request.
     max_retries: int = 2
+    #: Per-request timeout. Without one, a slow or wedged provider blocks a
+    #: twelve-phase run indefinitely at 0% CPU, which looks exactly like a hang.
+    request_timeout: float = 180.0
     #: Hard ceilings.  A run that would exceed them aborts rather than surprising you.
     max_total_calls: int = 4000
     max_total_output_tokens: int = 6_000_000
@@ -230,6 +261,24 @@ class LLMConfig(BaseModel):
     #: LangGraph's verified default is 10007 super-steps. An unbounded refinement
     #: loop would spend five figures before erroring, so we set it explicitly.
     recursion_limit: int = 200
+
+    # --- multi-provider routing -----------------------------------------
+    #: Refresh the model catalogue at most this often. Sources publish a
+    #: 5-minute freshness window; six hours is well inside what a batch pipeline
+    #: needs and avoids hammering them on every run.
+    catalog_ttl_hours: float = 6.0
+    #: Never reach the network for the catalogue. Falls back to cache, then a
+    #: pinned snapshot, then the static deep/fast models.
+    catalog_offline: bool = False
+    #: Path to a pinned catalogue snapshot, for reproducing an old run's routing.
+    catalog_pinned: str | None = None
+    #: Explicit role -> model overrides. These win outright over the router.
+    model_overrides: dict[str, str] = Field(default_factory=dict)
+    #: Abort before starting if the estimated run cost exceeds this.
+    budget_usd: float | None = None
+    #: Nudge multilingual-critical roles toward Chinese-native labs when the
+    #: corpus is Chinese and such a provider is configured.
+    prefer_chinese_native: bool = False
 
 
 class DeploymentConfig(BaseModel):
@@ -242,6 +291,10 @@ class QMineConfig(BaseModel):
     """The whole configuration for one run."""
 
     project_name: str = "qmine"
+    #: Language for reports and notebooks. Defaults to Chinese: the deliverables
+    #: are read by the team that owns the corpus, and a definition sentence in a
+    #: language they do not work in cannot be checked against the data.
+    report_language: Literal["zh", "en"] = "zh"
     run_root: str = "runs"
     domain: DomainProfile = Field(default_factory=DomainProfile)
     data: DataConfig = Field(default_factory=DataConfig)
@@ -270,7 +323,7 @@ class QMineConfig(BaseModel):
             self.clustering.k_sweep = [10, 15, 20, 30, 50]
             self.clustering.battery_k = [20]
             self.clustering.refine_rounds = 2
-            self.taxonomy.gold_sample_size = min(self.taxonomy.gold_sample_size, 120)
+            self.taxonomy.gold_sample_size = min(self.taxonomy.gold_sample_size or 120, 120)
             self.taxonomy.n_researchers = 3
         return self
 
@@ -309,3 +362,25 @@ def _deep_merge(base: dict[str, Any], over: dict[str, Any]) -> dict[str, Any]:
         else:
             out[k] = v
     return out
+
+
+def gold_size_for(n_rows: int, cfg: "TaxonomyConfig") -> int:
+    """How many rows Phase 2b should annotate for a corpus of `n_rows`.
+
+    The playbook asks for a stratified 3,000-5,000 (line 191) and, separately,
+    for a *higher proportion* on small corpora (line 119) — the two rules point
+    in different directions and the second is the one that is easy to miss. A
+    fixed 600, which is what this shipped with, satisfies neither: it is five
+    times under spec on a large corpus and, on a 2,000-row one, annotates 30% of
+    the data by accident rather than by intent.
+
+    The shape is: take the low end of the range; on a corpus small enough that
+    this would be a thin slice, raise it to a fraction instead; never exceed a
+    cap, because a gold set that is most of the corpus has stopped being a sample.
+    """
+    lo, hi = cfg.gold_size_range
+    target = lo
+    if n_rows < 10_000:
+        target = max(target, int(n_rows * cfg.gold_min_fraction_small_corpus))
+    target = min(target, hi, int(n_rows * cfg.gold_max_fraction))
+    return max(50, target)

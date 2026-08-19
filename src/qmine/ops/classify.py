@@ -20,6 +20,7 @@ assignment rule the tree was built with — no train/serve skew is possible.
 
 from __future__ import annotations
 
+from collections import Counter
 from typing import Any, Sequence
 
 import numpy as np
@@ -36,6 +37,10 @@ from ..determinism import SEED_METRIC
 # Agreement
 # ==========================================================================
 
+UNLABELED = "UNLABELED"
+"""Sentinel for "this annotator returned nothing for this row"."""
+
+
 def agreement(labels_a: Sequence[str], labels_b: Sequence[str]) -> dict[str, Any]:
     """Raw agreement and Cohen's kappa between two independent annotators.
 
@@ -49,9 +54,24 @@ def agreement(labels_a: Sequence[str], labels_b: Sequence[str]) -> dict[str, Any
     coexist with mediocre kappa, and the two together tell you which situation
     you are in.
     """
-    a, b = list(labels_a), list(labels_b)
-    if not a or len(a) != len(b):
+    a_all, b_all = list(labels_a), list(labels_b)
+    if not a_all or len(a_all) != len(b_all):
         return {"n": 0, "raw_agreement": float("nan"), "kappa": float("nan")}
+
+    # A missing answer is not a disagreement. When an annotator's batch fails or
+    # its response omits a query, the caller fills UNLABELED — scoring that as
+    # "the two annotators disagree" charges an infrastructure failure to the
+    # methodology and depresses a *blocking* metric. Those rows are excluded and
+    # counted separately, so a coverage problem reads as a coverage problem.
+    keep = [i for i, (x, y) in enumerate(zip(a_all, b_all))
+            if x != UNLABELED and y != UNLABELED]
+    n_unlabelled = len(a_all) - len(keep)
+    a = [a_all[i] for i in keep]
+    b = [b_all[i] for i in keep]
+    if not a:
+        return {"n": 0, "raw_agreement": float("nan"), "kappa": float("nan"),
+                "n_unscored_unlabelled": n_unlabelled,
+                "note": "every row was unlabelled — the annotators did not run"}
     raw = float(np.mean([x == y for x, y in zip(a, b)]))
     try:
         k = float(cohen_kappa_score(a, b, replace_undefined_by=0.0))
@@ -62,6 +82,8 @@ def agreement(labels_a: Sequence[str], labels_b: Sequence[str]) -> dict[str, Any
     disagreements = [i for i, (x, y) in enumerate(zip(a, b)) if x != y]
     return {
         "n": len(a),
+        "n_submitted": len(a_all),
+        "n_unscored_unlabelled": n_unlabelled,
         "raw_agreement": round(raw, 4),
         "kappa": round(k, 4),
         "n_disagreements": len(disagreements),
@@ -400,7 +422,10 @@ def select_active_learning_batch(
     far from the ones already chosen.
     """
     labelled = set(int(i) for i in already_labelled)
-    pool = np.array([i for i in range(len(X)) if i not in labelled], dtype=np.int64)
+    # `.shape[0]`, not `len(X)`: the caller passes a char-TFIDF matrix, and
+    # scipy refuses len() on sparse ('length is ambiguous'). That TypeError was
+    # swallowed upstream, so this whole round silently never ran.
+    pool = np.array([i for i in range(X.shape[0]) if i not in labelled], dtype=np.int64)
     if pool.size == 0:
         return {"selected": [], "n": 0, "note": "no unlabelled rows remain"}
 
@@ -436,3 +461,136 @@ def select_active_learning_batch(
             "batch does not collapse onto a single confusing region"
         ),
     }
+
+
+# ==========================================================================
+# Phase 2b step 5 — deciding the boundaries the referee could not settle
+# ==========================================================================
+
+def contested_boundaries(rows: Sequence[Any]) -> list[dict[str, Any]]:
+    """Class pairs the referee resolved *inconsistently* across the gold set.
+
+    A pair the referee always sent the same way is settled — a rule can be
+    written from it. A pair it sent both ways is an open boundary, and no rule
+    can be written for a boundary nobody has decided. On the run that motivated
+    this, 30 of 42 disagreeing pairs were settled and 12 were not; resolving only
+    the settled ones lifts kappa to 0.8978, short of the 0.90 gate, while the
+    unsettled dozen holds the remaining 55 disagreements.
+    """
+    seen: dict[frozenset[str], list[str]] = {}
+    for r in rows:
+        if getattr(r, "agreed", False) or not getattr(r, "final", ""):
+            continue
+        key = frozenset((r.label_a, r.label_b))
+        if len(key) == 2:
+            seen.setdefault(key, []).append(r.final)
+    out = []
+    for key, finals in seen.items():
+        counts = Counter(finals)
+        if len(counts) > 1:
+            out.append({"pair": sorted(key), "n": len(finals),
+                        "resolved_as": dict(counts)})
+    return sorted(out, key=lambda d: -d["n"])
+
+
+def discriminating_markers(
+    rows: Sequence[Any], pair: Sequence[str], *,
+    min_support: int = 4, min_precision: float = 0.90, max_markers: int = 4,
+) -> list[dict[str, Any]]:
+    """Substrings that separate two classes, learned from rows both annotators agreed on.
+
+    The agreed rows are the only labels in the set with no arbitration in them,
+    which makes them the right evidence for settling a boundary the referee kept
+    flip-flopping on. Deciding it from this evidence beats asking another model
+    for an opinion: the resulting rule is checkable, reproducible, and stated in
+    the corpus's own vocabulary. On the motivating corpus the marker 意思 held
+    59/59 for WORD_MEANING over IDIOM_PHRASE among agreed rows — a discriminator
+    the referee overrode in three separate verdicts.
+    """
+    a, b = pair[0], pair[1]
+    pool = [r for r in rows if getattr(r, "agreed", False) and r.final in (a, b)]
+    if len(pool) < min_support * 2:
+        return []
+
+    counts: dict[str, Counter] = {}
+    for r in pool:
+        q = str(r.query)
+        # Character n-grams: the corpus may have no whitespace to tokenise on.
+        grams = {q[i : i + n] for n in (2, 3, 4) for i in range(len(q) - n + 1)}
+        for g in grams:
+            counts.setdefault(g, Counter())[r.final] += 1
+
+    out = []
+    for gram, c in counts.items():
+        total = c[a] + c[b]
+        if total < min_support:
+            continue
+        winner, n_win = (a, c[a]) if c[a] >= c[b] else (b, c[b])
+        precision = n_win / total
+        if precision >= min_precision:
+            out.append({"marker": gram, "then": winner, "support": total,
+                        "precision": round(precision, 3)})
+
+    # Greedy set cover, not a substring filter. Character n-grams necessarily
+    # produce overlapping fragments of one pattern (意思, 什么意, 么意思, 是什么意…),
+    # and no containment rule separates the useful short form from the noise —
+    # 意思 and 的意 overlap in neither direction yet say the same thing. Selecting
+    # by how many *not-yet-covered* rows a marker explains sidesteps that: a
+    # fragment of an already-chosen marker covers nothing new and drops out on
+    # its own, and what survives is the smallest set that reaches the most rows.
+    by_marker = {c["marker"]: c for c in out}
+    matches = {m: {i for i, r in enumerate(pool) if m in str(r.query)} for m in by_marker}
+    covered: set[int] = set()
+    chosen: list[dict[str, Any]] = []
+    while len(chosen) < max_markers:
+        taken = {k["marker"] for k in chosen}
+        # Rank every remaining candidate outright rather than tracking a running
+        # best: ties on coverage are common (的意 and 意思 both explain the same
+        # twelve rows), and resolving them by dict order makes the rule set
+        # depend on insertion order. Shortest wins, then lexicographic — so the
+        # same corpus always yields the same guide.
+        ranked = sorted(
+            ((len(matches[m] - covered), -len(m), [-ord(ch) for ch in m], c)
+             for m, c in by_marker.items() if m not in taken),
+            reverse=True,
+        )
+        if not ranked:
+            break
+        best_gain, _, _, best = ranked[0]
+        if best_gain < min_support:
+            break
+        chosen.append(best)
+        covered |= matches[best["marker"]]
+    return chosen
+
+
+def boundary_default(
+    rows: Sequence[Any], pair: Sequence[str], markers: Sequence[str] = (),
+    *, min_support: int = 20, min_precision: float = 0.75,
+) -> dict[str, Any] | None:
+    """A tie-breaker for rows on this boundary that carry no marker at all.
+
+    Markers cannot reach the hardest rows. On the motivating corpus 64% of all
+    disagreements were queries with no intent marker whatsoever — a bare
+    four-character idiom like 飞檐走壁 states its object and not what the user
+    wants to know about it, so an annotator with no default must guess, and two
+    annotators guess differently.
+
+    The default is taken from the marker-less rows both annotators agreed on,
+    and only when that majority is decisive: a 64% lean is noise dressed as a
+    rule and would manufacture as much disagreement as it settles. Returns
+    ``None`` when the evidence does not clear the floor, which leaves the
+    boundary honestly open rather than closing it on a coin flip.
+    """
+    a, b = pair[0], pair[1]
+    bare = [r for r in rows
+            if getattr(r, "agreed", False) and r.final in (a, b)
+            and not any(m in str(r.query) for m in markers)]
+    if len(bare) < min_support:
+        return None
+    counts = Counter(r.final for r in bare)
+    winner, n = counts.most_common(1)[0]
+    precision = n / len(bare)
+    if precision < min_precision:
+        return None
+    return {"then": winner, "support": len(bare), "precision": round(precision, 3)}
