@@ -4,10 +4,12 @@ from __future__ import annotations
 
 import json
 import logging
+import time
 from pathlib import Path
 from typing import Optional
 
 import typer
+import yaml
 from rich.console import Console
 from rich.table import Table
 
@@ -28,6 +30,17 @@ def _load_env() -> None:
         console.print(f"[dim]loaded {len(loaded)} key(s) from {next(iter(loaded.values()))}[/dim]")
 
 
+def _console_level(level: int) -> None:
+    """Set the verbosity of the stderr handler, leaving loggers permissive.
+
+    Handlers decide what reaches a destination; loggers decide what exists at
+    all. Only the former should move when the UI wants a quiet screen.
+    """
+    for h in logging.getLogger().handlers:
+        if isinstance(h, logging.StreamHandler) and not isinstance(h, logging.FileHandler):
+            h.setLevel(level)
+
+
 def _setup_logging(verbose: bool) -> None:
     logging.basicConfig(
         level=logging.INFO if verbose else logging.WARNING,
@@ -37,8 +50,26 @@ def _setup_logging(verbose: bool) -> None:
 
 
 def _load_config(config: Optional[str], domain: Optional[str], **over) -> QMineConfig:
+    """Build the run config from a YAML file and/or a domain profile.
+
+    `--config` used to win outright and silently drop `--domain`, so a config file
+    holding nothing but a provider policy also replaced the domain profile with
+    the generic default. The visible symptom was subtle: template coverage halved
+    from 36.6% to 19.1% in a *deterministic* phase, because the domain's phrasing
+    seeds had quietly gone missing. Everything downstream of template mining —
+    fragmentation, intent alignment, the K locator — rests on those rows.
+
+    A config file that declares its own `domain:` still wins; one that does not
+    inherits the profile the user asked for on the command line.
+    """
     if config:
         cfg = QMineConfig.load(config)
+        declares_domain = "domain" in (yaml.safe_load(Path(config).read_text()) or {})
+        if domain and not declares_domain:
+            path = Path(domain)
+            if not path.exists():
+                path = CONFIG_DIR / "domains" / f"{domain}.yaml"
+            cfg.domain = DomainProfile.load(path)
     else:
         cfg = QMineConfig()
         if domain:
@@ -117,22 +148,116 @@ def run(
     # `tee` keep working.
     use_dash = dashboard and verbose
     if use_dash:
-        import logging as _logging
-
         from .ui.live import LiveDashboard
 
-        _logging.getLogger("qmine").setLevel(_logging.WARNING)
         dash = LiveDashboard(run_id=run_id or "", domain=cfg.domain.key,
                              provider=cfg.llm.provider, language=cfg.report_language)
         with dash:
-            if not dash.enabled:
-                _logging.getLogger("qmine").setLevel(_logging.INFO)
+            # Quiet the *console handler*, not the logger. Lowering the logger
+            # here used to take `<run>/run.log` down with it, so choosing the
+            # pretty view meant choosing to have no record of the run at all.
+            if dash.enabled:
+                _console_level(logging.WARNING)
             result = run_pipeline(cfg, run_id=run_id, human_review=human_review,
                                   on_event=dash.handle)
+            # The dashboard cannot tell a halt from ordinary progress — a
+            # blocking gate returns normally — so the outcome is handed to it.
+            dash.finish(ok=not result["summary"].get("halted", False))
+        _console_level(logging.INFO)
     else:
         result = run_pipeline(cfg, run_id=run_id, human_review=human_review,
                               on_event=lambda m: console.print(f"  [dim]{m}[/dim]"))
     _print_summary(result["summary"])
+
+
+@app.command()
+def watch(
+    run_id: str = typer.Argument(..., help="Run to follow."),
+    run_root: str = typer.Option("runs", "--run-root"),
+    language: str = typer.Option("zh", "--language", help="zh | en."),
+    poll: float = typer.Option(0.5, "--poll", help="Seconds between reads."),
+) -> None:
+    """Attach the live dashboard to a run, following ``<run>/run.log``.
+
+    The panel used to be welded to the process that owned the terminal, which
+    forced a choice: run it yourself and watch, or hand it off and see nothing.
+    Reading the log instead separates the two, so a run can be launched detached
+    — or by someone else entirely — and still be watched, re-watched after it
+    finishes, or watched from two terminals at once.
+    """
+    from .ui.live import LiveDashboard, parse_log_line
+
+    root = Path(run_root) / run_id
+    log_path, usage_path = root / "run.log", root / "usage.json"
+    if not root.exists():
+        console.print(f"[red]no run at {root}[/red]")
+        raise typer.Exit(1)
+
+    def usage() -> dict:
+        try:
+            return json.loads(usage_path.read_text())
+        except Exception:  # noqa: BLE001
+            return {}
+
+    def finished() -> bool:
+        """A summary exists AND nothing has been logged since it was written.
+
+        Checking only for the file's existence made `watch` unusable on exactly
+        the case it is most wanted for: a re-run of a run id that halted earlier
+        leaves the previous attempt's summary on disk, so the follower replayed
+        the log and exited within seconds while the new run was still going.
+        """
+        summaries = list(root.glob("gen*/run_summary.json"))
+        if not summaries:
+            return False
+        newest = max(f.stat().st_mtime for f in summaries)
+        if log_path.exists() and log_path.stat().st_mtime > newest + 1.0:
+            return False          # the log has moved on past that summary
+        return True
+
+    def halted() -> bool:
+        for f in sorted(root.glob("gen*/run_summary.json")):
+            try:
+                return bool(json.loads(f.read_text()).get("halted"))
+            except Exception:  # noqa: BLE001
+                pass
+        return False
+
+    dash = LiveDashboard(run_id=run_id, domain="", provider="", language=language)
+    dash.usage_fn = usage
+    offset, idle = 0, 0.0
+    with dash:
+        try:
+            while True:
+                if log_path.exists():
+                    size = log_path.stat().st_size
+                    # A re-run of the same id truncates the log; without this the
+                    # follower would read from a stale offset into the middle of
+                    # a line and silently show nothing for the rest of the run.
+                    if size < offset:
+                        offset = 0
+                    if size > offset:
+                        with log_path.open(encoding="utf-8", errors="replace") as fh:
+                            fh.seek(offset)
+                            for line in fh:
+                                msg = parse_log_line(line)
+                                if msg:
+                                    dash.handle(msg)
+                            offset = fh.tell()
+                        idle = 0.0
+                    else:
+                        idle += poll
+                else:
+                    idle += poll
+                # Only stop once the run has written a summary AND gone quiet —
+                # a summary alone can appear before the last lines are flushed.
+                if finished() and idle >= 3.0:
+                    break
+                time.sleep(poll)
+        except KeyboardInterrupt:
+            pass
+        dash.finish(ok=not halted())
+    console.print(f"[dim]{log_path} — {'halted' if halted() else 'finished' if finished() else 'detached'}[/dim]")
 
 
 @app.command()
@@ -249,7 +374,10 @@ def promote(
     from .memory.context import BlindnessFirewall
     from .memory.store import open_memory
     from .ops.promotion import (
-        apply_promotion, build_blind_matchups, find_disagreements, score_verdicts,
+        apply_promotion,
+        build_blind_matchups,
+        find_disagreements,
+        score_verdicts,
     )
 
     cfg = _load_config(None, domain)

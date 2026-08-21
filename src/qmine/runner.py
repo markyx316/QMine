@@ -10,6 +10,7 @@ reviewer's veto.
 from __future__ import annotations
 
 import contextlib
+import json
 import logging
 import time
 import uuid
@@ -34,35 +35,35 @@ def make_run_id(prefix: str = "run") -> str:
 
 
 @contextlib.contextmanager
-def open_run(
-    cfg: QMineConfig,
-    *,
-    run_id: str | None = None,
-    generation: int = 1,
-    resume: bool = False,
-    on_event: Any = None,
-) -> Iterator[tuple[Deps, Any, dict[str, Any]]]:
-    """Open every resource a run needs and yield ``(deps, graph, config_dict)``."""
-    run_id = run_id or make_run_id(cfg.domain.key)
-    root = Path(cfg.run_root) / run_id
-    root.mkdir(parents=True, exist_ok=True)
+def _run_log(root: Path) -> Iterator[None]:
+    """Tee every emitted line to ``<run>/run.log``, whatever the console is doing.
 
-    store = ArtifactStore(root, generation=generation)
-    registry = ModelRegistry(cfg.llm, cache_dir=root / "llm_cache", run_cfg=cfg)
+    The live dashboard owns the screen, so the CLI drops the console logger to
+    WARNING while it runs — which used to mean the INFO stream simply ceased to
+    exist. Nothing was written to disk anywhere, so watching a run *prettily* and
+    being able to debug it afterwards were mutually exclusive, and a two-hour run
+    that halted left only whatever six lines the dashboard happened to be showing.
 
-    with open_memory(root.parent / "memory.sqlite", project="qmine", domain=cfg.domain.key) as memory:
-        deps = Deps(
-            cfg=cfg, store=store, registry=registry, memory=memory,
-            firewall=BlindnessFirewall(), run_id=run_id, on_event=on_event,
-        )
-        with _checkpointer(root / "checkpoints.sqlite") as saver:
-            graph = build_graph(cfg, deps, checkpointer=saver, human_review=cfg.gates.human_review_points and False)
-            yield deps, graph, {
-                "run_id": run_id,
-                "root": str(root),
-                "thread": {"configurable": {"thread_id": f"{run_id}-gen{generation}"},
-                           "recursion_limit": cfg.llm.recursion_limit},
-            }
+    The level lives on the *handler*, never on the logger. A logger's level gates
+    records before any handler sees them, so quieting the console by lowering the
+    logger — which is what the CLI used to do — silences the file too. Keeping the
+    logger permissive and letting each handler choose is what allows one INFO
+    stream to reach disk while the console shows only warnings.
+    """
+    path = root / "run.log"
+    handler = logging.FileHandler(path, encoding="utf-8")
+    handler.setLevel(logging.INFO)
+    handler.setFormatter(logging.Formatter("%(asctime)s %(levelname)-7s %(name)s: %(message)s",
+                                           datefmt="%H:%M:%S"))
+    previous = log.level
+    log.setLevel(logging.INFO)
+    log.addHandler(handler)
+    try:
+        yield
+    finally:
+        log.setLevel(previous)
+        log.removeHandler(handler)
+        handler.close()
 
 
 #: Our own record types, declared to the checkpoint serialiser.
@@ -151,8 +152,32 @@ def run_pipeline(
 
     def _emit(msg: str) -> None:
         events.append(msg)
+        # A follower attached with `qmine watch` reads the log, which carries no
+        # spend. Snapshotting usage beside it keeps the two things the dashboard
+        # promises to show continuously — gates and money — available to a viewer
+        # that is not this process.
+        try:
+            (root / "usage.json").write_text(json.dumps(registry.usage(), default=str))
+        except Exception:  # noqa: BLE001
+            pass
         if on_event:
             on_event(msg)
+
+    def _agent(rec: dict[str, Any]) -> None:
+        # One line, readable in `--plain` and parseable by the dashboard. The
+        # marker is what lets a follower rebuild the agent panel from run.log
+        # alone, so it must survive into the file verbatim.
+        mark = "ok" if rec["ok"] else "!!"
+        line = (f"  ~ {rec['role']} {mark} {rec['latency_s']}s "
+                f"out {rec['output_tokens']:,} · {rec['model']} · {rec['returned']}")[:400]
+        # `log.info` FIRST. `_emit` only feeds the in-process dashboard; `deps.emit`
+        # is what reaches `run.log`, and a follower attached with `qmine watch`
+        # reads the file. Emitting only to `_emit` left the agents panel empty for
+        # an entire live run while the mechanism underneath it worked fine.
+        log.info(line)
+        _emit(line)
+
+    registry.on_call = _agent
 
     if on_event is not None and hasattr(on_event, "__self__"):
         # A LiveDashboard: give it a handle on usage so it can show spend live.
@@ -162,7 +187,7 @@ def run_pipeline(
         if hasattr(dash, "provider"):
             dash.provider = registry.provider
 
-    with open_memory(Path(cfg.run_root) / "memory.sqlite", project="qmine", domain=cfg.domain.key) as memory:
+    with _run_log(root), open_memory(Path(cfg.run_root) / "memory.sqlite", project="qmine", domain=cfg.domain.key) as memory:
         deps = Deps(cfg=cfg, store=store, registry=registry, memory=memory,
                     firewall=BlindnessFirewall(), run_id=run_id, on_event=_emit)
         with _checkpointer(root / "checkpoints.sqlite") as saver:
@@ -281,7 +306,7 @@ def resume_run(cfg: QMineConfig, run_id: str, *, generation: int = 1, resume_val
     root = Path(cfg.run_root) / run_id
     store = ArtifactStore(root, generation=generation)
     registry = ModelRegistry(cfg.llm, cache_dir=root / "llm_cache", run_cfg=cfg)
-    with open_memory(Path(cfg.run_root) / "memory.sqlite", project="qmine", domain=cfg.domain.key) as memory:
+    with _run_log(root), open_memory(Path(cfg.run_root) / "memory.sqlite", project="qmine", domain=cfg.domain.key) as memory:
         deps = Deps(cfg=cfg, store=store, registry=registry, memory=memory,
                     firewall=BlindnessFirewall(), run_id=run_id)
         with _checkpointer(root / "checkpoints.sqlite") as saver:

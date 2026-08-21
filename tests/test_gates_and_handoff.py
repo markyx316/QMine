@@ -467,30 +467,40 @@ def test_the_pilot_separates_a_fixable_guide_from_an_annotator_ceiling():
     Without this the gate imports a kappa bar from another project and treats an
     unreachable one as a guide defect. On this corpus collapsing the taxonomy from
     21 classes to 4 moved kappa only 0.808 → 0.832, so the taxonomy was never it.
+    The "at the ceiling" side used to be `share_of_ceiling >= 0.90` — a constant
+    from one corpus, deciding whether a run halts. It is now a test the pilot can
+    answer itself: the slack a redraft could recover is `ceiling - kappa`, and it
+    is worth acting on only when it exceeds the error on that difference.
     """
     from qmine.config import QMineConfig
 
     cfg = QMineConfig()
 
-    def verdict(inter_upper: float, share_of_ceiling: float) -> bool:
-        """The gate's own rule: pass if it reaches target OR sits at the ceiling."""
-        return inter_upper >= cfg.gates.kappa or share_of_ceiling >= 0.90
+    def verdict(po: float, k: float, po2: float, k2: float, n: int = 200) -> bool:
+        """The gate's own rule, recomputed from the same inputs it uses."""
+        pe = (po - k) / (1 - k) if k < 1 else 0.0
+        pe2 = (po2 - k2) / (1 - k2) if k2 < 1 else 0.0
+        se = ((po * (1 - po) / n) ** 0.5) / max(1e-6, 1 - pe)
+        se2 = ((po2 * (1 - po2) / n) ** 0.5) / max(1e-6, 1 - pe2)
+        slack_is_real = (k2 - k) > 1.645 * (se ** 2 + se2 ** 2) ** 0.5
+        return (k + 1.645 * se) >= cfg.gates.kappa or not slack_is_real
 
-    # Clears the bar outright.
-    assert verdict(0.94, 0.80)
+    # Both real halts must still halt. These are the measured pilots.
+    assert not verdict(0.785, 0.761, 0.900, 0.8997), "live30 kappa 0.761 vs ceiling 0.900"
+    assert not verdict(0.715, 0.688, 0.820, 0.8023), "live31 kappa 0.688 vs ceiling 0.802"
 
-    # Well short of the bar, and well short of what the annotator can do alone:
-    # a real guide defect, and the gate must stop the run before the gold set.
-    assert not verdict(0.72, 0.78)
+    # Clears the bar outright — ceiling is irrelevant when the target is met.
+    assert verdict(0.95, 0.94, 0.96, 0.95)
 
-    # Well short of the bar, but the annotator only agrees with ITSELF at ~0.85 —
-    # no rule the referee writes can close that. Halting here would be demanding
-    # the impossible, so it warns and records the ceiling instead.
-    assert verdict(0.83, 0.98)
+    # Short of the bar, but the annotator barely beats itself: no rule the referee
+    # writes can close that, so halting would demand a fix nobody can perform.
+    assert verdict(0.83, 0.795, 0.84, 0.805)
 
-    # The boundary is on the ceiling share, not on the absolute kappa.
-    assert verdict(0.10, 0.95)
-    assert not verdict(0.89, 0.50)
+    # And the point of doing it this way: the SAME slack decides differently
+    # depending on whether it is bigger than its own error. That is the thing a
+    # fixed share threshold could not express.
+    assert verdict(0.83, 0.795, 0.845, 0.815, n=200)          # 0.020 ± 0.05 — noise
+    assert not verdict(0.80, 0.700, 0.845, 0.815, n=200)      # 0.115 ± 0.05 — real
 
 
 def test_gates_do_not_import_thresholds_that_only_fit_one_corpus():
@@ -573,3 +583,135 @@ def test_a_taxonomy_without_tie_breaks_cannot_reach_annotation():
 
     # Healthy on both axes.
     assert gate(lo + 1, floor + 5) == (True, True)
+
+
+def test_every_adjudication_rule_the_architect_writes_reaches_the_annotator():
+    """`TaxonomyNode.adjudication_rules` was write-only for the whole project.
+
+    It is declared to hold rule *ids* cross-referencing the top-level list; the
+    models fill it with whole rules; and nothing in `src/` ever read it. So the
+    architect spent output tokens on per-class tie-breaks that reached no
+    annotator, no referee and no classifier — 55 discarded in one live run, 24 in
+    the next, while its shape gate reported "1 adjudication rules".
+    """
+    from qmine.graph.nodes.topdown import _render_rules
+    from qmine.records import AdjudicationRule, Taxonomy, TaxonomyNode
+
+    tax = Taxonomy(
+        version="v1",
+        nodes=[
+            TaxonomyNode(code="A", name="a", level=1, definition="d", user_need="n",
+                         adjudication_rules=["A vs B: prefer A when the marker is 读音", "R1"]),
+            TaxonomyNode(code="B", name="b", level=1, definition="d", user_need="n",
+                         adjudication_rules=["A vs B: prefer A when the marker is 读音"]),
+        ],
+        rules=[AdjudicationRule(id="R1", when="marker is 拼音", then="A", rationale="r")],
+    )
+    out = _render_rules(tax)
+    assert "[R1]" in out, "structured rules must still render"
+    assert "prefer A when the marker is 读音" in out, "node rules must reach the annotator"
+    assert out.count("prefer A when the marker is 读音") == 1, "duplicated across nodes"
+    assert out.count("R1") == 1, "a bare id is a cross-reference, not a second rule"
+    assert out.splitlines()[0].startswith("- [R1]"), "citable ids come first, ahead of free text"
+
+
+def test_a_halted_pilot_prescribes_a_remedy_and_names_which_kind():
+    """Three live halts reported `n_prescriptions: 0` — the operator was told the
+    taxonomy was wrong and not which part, nor which of two opposite fixes applied.
+
+    The pilot already holds the answer and was discarding it. A pair one annotator
+    cannot reproduce against ITSELF is a boundary not present in the data: merging
+    or re-cutting is the only remedy, and a tie-break rule is wasted effort on it.
+    A pair two annotators split while each stays self-consistent is precisely what
+    a tie-break is for. Replayed on a real pilot the split was 36 queries structural
+    against 27 guide — invisible in the aggregate kappa that halted the run.
+    """
+    import collections
+
+    la = [{"label": x} for x in ["A", "A", "B", "C", "C", "D"]]
+    lb = [{"label": x} for x in ["B", "A", "B", "D", "C", "D"]]   # differs at 0 and 3
+    back = ["B", "A", "B", "C", "C", "D"]                          # A self-differs at 0, 2
+
+    conf = collections.Counter(" × ".join(sorted((x["label"], y["label"])))
+                               for x, y in zip(la, lb) if x["label"] != y["label"])
+    structural = collections.Counter(" × ".join(sorted((x["label"], str(v))))
+                                     for x, v in zip(la, back) if x["label"] != str(v))
+    guide_only = {k: v for k, v in conf.items() if k not in set(structural)}
+
+    assert "A × B" in structural, "A vs B is not reproducible by one annotator"
+    assert "C × D" in guide_only, "C vs D is stable within an annotator, unstable across"
+    assert "A × B" not in guide_only, "a structural pair must not also be prescribed a rule"
+
+
+def test_the_architect_is_not_told_to_write_rules_it_does_not_write():
+    """The prompt said "You are not writing the adjudication rules" and, twenty
+    lines later, "YOU MUST return at least {{MIN_RULES}} adjudication rules".
+
+    It obeyed the second: 41,808 output tokens, rules emitted anyway, and the
+    class list starved of the budget it was supposed to receive.
+    """
+    from pathlib import Path as P
+
+    prompt = P("src/qmine/agents/prompts/architect.md").read_text()
+    assert "not writing the adjudication rules" in prompt
+    assert "MIN_RULES" not in prompt, "the architect is still ordered to write rules"
+
+
+def test_the_catchall_instruction_does_not_ask_for_the_defect_it_causes():
+    """The prompt required a catch-all "defined by what it *is*, not by what it is
+    not". A catch-all named for a content area competes with the named classes for
+    the same queries — measured as 25% of one pilot's inter-annotator disagreement.
+    A catch-all can only be defined by exclusion."""
+    from pathlib import Path as P
+
+    prompt = P("src/qmine/agents/prompts/architect.md").read_text()
+    assert "defined by what it *is*, not by what it is not" not in prompt
+    assert "none of the above" in prompt
+    assert "exclusion" in prompt
+
+
+def test_a_gate_with_no_remaining_move_proceeds_rather_than_stopping_dead():
+    """The slack test exists to trigger a remedy; the pipeline has one.
+
+    Measured on `live35`: kappa 0.844 against a 0.9243 ceiling left 0.080 of
+    statistically significant slack, the redraw rewrote the six worst boundaries,
+    and kappa FELL to 0.827 — so it was reverted and the slack stood. Halting
+    then asks the operator to do by hand what the pipeline just failed at, while
+    kappa 0.844 is above the reliability floor and the labels would serve.
+
+    The condition is deliberately narrow: it requires the remedy to have RUN and
+    FAILED. A run that never attempted a redraw still halts, because it has a
+    move left to make.
+    """
+    from qmine.config import QMineConfig
+
+    cfg = QMineConfig()
+    floor = cfg.gates.annotator_fitness_kappa
+
+    def gate(kappa, upper, ceiling_ok, slack_sig, history):
+        attempted = bool(history)
+        helped = any(h.get("kept") for h in history)
+        exhausted = attempted and not helped
+        usable = exhausted and kappa >= floor
+        at_ceiling = not slack_sig
+        return ceiling_ok and (upper >= cfg.gates.kappa or at_ceiling or usable)
+
+    reverted = [{"kept": False}]
+    kept = [{"kept": True}]
+
+    # live35 exactly: good kappa, real slack, redraw tried and reverted.
+    assert gate(0.844, 0.888, True, True, reverted)
+
+    # Never attempted — there is still a move to make, so it must halt.
+    assert not gate(0.844, 0.888, True, True, [])
+
+    # The redraw HELPED, so the loop stopped for another reason; the slack test
+    # still governs and this must halt.
+    assert not gate(0.844, 0.888, True, True, kept)
+
+    # Below the reliability floor the labels cannot support conclusions, and no
+    # amount of "we tried" changes that.
+    assert not gate(0.71, 0.77, True, True, reverted)
+
+    # An unfit annotator halts regardless.
+    assert not gate(0.844, 0.888, False, True, reverted)

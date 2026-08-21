@@ -179,6 +179,19 @@ class TaxonomyConfig(BaseModel):
     #: re-annotate rather than shipping an ambiguous gold set. Each round costs a
     #: second full annotation pass, so the default is one.
     kappa_repair_rounds: int = 1
+    #: How many times P2a may redraw the taxonomy and re-pilot before giving up.
+    #: Each round costs one redraw call plus one pilot — cheap against a 3,000-row
+    #: gold set, and the alternative was halting with a printed diagnosis nobody
+    #: acted on. 0 disables the loop and restores the report-and-stop behaviour.
+    max_taxonomy_redraws: int = 2
+    #: Reuse a previous run's taxonomy instead of designing a new one. The design
+    #: work is expensive (5 researchers + architect + rule writer + critic, ~25
+    #: minutes) and TWO of the researchers read the live web, so re-running it
+    #: never reproduces the same taxonomy. That is what made recovery from a
+    #: mid-annotation provider outage cost ninety minutes rather than five: the
+    #: routing was pinned, the cache keys still moved, because the class list and
+    #: rules are embedded in every annotator prompt. Point this at a run id.
+    reuse_taxonomy_from: str | None = None
     #: The repair round scores a FRESH sample. Re-scoring the rows the repair was
     #: derived from measures how well the rules fit those rows, not whether the
     #: guide got clearer.
@@ -209,7 +222,22 @@ class GateConfig(BaseModel):
     min_template_rows: int = 400
     min_template_row_fraction: float = 0.05
     pilot_agreement: float = 0.85
+    #: The playbook's aspiration (line 205), reported for reference. It is NOT a
+    #: pass condition: it came with "K12 达 0.966", i.e. it was set as a floor
+    #: beneath what *that* project's annotators achieved. Ours self-agree at
+    #: 0.883, so 0.90 sits above this annotator's ceiling and two annotators can
+    #: never reach it — a bar that cannot be cleared is a wall, not a gate.
     kappa: float = 0.90
+    #: What the gate actually enforces, on the quantity it actually describes.
+    #: Two annotators cannot agree with each other more reliably than one agrees
+    #: with itself, so the fitness question is about the ANNOTATOR: can it apply
+    #: this taxonomy reproducibly at all? 0.80 is the conventional reliability
+    #: threshold in content analysis (Landis & Koch "almost perfect" begins at
+    #: 0.81; Krippendorff wants alpha >= 0.800 before drawing conclusions) — a
+    #: disciplinary constant about measurement, not one imported from another
+    #: project's result. Below it the labels cannot support conclusions and no
+    #: guide work will change that.
+    annotator_fitness_kappa: float = 0.80
     #: Fraction of the intended gold sample that both annotators must actually
     #: label before kappa is treated as a measurement at all.
     min_annotation_coverage: float = 0.90
@@ -303,6 +331,12 @@ class LLMConfig(BaseModel):
     catalog_offline: bool = False
     #: Path to a pinned catalogue snapshot, for reproducing an old run's routing.
     catalog_pinned: str | None = None
+    #: Labs whose models must never be candidates, by originating lab rather than
+    #: by gateway — excluding "openai" also excludes `openrouter:openai/gpt-5.1`,
+    #: which is the only version of this that works once an aggregator is in the
+    #: pool. Empty by default: a general tool should not have opinions about whose
+    #: models you may use.
+    excluded_labs: list[str] = Field(default_factory=list)
     #: Explicit role -> model overrides. These win outright over the router.
     model_overrides: dict[str, str] = Field(default_factory=dict)
     #: Abort before starting if the estimated run cost exceeds this.

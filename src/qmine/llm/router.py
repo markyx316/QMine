@@ -42,7 +42,69 @@ log = logging.getLogger("qmine.router")
 #: are independent. Give both the same model and shared architecture makes them
 #: agree on the same mistakes, inflating kappa and hiding exactly the guide
 #: ambiguity the gold set exists to find.
-MUST_DIFFER_FROM: dict[str, str] = {"annotator_b": "annotator_a"}
+#: A role must not share a lab with any of these. The referee decides every row
+#: the annotators split on, so sharing a lab with either would make it side
+#: systematically with that one — corrupting the gold set the whole pipeline
+#: rests on, silently and in a direction nobody would look for.
+MUST_DIFFER_FROM: dict[str, tuple[str, ...]] = {
+    "annotator_b": ("annotator_a",),
+    "referee": ("annotator_a", "annotator_b"),
+}
+
+#: Model-id fragments that identify the LAB a model comes from, regardless of
+#: which gateway serves it. An aggregator makes `provider` useless as a proxy for
+#: independence: `zhipu/zai/glm-5.1` and `openrouter/z-ai/glm-5.3` are different
+#: providers and the same lab, so two annotators there would agree on the same
+#: mistakes and inflate kappa exactly where the gold set is meant to expose the
+#: guide. Order matters — longest, most specific fragment first.
+_LAB_MARKERS: tuple[tuple[str, str], ...] = (
+    ("deepseek", "deepseek"), ("z-ai/", "zhipu"), ("zai/", "zhipu"), ("glm", "zhipu"),
+    ("qwen", "qwen"), ("dashscope/", "qwen"), ("moonshot", "moonshot"),
+    ("openai/", "openai"), ("anthropic/", "anthropic"), ("google/", "google"),
+    ("kimi", "moonshot"), ("claude", "anthropic"), ("gpt-", "openai"),
+    ("o1", "openai"), ("o3", "openai"), ("gemini", "google"), ("llama", "meta"),
+    ("mistral", "mistral"), ("minimax", "minimax"), ("baichuan", "baichuan"),
+    ("yi-", "01ai"), ("ernie", "baidu"), ("hunyuan", "tencent"), ("doubao", "bytedance"),
+)
+
+
+#: API gateways, which are never a lab.
+_GATEWAYS = frozenset({"openrouter", "dashscope", "volcengine", "siliconflow"})
+
+
+def bare_model(card_or_id: Any) -> str:
+    """The model's own name, with the gateway's namespacing removed.
+
+    `deepseek/deepseek-v4-flash` served by OpenRouter and `deepseek-v4-flash`
+    served by DeepSeek are the same model reached two ways, and the router had no
+    way to notice that.
+    """
+    mid = str(getattr(card_or_id, "api_id", "") or getattr(card_or_id, "id", card_or_id))
+    return mid.split("/")[-1].lower()
+
+
+def lab_of(card_or_id: Any) -> str:
+    """Which lab trained this model, not which gateway sells it.
+
+    Independence between two annotators is a property of the models, not of the
+    billing relationship. Falls back to the provider when nothing matches, which
+    is the old behaviour and safe for direct providers.
+    """
+    mid = getattr(card_or_id, "id", card_or_id)
+    low = str(mid).lower()
+    for fragment, lab in _LAB_MARKERS:
+        if fragment in low:
+            return lab
+    # No marker. Aggregators namespace ids as `vendor/model`, so the vendor
+    # segment is the lab. Falling back to `provider` here returned "openrouter"
+    # for every unrecognised model — which made them indistinguishable from each
+    # other AND unexcludable by name, since the caller has no way to say "not
+    # that vendor" when every vendor reports as the gateway.
+    parts = [seg for seg in low.split("/") if seg and seg not in _GATEWAYS]
+    if len(parts) > 1:
+        return parts[0]
+    return str(getattr(card_or_id, "provider", "") or mid)
+
 
 #: Price percentile boundaries used to assign capability tiers, computed over the
 #: reachable set rather than over absolute dollars.
@@ -64,6 +126,11 @@ class Assignment:
     #: The model's own generation ceiling, so the caller never asks for more than
     #: it will emit. ``None`` when the catalogue does not publish one.
     max_output_tokens: int | None = None
+    #: What this model charges, carried through so spend is measured at the same
+    #: prices that chose it. The ledger used to bill every token at a hardcoded
+    #: frontier rate and overstated a live run by 11x.
+    input_per_mtok: float | None = None
+    output_per_mtok: float | None = None
     fallbacks: list[str] = field(default_factory=list)
     estimated_cost_usd: float = 0.0
     estimated_calls: int = 0
@@ -73,6 +140,7 @@ class Assignment:
     def as_dict(self) -> dict[str, Any]:
         return {
             "role": self.role, "model": self.model, "api_model": self.api_model,
+            "input_per_mtok": self.input_per_mtok, "output_per_mtok": self.output_per_mtok,
             "provider": self.provider,
             "tier": self.tier, "fallbacks": self.fallbacks,
             "estimated_cost_usd": round(self.estimated_cost_usd, 4),
@@ -99,13 +167,46 @@ class RoutingPlan:
         }
 
 
+def _generation(model_id: str) -> float:
+    """The largest version number in a model id, as a recency proxy.
+
+    `glm-5.1` -> 5.1, `glm-4.5-airx` -> 4.5, `qwen3-next-80b` -> 80 would be
+    wrong, so parameter-count suffixes are stripped first. Crude, and only ever
+    consulted to break an exact tie — never to override a real score difference.
+    """
+    import re as _re
+
+    low = str(model_id).lower()
+    # Date stamps first. `qwen-flash-2025-07-28` read as generation 28 and became
+    # the top-ranked model of its lab, then won every role in the pipeline.
+    low = _re.sub(r"\d{4}-\d{2}-\d{2}", " ", low)
+    low = _re.sub(r"\b\d{6,8}\b", " ", low)
+    low = _re.sub(r"\b20\d\d\b", " ", low)
+    # Then parameter counts — `qwen3-next-80b-a3b` must read as 3, not 80.
+    low = _re.sub(r"\d+(?:\.\d+)?\s*[bkm]\b", " ", low)
+    nums = _re.findall(r"\d+(?:\.\d+)?", low)
+    # A version number is small. Anything larger is a date, a size or an id.
+    return max((float(n) for n in nums if float(n) < 30), default=0.0)
+
+
 def _assign_tiers(cards: Sequence[ModelCard]) -> dict[str, str]:
     """Bucket models into capability tiers by price percentile.
 
-    Relative rather than absolute, so the tiers stay meaningful as the whole
-    market gets cheaper — which it does, continuously. Computed across the full
-    catalogue so that the reference distribution does not shift with how many
-    provider keys happen to be configured.
+    Price is a poor capability signal and we know exactly how it fails: a newer,
+    roomier model priced BELOW an older one reads as less capable — that is how
+    the referee kept `zai/glm-4.5-airx` (128k context) over `z-ai/glm-5.2` (1M
+    context) for being $1.46/M dearer. The fix for that is the tie-break in
+    `route`, which now rounds the score so a 1e-15 cost difference cannot outvote
+    a whole model generation.
+
+    Replacing the percentile with a price-free capability score was tried and
+    reverted, three times, because price was quietly doing two other jobs as well:
+    keeping $0.00 and unpriced endpoints — free tiers, previews, `openrouter/auto`
+    — out of the roles that matter. Strip price out of the ranking and those win
+    everything, because a cost-weighted score cannot resist a free model. Those
+    exclusions are now explicit in `_eligible`, but the ordering stays priced
+    until there is a capability signal worth trusting; the catalogue publishes
+    none, and inventing one produced worse routing than the flawed proxy.
     """
     priced = sorted([c for c in cards if c.priced],
                     key=lambda c: (c.input_per_mtok or 0) + 3 * (c.output_per_mtok or 0))
@@ -136,6 +237,26 @@ def _eligible(card: ModelCard, req: RoleRequirement, tier: str) -> tuple[bool, s
             pass
     if card.emits_non_text:
         return False, "emits images; tuned for a different job than text reasoning"
+    # Asynchronous variants. A `:batch` endpoint trades latency for price and is
+    # answered on the provider's schedule, not the caller's — this pipeline waits
+    # on every call, so one would hang a phase rather than serve it. They are
+    # cheap, which is exactly why the cost-weighted score reaches for them: the
+    # router picked `openai/gpt-5.1:batch` for the referee and five other roles.
+    if ":batch" in card.id or card.id.endswith(":async"):
+        return False, "asynchronous batch endpoint; this pipeline calls synchronously"
+    # Free and preview tiers. A run makes ~500 calls over two hours; free tiers are
+    # aggressively rate-limited and previews are withdrawn without notice. They
+    # also cost nothing, so a cost-weighted score reaches for them first — with
+    # price removed from the capability estimate, `:free` variants won every role
+    # in the pipeline including the architect.
+    if ":free" in card.id or "preview" in card.id or "-exp" in card.id:
+        return False, "free/preview tier: rate-limited and impermanent, unfit for a long run"
+    # A model with no price, or a price of zero, cannot be reasoned about and is
+    # almost always a free tier, a preview, or a meta-endpoint like
+    # `openrouter/auto` that resolves to something else at call time. A
+    # cost-weighted score ranks all of them first.
+    if not card.priced or (card.output_per_mtok or 0) <= 0:
+        return False, "no published price: free tier, preview, or a meta-endpoint"
     # The price-derived tier is a HARD gate only where an error is unrecoverable.
     # Everywhere else it is a scoring term, because the proxy's known failure is
     # precisely a strong-and-cheap model: DeepSeek at $0.28/$1M with 131k context
@@ -155,6 +276,7 @@ def route(
     prefer: dict[str, str] | None = None,
     budget_usd: float | None = None,
     prefer_chinese_native: bool = False,
+    excluded_labs: Sequence[str] = (),
     avg_input_tokens: int = 6000,
     #: Config-scaled call volumes. Without it the estimate is a constant and reads
     #: the same whether the gold set is 600 rows or 3,000 — a number consulted
@@ -171,10 +293,21 @@ def route(
     reqs = requirements or ROLE_REQUIREMENTS
     role_list = list(roles or reqs.keys())
     # Partner-constrained roles are routed after the role they must differ from.
-    role_list.sort(key=lambda r: (r in MUST_DIFFER_FROM, r))
+    role_list.sort(key=lambda r: (len(MUST_DIFFER_FROM.get(r, ())), r))
     cards = catalog.for_providers(available_providers)
+    if excluded_labs:
+        banned = {lab.lower() for lab in excluded_labs}
+        before = len(cards)
+        cards = [c for c in cards if lab_of(c) not in banned]
+        plan_note = (f"excluded {before - len(cards)} models from "
+                     f"{sorted(banned)} — by LAB, so an aggregator cannot smuggle "
+                     "them back in under a different provider name")
+    else:
+        plan_note = ""
     plan = RoutingPlan(catalog_provenance=catalog.provenance(),
                        providers_used=sorted(set(available_providers)))
+    if plan_note:
+        plan.notes.append(plan_note)
 
     if not cards:
         plan.notes.append(
@@ -201,7 +334,15 @@ def route(
             card = by_id.get(chosen_id)
             plan.assignments[role] = Assignment(
                 role=role, model=chosen_id,
+                # Carry the API id. Without it an explicitly-preferred model is
+                # called by its CATALOGUE id — `zai/glm-4.5-airx` where the
+                # endpoint wants `glm-4.5-airx` — which 404s, and which also
+                # changes the LLM cache key, so pinning a run to its own previous
+                # models would silently replay nothing.
+                api_model=card.api_id if card else None,
                 max_output_tokens=card.max_output_tokens if card else None,
+                input_per_mtok=card.input_per_mtok if card else None,
+                output_per_mtok=card.output_per_mtok if card else None,
                 provider=card.provider if card else "explicit",
                 tier=tiers.get(chosen_id, "explicit"),
                 estimated_calls=req.typical_calls,
@@ -258,28 +399,92 @@ def route(
                 bonus = 0.08
             return (1 - w_cost) * cap + w_cost * cheap + bonus
 
-        scored.sort(key=_score, reverse=True)
+        def _tiebreak(item: tuple[float, ModelCard, str]) -> tuple[float, float, float]:
+            """Score first; then break ties toward newer and roomier.
+
+            Measured: `zai/glm-5.1` (1.40/4.40, 200k context) and
+            `zai/glm-4.5-airx` (1.10/4.50, 128k) score **identically** on the cost
+            proxy — 14.60 each. The referee got the older, smaller-context model
+            because it came first in the catalogue. Price is the only capability
+            signal the router has, so when price cannot separate two candidates
+            something else must, and "newer generation, more context" is the
+            least-bad available proxy.
+            """
+            _cost, card, _tier = item
+            # ROUND the score. Two candidates differing by 1e-16 of floating-point
+            # noise are tied in every sense that matters, and comparing raw floats
+            # meant the tie-break below was unreachable: the referee kept an older
+            # 128k model over a newer 1M-context one on a 1.78e-15 cost difference.
+            return (round(_score(item), 6), _generation(card.id),
+                    float(card.context_tokens or 0))
+
+        scored.sort(key=_tiebreak, reverse=True)
+
+        # Within ONE lab, a newer model holding at least as much context is not
+        # less capable than an older one, whatever it costs. The price-derived
+        # tier says otherwise: `z-ai/glm-5.2` ($3.04/M, 1M context, structured
+        # output) is bucketed a tier BELOW `zai/glm-4.5-airx` ($4.50/M, 128k) for
+        # being cheaper, and the capability term — weighted 75% — then keeps the
+        # older model. Cross-lab this comparison is meaningless, so it is confined
+        # to a single lab, where a version number really does order the lineup.
+        if scored:
+            top = scored[0][1]
+            top_lab, top_gen = lab_of(top), _generation(top.id)
+            upgrade = next(
+                (it for it in scored
+                 if lab_of(it[1]) == top_lab
+                 and _generation(it[1].id) > top_gen
+                 and (it[1].context_tokens or 0) >= (top.context_tokens or 0)
+                 and (it[1].supports_structured_output is not False
+                      or top.supports_structured_output is not True)),
+                None,
+            )
+            if upgrade is not None:
+                scored = [upgrade] + [it for it in scored if it is not upgrade]
 
         # Independence constraint: prefer a different provider from the partner
         # role, dropping down the ranking to get it. Only a preference — if the
         # user has one provider, one model is the honest outcome, and it is
         # recorded as a warning rather than silently accepted.
-        partner = MUST_DIFFER_FROM.get(role)
+        partners = [p for p in MUST_DIFFER_FROM.get(role, ()) if p in plan.assignments]
+        partner = ", ".join(partners)
         independence_note = ""
-        if partner and partner in plan.assignments:
-            twin = plan.assignments[partner]
-            alt = next((it for it in scored if it[1].provider != twin.provider), None)
+        if partners:
+            twin_labs = {lab_of(by_id.get(plan.assignments[p].model)
+                                or plan.assignments[p].model) for p in partners}
+            twin_lab = ", ".join(sorted(twin_labs))
+            alt = next((it for it in scored if lab_of(it[1]) not in twin_labs), None)
             if alt is not None:
                 scored = [alt] + [it for it in scored if it is not alt]
                 independence_note = (
-                    f" Routed to a different provider from {partner} so that their agreement "
-                    "measures the guide rather than shared architecture."
+                    f" Routed to a different LAB from {partner} ({twin_lab}) so that their "
+                    "agreement measures the guide rather than shared architecture."
                 )
             else:
                 independence_note = (
-                    f" WARNING: shares a provider with {partner}; their kappa will partly "
-                    "reflect shared architecture rather than guide clarity."
+                    f" WARNING: shares a lab ({twin_lab}) with {partner}; their kappa will "
+                    "partly reflect shared architecture rather than guide clarity."
                 )
+
+        # Same model, fewer hops. An aggregator adds a routing layer with its own
+        # queueing, its own outages and its own rate limits; the lab that trained
+        # the model is the more direct route to it. Measured on one pilot: the
+        # OpenRouter-served path showed a 6.3x spread between its median and worst
+        # call (67.8s to 429.9s) where a direct provider held 1.4x — a difference
+        # model verbosity does not explain. Preference, not a rule: an aggregator
+        # is sometimes cheaper and is sometimes the only route to a model.
+        from .providers import BY_KEY
+
+        def _is_direct(prov: str) -> bool:
+            spec = BY_KEY.get(prov)
+            return bool(spec and spec.kind == "direct")
+
+        if scored and not _is_direct(scored[0][1].provider):
+            same = next((it for it in scored
+                         if _is_direct(it[1].provider)
+                         and bare_model(it[1]) == bare_model(scored[0][1])), None)
+            if same is not None:
+                scored = [same] + [it for it in scored if it is not same]
 
         cost, best, tier = scored[0]
 
@@ -292,26 +497,33 @@ def route(
             )
 
         # Fallbacks from *other* providers — a chain within one provider is one outage.
+        # Fallbacks diversify by LAB, not gateway. A chain within one lab is one
+        # outage; for a partner-constrained role it is also one architecture, so
+        # failing over would quietly destroy the independence kappa depends on.
         fallbacks: list[str] = []
-        seen = {best.provider}
+        seen = {lab_of(best)}
+        for pname in partners:
+            seen.add(lab_of(by_id.get(plan.assignments[pname].model)
+                            or plan.assignments[pname].model))
         for _c, cand, _t in scored[1:]:
-            if cand.provider in seen:
+            if lab_of(cand) in seen:
                 continue
             fallbacks.append(f"{cand.provider}:{cand.id}")
-            seen.add(cand.provider)
+            seen.add(lab_of(cand))
             if len(fallbacks) >= 2:
                 break
 
         total = cost * req.typical_calls
         plan.assignments[role] = Assignment(
             role=role, model=best.id, api_model=best.api_id or best.id,
+            input_per_mtok=best.input_per_mtok, output_per_mtok=best.output_per_mtok,
             max_output_tokens=best.max_output_tokens,
             provider=best.provider, tier=tier,
             fallbacks=fallbacks, estimated_cost_usd=total, estimated_calls=req.typical_calls,
             why=(f"{tier} tier meets the role's {req.reasoning} requirement; "
                  f"cost weighted {w_cost:.0%} because {req.typical_calls} call(s) at "
                  f"{req.blast_radius} blast radius" + independence_note + relax_note),
-            warnings=(["shares a provider with its partner annotator"]
+            warnings=(["shares a LAB with its partner annotator"]
                       if "WARNING" in independence_note else [])
                      + ([f"price tier relaxed: nothing reachable rated {req.reasoning}"]
                         if tier_relaxed else []),

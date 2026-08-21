@@ -22,6 +22,7 @@ from __future__ import annotations
 
 import hashlib
 import logging
+import time
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, TypeVar
@@ -169,6 +170,16 @@ class Agent:
         }
 
 
+def _tool_loop_usage(result: Any) -> dict[str, int]:
+    """Total the tokens every model turn in a tool loop actually spent."""
+    totals = {"input_tokens": 0, "output_tokens": 0}
+    for msg in (result or {}).get("messages", []) or []:
+        usage = getattr(msg, "usage_metadata", None) or {}
+        for key in totals:
+            totals[key] += int(usage.get(key, 0) or 0)
+    return totals
+
+
 class ToolAgent(Agent):
     """An agent that can call tools before answering.
 
@@ -197,6 +208,18 @@ class ToolAgent(Agent):
             out = self.ctx.registry.complete(role, system, user, schema=self.schema)
             return self.postprocess(out, **kwargs)
 
+        # Replay first. Without this the tool path re-fetched live pages on every
+        # run, which changed this agent's answer, which changed the architect's
+        # prompt, which missed ITS cache — and so on through every annotation call
+        # downstream. It is why "resume after a failure" replayed almost nothing
+        # twice today, despite the entries being on disk the whole time.
+        cached = self.ctx.registry.replay_external_turn(
+            role, "deep", system, user, self.schema)
+        if cached is not None:
+            self.used_tools = True
+            return self.postprocess(cached, **kwargs)
+
+        t0 = time.time()
         try:
             from langchain.agents import create_agent
 
@@ -213,7 +236,23 @@ class ToolAgent(Agent):
             if parsed is None:
                 raise ValueError("tool agent returned no structured response")
             self.used_tools = True
-            self.ctx.registry.ledger.record(role, output_tokens=0)
+            # A tool loop is several model calls, and this recorded a hardcoded
+            # zero for all of them: every web-researching agent's spend was
+            # invisible in `run_summary.json`, and — the part that matters — the
+            # ledger's output-token ceiling could not see the one code path that
+            # can iterate. A runaway search loop was the single thing the budget
+            # guard was blind to. The messages carry their own usage; sum it.
+            usage = _tool_loop_usage(result)
+            self.ctx.registry.ledger.record(role, **usage)
+            # The tool path bypasses `registry.complete`, so it must announce
+            # itself or the web-researching agents stay invisible to a watcher —
+            # the same gap that hid their token spend.
+            # `record_external_turn` files the cache entry and the transcript row
+            # through `_store`, which announces the turn itself. Calling
+            # `report_call` here as well printed every web-researching agent twice
+            # in the log and the agents panel.
+            self.ctx.registry.record_external_turn(
+                role, "deep", system, user, parsed, time.time() - t0)
             return self.postprocess(parsed, **kwargs)
         except Exception as exc:  # noqa: BLE001
             log.warning("tool loop failed for %s (%s); falling back to a single call",

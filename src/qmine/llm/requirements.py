@@ -109,7 +109,10 @@ class RoleRequirement(BaseModel):
 ROLE_REQUIREMENTS: dict[str, RoleRequirement] = {
     "researcher": RoleRequirement(
         role="researcher", reasoning="strong", blast_radius="phase",
-        min_context_tokens=128_000, typical_calls=5, output_tokens_per_call=4000,
+        min_context_tokens=128_000, typical_calls=5,
+        # Measured on glm-5.2: this role emits up to 13,377 tokens, which
+        # overran the previous 12,000 cap on every single call of a live run.
+        output_tokens_per_call=6000,
         multilingual_critical=True,
         rationale="Reads thousands of raw queries and must notice what is NOT there. "
                   "Long context is the binding constraint; volume is trivial.",

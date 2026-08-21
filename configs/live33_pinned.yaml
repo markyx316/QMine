@@ -1,0 +1,302 @@
+project_name: qmine
+report_language: zh
+run_root: runs
+domain:
+  key: k12_zh
+  display_name: K12 中文搜索 Query
+  language: zh
+  tokenizer: jieba
+  char_ngram_range:
+  - 1
+  - 3
+  word_ngram_range:
+  - 1
+  - 2
+  embedding_candidates:
+  - BAAI/bge-small-zh-v1.5
+  - BAAI/bge-base-zh-v1.5
+  - BAAI/bge-large-zh-v1.5
+  - shibing624/text2vec-base-chinese
+  instruction_prefix: null
+  template_seeds:
+  - name: pronunciation
+    pattern: (的拼音|怎么读|读音|念什么|读什么|拼音是什么)
+    intent_hint: 求一个字/词的读音
+    expected_min_share: 0.1
+  - name: meaning
+    pattern: (什么意思|啥意思|的意思|意思是什么|释义|何意)
+    intent_hint: 求一个词/句的释义
+    expected_min_share: 0.1
+  - name: word_formation
+    pattern: (组词|怎么组词|能组什么词|的词语)
+    intent_hint: 用一个字组出词语
+    expected_min_share: 0.01
+  - name: lexical_relation
+    pattern: (近义词|反义词|同义词|相近的词)
+    intent_hint: 求近义/反义关系
+    expected_min_share: 0.01
+  - name: stroke_order
+    pattern: (笔顺|笔画|怎么写|几画|部首|偏旁)
+    intent_hint: 求字形写法
+    expected_min_share: 0.01
+  - name: verse_continuation
+    pattern: (的下一句|下一句是什么|上一句|的全诗|全诗是什么)
+    intent_hint: 报出半句求原文续句
+    expected_min_share: 0.005
+  - name: char_riddle
+    pattern: 打一(?:字|成语|词|地名|物|数字)
+    intent_hint: 字谜/成语谜求谜底
+    expected_min_share: 0.002
+  risk_categories:
+  - name: zodiac_gambling
+    patterns:
+    - 生肖
+    - 打一(?:准确|正确|最准)?生肖
+    - 三大生肖
+    - 特码
+    - 开奖
+    - 六合彩
+    keywords: []
+    rationale: 'Lottery/gambling probes wearing riddle clothing. In pure semantic
+      space they embed next to classical-poetry riddles and would otherwise be served
+      as children''s content.
+
+      '
+    policy: isolate_and_flag
+  - name: adult_or_offtopic
+    patterns:
+    - 情感语录
+    - 伤感说说
+    - 土味情话
+    - 娈童
+    - 人彘
+    - 淫
+    - 妓
+    - 娼
+    keywords: []
+    rationale: 'Adult-audience content arriving in a K12 surface, mostly via rare-character
+      and classical-vocabulary lookups rather than via adult phrasing.
+
+      '
+    policy: isolate_and_flag
+  - name: textbook_copyright
+    patterns:
+    - 电子课本
+    - 课本原文
+    - 人教版.*(试卷|下载)
+    - 苏教版.*(试卷|下载)
+    - 教材全解
+    keywords: []
+    rationale: 'Requests for full textbook text and complete exam papers from named
+      publishers. Reproducing the full work is a rights problem; cite the source and
+      point at a licensed channel instead.
+
+      '
+    policy: isolate_and_flag
+  - name: school_ranking_and_admissions
+    patterns:
+    - 排名
+    - 分数线
+    - 录取线
+    - 升学率
+    - 重点班
+    - 哪个学校好
+    - 几中好
+    keywords: []
+    rationale: 'School rankings, admission score lines and "which school is better"
+      judgments. Two problems at once: the facts change yearly and vary by locality,
+      so answering from memory misinforms a high-stakes decision; and promoting school
+      rankings and admission rates is restricted content for education providers in
+      mainland China.
+
+      '
+    policy: isolate_and_flag
+  - name: high_stakes_dates_and_entities
+    patterns:
+    - 中考.*(时间|几月|哪天)
+    - 高考.*(时间|几月|哪天)
+    - 开学.*(时间|几号)
+    - 官网
+    - 招生电话
+    keywords: []
+    rationale: 'Exam dates, term dates, and specific school contact details. Jurisdiction-
+      specific and time-sensitive; a confidently wrong answer here has real consequences,
+      so these should route to a retrieval path rather than be generated.
+
+      '
+    policy: isolate
+  expected_l1_range:
+  - 15
+  - 25
+  expected_family_range:
+  - 15
+  - 25
+  pragmatic_intents_hint:
+  - 解题求答案 (content looks identical to a concept question)
+  - 用法判断/对错验证 ('X和Y哪个对')
+  - 谜语/脑筋急转弯
+  - 手工/活动做法
+  - 育儿/家长咨询
+  - 导航到具体站点或应用
+  - 闲聊与噪声
+  domain_notes: 'Chinese K12 search. Queries are short (median 7 chars) and heavily
+    templated around character-level lookups. The legacy taxonomy sorts ~46% of traffic
+    into shape-defined buckets ("5-9字短语", "含数字"), so it is a reference, not a skeleton
+    to inherit. Subject axis: 语文 dominates (~56%), then 数学, 英语, policy/entity queries,
+    and a noise tail.
+
+    '
+data:
+  input_path: data/raw/k12_queries_50k.csv
+  text_column: query
+  weight_column: null
+  reference_label_columns:
+  - legacy_l1
+  - legacy_l2
+  sample_size: null
+  min_query_len: 1
+  max_query_len: 200
+  drop_duplicates: false
+representation:
+  svd_dims: 256
+  tfidf_min_df: 2
+  tfidf_sublinear: true
+  alpha_grid:
+  - 0.0
+  - 0.1
+  - 0.2
+  - 0.3
+  - 0.5
+  alpha_sweep_k: null
+  bakeoff_subsample: 15000
+clustering:
+  k_sweep:
+  - 8
+  - 10
+  - 12
+  - 15
+  - 18
+  - 20
+  - 25
+  - 30
+  - 40
+  - 50
+  - 65
+  - 80
+  - 100
+  - 120
+  battery_k:
+  - 15
+  - 20
+  - 30
+  silhouette_sample: 8000
+  stability_common_sample: 8000
+  min_leaf_size: 150
+  min_leaf_fraction: 0.003
+  max_leaves_per_family: 8
+  family_min_size_for_split: 300
+  refine_rounds: 5
+  refine_merge_cos: 0.92
+  refine_move_tolerance: 0.005
+  heldout_fraction: 0.2
+  deep_aligned_multiplier: 3
+taxonomy:
+  n_researchers: 5
+  l1_target_range:
+  - 15
+  - 25
+  min_adjudication_rules: 20
+  gold_sample_size: null
+  gold_size_range:
+  - 3000
+  - 5000
+  gold_min_fraction_small_corpus: 0.3
+  gold_max_fraction: 0.6
+  pilot_sample_size: 200
+  pilot_agreement_threshold: 0.85
+  kappa_threshold: 0.9
+  kappa_repair_rounds: 1
+  max_taxonomy_redraws: 2
+  repair_on_fresh_sample: true
+  active_learning_rounds: 1
+  active_learning_batch: 200
+  rule_precision_floor: 0.98
+naming:
+  n_naming_agents: 5
+  card_center: 15
+  card_random: 10
+  card_edge: 5
+  card_top_ngrams: 12
+  coherence_threshold: 4.0
+gates:
+  template_coverage_range:
+  - 0.2
+  - 0.4
+  min_template_rows: 400
+  min_template_row_fraction: 0.05
+  pilot_agreement: 0.85
+  kappa: 0.9
+  annotator_fitness_kappa: 0.8
+  min_annotation_coverage: 0.9
+  heldout_reproduction: 0.98
+  heldout_share_of_ceiling: 0.97
+  coherence: 4.0
+  coherence_weak_below: 3.0
+  coherence_max_weak_share: 0.15
+  require_risk_independently_found: true
+  require_governance_executed: true
+  blocking:
+  - p2a_pilot_agreement
+  - p2b_kappa
+  - p6_heldout_reproduction
+  - p7_all_leaves_named
+  - p8_governance_executed
+  human_review_points:
+  - p2a_taxonomy
+  - p7_tree
+  - p9_panel
+llm:
+  provider: router
+  deep_model: claude-opus-5
+  fast_model: claude-sonnet-5
+  temperature: null
+  max_tokens: 16000
+  max_concurrency: 8
+  max_retries: 2
+  request_timeout: 180.0
+  max_total_calls: 4000
+  max_total_output_tokens: 6000000
+  cache_llm_calls: true
+  record_raw_outputs: true
+  recursion_limit: 200
+  catalog_ttl_hours: 6.0
+  catalog_offline: false
+  catalog_pinned: null
+  model_overrides:
+    adversary: zai/glm-4.5-airx
+    annotator_a: dashscope/qwen3-next-80b-a3b-instruct
+    domain_scout: zai/glm-4.5-airx
+    l2_interpreter: dashscope/qwen3-next-80b-a3b-instruct
+    maintainer: zai/glm-4.5-airx
+    namer: dashscope/qwen3-next-80b-a3b-instruct
+    referee: zai/glm-4.5-airx
+    reporter: dashscope/glm-5.1
+    researcher: zai/glm-4.5-airx
+    risk_sentinel: zai/glm-4.5-airx
+    taxonomy_architect: dashscope/glm-5.1
+    taxonomy_critic: zai/glm-4.5-airx
+    tree_auditor: dashscope/glm-5.1
+    annotator_b: deepseek-v4-flash
+  budget_usd: null
+  prefer_chinese_native: false
+deployment:
+  margin_threshold: 0.02
+  distill_cv_folds: 3
+  live_demo_n: 8
+seed_metric: 0
+seed_viz: 42
+seed_replay:
+- 0
+- 1
+fast_mode: false
+offline: false

@@ -2,9 +2,15 @@
 
 You receive independent submissions from several researchers who each saw a
 different slice of the evidence. Your job is to synthesise one taxonomy that a
-pair of annotators could apply to the same 50 queries and agree at least 85% of
-the time. That agreement target is the real specification; everything below is
-in service of it.
+pair of annotators could apply to the same queries and agree on. Agreement is
+the real specification; everything below is in service of it.
+
+Agreement is measured against a ceiling, not a constant: the pipeline re-asks one
+annotator the same queries in a different order, and two annotators can never
+agree with each other more reliably than one agrees with itself. Your classes set
+that ceiling. Boundaries that are genuinely decidable raise it; boundaries that
+require a judgement the query does not support lower it, and no amount of
+downstream rule-writing recovers the difference.
 
 ## The two axes
 
@@ -35,24 +41,6 @@ Both directions fail loudly:
 - Too many, and annotators stop agreeing, which destroys the gold set, which
   destroys the classifier that depends on it.
 
-## Adjudication rules
-
-**YOU MUST return at least {{MIN_RULES}} adjudication rules.** A taxonomy with
-fewer is not deliverable and the run will halt on it.
-
-For every pair of classes an annotator could plausibly confuse, write an explicit
-tie-break: "when a query looks like both A and B, choose X because Y." These are
-not documentation — they are the mechanism by which two annotators reach the same
-answer, and later the mechanism by which a referee settles their disagreements by
-citation rather than by taste.
-
-This is measured, not stylistic. A live run shipped 19 classes with **one** rule:
-two independent annotators then agreed at kappa 0.761, while the same annotator
-agreed with *itself* at 0.900. The whole 14-point gap was missing tie-breaks. Work
-through your class list pairwise and write a rule for every pair you would have to
-think about — if you hesitate, an annotator will too, and they will not have you
-to ask.
-
 ## Requirements per class
 
 - `code` — SCREAMING_SNAKE, stable, never reused
@@ -64,11 +52,40 @@ to ask.
 - `pragmatic_only` — true if this intent is invisible in the wording and must be
   carried by the top-down route because clustering will never surface it
 
-## MECE
+## MECE, and the part of it that actually fails
 
-Mutually exclusive, collectively exhaustive. Every query in the corpus must have
-exactly one correct L1 under your rules. A catch-all is permitted but must be
-defined by what it *is*, not by what it is not, and must stay under 5% of traffic.
+Mutually exclusive, collectively exhaustive: every query must have exactly one
+correct L1. That is easy to assert and easy to violate, so here are the three
+ways it breaks. They are not stylistic — they were measured by replaying one
+run's pilot annotations, and together they caused **about half** of all
+disagreement, including half of the disagreement an annotator had *with itself*.
+
+**1. Siblings that overlap.** If a query satisfying A's definition also satisfies
+B's, the annotator is guessing, and no adjudication rule can fix it because both
+answers are correct. Watch for one class being a *property* of another's subject
+matter — where "look up property P of X" and "look up X" are separate classes,
+every query about P belongs to both.
+
+**2. Siblings cut on different bases.** All classes at one level must divide the
+space on ONE principle. Mixing "what the content is" with "what the user wants
+done to it" produces a class that cross-cuts its siblings, and every query in the
+overlap has two correct answers. If you need both principles, one is L1 and the
+other is L2 — never two siblings.
+
+**3. A catch-all defined by its content.** It must mean *none of the above* and
+nothing else. A catch-all named for a subject area competes with the named
+classes for the same queries and loses coherence as it grows. Define it purely by
+exclusion, and keep it under 5% of traffic.
+
+**The test that catches all three:** for every pair of your classes, ask whether a
+query could satisfy both definitions. If one could, you have not drawn a boundary
+— you have described the same region twice. Redraw before returning.
+
+**And the limit worth knowing.** A distinction the query does not contain the
+information to make cannot be rescued later by a tie-break rule. Bare content
+with no stated action — a quoted line, a bare entity name — cannot be sorted by
+what the user wanted done with it. If your scheme requires that, it will not be
+applied consistently by anyone, including a single annotator asked twice.
 
 ## Honesty requirement
 

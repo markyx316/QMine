@@ -48,7 +48,7 @@ def build(state: Any, deps: Any, figs: dict[str, Any]) -> str:
     meta, naming = load("hierarchy_meta"), load("tree_naming")
     gov, dep = load("governance"), load("deployment")
     panel, tmpl = load("metrics_panel"), load("template_groups")
-    audit, langp = load("data_audit"), load("language_profile")
+    langp = load("language_profile")
     battery = load("battery")
 
     df = deps.df
@@ -112,7 +112,7 @@ def build(state: Any, deps: Any, figs: dict[str, Any]) -> str:
     L += ["### 1.1 表征构建", ""]
     bake = _t(rep, "bakeoff", default={})
     if bake.get("rows"):
-        L += [f"**底座 embedding 选型**: 在**本语料自己的聚类任务**上做 bake-off, 而非照搬榜单分数。", "",
+        L += ["**底座 embedding 选型**: 在**本语料自己的聚类任务**上做 bake-off, 而非照搬榜单分数。", "",
               "| encoder | 维度 | 稳定性 ARI (主裁判) | 碎裂度 (主裁判) | silhouette (仅参考) |",
               "|---|---|---|---|---|"]
         for r in bake["rows"]:
@@ -235,7 +235,7 @@ def build(state: Any, deps: Any, figs: dict[str, Any]) -> str:
                   "**结构换一种算法还在不在?** 在, 说明它是语料的性质; 不在, 说明它是 "
                   "KMeans「簇近似球形」这一假设的产物。", ""]
             alt, mg = verdict.get("best_alternative"), verdict.get("alternative_beats_reference_by")
-            L += [f"| 参照 (交付所用) | 最强替代算法 | 稳定性差距 | 结论 |", "|---|---|---|---|",
+            L += ["| 参照 (交付所用) | 最强替代算法 | 稳定性差距 | 结论 |", "|---|---|---|---|",
                   f"| `{verdict.get('reference_algorithm')}` | `{alt}` | "
                   f"{num(mg) if mg is not None else '—'} | "
                   f"{'⚠️ 假设被质疑' if verdict.get('kmeans_assumption_contradicted') else '✅ 未被证伪'} |", ""]

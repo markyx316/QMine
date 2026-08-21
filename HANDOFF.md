@@ -12,48 +12,50 @@
 
 ---
 
-## 1. Status — last updated 2026-08-20
+## 1. Status — last updated 2026-08-21 (evening)
 
 | | |
 |---|---|
-| Tests | **141 passing**; `ruff --select F` clean but for 3 pre-existing style warnings |
-| Verified **live** (real agents) | p0–p2a on the **full 50k**; p2b annotation on 12k |
-| Verified **offline** (stand-in) | all 17 phases on the **full 50k**, clean — `runs/preflight50k` |
-| Never run | any live run past p2b |
-| Live spend to date | ~$41 across 5 attempts |
+| Tests | **226 passing**; `ruff --select F` clean |
+| Verified **live** | p0–p2a on the full 50k, five times |
+| Verified **offline** | all 17 phases on the full 50k, real encoders |
+| Never run live | **anything past p2b** — referee, adversary, l2, namer, reporter, maintainer |
+| Live spend today | ~$15 across five runs, priced correctly for the first time |
 
-**Next action: relaunch the full-50k live run.** Everything blocking it has been
-fixed and probed; nothing is known-broken. Expect it to reach p2b for the first
-time with a taxonomy that has real tie-breaks.
+**Paused mid-p2a, deliberately.** `live35` holds **59 cached calls** — all five
+researchers (including both web ones), the architect, the critic, and all 48 pilot
+and re-pilot annotations. Resuming replays the researcher fan-out in ~1 second
+against the ~10 minutes it originally cost. Only the architect call that was
+in flight when it stopped will regenerate (~8 min).
+
+Nothing is broken and nothing is half-written: the cache is append-only and the
+artifacts on disk are from the completed p2a of the previous attempt.
 
 ```bash
-cd "/Users/mayouxuan/Documents/Claude/Search Query Mining Agent Team/QMine"
-mkdir -p runs/live31 && cp -r runs/live30/llm_cache runs/live31/llm_cache
+cd QMine
+# Re-run an existing id: drop the CHECKPOINT, keep the CACHE. They are separate.
+rm -f runs/live35/checkpoints.sqlite*
 HF_HOME=$(pwd)/.hf caffeinate -i .venv/bin/qmine run \
   --input data/raw/k12_queries_50k.csv --domain k12_zh \
   --reference-columns legacy_l1,legacy_l2 \
-  --provider router --run-id live31 --plain
+  --config configs/live.yaml --provider router --run-id live35 --plain
 ```
 
-Budget **$25-40** and 2-3 hours. (`qmine models` says ~$5; it now scales call
-volumes with the config but still under-prices per call, because reasoning tokens
-are billed as output and are most of the total. See §2.)
+`configs/live.yaml` carries the provider policy: labs excluded by LAB, and the three
+reasoning roles pinned to `deepseek-v4-pro`. Pass `--domain k12_zh` **as well** — a
+config file no longer swallows the domain, but the flag is what selects it.
 
 ---
 
 ## 2. Open questions — EDIT THIS SECTION, DO NOT APPEND
 
-0. **`qmine models` under-prices a run by roughly 5x.** Call volumes now scale with
-   the config, but the per-call price assumes no reasoning tokens. `annotator_b` on
-   DeepSeek emitted 11,910 output tokens where its partner emitted 1,439 for the
-   identical task. Fix: price reasoning-capable models with a measured multiplier.
-
-0b. **The architect writes rules even when told not to.** Its prompt now says the
-   rule writing happens in a separate call, and it still returned 24 rules
-   alongside its 19 classes — the `rules` field in `TaxonomyDraft` invites it. They
-   are merged rather than wasted, so this costs time, not correctness. Fix would be
-   a separate schema for the classes-only call.
-
+0. **The "`qmine models` under-prices by 5x" claim was WRONG and is withdrawn.**
+   It came from comparing the planner's estimate (real catalogue prices) against
+   `UsageLedger.estimated_cost_usd`, which hardcoded $3/$15 per million — frontier
+   rates — while runs were on models costing $0.15–$1.32. Every cost this project
+   ever reported was inflated ~7-11x; `live32` was reported as $4.68 and cost
+   $0.67. The ledger now prices from the routing plan. **Re-derive the planner's
+   accuracy against a corrected run before trusting or blaming it.**
 
 1. **Does the guide repair help? First clean answer: no measurable effect.**
    `live20` produced the first uncontaminated comparison — both rounds at **n=596**,
@@ -90,8 +92,45 @@ are billed as output and are most of the total. See §2.)
    The serialized referee is the mitigation, not the filter.
 4. **Three domain profiles are untested on real data:** `finance_zh`, `sports_zh`,
    `politics_zh`.
-5. **`n_prescriptions` is 0 on every halt so far.** A halted run tells the operator
-   what failed but issues no structured prescription for fixing it.
+5. **The redraw loop made agreement WORSE on its first real trial.** `live35`:
+   kappa 0.8437 -> 0.8272 (-0.0165) after rewriting the six boundaries one
+   annotator could not reproduce; the ceiling did not move (0.9243 -> 0.9239). It
+   dropped no classes and added none — it rewrote definitions in place and the
+   rewrite was worse. The revert guard caught it.
+
+   This is evidence AGAINST the hypothesis the loop was built on: that a pair one
+   annotator cannot reproduce means the boundary is not in the data, so redrawing
+   is the only remedy. One trial at n=200, so not decisive — but it is the only
+   controlled before/after this project has, and it points the wrong way. Do not
+   describe the redraw as a fix until a second trial says otherwise.
+
+6. **Is `annotator_b` worth its tokens? Still untested.** The reasoning model
+   emits 6-20x the tokens of its partner for identical work and dominates
+   wall-clock. `qmine_annotator_worth.py` (scratchpad) tests it: on every row the
+   two split, the referee's verdict says which annotator was right. Needs a gold
+   set, which no run has produced.
+
+7. **Error classification reads PROSE, and it has bitten three times in one day.**
+   A 402 hidden in `completion_tokens=4013`; a schema miss vs a truncation; a
+   truncation vs a dead provider. Each fix was narrower than the last, but where
+   the SDK raises typed exceptions the classification should key off the TYPE and
+   use strings only as a fallback. Deliberate change, not a patch.
+
+8. **The guide-repair question is half-answered and half-reframed.** The
+   Δκ = −0.002 result above stands, but it was measured with the annotator seeing
+   **one** adjudication rule: `_render_rules` rendered only the top-level list
+   while 55 per-class rules sat unread in the artifact. Any conclusion about
+   whether rules help was drawn from a near-ruleless condition. Re-open it once a
+   run reaches P2b with the renderer fixed.
+9. **`positive_examples` overlap cannot be detected mechanically.** A check for
+   "do two classes claim the same example" scored **zero on both real taxonomies**
+   — models make semantic overlaps, not syntactic ones. The pilot's
+   self-consistency pass is the only detector we have. Do not rebuild this.
+10. **The architect is high-variance and one probe does not predict a run.** A
+   $0.52 probe on stored submissions produced 19 classes with a consistent basis
+   of division; the live run on the same corpus with the same prompt produced 20
+   classes across fourteen different bases. Treat a single probe as a smoke test,
+   never as evidence a prompt change holds.
 
 ---
 
@@ -348,4 +387,182 @@ Found by ~$0.05 probes against `live30`'s stored submissions, not by paid runs:
   class count halts, a near-miss warns.
 - **`CLAUDE.md` written** (106 lines) plus three path-scoped `.claude/rules/` files.
   Verifying it caught two globs that matched **nothing**.
+
+---
+
+## 7. Session 4 (2026-08-21) — the operator's view, and a gate that could be won
+
+Three live runs today (`live31`, `live32`, `live33`), 176 tests (was 141).
+
+### The dashboard existed and had never been rendered
+241 lines, on by default, zero tests, never once looked at. Rendering a real
+`run.log` through it found six defects in twenty minutes: the two panes never
+split (`Columns` sizes by content, so it stacked); Rich ate `researcher[log_reading]`
+as markup so three agents showed as three identical lines; `P3a/b/c` were emitted
+while `p3` was declared, so that row could never light up; gate notes were cut
+mid-word at 70 chars; metric labels were sliced mid-token; and a *halted* run left
+its last phase spinning at ◐, because a blocking gate returns rather than raises.
+
+Then rendering the **live** log found a seventh the recording could not: eight
+concurrent batches fail identically in one second, each wrapping to two display
+lines, so one benign already-handled error filled all six activity slots and
+pushed out the progress. **Build against a recording, re-render against live
+traffic** — a clean run has no failure *concurrency*.
+
+Also added: `qmine watch RUN_ID` (the panel reads `run.log`, so a run can be
+launched detached and still watched), per-phase explanations, and an agent panel
+showing role · model · elapsed · out-tokens · *what it returned*.
+
+### `run.log` did not exist at all
+The CLI quieted the **logger** to give the panel the screen, and there was no file
+handler anywhere — so choosing the pretty view meant choosing to have no record.
+Levels belong on handlers. Fixing it exposed that `open_run()` had **zero callers**:
+34 lines duplicating the resource setup of the three functions that are real. My
+first fix went into it and did nothing.
+
+### The cost ledger was optimistic exactly where things go wrong
+Three instances of one pattern: `ToolAgent.run` recorded a hardcoded
+`output_tokens=0` for every tool loop — so the budget ceiling was blind to the one
+path that *iterates*; `complete()`'s failure branch recorded zero for responses the
+provider had already generated and billed; and `qmine models` still assumes one
+output-tokens-per-call figure across roles (annotator_a 1,439, annotator_b 12,435).
+First two fixed. Tool-loop turns also now write a cache entry and a transcript
+entry — the web-researching agents were the only ones leaving no record of what
+they said, which is a poor property for the agents citing pages nobody else saw.
+
+### `TaxonomyNode.adjudication_rules` was write-only
+Declared to hold rule *ids*, filled by the models with rule *text*, and read by
+**nothing**. `_render_rules` rendered only the top-level list. Measured recovery:
+`live30` would have shown the annotator **42** rules instead of 1; `live31` 70
+instead of 46. This reframes `live30` retroactively — its κ 0.761 was achieved with
+one visible rule, and the shape gate's "1 adjudication rules" was accurate about
+what reached the annotator while 55 sat unread.
+
+### The three taxonomy defects, measured
+Replaying all 600 pilot labels out of `live31`'s cache separates intrinsic
+ambiguity from fixable guide gaps — a query where annotator A disagrees with
+*itself* is a boundary not in the data. That split 57 disagreements into **36
+structural / 27 guide**, and attributed ~half to three corpus-independent defects:
+overlapping siblings, siblings cut on different bases, and a catch-all defined by
+content. The architect prompt was **requiring** the third ("a catch-all must be
+defined by what it *is*") and simultaneously telling the architect both to write
+and not to write adjudication rules.
+
+A first hypothesis — that the LOOKUP/EXPLAIN *axis* was the problem — did not
+survive its own significance test (z≈1.0). Recorded because it looked convincing.
+
+### The κ gate was measuring its own confidence interval
+The playbook's ≥0.9 came with "K12 达 0.966" — a floor beneath what *that* project's
+annotators reached. Ours self-agree at 0.883. Worse, the gate tested the *upper*
+bound, so the bar moved with the pilot size:
+
+| pilot n | κ demanded |
+|---|---|
+| 50 | 0.801 |
+| 200 | 0.857 |
+| 3000 | **0.890 — above the ceiling, unwinnable** |
+
+Now two independent conditions: **annotator fitness** (`ceiling ≥ 0.80`, the
+conventional reliability threshold applied to the quantity it describes) and **no
+significant recoverable slack**. 0.90 is reported as the playbook's aspiration.
+
+### P2a can now redraw and re-pilot
+`TaxonomyRedrawAgent` is shown the current taxonomy and the pairs one annotator
+could not reproduce, and told to merge or re-cut *those* and leave the rest
+byte-identical — not the architect, which rebuilds from evidence and re-rolls the
+classes that were fine. Bounded at 2 rounds, reverts any redraw that lowers κ.
+
+Extracting it into `_redraw_until_stable` to make it testable immediately found
+two bugs that lint and the offline run both passed: the revert filtered the
+*redrawn* nodes by the old codes (keeping new definitions under old names), and
+the `return` sat inside the `for`, so the loop exited after one iteration on
+success and returned `None` on any break.
+
+### Results
+| | live30 | live31 | live32 |
+|---|---|---|---|
+| pilot κ | 0.761 | 0.688 | **0.777** |
+| ceiling | 0.8997 | 0.8023 | **0.883** |
+| citable rules | 1 | 46 | **106** |
+| prescriptions | 0 | 0 | **12** |
+
+Predicted κ≈0.84 / ceiling≈0.90 from the defect attribution; got 0.777 / 0.883.
+Direction right, magnitude about half. All three halted at `p2a_pilot_agreement`.
+
+### Evening: OpenRouter, and five more live runs
+
+An OpenRouter key was added mid-session. It changed more than it looked like it would.
+
+**Every cost figure this project ever reported was fiction.**
+`UsageLedger.estimated_cost_usd` hardcoded `in_rate=3.0, out_rate=15.0` per million —
+frontier rates — while runs were on `deepseek-v4-flash` ($0.44/$1.32) and
+`qwen3-next-80b` ($0.15/$1.20). `live32`: reported **$4.68**, actual **$0.67**. The
+ledger now prices from the routing plan, and names any role priced by the fallback
+rather than letting a guess read as a measurement. Fixing it exposed a second bug in
+the fix: roles arrive suffixed (`researcher_log_reading`) while the plan is keyed on
+the base role, so exact-match lookup dropped four roles back onto frontier rates.
+
+**Independence was checked on the gateway, not the lab.** With an aggregator in the
+pool `zhipu/zai/glm-5.1` and `openrouter/z-ai/glm-5.3` read as independent and are
+one lab. `lab_of()` now resolves the originating lab, applied to the primary choice
+AND the fallback chain — a fallback within one lab is one outage and one architecture.
+The referee must now differ from BOTH annotators, not just annotator_b from annotator_a.
+
+**Three things the price-as-capability proxy did, only one of which was intended.**
+Removing price from `_assign_tiers` was tried and reverted three times: each attempt
+let something worse win every role — a date stamp parsed as version 28
+(`qwen-flash-2025-07-28`), then `:free` variants, then `openrouter/auto`, a
+meta-endpoint. Price was also silently excluding those. Those exclusions are now
+explicit in `_eligible` (`:batch`, `:free`, preview, unpriced) and the ordering stays
+priced. The narrow fix for the real complaint — a newer model rejected for being
+cheaper — is a same-LAB generation upgrade after scoring.
+
+**Failover exists now**, and cost three attempts to get right. A `402 Insufficient
+Balance` mid gold-annotation took twelve batches while two declared fallbacks sat
+unused. Then the classifier killed a whole provider on
+`CompletionUsage(completion_tokens=4013, prompt_tokens=8402)` — "4013" contains "401".
+Then a truncation was misread as a dead provider when the remedy was more room.
+
+**`glm-5.2` truncates in native structured-output mode and does not need to.**
+Measured four times: truncates past 12,000 tokens natively, completes in ~5,300 on the
+plain-JSON path — the same answer for less than half the tokens. A truncation now
+raises the cap AND abandons native mode, both keyed by MODEL so one discovery serves
+every role. Previously five researchers each paid ~180s to learn it separately.
+
+**Latency: the gateway, not the model.** Same `deepseek-v4-flash`, same phase —
+OpenRouter median 67.8s / max 429.9s, direct 83-98s with no tail. The router now
+prefers the DIRECT route when the same bare model name is reachable both ways. Costs
+~70% more on the estimate; buys back roughly two hours of wall-clock on a gold phase.
+
+**The gate proceeds once its remedy is exhausted.** `live35` sat at kappa 0.844 with
+0.080 of significant slack and a redraw that had run and failed. Halting there asks
+the operator to do by hand what the pipeline just could not, while 0.844 is above the
+reliability floor. It now passes — narrowly: the redraw must have RUN and FAILED, and
+kappa must clear the floor. The message and `run_summary.json` both record that it
+proceeded with residual slack.
+
+**Re-running a run id: three separate traps, all new because we had never done it.**
+The CHECKPOINT carries `halted=True` and exits in 3.1s without re-reaching the gate —
+delete `checkpoints.sqlite`, keep `llm_cache/`. The TOOL path wrote cache entries and
+never read them, so the two web researchers re-fetched live pages and cascaded a miss
+through everything downstream (this is what defeated the `live33` resume too).
+And `qmine watch` treated ANY `run_summary.json` as "finished", so it exited within
+seconds of attaching to a re-run. All three fixed; the researcher fan-out now replays
+in **one second** against ten minutes.
+
+**Also:** `--config` silently discarded `--domain`, swapping k12_zh for `generic` and
+halving template coverage in a deterministic phase with no error anywhere — caught
+only because 18,298 had been read three times that day.
+
+### Results across five live runs
+
+| | live30 | live31 | live32 | live33 | live35 |
+|---|---|---|---|---|---|
+| pilot kappa | 0.761 | 0.688 | 0.777 | 0.839 | **0.844** |
+| ceiling | 0.900 | 0.802 | 0.883 | 0.861 | **0.924** |
+| citable rules | 1 | 46 | 106 | 92 | 58 |
+| prescriptions | 0 | 0 | 12 | 12 | 12 |
+| redraw fired | — | — | — | no | **yes, reverted** |
+
+226 tests, up from 141 at the start of the day.
 

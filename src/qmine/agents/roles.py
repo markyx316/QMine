@@ -202,6 +202,53 @@ class RuleWriterAgent(Agent):
         )
 
 
+class TaxonomyRedrawAgent(Agent):
+    """Redraws only the boundaries a pilot proved are not in the data.
+
+    The pilot already knows which pairs are broken *and* which remedy applies: a
+    pair one annotator cannot reproduce against itself is a boundary the query
+    does not carry, and no tie-break rule can rescue it. That finding used to be
+    printed in a halt message and thrown away — three runs halted, prescribed
+    nothing, and waited for a human to redraw by hand.
+
+    Reusing the architect for this does not work: it is shown the researchers'
+    evidence and rebuilds from scratch, which discards the classes that were
+    fine and re-rolls the ones that were not. This one is shown the *current*
+    taxonomy and the specific failing pairs, and is told to change nothing else.
+    """
+
+    role = "taxonomy_architect"
+    prompt_name = "taxonomy_redraw"
+    schema = TaxonomyDraft
+
+    def build_system(self, *, l1_range: tuple[int, int] = (15, 25), **kw: Any) -> str:
+        lo, hi = l1_range
+        return (super().build_system()
+                .replace("{{L1_MIN}}", str(lo))
+                .replace("{{L1_MAX}}", str(hi)))
+
+    def build_user(self, *, nodes: Sequence[Any] = (), pairs: Sequence[Any] = (),
+                   domain_notes: str = "", n_pilot: int = 0, **kw: Any) -> str:
+        listing = "\n".join(
+            f"- `{n.code}` — {n.name}: {n.definition}\n"
+            f"    yes: {list(n.positive_examples)[:4]}\n"
+            f"    no:  {list(n.negative_examples)[:2]}"
+            for n in nodes
+        )
+        broken = "\n".join(
+            f"- **{pair}** — the same annotator resolved {count} of {n_pilot} pilot "
+            f"queries differently on a second pass"
+            for pair, count in pairs
+        )
+        return (
+            f"## Domain\n{domain_notes}\n\n"
+            f"## The current taxonomy ({len(nodes)} classes)\n{listing}\n\n"
+            f"## Boundaries that failed the reproducibility test\n{broken}\n\n"
+            "Return the complete class list with these boundaries redrawn and "
+            "everything else byte-identical."
+        )
+
+
 class ArchitectAgent(Agent):
     role = "taxonomy_architect"
     prompt_name = "architect"

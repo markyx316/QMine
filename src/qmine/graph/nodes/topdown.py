@@ -24,20 +24,22 @@ import numpy as np
 import pandas as pd
 
 from ...agents.roles import (
-    RESEARCH_ANGLES,
     AdversaryAgent,
     AnnotatorAgent,
     ArchitectAgent,
-    RuleWriterAgent,
     CriticAgent,
+    RESEARCH_ANGLES,
     RefereeAgent,
     ResearcherAgent,
+    RuleWriterAgent,
+    TaxonomyRedrawAgent,
 )
 from ...config import gold_size_for
 from ...determinism import deterministic_subsample, rng
 from ...ops.audit import stratified_sample
 from ...ops.classify import UNLABELED, RuleEngine, agreement, build_features, train_classifier
 from ...records import AdjudicationRule, GoldRow, Taxonomy, TaxonomyNode
+from ...records import Prescription
 from ...state import PipelineState
 from ..deps import Deps
 
@@ -79,6 +81,13 @@ def p2a_taxonomy(state: PipelineState, deps: Deps) -> dict[str, Any]:
             domain_notes=cfg.domain.domain_notes,
         )
         sub.angle = angle["key"]
+        # An angle that returns nothing is a paid-for perspective missing from the
+        # design record, and it is silent: the phase still announces five
+        # researchers fanning out. One live run had `literature` return zero while
+        # the other four returned 6-12, and nothing anywhere noticed.
+        if not sub.candidates:
+            deps.emit(f"  ⚠ researcher[{angle['key']}] returned NO candidates — "
+                      "this angle contributed nothing to the taxonomy")
         deps.emit(f"  researcher[{angle['key']}] → {len(sub.candidates)} candidates"
                   + (" (web-researched)" if getattr(agent, "used_tools", False) else ""))
         return sub
@@ -145,7 +154,10 @@ def p2a_taxonomy(state: PipelineState, deps: Deps) -> dict[str, Any]:
     deps.emit(f"  critic → {len(critique.findings)} findings, verdict {critique.verdict}")
 
     rule_health = _validate_rules(taxonomy, deps)
-    n_rules = len(taxonomy.rules)
+    # Count what an annotator can actually cite, which is what the gate is for.
+    # `len(taxonomy.rules)` counts only the top-level list; per-class rules now
+    # render too, and one live taxonomy carried 55 of them behind a reported "1".
+    n_rules = len(_render_rules(taxonomy).splitlines())
 
     # Playbook 2a quality gate: 50 queries, two independent annotators, and a
     # hard stop below 85% agreement — "一致率 <85% 则回炉改指南/裁决规则, 而非直接开标".
@@ -153,7 +165,16 @@ def p2a_taxonomy(state: PipelineState, deps: Deps) -> dict[str, Any]:
     # set costs hundreds of calls; this costs four, and it asks the same question.
     # Discovering an ambiguous guide here rather than after 3,000 annotations is
     # the difference between a cheap redraft and an expensive one.
+    # Pilot, and if it finds boundaries that are not in the data, redraw those
+    # boundaries and pilot again. The pilot has always known which pairs were
+    # structural; three runs printed that and halted, and a human redrew by hand.
+    # A round costs one redraw plus one pilot against a 3,000-row gold set, so
+    # spending two of them to avoid annotating against a broken taxonomy is
+    # straightforwardly cheaper than not.
     pilot = _pilot_agreement(deps, ctx, df, taxonomy)
+    taxonomy, pilot, redraw_history = _redraw_until_stable(
+        deps, ctx, df, taxonomy, pilot)
+
     # Capture it. `deps.gate` builds and returns a GateResult but does not write to
     # state, so a gate that is not put in this node's returned `gates` dict is
     # invisible to the router and can never halt anything — which is what happened
@@ -187,19 +208,65 @@ def p2a_taxonomy(state: PipelineState, deps: Deps) -> dict[str, Any]:
     # reliability — and it would report "at ceiling" for any guide at all.
     at_ceiling = (
         not deps.registry.is_offline
-        and (pilot.get("share_of_ceiling_reached") or 0) >= 0.90
+        and pilot.get("self_consistency_kappa") is not None
+        and not pilot.get("slack_is_significant", False)
     )
     reaches_target = pilot["kappa_upper"] >= cfg.gates.kappa
+
+    # The slack test exists to TRIGGER a remedy, and the pipeline has one: redraw
+    # the boundaries the annotator cannot reproduce, then re-pilot. Once that has
+    # run and failed to improve agreement, the slack is no longer something this
+    # pipeline can act on — and halting then asks the operator to do by hand what
+    # it just tried and could not. Measured on `live35`: kappa 0.844 against a
+    # 0.9243 ceiling, the redraw rewrote the six worst boundaries and kappa FELL
+    # to 0.827, so the redraw was reverted and the slack stood.
+    #
+    # At that point the question is only whether the labels can support
+    # conclusions, and kappa 0.844 is above the reliability floor by any
+    # convention. So: proceed, loudly, with the residual slack recorded — rather
+    # than stop with nothing delivered and no remaining move.
+    redraw_attempted = bool(redraw_history)
+    redraw_helped = any(r.get("kept") for r in redraw_history)
+    remedy_exhausted = redraw_attempted and not redraw_helped
+    usable_despite_slack = (
+        remedy_exhausted and pilot["kappa"] >= cfg.gates.annotator_fitness_kappa
+    )
+
+    # Is the ANNOTATOR fit to apply this taxonomy at all? That is the question an
+    # absolute floor can answer, and self-consistency is the quantity it describes.
+    # The playbook's 0.90 was measured on a project whose annotators reached 0.966;
+    # ours self-agree at 0.883, so requiring 0.90 *between* two of them demanded
+    # more reliability than one of them has. Enforcing it made the gate unpassable:
+    # a perfect guide would still have halted, every time, forever.
+    ceiling = pilot.get("self_consistency_kappa")
+    annotator_fit = (
+        deps.registry.is_offline               # the stand-in is not an annotator
+        or ceiling is None
+        or ceiling >= cfg.gates.annotator_fitness_kappa
+    )
     pilot_gate = deps.gate(
         "p2a_pilot_agreement", "p2a",
-        passed=reaches_target or at_ceiling,
+        # Two independent conditions, each answering a different question.
+        # Fitness: can this annotator apply this taxonomy reproducibly? If not, no
+        # guide work helps and the run must stop. Slack: is the guide extracting
+        # what the annotator can give? If there is significant slack, redraft —
+        # that is cheap here and ruinous after 3,000 gold rows are paid for.
+        passed=annotator_fit and (reaches_target or at_ceiling or usable_despite_slack),
         observed={"kappa": pilot["kappa"], "kappa_upper_95": pilot["kappa_upper"],
                   "raw_agreement": pilot["raw_agreement"], "n": pilot["n"],
                   "raw_agreement_implied_by_target": pilot["raw_needed_for_target"],
                   "annotator_self_consistency_kappa": pilot.get("self_consistency_kappa"),
                   "share_of_ceiling_reached": pilot.get("share_of_ceiling_reached"),
+                  "recoverable_slack": pilot.get("recoverable_slack"),
+                  "recoverable_slack_se": pilot.get("recoverable_slack_se"),
+                  "target_above_ceiling": pilot.get("target_above_ceiling"),
+                  "annotator_fit": annotator_fit,
+                  "redraw_attempted": redraw_attempted,
+                  "redraw_helped": redraw_helped,
+                  "proceeded_with_residual_slack": usable_despite_slack,
                   "at_annotator_ceiling": at_ceiling},
-        threshold={"kappa": cfg.gates.kappa,
+        threshold={"annotator_fitness_kappa": cfg.gates.annotator_fitness_kappa,
+                   "playbook_aspiration_kappa": cfg.gates.kappa,
                    "playbook_raw_agreement_floor": cfg.taxonomy.pilot_agreement_threshold},
         message=(f"pilot: kappa {pilot['kappa']:.3f} (95% upper {pilot['kappa_upper']:.3f}) "
                  f"on {pilot['n']} queries; raw agreement {pilot['raw_agreement']:.1%}, "
@@ -211,6 +278,18 @@ def p2a_taxonomy(state: PipelineState, deps: Deps) -> dict[str, Any]:
                  + (" — AT THE ANNOTATOR CEILING: this is the achievable bar on this "
                     "corpus with this annotator, not a fixable guide defect"
                     if at_ceiling and not reaches_target else "")
+                 + (f" — NOTE the target {cfg.gates.kappa} is ABOVE this annotator's own "
+                    f"ceiling of {pilot['self_consistency_kappa']}, so it is unreachable "
+                    f"by any guide; the recoverable slack is "
+                    f"{pilot.get('recoverable_slack')} ± {pilot.get('recoverable_slack_se')}"
+                    if pilot.get("target_above_ceiling") else "")
+                 + (f" — PROCEEDING WITH RESIDUAL SLACK of "
+                    f"{pilot.get('recoverable_slack')}: the redraw ran and did not "
+                    f"improve agreement, so this pipeline has no remaining move; "
+                    f"kappa {pilot['kappa']:.3f} is above the "
+                    f"{cfg.gates.annotator_fitness_kappa} reliability floor, and every "
+                    f"downstream number must be read against this gap"
+                    if usable_despite_slack else "")
                  + (f" — top confusions {pilot['top_confusions']}" if pilot["top_confusions"] else "")),
         remediation=(
             pilot.get("ceiling_verdict", "")
@@ -241,10 +320,10 @@ def p2a_taxonomy(state: PipelineState, deps: Deps) -> dict[str, Any]:
         # with itself at 0.900. Every point of that gap was missing rules, and the
         # pilot cost real money to discover what this gate can see for free.
         passed=(lo <= n_l1 <= hi) and n_rules >= cfg.taxonomy.min_adjudication_rules,
-        observed={"n_l1": n_l1, "n_rules": len(taxonomy.rules), "critic_verdict": critique.verdict,
+        observed={"n_l1": n_l1, "n_rules": n_rules, "n_rules_top_level": len(taxonomy.rules), "critic_verdict": critique.verdict,
                   "rules_repaired": rule_health["n_repaired"], "rules_dropped": rule_health["n_dropped"]},
         threshold={"l1_range": [lo, hi], "min_rules": cfg.taxonomy.min_adjudication_rules},
-        message=f"{n_l1} L1 intents, {len(taxonomy.rules)} adjudication rules",
+        message=f"{n_l1} L1 intents, {n_rules} adjudication rules the annotator can cite",
         remediation=(
             "Too few classes and a catch-all swells until it means nothing; too many and "
             "annotators stop agreeing, which destroys the gold set. Too few rules means "
@@ -276,6 +355,10 @@ def p2a_taxonomy(state: PipelineState, deps: Deps) -> dict[str, Any]:
             "submissions": [s.model_dump() for s in submissions],
             "critique": critique.model_dump(),
             "dropped_candidates": draft.dropped_candidates,
+            # What the pilot made us change, and whether it helped. Without this
+            # the delivered taxonomy silently differs from the one the architect
+            # designed, and the report cannot say why.
+            "redraw_history": redraw_history,
         },
         producer="p2a",
         summary=f"{n_l1} L1 intents, {len(taxonomy.rules)} rules",
@@ -293,11 +376,43 @@ def p2a_taxonomy(state: PipelineState, deps: Deps) -> dict[str, Any]:
         rejected=draft.dropped_candidates,
     )
 
+    # A halted run used to name what failed and prescribe nothing — three halts,
+    # `n_prescriptions: 0` each time, an operator told the taxonomy is wrong and
+    # not which part. The pilot already knows: it measured which pairs one
+    # annotator cannot reproduce against itself (redraw the boundary — a tie-break
+    # cannot rescue a distinction the query does not contain) and which pairs two
+    # annotators split on while each stayed self-consistent (write the tie-break).
+    prescriptions: list[Prescription] = []
+    for pair, count in pilot.get("structural_confusions", []):
+        classes = [c.strip() for c in pair.split("×")]
+        prescriptions.append(Prescription(
+            id=deps.next_prescription_id(), kind="merge_families",
+            target_names=classes, proposed_by="p2a_pilot",
+            rationale=(f"{count} of {pilot['n']} pilot queries land differently when the "
+                       f"SAME annotator is re-asked, so the boundary between {pair} is not "
+                       "in the data. Merge them, or re-cut them on one basis of division; "
+                       "an adjudication rule cannot fix a distinction the query lacks."),
+        ))
+    for pair, count in pilot.get("guide_confusions", []):
+        classes = [c.strip() for c in pair.split("×")]
+        prescriptions.append(Prescription(
+            id=deps.next_prescription_id(), kind="flag_risk",
+            target_names=classes, proposed_by="p2a_pilot",
+            rationale=(f"{count} pilot disagreements on {pair}, but each annotator was "
+                       "self-consistent — the boundary exists and is merely unstated. "
+                       "This is what an adjudication rule is for."),
+        ))
+    if prescriptions:
+        deps.emit(f"  prescriptions: {sum(1 for p in prescriptions if p.kind == 'merge_families')} "
+                  f"structural (redraw), "
+                  f"{sum(1 for p in prescriptions if p.kind == 'flag_risk')} guide (tie-break)")
+
     return {
         "phase": "p2b",
         "artifacts": {"taxonomy": tax_ref},
         "gates": {gate.name: gate, pilot_gate.name: pilot_gate},
         "decisions": [decision],
+        "prescriptions": prescriptions,
         "completed_phases": ["p2a"],
         "events": [f"P2a: taxonomy with {n_l1} L1 intents and {len(taxonomy.rules)} rules"],
     }
@@ -620,6 +735,72 @@ def p2b_gold(state: PipelineState, deps: Deps) -> dict[str, Any]:
     }
 
 
+def _redraw_until_stable(
+    deps: Deps, ctx: Any, df: Any, taxonomy: Taxonomy, pilot: dict[str, Any],
+) -> tuple[Taxonomy, dict[str, Any], list[dict[str, Any]]]:
+    """Redraw the boundaries a pilot proved are not in the data, then re-pilot.
+
+    Extracted from the node so it can be tested. It decides how money is spent and
+    which taxonomy is delivered, and inside `p2a_taxonomy` it could only be
+    exercised by a paid run — the offline stand-in is skipped, because re-asking a
+    deterministic function in a different batch order measures its batching rather
+    than an annotator's reliability, so every pair would look structural.
+    """
+    cfg = deps.cfg
+    redraw_history: list[dict[str, Any]] = []
+    for attempt in range(cfg.taxonomy.max_taxonomy_redraws):
+        structural = pilot.get("structural_confusions") or []
+        if deps.registry.is_offline or not structural or not pilot.get("slack_is_significant"):
+            break
+        deps.emit(f"  redraw {attempt + 1}/{cfg.taxonomy.max_taxonomy_redraws} — "
+                  f"{len(structural)} boundaries the annotator could not reproduce")
+        try:
+            redrawn = TaxonomyRedrawAgent(ctx).run(
+                nodes=taxonomy.nodes, pairs=structural[:6],
+                domain_notes=cfg.domain.domain_notes, n_pilot=pilot["n"],
+                l1_range=cfg.taxonomy.l1_target_range)
+        except Exception as exc:  # noqa: BLE001
+            deps.emit(f"  ⚠ redraw failed ({type(exc).__name__}) — keeping the current taxonomy")
+            break
+        if not redrawn.nodes:
+            deps.emit("  ⚠ redraw returned no classes — keeping the current taxonomy")
+            break
+
+        before_nodes = list(taxonomy.nodes)
+        before_codes = {n.code for n in before_nodes}
+        taxonomy = taxonomy.model_copy(update={"nodes": list(redrawn.nodes)})
+        after_codes = {n.code for n in taxonomy.nodes}
+        candidate = _pilot_agreement(deps, ctx, df, taxonomy)
+        deps.emit(f"  redraw {attempt + 1}: {len(before_codes)} → {len(after_codes)} classes, "
+                  f"kappa {pilot['kappa']:.3f} → {candidate['kappa']:.3f}, "
+                  f"ceiling {pilot.get('self_consistency_kappa')} → "
+                  f"{candidate.get('self_consistency_kappa')}")
+        redraw_history.append({
+            "attempt": attempt + 1,
+            "pairs_targeted": [p for p, _ in structural[:6]],
+            "classes_before": len(before_codes), "classes_after": len(after_codes),
+            "dropped": sorted(before_codes - after_codes),
+            "added": sorted(after_codes - before_codes),
+            "kappa_before": pilot["kappa"], "kappa_after": candidate["kappa"],
+            "ceiling_before": pilot.get("self_consistency_kappa"),
+            "ceiling_after": candidate.get("self_consistency_kappa"),
+        })
+        # A redraw that makes agreement worse is a redraw to discard. Keeping it
+        # because it is newer is how a loop like this walks a taxonomy downhill.
+        if candidate["kappa"] < pilot["kappa"]:
+            deps.emit("  ⚠ redraw lowered kappa — reverting to the previous taxonomy")
+            redraw_history[-1]["kept"] = False
+            # Restore the ORIGINAL node objects. Filtering the redrawn list by the
+            # old codes would keep the redrawn *definitions* under the old names —
+            # a revert that reverts nothing, and silently.
+            taxonomy = taxonomy.model_copy(update={"nodes": before_nodes})
+            break
+        redraw_history[-1]["kept"] = True
+        pilot = candidate
+
+    return taxonomy, pilot, redraw_history
+
+
 def _pilot_agreement(deps: Deps, ctx: Any, df: Any, taxonomy: Taxonomy) -> dict[str, Any]:
     """A dry run of the annotation task, plus the ceiling it could possibly hit.
 
@@ -669,6 +850,20 @@ def _pilot_agreement(deps: Deps, ctx: Any, df: Any, taxonomy: Taxonomy) -> dict[
         " × ".join(sorted((x["label"], y["label"])))
         for x, y in zip(la, lb) if x["label"] != y["label"]
     )
+
+    # The ceiling can say WHICH pairs are broken, not just how many, and that
+    # distinction decides the remedy. A pair one annotator cannot reproduce
+    # against itself is a boundary that is not in the data — merging or re-cutting
+    # is the only fix, and writing a tie-break for it is wasted effort. A pair two
+    # annotators split on while each stays self-consistent is exactly what a
+    # tie-break is for. Replaying one run's pilot, these were about half its
+    # disagreements and the split was invisible in the aggregate kappa.
+    structural = Counter(
+        " × ".join(sorted((x["label"], str(v))))
+        for x, v in zip(la, back) if x["label"] != str(v)
+    )
+    structural_pairs = {k for k, _ in structural.most_common()}
+    guide_only = Counter({k: v for k, v in conf.items() if k not in structural_pairs})
     # Chance agreement backed out of the pair, so the pilot can state the raw
     # agreement its own kappa target actually implies rather than a constant.
     po, kp, n = agree["raw_agreement"], agree["kappa"], max(1, agree["n"])
@@ -683,16 +878,54 @@ def _pilot_agreement(deps: Deps, ctx: Any, df: Any, taxonomy: Taxonomy) -> dict[
     headroom = None
     if ceiling and ceiling > 0:
         headroom = round(min(1.0, kp / ceiling), 4)
+
+    # Is the remaining slack big enough to be worth a redraft, or is it noise?
+    #
+    # This used to be `share_of_ceiling >= 0.90` — another constant carried in from
+    # one corpus, and one that decided whether a run halted. The question it stands
+    # for is answerable from the pilot itself: the slack a redraft could recover is
+    # `ceiling - kappa`, and it is only worth acting on if it is larger than the
+    # error on that difference. Treating the two kappas as independent overstates
+    # that error, because both involve annotator A's first pass — which is the
+    # conservative direction: it declares slack less often, so it halts less often.
+    #
+    # Note the test tightens with the pilot size: at the configured 200 the error on
+    # the difference is about 0.05, so nothing under roughly 0.08 of slack can fire
+    # it, which is already a meaningful effect. Raise `pilot_sample_size` far above
+    # that and statistical significance stops implying practical significance — a
+    # 0.02 slack would halt a run for a redraft not worth doing. If the pilot ever
+    # grows, pair this with a floor on the effect size.
+    slack = slack_se = None
+    slack_is_real = False
+    if ceiling is not None:
+        po2, k2 = self_agree["raw_agreement"], self_agree["kappa"]
+        pe2 = (po2 - k2) / (1 - k2) if k2 < 1 else 0.0
+        se2 = ((po2 * (1 - po2) / n) ** 0.5) / max(1e-6, 1 - pe2)
+        slack = round(ceiling - kp, 4)
+        slack_se = round((se ** 2 + se2 ** 2) ** 0.5, 4)
+        slack_is_real = slack > 1.645 * slack_se
+
+    # A bar above the ceiling cannot be met by any amount of guide work: two
+    # annotators cannot agree with each other more reliably than one agrees with
+    # itself. Saying so is the difference between "your guide needs work" and
+    # "this target was never reachable with this annotator".
+    target_above_ceiling = ceiling is not None and target > ceiling
     return {
         "n": agree["n"],
         "self_consistency_kappa": ceiling,
         "self_consistency_raw": self_agree.get("raw_agreement"),
         "share_of_ceiling_reached": headroom,
+        "structural_confusions": structural.most_common(6),
+        "guide_confusions": guide_only.most_common(6),
+        "recoverable_slack": slack,
+        "recoverable_slack_se": slack_se,
+        "slack_is_significant": slack_is_real,
+        "target_above_ceiling": target_above_ceiling,
         "ceiling_measured_on_real_annotator": not deps.registry.is_offline,
         "ceiling_verdict": (
             "guide has slack — inter-annotator agreement is well below what this "
             "annotator achieves against itself, so redrafting should help"
-            if headroom is not None and headroom < 0.90 else
+            if slack_is_real else
             "at the annotator ceiling — a higher bar needs a stronger model or human "
             "annotation, not more adjudication rules"
             if headroom is not None else
@@ -918,10 +1151,25 @@ def _annotate(ctx: Any, which: str, queries: list[str], classes: str, rules: str
         return {}
 
     if len(batches) > 1 and not ctx.registry.is_offline:
-        from concurrent.futures import ThreadPoolExecutor
+        from concurrent.futures import ThreadPoolExecutor, as_completed
 
+        # Emit as batches land. A 3,000-row gold set is 120 batches per
+        # annotator at eight concurrent, and on success `_one` said nothing at
+        # all — so the phase went dark for roughly forty minutes per annotator
+        # and a watcher could not distinguish that from a hang, which is the one
+        # thing the dashboard exists to rule out. Order is irrelevant here: the
+        # results are merged into a dict keyed by query.
+        maps = []
         with ThreadPoolExecutor(max_workers=ctx.cfg.llm.max_concurrency) as pool:
-            maps = list(pool.map(_one, batches))
+            futures = [pool.submit(_one, b) for b in batches]
+            # About ten updates whatever the size. `len // 10` alone emits once
+            # per batch below ten, so the 200-query pilot printed all eight.
+            step = max(1, round(len(futures) / 10)) if len(futures) >= 10 else len(futures)
+            for i, fut in enumerate(as_completed(futures), 1):
+                maps.append(fut.result())
+                if i % step == 0 and i < len(futures):
+                    deps.emit(f"  annotator[{which}] {i}/{len(futures)} batches"
+                              f" · {sum(len(m) for m in maps)} rows")
     else:
         maps = [_one(b) for b in batches]
 
@@ -1075,7 +1323,31 @@ def _render_classes(t: Taxonomy) -> str:
 
 
 def _render_rules(t: Taxonomy) -> str:
-    return "\n".join(f"- [{r.id}] when {r.when} → {r.then} ({r.rationale})" for r in t.rules)
+    """Every adjudication rule the annotator is allowed to cite.
+
+    `TaxonomyNode.adjudication_rules` used to be write-only. It is declared to
+    hold rule *ids* cross-referencing the top-level list; the models fill it with
+    whole rules instead, and nothing in the codebase ever read it — so the
+    architect spent tokens writing per-class tie-breaks that reached no annotator,
+    no referee and no classifier. That was 55 rules discarded in one live run and
+    24 in the next. Whatever the field holds, it is adjudication content the model
+    produced on purpose, so it belongs in front of the annotator.
+
+    Structured rules come first: they are deduplicated and carry ids the referee
+    can cite, and the section is budgeted downstream, so anything truncated should
+    be the free text rather than the ids.
+    """
+    lines = [f"- [{r.id}] when {r.when} → {r.then} ({r.rationale})" for r in t.rules]
+    seen = {line.strip() for line in lines}
+    for node in t.nodes:
+        for raw in node.adjudication_rules:
+            text = str(raw).strip()
+            # A bare id is a cross-reference to a rule already listed above.
+            if not text or text in seen or any(text == r.id for r in t.rules):
+                continue
+            seen.add(text)
+            lines.append(f"- [{node.code}] {text}")
+    return "\n".join(lines)
 
 
 # ==========================================================================

@@ -23,12 +23,13 @@ import json
 import logging
 import os
 import re
+import threading
 import time
 from pathlib import Path
 from typing import Any, Literal, TypeVar
 
 from langchain_core.language_models import BaseChatModel
-from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
+from langchain_core.messages import HumanMessage, SystemMessage
 from pydantic import BaseModel
 
 from ..config import LLMConfig
@@ -67,6 +68,62 @@ class LLMUnavailable(RuntimeError):
     """Raised when a real provider was demanded but cannot be reached."""
 
 
+#: Fields worth showing a human, in the order they read best. Deliberately
+#: generic: the panel must be legible on a corpus and a schema this project has
+#: never seen, so nothing here names a QMine class.
+_SALIENT = ("query", "text", "name", "name_zh", "code", "label", "final_label",
+            "title", "verdict", "category", "rationale", "why")
+
+
+def _one_line(item: Any) -> str:
+    """Render one element of a returned list the way a person would read it."""
+    if not isinstance(item, dict):
+        return str(item)[:60]
+    keys = [k for k in _SALIENT if k in item and item[k] not in (None, "", [])]
+    if not keys:
+        keys = [k for k, v in list(item.items())[:2] if isinstance(v, (str, int, float))]
+    if len(keys) >= 2:
+        return f"{str(item[keys[0]])[:26]} → {str(item[keys[1]])[:26]}"
+    return str(item[keys[0]])[:52] if keys else ""
+
+
+def summarize_return(value: Any) -> str:
+    """What an agent returned, as a count plus a sample of the actual content.
+
+    "the agent finished" is not information. "labels=25" is better. What an
+    operator actually wants is to see the work: `labels=25 · 什么是光合作用 →
+    EXPLAIN_CONCEPT`. Reading the largest list and rendering its first element
+    from a fixed set of human-meaningful keys gets that without knowing which
+    schema this is — which matters, because the point of this pipeline is to run
+    on datasets and taxonomies nobody has written a formatter for.
+    """
+    if value is None:
+        return ""
+    if isinstance(value, BaseModel):
+        value = value.model_dump()
+    if isinstance(value, (list, tuple)):
+        head = _one_line(value[0]) if value else ""
+        return f"{len(value)} items" + (f" · {head}" if head else "")
+    if not isinstance(value, dict):
+        return str(value)[:70].replace("\n", " ")
+
+    lists = {k: v for k, v in value.items() if isinstance(v, (list, tuple))}
+    counts = ", ".join(f"{k}={len(v)}" for k, v in lists.items())
+    # Sample the largest list that actually has readable content. Picking purely
+    # by length lands on a list of bare ids and renders "· 1", which tells the
+    # reader nothing and costs the line that could have shown the work.
+    readable = {k: v for k, v in lists.items() if v and isinstance(v[0], dict)}
+    biggest = max((readable or lists).items(), key=lambda kv: len(kv[1]),
+                  default=(None, []))
+    sample = _one_line(biggest[1][0]) if biggest[1] else ""
+    if not counts:
+        # No lists at all — a verdict, a decision, a short answer.
+        parts = [f"{k}={str(v)[:34]}" for k, v in value.items()
+                 if isinstance(v, (str, int, float, bool)) and str(v).strip()]
+        return " · ".join(parts[:2])[:120]
+    return (counts + (f" · {sample}" if sample else ""))[:140]
+
+
 class ModelRegistry:
     """Hands out models by role, accounts for usage, and caches responses."""
 
@@ -91,6 +148,29 @@ class ModelRegistry:
         self.provider = self._resolve_provider(cfg.provider)
         self._models: dict[str, BaseChatModel] = {}
         self.raw_log: list[dict[str, Any]] = []
+        #: Called once per agent turn with what it cost and what it returned, so a
+        #: watcher can see the team working rather than inferring it from phase
+        #: lines. Set by the runner; ``None`` in tests and library use.
+        self.on_call: Any = None
+        #: The raw response of the attempt running on THIS thread. Eight
+        #: annotators run concurrently, so a plain attribute would race and
+        #: attribute one thread's tokens to another's failure.
+        self._raw = threading.local()
+        #: Providers that have proved unusable this run, and why. A dead provider
+        #: must be remembered: with eight concurrent batches, rediscovering it per
+        #: call costs three failed attempts each time.
+        self._dead_providers: dict[str, str] = {}
+        #: MODEL -> multiplier on the output cap, raised when that model truncates.
+        #: Keyed on the model, not the role: verbosity is a property of the model,
+        #: so one discovery should serve every role using it. Keyed per role, five
+        #: researchers each paid ~180s and a discarded call to learn the same fact
+        #: about `glm-5.2` — observed identically across two runs. This mirrors
+        #: `_no_native_schema`, which is per-model and sticks for the same reason.
+        self._length_bump: dict[str, int] = {}
+        #: role -> [(provider, model), ...] alternates the router already chose.
+        self._fallbacks: dict[str, list[tuple[str, str]]] = {}
+        #: What we actually failed over to, for the run summary.
+        self.failovers: list[dict[str, Any]] = []
         self.plan: Any = None          # RoutingPlan, when routing is enabled
         #: Models whose native structured-output mode has already failed once in
         #: this run. Retrying it per call is expensive: at 240 annotation calls,
@@ -159,10 +239,27 @@ class ModelRegistry:
                 prefer=self.cfg.model_overrides or None,
                 budget_usd=self.cfg.budget_usd,
                 prefer_chinese_native=self.cfg.prefer_chinese_native,
+                excluded_labs=self.cfg.excluded_labs,
             )
             self._routed = {
                 r: (a.provider, a.api_model or a.model)
                 for r, a in self.plan.assignments.items() if a.model
+            }
+            # Register the alternates the router already chose. They were being
+            # computed, written into `run_manifest.json`, printed by `qmine models`
+            # — and never consulted at call time, so a provider outage the router
+            # had explicitly planned around still took the run down.
+            self._fallbacks = {
+                r: [tuple(f.split(":", 1)) for f in (a.fallbacks or []) if ":" in f]
+                for r, a in self.plan.assignments.items() if a.model
+            }
+            # Teach the ledger what the chosen models actually charge, so spend is
+            # measured at the prices the router used to choose them.
+            self.ledger.rates = {
+                r: (a.input_per_mtok, a.output_per_mtok)
+                for r, a in self.plan.assignments.items()
+                if a.model and a.input_per_mtok is not None
+                and a.output_per_mtok is not None
             }
             self._model_output_cap = {
                 (a.provider, a.api_model or a.model): a.max_output_tokens
@@ -176,6 +273,46 @@ class ModelRegistry:
             log.warning("routing unavailable (%s); falling back to the static tiers", exc)
             self.provider = self._resolve_provider("auto")
 
+    def _live_route(self, role: str) -> tuple[str, str] | None:
+        """The role's route, skipping providers already proved dead this run.
+
+        Consulted before the plan so that once a provider is known unusable, every
+        later call goes straight to the alternate instead of rediscovering the
+        outage — at eight concurrent batches that rediscovery costs three failed
+        attempts per batch.
+        """
+        if not self._dead_providers:
+            return None
+        primary = self._routed.get(role) or self._prefix_route(role)
+        if primary is None or primary[0] not in self._dead_providers:
+            return None
+        base = role if role in self._fallbacks else next(
+            (b for b in sorted(self._fallbacks, key=len, reverse=True)
+             if role.startswith(b)), None)
+        for prov, model in self._fallbacks.get(base or role, []):
+            if prov not in self._dead_providers:
+                return (prov, model)
+        return None
+
+    def _prefix_route(self, role: str) -> tuple[str, str] | None:
+        for base in sorted(self._routed, key=len, reverse=True):
+            if role.startswith(base):
+                return self._routed[base]
+        return None
+
+    def mark_provider_dead(self, provider: str, reason: str, role: str = "") -> None:
+        """Record that a provider cannot serve this run, and what replaced it."""
+        if provider in self._dead_providers:
+            return
+        self._dead_providers[provider] = reason
+        alt = self._live_route(role) if role else None
+        self.failovers.append({"provider": provider, "reason": reason[:160],
+                               "role": role, "replaced_by": alt})
+        log.warning("provider %s is unusable this run (%s); %s", provider, reason[:120],
+                    f"failing over to {alt[0]}:{alt[1]}" if alt else
+                    "NO USABLE FALLBACK — calls on this provider will fail")
+        self._models.clear()          # cached clients point at the dead endpoint
+
     def route_for(self, role: str) -> tuple[str, str] | None:
         """The (provider, model) chosen for a role, if routing is active.
 
@@ -186,6 +323,9 @@ class ModelRegistry:
         fallback path. That is how a live run ended up asking for a model called
         ``routed:claude-sonnet-5``.
         """
+        live = self._live_route(role)
+        if live is not None:
+            return live
         if role in self._routed:
             return self._routed[role]
         # longest registered prefix wins, so `annotator_a` does not match `annotator`
@@ -254,15 +394,22 @@ class ModelRegistry:
         from .requirements import requirement_for
 
         req = requirement_for(role)
-        timeout = max(self.cfg.request_timeout, req.timeout_seconds)
         # The role's declared budget is authoritative — `cfg.max_tokens` is the
         # default for roles that declare nothing, not a ceiling over those that
         # do. Clamping to it truncated the taxonomy architect at 16k while its
         # own requirement asked for 24k.
-        cap = req.max_output_tokens
+        cap = req.max_output_tokens * self._length_bump.get(model_id, 1)
         published = self._model_output_cap.get((provider, model_id))
         if published:
             cap = min(cap, int(published))
+        # Derive the deadline from the cap actually in force. `req.timeout_seconds`
+        # is computed from the DECLARED cap, so a bumped role kept the old
+        # deadline: the architect once doubled to 84,000 tokens with 1,365s to
+        # emit them, and a researcher at 24,000 needs ~630s against a 390s
+        # timeout. Two constants that only make sense together, moved apart.
+        needed = (cap / req.THROUGHPUT_TOK_PER_SEC) * 1.3
+        timeout = max(self.cfg.request_timeout, req.timeout_seconds,
+                      min(1800.0, max(180.0, needed)))
         key = f"routed:{provider}:{model_id}:{int(timeout)}:{cap}"
         if key in self._models:
             return self._models[key]
@@ -382,6 +529,7 @@ class ModelRegistry:
         last_err = ""
 
         for attempt in range(max_repair + 1):
+            self._raw.last = None
             try:
                 if schema is None:
                     resp = model.invoke(messages)
@@ -413,7 +561,60 @@ class ModelRegistry:
                 raise
             except Exception as exc:  # noqa: BLE001 — we deliberately repair on anything
                 last_err = f"{type(exc).__name__}: {exc}"
-                self.ledger.record(role, error=True)
+                # A rejected REQUEST (a 400) generated nothing and is genuinely
+                # free. A rejected RESPONSE was generated and billed in full.
+                # Recording both as zero made the ledger — and the output-token
+                # ceiling that reads it — optimistic exactly on the paths that
+                # misbehave, which is where a runaway would show up first.
+                spent = getattr(self._raw, "last", None)
+                usage = getattr(spent, "usage_metadata", None) or {}
+                self.ledger.record(
+                    role, error=True,
+                    input_tokens=int(usage.get("input_tokens", 0) or 0),
+                    output_tokens=int(usage.get("output_tokens", 0) or 0),
+                )
+                self.report_call(role, self.model_name(tier, role), tier,
+                                 time.time() - t0, None, ok=False,
+                                 note=type(exc).__name__)
+                # A dead provider is not a retryable condition. Mark it, swing to
+                # the alternate the router already picked, and re-issue THIS call
+                # rather than burning the remaining attempts on the same endpoint
+                # and dropping the batch.
+                # Ran out of room, not out of capability. Give it more and ask
+                # again — swapping providers here would abandon a working model
+                # for a problem the model did not have.
+                if _hit_length_limit(last_err) and attempt < max_repair:
+                    truncated = self.model_name(tier, role)
+                    self._length_bump[truncated] = min(
+                        self._length_bump.get(truncated, 1) * 2, 8)
+                    # More room is only half of it. Measured four times on
+                    # `glm-5.2`: the call truncates past 12,000 tokens in NATIVE
+                    # structured-output mode and then completes in ~5,300 on the
+                    # plain-JSON path — the same answer for less than half the
+                    # tokens. Native mode's schema scaffolding is what overran the
+                    # cap, so a truncation is also evidence that mode is unsuited
+                    # to this model, exactly as an unparseable response is.
+                    self._no_native_schema.add(truncated)
+                    log.warning(
+                        "role=%s hit its output cap on %s; retrying with %dx room "
+                        "in plain-JSON mode (both apply to every role on this model)",
+                        role, truncated, self._length_bump[truncated])
+                    model = self.get(role)
+                    continue
+                if _provider_is_unusable(last_err):
+                    failed_provider = (self.route_for(role) or (self.provider, ""))[0]
+                    self.mark_provider_dead(failed_provider, last_err, role)
+                    routed = self.route_for(role)
+                    if routed and routed[0] != failed_provider:
+                        model = self.get(role)
+                        tier = ROLE_TIER.get(role, "fast")
+                        # The alternate is a different model, so anything learned
+                        # about the dead one's quirks does not carry over.
+                        continue
+                    raise LLMUnavailable(
+                        f"role={role} provider {failed_provider} is unusable "
+                        f"({last_err[:120]}) and no fallback is available"
+                    ) from exc
                 if attempt >= max_repair:
                     break
                 if attempt == 0 and _native_schema_is_broken(last_err):
@@ -440,6 +641,10 @@ class ModelRegistry:
             runnable = model.with_structured_output(schema, include_raw=True)
         out = runnable.invoke(messages)
         raw = out.get("raw") if isinstance(out, dict) else None
+        # Stash it before validation can reject it. The provider has already
+        # generated — and billed — these tokens; whether we can parse the result
+        # is our problem, not a reason to record the attempt as free.
+        self._raw.last = raw
         _check_refusal(raw)
         parsed = out.get("parsed") if isinstance(out, dict) else out
         if parsed is None:
@@ -466,6 +671,7 @@ class ModelRegistry:
             "fence, nothing before or after the JSON:\n\n" + schema_text
         ))
         resp = model.invoke(messages[:2] + [ask])
+        self._raw.last = resp
         _check_refusal(resp)
         text = resp.content if isinstance(resp.content, str) else str(resp.content)
         for candidate in (strip_fence(text), _outermost_json(text), text):
@@ -476,6 +682,72 @@ class ModelRegistry:
             except Exception:
                 continue
         return None, resp
+
+    def _external_key(self, role: str, tier: str, system: str, user: str) -> str:
+        """The cache key for a turn that bypassed `complete`. One definition, so
+        the reader and the writer cannot drift apart."""
+        return hash_params({"role": role, "provider": self.provider,
+                            "model": self.model_name(tier, role),
+                            "system": system, "user": user, "schema": "tool-loop"},
+                           length=32)
+
+    def replay_external_turn(self, role: str, tier: str, system: str, user: str,
+                             schema: type[T] | None = None) -> Any | None:
+        """A previously cached tool-loop turn, if this exact prompt was asked before.
+
+        The tool path wrote cache entries and never read them, which quietly made
+        "resume after a failure" impossible: the two web-researching agents fetch
+        live pages, so re-running them returns different candidates, which changes
+        the architect's prompt, which misses ITS cache, and so on through every
+        annotation call downstream. Twice today a resume that should have replayed
+        ~55 minutes of work replayed almost none of it for exactly this reason.
+
+        Replaying a web turn means reusing the pages that run saw rather than
+        today's — which is the correct behaviour for reproducing a run, and the
+        reason the entry is keyed on the prompt rather than on the fetch.
+        """
+        if not self.cfg.cache_llm_calls:
+            return None
+        hit = self._cache_get(self._external_key(role, tier, system, user))
+        if hit is None:
+            return None
+        self.ledger.record(role, cached=True)
+        try:
+            return schema.model_validate(hit) if schema else hit
+        except Exception:  # noqa: BLE001 — a stale shape must not break the run
+            return None
+
+    def record_external_turn(self, role: str, tier: str, system: str, user: str,
+                             value: Any, latency: float) -> None:
+        """File the two records `_store` files, for a turn that bypassed `complete`.
+
+        `ToolAgent` drives `create_agent` directly, so the web-researching agents
+        never reached `_store` — the only writer of `llm_cache/` and of the
+        `raw_log` that becomes `agent_transcript.json`. The result: the two agents
+        whose claims are *least* verifiable, because they cite pages nobody else
+        saw, were the only two with no record of what they returned and no cached
+        response to replay. Auditability should not depend on which code path an
+        agent happened to take.
+        """
+        self._store(role, self._external_key(role, tier, system, user), value,
+                    system, user, tier, time.time() - latency)
+
+    def report_call(self, role: str, model: str, tier: str, latency: float,
+                    value: Any, *, ok: bool = True, note: str = "") -> None:
+        """Announce one agent turn: what it was, what it cost, what it returned."""
+        if not self.on_call:
+            return
+        u = self.ledger.by_role.get(role, {})
+        try:
+            self.on_call({
+                "role": role, "model": model, "tier": tier, "ok": ok,
+                "latency_s": round(latency, 1), "note": note,
+                "calls": u.get("calls", 0), "errors": u.get("errors", 0),
+                "output_tokens": u.get("output_tokens", 0),
+                "returned": summarize_return(value) if ok else note,
+            })
+        except Exception:  # noqa: BLE001 — a watcher must never break a run
+            pass
 
     def _account(self, role: str, msg: Any) -> None:
         usage = getattr(msg, "usage_metadata", None) or {}
@@ -489,18 +761,26 @@ class ModelRegistry:
         self, role: str, key: str, value: Any, system: str, user: str, tier: Tier, t0: float
     ) -> None:
         payload = value.model_dump() if isinstance(value, BaseModel) else value
+        # `model_name(tier)` without the role skips routing and falls back to the
+        # tier default, so every routed run recorded `claude-opus-5` /
+        # `claude-sonnet-5` no matter which provider actually answered. The cache
+        # KEY passes the role and was always right, so replay was unaffected — but
+        # `agent_transcript.json` is the audit trail, and it named the wrong model
+        # for all 244 calls of the last live run.
+        model = self.model_name(tier, role)
         if self.cfg.cache_llm_calls:
             self._cache_put(
                 key,
                 payload,
-                {"role": role, "tier": tier, "model": self.model_name(tier), "ts": time.time()},
+                {"role": role, "tier": tier, "model": model, "ts": time.time()},
             )
+        self.report_call(role, model, tier, time.time() - t0, payload, ok=True)
         if self.cfg.record_raw_outputs:
             self.raw_log.append(
                 {
                     "role": role,
                     "tier": tier,
-                    "model": self.model_name(tier),
+                    "model": model,
                     "cache_key": key,
                     "latency_s": round(time.time() - t0, 2),
                     "system_head": system[:200],
@@ -518,6 +798,16 @@ class ModelRegistry:
         u["deep_model"] = self.model_name("deep")
         u["fast_model"] = self.model_name("fast")
         u["estimated_cost_usd"] = round(self.ledger.estimated_cost_usd(), 2)
+        # Name any role priced by the fallback rather than by its model's own
+        # rate, so a guess is never read as a measurement.
+        if self.ledger.unpriced_roles:
+            u["unpriced_roles"] = self.ledger.unpriced_roles
+        # A run that silently finished on its second-choice models is not the run
+        # the routing plan describes, and every downstream number was produced by
+        # whatever actually answered.
+        if self.failovers:
+            u["failovers"] = self.failovers
+            u["dead_providers"] = dict(self._dead_providers)
         return u
 
     def provenance_note(self, language: str = "en") -> str:
@@ -633,6 +923,57 @@ _NATIVE_SCHEMA_BROKEN = (
     "must contain the word 'json'",
     'must contain the word "json"',
 )
+
+
+#: Phrases that mean the PROVIDER cannot serve this call, however many times we
+#: ask. Distinct from a schema miss or a truncation, which mean the model answered
+#: and we could not use the answer — those have opposite remedies.
+_PROVIDER_DEAD_PHRASES = (
+    "insufficient balance", "invalid api key", "unauthorized", "payment required",
+    "quota exceeded", "exceeded your quota", "billing", "account is suspended",
+    "authenticationerror", "permissiondeniederror",
+)
+
+#: A status code only counts when it appears where a status code appears. Matching
+#: bare digits killed a provider on `CompletionUsage(completion_tokens=4013,
+#: prompt_tokens=8402)` — "4013" contains "401" and "8402" contains "402" — so a
+#: model hitting its length limit marked the whole of Qwen dead and sent taxonomy
+#: research to a coding model.
+_STATUS_RE = re.compile(
+    r"(?:error\s+code|status(?:\s+code)?|http)\s*[:=]?\s*(401|402|403)\b", re.I
+)
+
+
+def _provider_is_unusable(err: str) -> bool:
+    """Whether `err` means this provider is done for the run, not just this call.
+
+    A 402 on a live run took twelve gold batches — 300 rows — while the retry loop
+    asked the same dead endpoint three times per batch and the two declared
+    fallbacks sat unused in the routing plan.
+
+    Rate limits, timeouts and truncations are deliberately NOT here: those are
+    transient or fixable, and abandoning a working provider over one is worse than
+    the outage it was meant to survive.
+    """
+    low = err.lower()
+    if any(phrase in low for phrase in _PROVIDER_DEAD_PHRASES):
+        return True
+    return bool(_STATUS_RE.search(err))
+
+
+def _hit_length_limit(err: str) -> bool:
+    """Whether the model stopped because it ran out of room, not because it failed.
+
+    A truncation is fixable and the fix is not a different provider: it is more
+    room. `glm-5.2` is markedly more verbose than the `glm-4.5-airx` these budgets
+    were measured on and overran the researcher's 12,000-token cap on its first
+    call. The error text carries a `CompletionUsage(...)` with token counts in it,
+    which is also what made this look like a `402` to a substring matcher.
+    """
+    low = err.lower()
+    return ("lengthfinishreason" in low
+            or "length limit was reached" in low
+            or "finish_reason" in low and "length" in low)
 
 
 def _native_schema_is_broken(err: str) -> bool:

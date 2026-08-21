@@ -1,0 +1,31 @@
+# Provider policy for live runs on this project.
+#
+# Labs are excluded by LAB, not by gateway, so an aggregator cannot smuggle a
+# banned one back in under a different provider name. Cost and Chinese-corpus fit.
+#
+# The reasoning-heavy roles are pinned to DeepSeek's flagship. Within a price
+# tier the router treats every model as equally capable and takes the cheapest,
+# so a mid-line model was winning roles that make single-digit call counts and
+# where 40 cents per million tokens is noise. These four make ~5 calls between
+# them; the annotators, which make ~500, stay on the cheap fast models.
+#
+# The REFEREE is deliberately NOT pinned. It adjudicates every row the two
+# annotators split on, so it must come from a lab different from BOTH of them —
+# annotator_a is DeepSeek, annotator_b is Qwen, so the referee stays on Zhipu.
+# Pinning it to DeepSeek would have made it side systematically with annotator_a
+# and corrupted the gold set in a direction nobody would think to look for.
+llm:
+  provider: router
+  excluded_labs:
+    - openai
+    - anthropic
+    - google
+    - mistral
+    - sakana
+  # Pin by the BARE model id. `deepseek/deepseek-v4-pro` exists as a card id for
+  # BOTH the direct provider and the aggregator, and `by_id` is a dict — last one
+  # wins, which silently routed these through OpenRouter.
+  model_overrides:
+    taxonomy_architect: deepseek-v4-pro
+    taxonomy_critic: deepseek-v4-pro
+    tree_auditor: deepseek-v4-pro
