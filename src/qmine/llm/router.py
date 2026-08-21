@@ -156,6 +156,10 @@ def route(
     budget_usd: float | None = None,
     prefer_chinese_native: bool = False,
     avg_input_tokens: int = 6000,
+    #: Config-scaled call volumes. Without it the estimate is a constant and reads
+    #: the same whether the gold set is 600 rows or 3,000 — a number consulted
+    #: before spending has to move when the spending does.
+    requirements: dict[str, Any] | None = None,
 ) -> RoutingPlan:
     """Pick a model per role, with fallbacks and a cost estimate.
 
@@ -164,7 +168,8 @@ def route(
     """
     from .requirements import ROLE_REQUIREMENTS
 
-    role_list = list(roles or ROLE_REQUIREMENTS.keys())
+    reqs = requirements or ROLE_REQUIREMENTS
+    role_list = list(roles or reqs.keys())
     # Partner-constrained roles are routed after the role they must differ from.
     role_list.sort(key=lambda r: (r in MUST_DIFFER_FROM, r))
     cards = catalog.for_providers(available_providers)
@@ -189,7 +194,7 @@ def route(
     by_id = {c.id: c for c in cards}
 
     for role in role_list:
-        req = requirement_for(role)
+        req = reqs.get(role) or requirement_for(role)
 
         if prefer and role in prefer:
             chosen_id = prefer[role]

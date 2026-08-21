@@ -267,7 +267,7 @@ def promote(
 
     matchups, key = build_blind_matchups(queries, old_labels, new_labels, d["sampled_indices"])
     with open_memory(None, domain=cfg.domain.key) as mem:
-        ctx = AgentContext(cfg=cfg, registry=ModelRegistry(cfg.llm),
+        ctx = AgentContext(cfg=cfg, registry=ModelRegistry(cfg.llm, run_cfg=cfg),
                            store=ArtifactStore(Path(cfg.run_root) / "promote"),
                            memory=mem, firewall=BlindnessFirewall())
         agent = RefereeAgent(ctx)
@@ -426,13 +426,28 @@ def models_cmd(
     chinese: bool = typer.Option(False, "--prefer-chinese-native",
                                  help="Nudge multilingual roles toward Chinese-native labs."),
     cache_dir: str = typer.Option(".cache", "--cache-dir"),
+    domain: Optional[str] = typer.Option(None, "--domain",
+                                         help="Price against this domain profile's settings."),
+    gold: Optional[int] = typer.Option(None, "--gold-sample-size",
+                                       help="Price against this gold-set size."),
 ) -> None:
     """Show which providers are reachable and which model each agent role would use."""
     _load_env()
     _setup_logging(False)
+    from .config import QMineConfig
     from .llm.catalog import fetch
     from .llm.providers import detect
     from .llm.router import route
+
+    cfg = QMineConfig()
+    if domain:
+        from pathlib import Path as _P
+
+        from .config import DomainProfile
+
+        cfg.domain = DomainProfile.load(_P("configs/domains") / f"{domain}.yaml")
+    if gold:
+        cfg.taxonomy.gold_sample_size = gold
 
     av = detect()
     t = Table("provider", "kind", "via")
@@ -454,7 +469,16 @@ def models_cmd(
         console.print("\n[yellow]No API keys — nothing to route. Showing catalogue only.[/yellow]")
         return
 
-    plan = route(cat, av.usable, budget_usd=budget, prefer_chinese_native=chinese)
+    # Scale the volumes by the config that will actually run, so the number an
+    # operator checks before spending moves when the spending does. Without it the
+    # estimate read the same for a 600-row gold set and a 3,000-row one.
+    from .llm.requirements import scaled_requirements
+
+    plan = route(cat, av.usable, budget_usd=budget, prefer_chinese_native=chinese,
+                 requirements=scaled_requirements(cfg))
+    console.print(f"[dim]volumes scaled to this config: gold set "
+                  f"{cfg.taxonomy.gold_sample_size or 'derived from corpus size'}, "
+                  f"{cfg.taxonomy.kappa_repair_rounds} repair round(s)[/dim]")
     r = Table("role", "model", "tier", "calls", "est. $", "fallback")
     for role, a in sorted(plan.assignments.items(), key=lambda kv: -kv[1].estimated_cost_usd):
         r.add_row(role, f"{a.provider}:{a.model}" if a.model else "[red]none[/red]",

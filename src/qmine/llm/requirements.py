@@ -19,7 +19,7 @@ model landscape churns; only the matching changes.
 
 from __future__ import annotations
 
-from typing import Literal
+from typing import Any, ClassVar, Literal
 
 from pydantic import BaseModel, Field
 
@@ -65,17 +65,27 @@ class RoleRequirement(BaseModel):
         """
         return max(2000, self.output_tokens_per_call * 3)
 
+    #: Output tokens per second, measured on this project's providers: the taxonomy
+    #: architect emitted 20,441 tokens inside a 420s window on a live run.
+    #: Deliberately conservative — the cost of underestimating it is a timeout and
+    #: a full retry, the cost of overestimating is waiting longer for a hung call.
+    THROUGHPUT_TOK_PER_SEC: ClassVar[float] = 40.0
+
     @property
     def timeout_seconds(self) -> float:
         """Request timeout, scaled to how much this role has to write.
 
-        One global timeout cannot serve both a 1,500-token annotation batch and a
-        researcher composing 4,000 tokens of structured findings over a long
-        evidence bundle. Measured on a live run: a researcher on a mid-tier model
-        exceeded 180s and was retried three times, each retry as slow as the
-        first — the request was not stuck, merely long.
+        A two-step function (180s / 420s) served while every role's budget sat near
+        its lower rung. It stopped working the moment the architect's budget was
+        raised to cover what it actually emits: at ~49 tokens/sec measured, a
+        42,000-token ceiling needs about 860 seconds, and 420 cut it off mid-answer
+        so the run paid for a full retry down the plain-JSON repair path.
+
+        Derived from the role's own generation cap instead, so raising a budget can
+        never again leave a timeout that cannot accommodate it.
         """
-        return 180.0 if self.output_tokens_per_call <= 2000 else 420.0
+        needed = self.max_output_tokens / self.THROUGHPUT_TOK_PER_SEC
+        return float(min(1800.0, max(180.0, round(needed * 1.3))))
 
     @property
     def cost_sensitivity(self) -> float:
@@ -106,7 +116,11 @@ ROLE_REQUIREMENTS: dict[str, RoleRequirement] = {
     ),
     "taxonomy_architect": RoleRequirement(
         role="taxonomy_architect", reasoning="frontier", blast_radius="run",
-        min_context_tokens=200_000, typical_calls=1, output_tokens_per_call=8000,
+        # Measured at 23,759 output tokens when this call also wrote the rules;
+        # asking it for both blew a 42,000-token ceiling outright. Rules now live
+        # in a separate call, so the budget covers the class list plus the
+        # reasoning these models emit alongside it — which is most of the total.
+        min_context_tokens=200_000, typical_calls=2, output_tokens_per_call=14000,
         multilingual_critical=True,
         rationale="Synthesises every researcher's evidence into the taxonomy that gold "
                   "labels, the classifier, and every report inherit. One call, unbounded stakes.",
@@ -120,14 +134,19 @@ ROLE_REQUIREMENTS: dict[str, RoleRequirement] = {
     ),
     "annotator_a": RoleRequirement(
         role="annotator_a", reasoning="standard", blast_radius="contained",
-        min_context_tokens=32_000, typical_calls=240, output_tokens_per_call=1500,
+        # Re-derived from a live run. Annotator A measured 1,439 output tokens per
+        # batch, but its partner on a reasoning model emitted 11,910 for the SAME
+        # task — reasoning tokens are billed and capped as output, so the budget
+        # must cover the noisiest model that could be routed here, not the quietest.
+        min_context_tokens=32_000, typical_calls=240, output_tokens_per_call=5000,
         multilingual_critical=True,
         rationale="Thousands of rows, batched. Judgment per row is narrow and the guide "
                   "does the hard part. Highest-volume role — dominates the bill.",
     ),
     "annotator_b": RoleRequirement(
         role="annotator_b", reasoning="standard", blast_radius="contained",
-        min_context_tokens=32_000, typical_calls=240, output_tokens_per_call=1500,
+        # Measured at 11,910 on DeepSeek: 25 labels, rationales, and reasoning.
+        min_context_tokens=32_000, typical_calls=240, output_tokens_per_call=5000,
         multilingual_critical=True,
         rationale="Must be INDEPENDENT of annotator_a. Where two providers are available, "
                   "routing the two annotators to different model families makes their "
@@ -135,7 +154,8 @@ ROLE_REQUIREMENTS: dict[str, RoleRequirement] = {
     ),
     "referee": RoleRequirement(
         role="referee", reasoning="strong", blast_radius="phase",
-        min_context_tokens=64_000, typical_calls=30, output_tokens_per_call=3000,
+        # Measured at 8,179 adjudicating a 25-row batch with cited rules.
+        min_context_tokens=64_000, typical_calls=30, output_tokens_per_call=4000,
         multilingual_critical=True,
         rationale="Adjudicates exactly the cases two annotators disagreed on — by "
                   "construction the hardest rows in the set — and drafts the rules that "
@@ -224,6 +244,46 @@ def requirement_for(role: str) -> RoleRequirement:
         rationale="unregistered role — defaulting to standard, which fails visibly "
                   "rather than silently",
     )
+
+
+#: Roles whose call volume is set by configuration rather than being a constant of
+#: the method. Everything else really does run a fixed number of times.
+def scaled_requirements(cfg: Any) -> dict[str, "RoleRequirement"]:
+    """`ROLE_REQUIREMENTS` with the config-dependent volumes filled in.
+
+    `typical_calls` is a constant per role, which makes the pre-run cost estimate
+    a constant too — it read $2.99 whether the gold set was 600 rows or 3,000. That
+    number exists to be consulted *before* spending, so being wrong by 5x defeats
+    the only purpose it has.
+
+    Annotation dominates the bill and scales with three knobs: the gold sample, the
+    repair round that re-annotates it, and the pilot. Those are computed here; the
+    rest are left alone.
+    """
+    from ..config import gold_size_for
+
+    reqs = dict(ROLE_REQUIREMENTS)
+    tax = cfg.taxonomy
+    batch = 25
+
+    gold = tax.gold_sample_size or gold_size_for(getattr(cfg.data, "sample_size", None)
+                                                 or 50_000, tax)
+    per_annotator = -(-gold // batch)
+    # A repair round re-annotates a fresh sample of the same size.
+    per_annotator *= (1 + max(0, tax.kappa_repair_rounds))
+    # Round-2 active learning adds a fixed batch.
+    per_annotator += -(-tax.active_learning_batch // batch)
+    pilot = -(-tax.pilot_sample_size // batch)
+
+    # Annotator A also runs the self-consistency pass on the pilot sample.
+    reqs["annotator_a"] = reqs["annotator_a"].model_copy(
+        update={"typical_calls": per_annotator + 2 * pilot})
+    reqs["annotator_b"] = reqs["annotator_b"].model_copy(
+        update={"typical_calls": per_annotator + pilot})
+    # The referee sees the disagreements, historically ~16% of the gold set.
+    reqs["referee"] = reqs["referee"].model_copy(
+        update={"typical_calls": max(1, -(-int(gold * 0.16) // batch))})
+    return reqs
 
 
 def estimate_job(requirements: dict[str, RoleRequirement] | None = None) -> dict[str, int]:

@@ -161,6 +161,47 @@ class TaxonomyDraft(BaseModel):
     )
 
 
+class RuleSet(BaseModel):
+    rules: list[AdjudicationRule] = Field(default_factory=list)
+    pairs_considered: int = Field(
+        0, description="How many class pairs were examined, whether or not a rule was written."
+    )
+
+
+class RuleWriterAgent(Agent):
+    """Writes the adjudication rules, given a class list that already exists.
+
+    Split out of the architect for two measured reasons. Asking one call for the
+    classes *and* the rules exceeded a 42,000-token output ceiling — most of it
+    reasoning — and when the rule requirement was hardened to stop it writing only
+    one rule, it satisfied that by returning two classes instead of nineteen.
+
+    Separating them removes both failures structurally rather than by instruction.
+    Each call is small enough to finish, and this one is *shown* the final class
+    list, so it cannot invent a tie-break between classes that do not exist — which
+    is what made two dozen otherwise-good rules unusable.
+    """
+
+    role = "taxonomy_architect"
+    prompt_name = "rule_writer"
+    schema = RuleSet
+
+    def build_system(self, *, min_rules: int = 20, **kw: Any) -> str:
+        return super().build_system().replace("{{MIN_RULES}}", str(min_rules))
+
+    def build_user(self, *, nodes: Sequence[Any] = (), domain_notes: str = "", **kw: Any) -> str:
+        listing = "\n".join(
+            f"- `{n.code}` — {n.name}: {n.definition}" for n in nodes
+        )
+        return (
+            f"## Domain\n{domain_notes}\n\n"
+            f"## The final class list ({len(nodes)} classes)\n{listing}\n\n"
+            "Every rule's `then` MUST be one of the codes above, exactly as written. "
+            "Work through the pairs a rater would have to think about and write a "
+            "tie-break for each."
+        )
+
+
 class ArchitectAgent(Agent):
     role = "taxonomy_architect"
     prompt_name = "architect"

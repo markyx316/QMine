@@ -272,3 +272,59 @@ def test_a_region_probe_never_caches_a_host_it_has_evidence_against():
                 os.environ.pop(k, None)
             else:
                 os.environ[k] = v
+
+
+def test_output_budgets_cover_what_the_roles_actually_emit():
+    """Declared budgets set the generation cap (3x), so under-declaring truncates
+    the role mid-answer. Measured per-role output from a live run:
+
+      taxonomy_architect  23,759  — was at 99% of its cap, and this is the role
+                                    that truncated at exactly 16,001 twice before
+      annotator_b         11,910  — a reasoning model on the SAME task where its
+                                    partner emitted 1,439; reasoning tokens are
+                                    billed and capped as output
+      referee              8,179
+    """
+    from qmine.llm.requirements import requirement_for
+
+    measured = {
+        "taxonomy_architect": 23_759,
+        "annotator_b": 11_910,
+        "annotator_a": 1_439,
+        "referee": 8_179,
+    }
+    for role, observed in measured.items():
+        cap = requirement_for(role).max_output_tokens
+        assert cap >= observed * 1.2, (
+            f"{role} emitted {observed:,} tokens live but is capped at {cap:,} — "
+            "it will truncate, and a truncated structured answer fails to parse"
+        )
+
+    # The two annotators do the identical job, so their budgets must not diverge:
+    # which one gets the reasoning model is a routing decision made later.
+    assert (requirement_for("annotator_a").max_output_tokens
+            == requirement_for("annotator_b").max_output_tokens)
+
+
+def test_a_role_is_always_given_time_to_emit_its_own_budget():
+    """The timeout used to be a two-step function (180s / 420s) while the caps were
+    per-role. Raising the architect's cap to 42,000 tokens to stop it truncating
+    left it with 420s to write them — at the ~49 tokens/sec measured on these
+    providers that is roughly half the time it needs, so the fix for one failure
+    created another. Deriving the timeout from the cap makes that combination
+    unreachable."""
+    from qmine.llm.requirements import ROLE_REQUIREMENTS, RoleRequirement, requirement_for
+
+    for name in ROLE_REQUIREMENTS:
+        q = requirement_for(name)
+        implied = q.max_output_tokens / RoleRequirement.THROUGHPUT_TOK_PER_SEC
+        assert q.timeout_seconds >= implied, (
+            f"{name} may emit {q.max_output_tokens:,} tokens but is cut off after "
+            f"{q.timeout_seconds:.0f}s — it needs about {implied:.0f}s"
+        )
+
+    # The architect is the case that motivated this: one call, unbounded stakes.
+    arch = requirement_for("taxonomy_architect")
+    assert arch.timeout_seconds > 420, "still on the old two-step value"
+    # ...and nothing waits forever on a hung request.
+    assert all(requirement_for(n).timeout_seconds <= 1800 for n in ROLE_REQUIREMENTS)

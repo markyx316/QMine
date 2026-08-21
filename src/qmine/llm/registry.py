@@ -75,9 +75,13 @@ class ModelRegistry:
         cfg: LLMConfig,
         *,
         cache_dir: str | os.PathLike[str] | None = None,
+        #: The whole run config, when available. Only used to scale the pre-run
+        #: cost estimate by the knobs that actually drive call volume.
+        run_cfg: Any = None,
         ledger: UsageLedger | None = None,
     ) -> None:
         self.cfg = cfg
+        self.run_cfg = run_cfg
         self.ledger = ledger or UsageLedger(
             max_calls=cfg.max_total_calls, max_output_tokens=cfg.max_total_output_tokens
         )
@@ -145,8 +149,14 @@ class ModelRegistry:
                 cache_dir=cache_dir, ttl=self.cfg.catalog_ttl_hours * 3600,
                 allow_network=not self.cfg.catalog_offline, pinned=self.cfg.catalog_pinned,
             )
+            scaled = None
+            if self.run_cfg is not None:
+                from .requirements import scaled_requirements
+
+                scaled = scaled_requirements(self.run_cfg)
             self.plan = route(
-                cat, av.usable, prefer=self.cfg.model_overrides or None,
+                cat, av.usable, requirements=scaled,
+                prefer=self.cfg.model_overrides or None,
                 budget_usd=self.cfg.budget_usd,
                 prefer_chinese_native=self.cfg.prefer_chinese_native,
             )

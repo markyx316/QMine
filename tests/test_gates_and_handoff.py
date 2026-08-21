@@ -531,3 +531,45 @@ def test_gates_do_not_import_thresholds_that_only_fit_one_corpus():
         "a tree with a fifth of its leaves incoherent still passes — the gate is "
         "reading the mean again"
     )
+
+
+def test_a_taxonomy_without_tie_breaks_cannot_reach_annotation():
+    """A taxonomy with no adjudication rules cannot be annotated consistently, so
+    the rule floor blocks while the class-count range only warns.
+
+    Measured on a live 50k run: 19 classes shipped with ONE rule, two independent
+    annotators then agreed at kappa 0.761, and the same annotator agreed with
+    itself at 0.900. The entire 14-point gap was missing tie-breaks — and the
+    pilot spent real money to discover what this gate sees for free.
+    """
+    from qmine.config import QMineConfig
+
+    cfg = QMineConfig()
+    lo, hi = cfg.taxonomy.l1_target_range
+    floor = cfg.taxonomy.min_adjudication_rules
+    assert floor >= 10, "a floor this low cannot cover the confusable pairs"
+
+    def gate(n_l1: int, n_rules: int) -> tuple[bool, bool]:
+        passed = (lo <= n_l1 <= hi) and n_rules >= floor
+        warn_only = n_rules >= floor and lo / 2 <= n_l1 <= hi * 1.5
+        return passed, warn_only
+
+    # Live failure 1: a sane class count, no tie-breaks. Must block.
+    passed, warn_only = gate(19, 1)
+    assert not passed and not warn_only, "1 rule must halt the run, not warn"
+
+    # Live failure 2, caused by the fix for the first: hardening the rule
+    # requirement made the next draft satisfy it by sacrificing the classes —
+    # 24 rules and TWO classes, the rules naming a dozen classes that did not
+    # exist. Two classes is not a granularity judgement, it is broken output.
+    passed, warn_only = gate(2, 24)
+    assert not passed and not warn_only, "a 2-class taxonomy must halt, not warn"
+
+    # A count NEAR the range with rules present stays advisory — the data may
+    # legitimately settle granularity differently than the prior expected.
+    for n in (lo - 2, hi + 2):
+        passed, warn_only = gate(n, floor)
+        assert not passed and warn_only, f"{n} classes should warn, not halt"
+
+    # Healthy on both axes.
+    assert gate(lo + 1, floor + 5) == (True, True)

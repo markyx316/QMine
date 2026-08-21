@@ -12,32 +12,48 @@
 
 ---
 
-## 1. Status — last updated 2026-08-19
+## 1. Status — last updated 2026-08-20
 
 | | |
 |---|---|
-| Tests | **138 passing**; `ruff --select F` clean but for 3 pre-existing style warnings |
-| Verified **live** (real agents) | phases p0–p2b only, on a **12k subsample** |
-| Verified **offline** (stand-in) | all 12 phases, incl. reports, notebook, 11 figures |
-| Never run | the full 50k corpus with live agents |
-| Live spend to date | ~$38 across 4 attempts |
+| Tests | **141 passing**; `ruff --select F` clean but for 3 pre-existing style warnings |
+| Verified **live** (real agents) | p0–p2a on the **full 50k**; p2b annotation on 12k |
+| Verified **offline** (stand-in) | all 17 phases on the **full 50k**, clean — `runs/preflight50k` |
+| Never run | any live run past p2b |
+| Live spend to date | ~$41 across 5 attempts |
 
-**Next action:** the full-50k live run. Everything since `live20` — the AMI-based K
-rule, `partition_stability`, battery-as-probe, gold sizing 600→3000, the audit trail,
-the annotator-ceiling pilot — has only ever run offline.
+**Next action: relaunch the full-50k live run.** Everything blocking it has been
+fixed and probed; nothing is known-broken. Expect it to reach p2b for the first
+time with a taxonomy that has real tie-breaks.
 
 ```bash
 cd "/Users/mayouxuan/Documents/Claude/Search Query Mining Agent Team/QMine"
-mkdir -p runs/live21 && cp -r runs/live20/llm_cache runs/live21/llm_cache   # saves ~35 min
+mkdir -p runs/live31 && cp -r runs/live30/llm_cache runs/live31/llm_cache
 HF_HOME=$(pwd)/.hf caffeinate -i .venv/bin/qmine run \
   --input data/raw/k12_queries_50k.csv --domain k12_zh \
   --reference-columns legacy_l1,legacy_l2 \
-  --provider router --run-id live21 --plain
+  --provider router --run-id live31 --plain
 ```
+
+Budget **$25-40** and 2-3 hours. (`qmine models` says ~$5; it now scales call
+volumes with the config but still under-prices per call, because reasoning tokens
+are billed as output and are most of the total. See §2.)
 
 ---
 
 ## 2. Open questions — EDIT THIS SECTION, DO NOT APPEND
+
+0. **`qmine models` under-prices a run by roughly 5x.** Call volumes now scale with
+   the config, but the per-call price assumes no reasoning tokens. `annotator_b` on
+   DeepSeek emitted 11,910 output tokens where its partner emitted 1,439 for the
+   identical task. Fix: price reasoning-capable models with a measured multiplier.
+
+0b. **The architect writes rules even when told not to.** Its prompt now says the
+   rule writing happens in a separate call, and it still returned 24 rules
+   alongside its 19 classes — the `rules` field in `TaxonomyDraft` invites it. They
+   are merged rather than wasted, so this costs time, not correctness. Fix would be
+   a separate schema for the classes-only call.
+
 
 1. **Does the guide repair help? First clean answer: no measurable effect.**
    `live20` produced the first uncontaminated comparison — both rounds at **n=596**,
@@ -271,4 +287,65 @@ I added minutes later.
 
 **State:** 134 tests pass; report 15 sections / 664 lines / **0 lines of English**;
 11 figures; notebook executes with 0 errors.
+
+---
+
+## 6. Session 3 (2026-08-20) — CLAUDE.md, portability, and the first live 50k run
+
+### Pre-flight paid for itself
+A **full-50k offline run** (`runs/preflight50k`) completed all 17 phases in 21.7
+minutes, clean — the first time the whole pipeline has run at real scale with the
+current code. Before that, an audit of `live20`'s per-role usage caught two defects
+that would have failed the paid run:
+- **`taxonomy_architect` at 99% of its cap** (23,759 of 24,000) — the role that had
+  already truncated twice.
+- **`annotator_b` exceeding its cap outright** (11,910 vs 4,500), because reasoning
+  tokens are billed and capped as output while its partner emitted 1,439 for the
+  same task.
+
+### The live run: $3.02, halted at p2a, and worth it
+`live30`, full 49,999 rows, real agents. The **annotator-ceiling pilot** — built
+that morning on reasoning alone — returned its first real measurement:
+
+```
+pilot: kappa 0.761 (95% upper 0.814) on 200 queries
+       annotator self-consistency kappa 0.8997 (0.8457 of ceiling reached)
+top confusions: QUERY_POETRY_TEXT × QUERY_WORD_USAGE, EXPLAIN_WORD_MEANING × QUERY_POETRY_TEXT
+```
+
+Two annotators agree at 0.761; **one agrees with itself at 0.900**. So the 14-point
+gap is guide ambiguity, not model noise — the *fixable* branch, established rather
+than assumed. Yesterday the same situation cost $16.67 to reach a worse-informed
+conclusion.
+
+**Root cause:** the architect shipped **19 classes and 1 adjudication rule**. No
+truncation (20,441 tokens against a 42,000 cap) — it simply followed
+`"Aim for at least {{MIN_RULES}} rules"`, which is exactly the soft phrasing
+Anthropic's own guidance says gets ignored.
+
+### Three fixes, each of which exposed the next
+Found by ~$0.05 probes against `live30`'s stored submissions, not by paid runs:
+1. `"Aim for"` → **`YOU MUST`**. Result: 1 rule → 24. But classes went 19 → **2**,
+   and the rules named a dozen classes that did not exist. Emphasis raises
+   adherence to the emphasised instruction *and lowers it for what competes*.
+2. Made the two requirements **joint**. Result: 20 classes, 22 rules — but only by
+   emitting **42,001 tokens**, hitting the ceiling, and recovering via the
+   plain-JSON repair path.
+3. **Split the call**: architect writes classes, a new `RuleWriterAgent` writes
+   rules *shown the finalised class list*. Probed: 19 classes, 22 rules,
+   **22/22 naming a real class**, 731s. The invalid-rule failure is now structurally
+   impossible rather than discouraged.
+
+### Also this session
+- **`timeout_seconds` is derived from the generation cap.** Raising the architect's
+  cap to 42,000 left it 420s to emit them — at ~49 tok/s measured, about half what
+  it needs. Two independently-tuned constants that only make sense together.
+- **Three gates de-imported from K12.** Coverage gates on *rows* not a share (the
+  e-commerce corpus was flagged for being more templated); held-out is bounded by
+  the partition's own reproducibility; coherence reads the **weak tail**, not the
+  mean (a tree with 16 good leaves and 4 incoherent ones passed on average).
+- **`p2a_taxonomy_shape` now has three outcomes**: missing rules halt, a wildly-off
+  class count halts, a near-miss warns.
+- **`CLAUDE.md` written** (106 lines) plus three path-scoped `.claude/rules/` files.
+  Verifying it caught two globs that matched **nothing**.
 

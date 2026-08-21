@@ -28,6 +28,7 @@ from ...agents.roles import (
     AdversaryAgent,
     AnnotatorAgent,
     ArchitectAgent,
+    RuleWriterAgent,
     CriticAgent,
     RefereeAgent,
     ResearcherAgent,
@@ -105,9 +106,34 @@ def p2a_taxonomy(state: PipelineState, deps: Deps) -> dict[str, Any]:
         l1_range=cfg.taxonomy.l1_target_range,
         min_rules=cfg.taxonomy.min_adjudication_rules,
     )
+    nodes = draft.nodes or _fallback_nodes(submissions)
+
+    # Rules are written in a second call, shown the finalised class list. Asking one
+    # call for both blew a 42,000-token ceiling, and hardening the rule requirement
+    # inside that single call made it return two classes instead of nineteen. The
+    # split removes both failures structurally: each call fits, and a writer that
+    # can see the class list cannot invent a tie-break between classes that do not
+    # exist. The architect's own rules are kept and merged, so this only ever adds.
+    rules = list(draft.rules)
+    try:
+        extra = RuleWriterAgent(ctx).run(
+            nodes=nodes, domain_notes=cfg.domain.domain_notes,
+            min_rules=cfg.taxonomy.min_adjudication_rules,
+        )
+        have = {(str(r.when), str(r.then)) for r in rules}
+        rules += [r for r in extra.rules if (str(r.when), str(r.then)) not in have]
+        deps.emit(f"  rule writer → {len(extra.rules)} rules over "
+                  f"{extra.pairs_considered or len(nodes)} class pairs "
+                  f"({len(rules)} total after merge)")
+    except Exception as exc:  # noqa: BLE001
+        # The architect's own rules stand. The shape gate below decides whether
+        # what survived is enough to annotate against.
+        deps.emit(f"  ⚠ rule writer failed ({type(exc).__name__}) — "
+                  f"proceeding with the architect's {len(rules)} rule(s)")
+
     taxonomy = Taxonomy(
-        nodes=draft.nodes or _fallback_nodes(submissions),
-        rules=draft.rules,
+        nodes=nodes,
+        rules=rules,
         labeling_guide=draft.labeling_guide,
         notes=draft.design_notes,
     )
@@ -119,6 +145,7 @@ def p2a_taxonomy(state: PipelineState, deps: Deps) -> dict[str, Any]:
     deps.emit(f"  critic → {len(critique.findings)} findings, verdict {critique.verdict}")
 
     rule_health = _validate_rules(taxonomy, deps)
+    n_rules = len(taxonomy.rules)
 
     # Playbook 2a quality gate: 50 queries, two independent annotators, and a
     # hard stop below 85% agreement — "一致率 <85% 则回炉改指南/裁决规则, 而非直接开标".
@@ -206,7 +233,14 @@ def p2a_taxonomy(state: PipelineState, deps: Deps) -> dict[str, Any]:
     gate = deps.gate(
         "p2a_taxonomy_shape",
         "p2a",
-        passed=(lo <= n_l1 <= hi) and len(taxonomy.rules) >= cfg.taxonomy.min_adjudication_rules,
+        # The class-count range warns; the rule floor BLOCKS. They are not the same
+        # kind of finding. A count slightly outside the expected range is a judgement
+        # call about granularity, but a taxonomy without tie-breaks cannot be
+        # annotated consistently by anyone — measured directly: 19 classes with one
+        # rule produced inter-annotator kappa 0.761 against an annotator that agreed
+        # with itself at 0.900. Every point of that gap was missing rules, and the
+        # pilot cost real money to discover what this gate can see for free.
+        passed=(lo <= n_l1 <= hi) and n_rules >= cfg.taxonomy.min_adjudication_rules,
         observed={"n_l1": n_l1, "n_rules": len(taxonomy.rules), "critic_verdict": critique.verdict,
                   "rules_repaired": rule_health["n_repaired"], "rules_dropped": rule_health["n_dropped"]},
         threshold={"l1_range": [lo, hi], "min_rules": cfg.taxonomy.min_adjudication_rules},
@@ -216,7 +250,18 @@ def p2a_taxonomy(state: PipelineState, deps: Deps) -> dict[str, Any]:
             "annotators stop agreeing, which destroys the gold set. Too few rules means "
             "the referee has nothing to cite and adjudication becomes taste."
         ),
-        warn_only=True,
+        # Three outcomes, not two. Missing rules block, because a taxonomy without
+        # tie-breaks cannot be annotated by anyone. A class count *near* the range
+        # only warns, because granularity is a judgement call the data may
+        # legitimately settle differently. But a count wildly outside it is not a
+        # judgement call — it is broken output: one draft returned two classes for
+        # a 15-25 target, and its two dozen rules named a dozen classes that did
+        # not exist, so all of them were discarded as unfollowable.
+        #
+        # `n_rules` is read after validation, so rules dropped for naming a class
+        # that does not exist count as missing. That is exactly right here.
+        warn_only=(n_rules >= cfg.taxonomy.min_adjudication_rules
+                   and lo / 2 <= n_l1 <= hi * 1.5),
     )
 
     for node in taxonomy.nodes:

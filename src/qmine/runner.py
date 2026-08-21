@@ -48,7 +48,7 @@ def open_run(
     root.mkdir(parents=True, exist_ok=True)
 
     store = ArtifactStore(root, generation=generation)
-    registry = ModelRegistry(cfg.llm, cache_dir=root / "llm_cache")
+    registry = ModelRegistry(cfg.llm, cache_dir=root / "llm_cache", run_cfg=cfg)
 
     with open_memory(root.parent / "memory.sqlite", project="qmine", domain=cfg.domain.key) as memory:
         deps = Deps(
@@ -146,7 +146,7 @@ def run_pipeline(
     root.mkdir(parents=True, exist_ok=True)
 
     store = ArtifactStore(root, generation=generation)
-    registry = ModelRegistry(cfg.llm, cache_dir=root / "llm_cache")
+    registry = ModelRegistry(cfg.llm, cache_dir=root / "llm_cache", run_cfg=cfg)
     events: list[str] = []
 
     def _emit(msg: str) -> None:
@@ -280,7 +280,7 @@ def resume_run(cfg: QMineConfig, run_id: str, *, generation: int = 1, resume_val
 
     root = Path(cfg.run_root) / run_id
     store = ArtifactStore(root, generation=generation)
-    registry = ModelRegistry(cfg.llm, cache_dir=root / "llm_cache")
+    registry = ModelRegistry(cfg.llm, cache_dir=root / "llm_cache", run_cfg=cfg)
     with open_memory(Path(cfg.run_root) / "memory.sqlite", project="qmine", domain=cfg.domain.key) as memory:
         deps = Deps(cfg=cfg, store=store, registry=registry, memory=memory,
                     firewall=BlindnessFirewall(), run_id=run_id)
