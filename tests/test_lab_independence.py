@@ -215,3 +215,56 @@ def bare_model_unreachable_directly(model_id: str) -> bool:
     from qmine.llm.router import bare_model
 
     return bare_model(model_id) == "glm-5.3"
+
+
+# --- independence must hold for the FALLBACK chain, not just the first pick ---
+
+
+def test_a_pinned_model_still_gets_failover():
+    """Pinning said "use this model", and was read as "and abandon the run".
+
+    The `prefer` branch returned with an empty `fallbacks`, so a pinned
+    annotator_b — 256 calls — had no alternative at all, in a project that has
+    already lost twelve gold batches to a single 402.
+    """
+    import inspect
+
+    from qmine.llm import router
+
+    src = inspect.getsource(router.route)
+    assert "_pin_fallbacks(" in src, "an explicitly preferred model still needs alternates"
+
+
+def test_independence_is_enforced_after_every_role_is_assigned():
+    """Checking during assignment checks against an empty set.
+
+    Both the ranked path and the pinned branch consulted only partners ALREADY
+    assigned, so a role processed early was compared against nothing. Observed:
+    a pinned annotator_b was handed a zhipu fallback while the referee ran on
+    zhipu — failing over would have turned independent annotation into
+    shared-architecture agreement, silently.
+    """
+    import inspect
+
+    from qmine.llm import router
+
+    src = inspect.getsource(router.route)
+    assert "for role, a in plan.assignments.items():" in src, \
+        "independence needs a pass over the COMPLETED assignment table"
+    assert "destroy the independence" in src, \
+        "and dropping a fallback for this reason must be reported, not silent"
+
+
+def test_the_relation_is_treated_as_symmetric():
+    """`MUST_DIFFER_FROM` is declared one way; the property is symmetric.
+
+    The referee must differ from the annotators — which equally means an
+    annotator must not fail over into the referee's lab.
+    """
+    import inspect
+
+    from qmine.llm import router
+
+    src = inspect.getsource(router.route)
+    assert "for o, must in MUST_DIFFER_FROM.items() if role in must" in src, \
+        "a role must also avoid the labs of roles declared to differ from IT"

@@ -132,22 +132,17 @@ def _checkpointer(path: Path) -> Iterator[Any]:
     yield InMemorySaver()
 
 
-def run_pipeline(
-    cfg: QMineConfig,
-    *,
-    run_id: str | None = None,
-    generation: int = 1,
-    human_review: bool = False,
-    on_event: Any = None,
-    stream: bool = True,
-) -> dict[str, Any]:
-    """Execute the whole pipeline and return the final state plus a summary."""
-    run_id = run_id or make_run_id(cfg.domain.key)
-    root = Path(cfg.run_root) / run_id
-    root.mkdir(parents=True, exist_ok=True)
+def _wire_events(
+    root: Path, registry: ModelRegistry, on_event: Any = None,
+) -> tuple[list[str], Any]:
+    """Wire agent lines and usage snapshots, for either entry point.
 
-    store = ArtifactStore(root, generation=generation)
-    registry = ModelRegistry(cfg.llm, cache_dir=root / "llm_cache", run_cfg=cfg)
+    `resume_run` wired NEITHER: no `registry.on_call`, no event sink. So a
+    resumed run wrote not one `~ role ok ...` line to `run.log` — the agents
+    panel stayed empty for its whole duration and `qmine watch` had nothing to
+    replay — while the same mechanism worked perfectly on a fresh run. Sharing
+    it is the point: this had already been fixed once, on the fresh path only.
+    """
     events: list[str] = []
 
     def _emit(msg: str) -> None:
@@ -168,16 +163,38 @@ def run_pipeline(
         # marker is what lets a follower rebuild the agent panel from run.log
         # alone, so it must survive into the file verbatim.
         mark = "ok" if rec["ok"] else "!!"
+        # THIS call's output, not the role's running total — see `report_call`.
+        # The total read as per-call and sent a live diagnosis down the wrong path.
+        out = rec.get("call_output_tokens", rec["output_tokens"])
         line = (f"  ~ {rec['role']} {mark} {rec['latency_s']}s "
-                f"out {rec['output_tokens']:,} · {rec['model']} · {rec['returned']}")[:400]
-        # `log.info` FIRST. `_emit` only feeds the in-process dashboard; `deps.emit`
-        # is what reaches `run.log`, and a follower attached with `qmine watch`
-        # reads the file. Emitting only to `_emit` left the agents panel empty for
-        # an entire live run while the mechanism underneath it worked fine.
+                f"out {out:,} · {rec['model']} · {rec['returned']}")[:400]
+        # `log.info` FIRST. `_emit` only feeds the in-process dashboard; the log
+        # file is what a follower reads. Emitting only to `_emit` left the agents
+        # panel empty for an entire live run.
         log.info(line)
         _emit(line)
 
     registry.on_call = _agent
+    return events, _emit
+
+
+def run_pipeline(
+    cfg: QMineConfig,
+    *,
+    run_id: str | None = None,
+    generation: int = 1,
+    human_review: bool = False,
+    on_event: Any = None,
+    stream: bool = True,
+) -> dict[str, Any]:
+    """Execute the whole pipeline and return the final state plus a summary."""
+    run_id = run_id or make_run_id(cfg.domain.key)
+    root = Path(cfg.run_root) / run_id
+    root.mkdir(parents=True, exist_ok=True)
+
+    store = ArtifactStore(root, generation=generation)
+    registry = ModelRegistry(cfg.llm, cache_dir=root / "llm_cache", run_cfg=cfg)
+    events, _emit = _wire_events(root, registry, on_event)
 
     if on_event is not None and hasattr(on_event, "__self__"):
         # A LiveDashboard: give it a handle on usage so it can show spend live.
@@ -299,16 +316,18 @@ def _halt_kind(state: dict[str, Any]) -> str:
     return "gate" if reason else ""
 
 
-def resume_run(cfg: QMineConfig, run_id: str, *, generation: int = 1, resume_value: Any = None) -> dict[str, Any]:
+def resume_run(cfg: QMineConfig, run_id: str, *, generation: int = 1,
+               resume_value: Any = None, on_event: Any = None) -> dict[str, Any]:
     """Resume a checkpointed run, optionally answering a pending human review."""
     from langgraph.types import Command
 
     root = Path(cfg.run_root) / run_id
     store = ArtifactStore(root, generation=generation)
     registry = ModelRegistry(cfg.llm, cache_dir=root / "llm_cache", run_cfg=cfg)
+    events, _emit = _wire_events(root, registry, on_event)
     with _run_log(root), open_memory(Path(cfg.run_root) / "memory.sqlite", project="qmine", domain=cfg.domain.key) as memory:
         deps = Deps(cfg=cfg, store=store, registry=registry, memory=memory,
-                    firewall=BlindnessFirewall(), run_id=run_id)
+                    firewall=BlindnessFirewall(), run_id=run_id, on_event=_emit)
         with _checkpointer(root / "checkpoints.sqlite") as saver:
             graph = build_graph(cfg, deps, checkpointer=saver, human_review=True)
             config = {"configurable": {"thread_id": f"{run_id}-gen{generation}"},
@@ -365,13 +384,30 @@ def resume_run(cfg: QMineConfig, run_id: str, *, generation: int = 1, resume_val
                     _halt_kind(prev) or "a blocking gate", prev.get("halt_reason", "")[:160],
                 )
 
-            payload = Command(resume=resume_value) if resume_value is not None else None
+            if resume_value is not None:
+                payload: Any = Command(resume=resume_value)
+            elif not prev:
+                # A NEW GENERATION IS A NEW THREAD. `new-generation` is the move
+                # the gate-halt message tells you to make, and the thread id is
+                # `{run_id}-gen{generation}` — so gen02 has no checkpoint, and
+                # invoking with None (meaning "continue from the checkpoint")
+                # raised "Received no input for __start__", which `open_memory`
+                # then masked as "generator didn't stop after throw()". Seed it
+                # exactly as a fresh run does; the artifacts and the llm_cache
+                # carry over, so the replay is cheap.
+                payload = new_state(run_id, cfg.config_hash, cfg.domain.key, generation)
+                log.info("resume: generation %d has no checkpoint of its own — running "
+                         "its graph from the start; artifacts and llm_cache carry over",
+                         generation)
+            else:
+                payload = None
             t0 = time.time()
             final = graph.invoke(payload, config=config)
             summary = write_summary(final, store, registry, declared_gates=cfg.gates.blocking,
                                     run_id=run_id, generation=generation,
                                     elapsed=time.time() - t0, resumed=True)
-            return {"state": final, "summary": summary, "state_summary": state_summary(final)}
+            return {"state": final, "summary": summary, "events": events,
+                    "state_summary": state_summary(final)}
 
 
 def new_generation(cfg: QMineConfig, run_id: str, *, from_generation: int, reason: str) -> int:

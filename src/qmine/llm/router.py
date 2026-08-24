@@ -268,6 +268,42 @@ def _eligible(card: ModelCard, req: RoleRequirement, tier: str) -> tuple[bool, s
     return True, ""
 
 
+def _pin_fallbacks(
+    role: str, chosen_id: str, cards: Any, tiers: Any, req: Any,
+    by_id: Any, assignments: Any,
+) -> list[str]:
+    """Lab-diverse alternates for an explicitly pinned model.
+
+    The pin says which model to use; it does not say the run should end when
+    that provider has an outage. Diversifies by LAB rather than gateway, and
+    skips the labs already used by partner roles, because failing over into a
+    partner's lab would quietly destroy the independence kappa depends on.
+    """
+    out: list[str] = []
+    seen = {lab_of(by_id.get(chosen_id) or chosen_id)}
+    # BOTH DIRECTIONS. `MUST_DIFFER_FROM` is declared one way — the referee must
+    # differ from the annotators — but the property is symmetric: if annotator_b
+    # fails over INTO the referee's lab, the referee is no longer independent of
+    # annotator_b, and the kappa that independence underwrites becomes
+    # shared-architecture agreement. Observed: a pinned annotator_b was handed a
+    # zhipu fallback while the referee ran on zhipu.
+    related = set(MUST_DIFFER_FROM.get(role, ()))
+    related |= {other for other, must in MUST_DIFFER_FROM.items() if role in must}
+    for pname in related:
+        a = assignments.get(pname)
+        if a is not None and a.model:
+            seen.add(lab_of(by_id.get(a.model) or a.model))
+    for c in cards:
+        ok, _ = _eligible(c, req, tiers.get(c.id, "light"))
+        if not ok or c.id == chosen_id or lab_of(c) in seen:
+            continue
+        out.append(f"{c.provider}:{c.id}")
+        seen.add(lab_of(c))
+        if len(out) >= 2:
+            break
+    return out
+
+
 def route(
     catalog: Catalog,
     available_providers: Sequence[str],
@@ -348,6 +384,15 @@ def route(
                 estimated_calls=req.typical_calls,
                 estimated_cost_usd=(card.blended_cost(avg_input_tokens, req.output_tokens_per_call) or 0)
                                    * req.typical_calls if card else 0.0,
+                # A PIN STILL NEEDS FAILOVER. This branch returned with an empty
+                # `fallbacks`, so pinning a model meant "use this one, and abandon
+                # the run if its provider is unavailable" — on a 256-call role,
+                # against a project that has already lost twelve gold batches to a
+                # single 402. Pinning expresses which model to prefer, not a
+                # willingness to have no alternative. Same lab-diversity rule as
+                # the ranked path: a chain within one lab is one outage.
+                fallbacks=_pin_fallbacks(role, chosen_id, cards, tiers, req,
+                                         by_id, plan.assignments),
                 why="explicitly preferred by the user; the router did not second-guess it",
             )
             continue
@@ -537,4 +582,33 @@ def route(
             "shrinking the gold set moves the total far more than changing the frontier roles, "
             "which are a rounding error by design."
         )
+    # INDEPENDENCE IS CHECKED AFTER EVERY ROLE IS ASSIGNED, NOT DURING.
+    # Both this loop and the pinned branch could only consult partners that had
+    # ALREADY been assigned (`if p in plan.assignments`), so a role processed
+    # early was checked against an empty set. Observed: a pinned `annotator_b`
+    # was given a zhipu fallback because the referee — which runs on zhipu — had
+    # not been assigned yet. Failing over there would turn independent
+    # annotation into shared-architecture agreement without anything saying so.
+    for role, a in plan.assignments.items():
+        related = set(MUST_DIFFER_FROM.get(role, ()))
+        related |= {o for o, must in MUST_DIFFER_FROM.items() if role in must}
+        if not related or not a.fallbacks:
+            continue
+        forbidden = set()
+        for other in related:
+            b = plan.assignments.get(other)
+            if b is None or not b.model:
+                continue
+            forbidden.add(lab_of(by_id.get(b.model) or b.model))
+            for f in b.fallbacks:
+                forbidden.add(lab_of(f.split(":", 1)[-1]))
+        kept = [f for f in a.fallbacks if lab_of(f.split(":", 1)[-1]) not in forbidden]
+        if len(kept) != len(a.fallbacks):
+            dropped = [f for f in a.fallbacks if f not in kept]
+            plan.notes.append(
+                f"{role}: dropped {len(dropped)} fallback(s) sharing a lab with "
+                f"{sorted(related)} — failing over there would destroy the "
+                f"independence the gold set depends on ({', '.join(dropped)})")
+            a.fallbacks = kept
+
     return plan

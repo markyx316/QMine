@@ -306,6 +306,38 @@ def _json_default(obj: Any) -> Any:
     return str(obj)
 
 
+def latest_generation(root: str | os.PathLike[str]) -> int:
+    """The highest generation directory present under a run, or 1 if none.
+
+    Both resume paths used to hardcode generation 1. After `new-generation` —
+    the move the gate-halt message itself tells you to make — that reopened the
+    OLD generation's thread, found `halted=True`, logged "stays halted" and
+    exited in seconds having done nothing, while the new generation sat
+    untouched. The thread id is per-generation, so resuming the wrong number is
+    not a near miss; it is a different run.
+    """
+    p = Path(root)
+    gens = [int(d.name[3:]) for d in p.glob("gen[0-9][0-9]")
+            if d.is_dir() and d.name[3:].isdigit()]
+    return max(gens) if gens else 1
+
+
+def resolved_config_path(root: str | os.PathLike[str], generation: int) -> Path | None:
+    """The newest `config.resolved.yaml` at or below `generation`.
+
+    `new_generation` opens a directory and a note, not a config — so the config
+    of gen02 is gen01's. Looking only in the current generation finds nothing and
+    sends `run --resume` down its "nothing to resume" path, straight into the
+    refuse-an-existing-run-id guard.
+    """
+    p = Path(root)
+    for g in range(generation, 0, -1):
+        cand = p / f"gen{g:02d}" / "config.resolved.yaml"
+        if cand.exists():
+            return cand
+    return None
+
+
 def merge_artifacts(left: dict[str, ArtifactRef], right: dict[str, ArtifactRef]) -> dict[str, ArtifactRef]:
     """Reducer for the ``artifacts`` channel of the graph state.
 

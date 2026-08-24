@@ -117,7 +117,15 @@ print(f"\\n合计覆盖率 {tmpl['coverage']['union_coverage']:.1%}  (质量门�
 
     out.append(("code", """# %% [3] 现场演算: 碎裂度逐步计算
 import re
-groups = {g['name']: g['pattern'] for g in tmpl['groups']}
+# TRUSTED groups only. Fragmentation asks "a set of KNOWN same-intent phrasings —
+# how many families did it get split into?"; a group whose cohesion check failed
+# is not known-same-intent, so its split is not evidence about the clustering and
+# counting it inflates the number. This is the same rule `foundation.py` applies
+# with `trusted_only=True` for the masks that judge representations.
+groups = {g['name']: g['pattern'] for g in tmpl['groups'] if g.get('trusted', True)}
+_untrusted = [g['name'] for g in tmpl['groups'] if not g.get('trusted', True)]
+if _untrusted:
+    print(f"排除 {len(_untrusted)} 个未通过内聚检验的模板群: {_untrusted}")
 fam_of_row = fam[labels]
 rows = []
 for name, pat in groups.items():

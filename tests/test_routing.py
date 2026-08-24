@@ -278,20 +278,33 @@ def test_output_budgets_cover_what_the_roles_actually_emit():
     """Declared budgets set the generation cap (3x), so under-declaring truncates
     the role mid-answer. Measured per-role output from a live run:
 
-      taxonomy_architect  23,759  — was at 99% of its cap, and this is the role
-                                    that truncated at exactly 16,001 twice before
-      annotator_b         11,910  — a reasoning model on the SAME task where its
-                                    partner emitted 1,439; reasoning tokens are
-                                    billed and capped as output
-      referee              8,179
+      taxonomy_architect  39,647  — measured THREE times and rising on an
+                                    unchanged prompt: 23,759, then 38,073 on
+                                    live36, then 39,647 on live38 at 94% of cap
+      annotator_a         21,975  — measured on live38/deepseek-v4-flash. The
+                                    roles INVERTED: annotator_a is now the noisy
+                                    one (21,975) and annotator_b the quiet one
+                                    (1,792), the reverse of the run this table
+                                    was first written from. Reasoning tokens are
+                                    billed and capped as output, and which
+                                    annotator draws the reasoning model is a
+                                    ROUTING decision, so both budgets must fit
+                                    the noisier of the two
+      referee             19,597  — re-measured on live36/glm-5.2, up from 8,179.
+                                    Ten calls died at EXACTLY 24,001 tokens (the
+                                    12,000 cap bumped once to 2x) and each
+                                    silently discarded 25 adjudications.
+
+    Budgets go stale because the MODEL changes underneath them, not the task.
+    Both figures above tripled without a line of prompt changing.
     """
     from qmine.llm.requirements import requirement_for
 
     measured = {
-        "taxonomy_architect": 23_759,
-        "annotator_b": 11_910,
-        "annotator_a": 1_439,
-        "referee": 8_179,
+        "taxonomy_architect": 39_647,
+        "annotator_b": 11_910,  # both budgets must fit the noisier role
+        "annotator_a": 21_975,
+        "referee": 19_597,
     }
     for role, observed in measured.items():
         cap = requirement_for(role).max_output_tokens
@@ -328,3 +341,28 @@ def test_a_role_is_always_given_time_to_emit_its_own_budget():
     assert arch.timeout_seconds > 420, "still on the old two-step value"
     # ...and nothing waits forever on a hung request.
     assert all(requirement_for(n).timeout_seconds <= 1800 for n in ROLE_REQUIREMENTS)
+
+
+def test_the_generation_cap_and_the_cost_estimate_are_separate_questions():
+    """One field cannot answer both, and conflating them moved a model.
+
+    The CAP must cover the noisiest model that could be routed to a role, or the
+    call truncates. The ESTIMATE must reflect what is actually emitted, or the
+    role is over-charged — and the router weighs cost, so an inflated estimate
+    silently changes which model gets picked. Pricing both annotators at their
+    peak (22,000) roughly doubled the pair and moved annotator_b to another lab
+    on a number that was not real.
+    """
+    from qmine.llm.requirements import requirement_for
+
+    a, b = requirement_for("annotator_a"), requirement_for("annotator_b")
+
+    # Measured on live38: the two do identical work and emitted 21,975 vs 1,792.
+    assert a.max_output_tokens == b.max_output_tokens, \
+        "which annotator draws the reasoning model is decided later; the cap " \
+        "must fit either, or whichever gets it truncates"
+    assert a.max_output_tokens > 21_975 * 1.2, "the cap must clear the measured peak"
+    assert a.output_tokens_per_call < a.max_output_tokens / 2, \
+        "the estimate must be the expected cost, not the worst case"
+    assert a.output_tokens_per_call == b.output_tokens_per_call, \
+        "and symmetric, since routing has not happened when it is computed"

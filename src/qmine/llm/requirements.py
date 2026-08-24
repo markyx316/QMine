@@ -45,8 +45,15 @@ class RoleRequirement(BaseModel):
     needs_structured_output: bool = True
     #: Rough call count on a 50k-row corpus. Drives the cost weighting.
     typical_calls: int = 1
-    #: Approximate output tokens per call, for pre-run cost estimation.
+    #: Approximate output tokens per call, for pre-run COST ESTIMATION.
     output_tokens_per_call: int = 1200
+    #: Worst-case output for the GENERATION CAP, when it differs from the
+    #: expected. One field cannot serve both: the cap must cover the noisiest
+    #: model that could be routed here or the call truncates, while the estimate
+    #: must reflect what is actually emitted or it over-charges the role — and
+    #: the router weighs cost, so an inflated estimate silently changes which
+    #: model gets picked. Setting both annotators to their peak did exactly that.
+    peak_output_tokens_per_call: int | None = None
     multilingual_critical: bool = Field(
         default=False,
         description="Reads raw corpus text rather than our own English scaffolding.",
@@ -63,7 +70,8 @@ class RoleRequirement(BaseModel):
         that emit one short object get a floor of 2000 tokens so a verbose
         preamble cannot eat the whole allowance.
         """
-        return max(2000, self.output_tokens_per_call * 3)
+        return max(2000, (self.peak_output_tokens_per_call
+                          or self.output_tokens_per_call) * 3)
 
     #: Output tokens per second, measured on this project's providers: the taxonomy
     #: architect emitted 20,441 tokens inside a 420s window on a live run.
@@ -123,7 +131,12 @@ ROLE_REQUIREMENTS: dict[str, RoleRequirement] = {
         # asking it for both blew a 42,000-token ceiling outright. Rules now live
         # in a separate call, so the budget covers the class list plus the
         # reasoning these models emit alongside it — which is most of the total.
-        min_context_tokens=200_000, typical_calls=2, output_tokens_per_call=14000,
+        # Re-measured TWICE, rising each time on the same prompt: 23,759 on the
+        # model this was first taken on, 38,073 on live36, then 39,647 on live38
+        # — 94% of a 42,000 cap, i.e. it cleared by ~2,350 tokens. A budget set
+        # to just clear the last observation is a budget that truncates on the
+        # next one, so this is sized against the trend, not the maximum.
+        min_context_tokens=200_000, typical_calls=2, output_tokens_per_call=18000,
         multilingual_critical=True,
         rationale="Synthesises every researcher's evidence into the taxonomy that gold "
                   "labels, the classifier, and every report inherit. One call, unbounded stakes.",
@@ -137,19 +150,38 @@ ROLE_REQUIREMENTS: dict[str, RoleRequirement] = {
     ),
     "annotator_a": RoleRequirement(
         role="annotator_a", reasoning="standard", blast_radius="contained",
-        # Re-derived from a live run. Annotator A measured 1,439 output tokens per
-        # batch, but its partner on a reasoning model emitted 11,910 for the SAME
-        # task — reasoning tokens are billed and capped as output, so the budget
-        # must cover the noisiest model that could be routed here, not the quietest.
-        min_context_tokens=32_000, typical_calls=240, output_tokens_per_call=5000,
+        # The budget must cover the NOISIEST model that could be routed here, not
+        # the quietest — reasoning tokens are billed and capped as output. That
+        # principle was right and the number was four years behind it: measured
+        # 1,439, then 11,910, and on live38 `deepseek-v4-flash` emitted **21,975**
+        # per 25-row batch. At the declared 5,000 the whole-run projection came
+        # out 4.4x under, which is what sized `max_total_output_tokens` below its
+        # own honest requirement.
+        # EXPECTED is the pair average; PEAK is what the noisy one emits. Exactly
+        # one annotator draws a reasoning model and which one is a routing
+        # decision made later, so pricing both at the peak inflated the pair by
+        # ~2x and moved annotator_b to a different lab on a number that was not
+        # real. Measured on live38: 21,975 and 1,792, averaging ~11,900.
+        # min_context is the ROUTER'S ELIGIBILITY FILTER, so under-declaring it
+        # selects models that cannot hold the prompt. 32,000 was measured before
+        # the referee wrote rules: live38 assembles 7,028 chars of classes,
+        # 46,814 of rules and 8,654 of binding rulings — ~63,000 chars, i.e.
+        # 44,000-63,000 tokens of Chinese. Declared at 2x that so a role whose
+        # rule set keeps growing does not silently outgrow its own model.
+        min_context_tokens=128_000, typical_calls=240, output_tokens_per_call=12000,
+        peak_output_tokens_per_call=22000,
         multilingual_critical=True,
         rationale="Thousands of rows, batched. Judgment per row is narrow and the guide "
                   "does the hard part. Highest-volume role — dominates the bill.",
     ),
     "annotator_b": RoleRequirement(
         role="annotator_b", reasoning="standard", blast_radius="contained",
-        # Measured at 11,910 on DeepSeek: 25 labels, rationales, and reasoning.
-        min_context_tokens=32_000, typical_calls=240, output_tokens_per_call=5000,
+        # Held EQUAL to annotator_a on purpose: the two do identical work and
+        # which one draws the noisy model is a routing decision made later, so a
+        # budget that fits only the quiet one truncates whichever gets the other.
+        # (On live38 the routing inverted — a emitted 21,975, b emitted 1,792.)
+        min_context_tokens=128_000, typical_calls=240, output_tokens_per_call=12000,
+        peak_output_tokens_per_call=22000,
         multilingual_critical=True,
         rationale="Must be INDEPENDENT of annotator_a. Where two providers are available, "
                   "routing the two annotators to different model families makes their "
@@ -157,8 +189,13 @@ ROLE_REQUIREMENTS: dict[str, RoleRequirement] = {
     ),
     "referee": RoleRequirement(
         role="referee", reasoning="strong", blast_radius="phase",
-        # Measured at 8,179 adjudicating a 25-row batch with cited rules.
-        min_context_tokens=64_000, typical_calls=30, output_tokens_per_call=4000,
+        # Measured at 8,179 adjudicating a 25-row batch with cited rules — on a
+        # model long since replaced. On `live36`/`glm-5.2` the SUCCESSFUL calls
+        # emitted 19,279-19,597 for the same 25-row batch, and 10 of 15 calls
+        # died at exactly 24,001 tokens: the 12,000 cap, bumped once to 2x, and
+        # unable to grow further. Truncated JSON does not parse, so each of those
+        # silently discarded 25 adjudications. Set from what it actually writes.
+        min_context_tokens=64_000, typical_calls=30, output_tokens_per_call=12000,
         multilingual_critical=True,
         rationale="Adjudicates exactly the cases two annotators disagreed on — by "
                   "construction the hardest rows in the set — and drafts the rules that "

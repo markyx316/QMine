@@ -541,3 +541,71 @@ def test_the_reader_and_writer_share_one_key_definition(cfg, tmp_path):
 
     for fn in (ModelRegistry.record_external_turn, ModelRegistry.replay_external_turn):
         assert "_external_key(" in inspect.getsource(fn)
+
+
+def test_watch_does_not_exit_on_a_previous_runs_summary(tmp_path: Path):
+    """`watch` treated ANY `run_summary.json` as "the run finished".
+
+    Re-running a run id that halted earlier leaves the previous attempt's summary
+    on disk, so the follower replayed the log and exited within seconds — on
+    exactly the case it is most wanted for. It now requires the summary to be at
+    least as new as the last log line.
+    """
+    import time
+
+    gen = tmp_path / "gen01"
+    gen.mkdir()
+    summary = gen / "run_summary.json"
+    log = tmp_path / "run.log"
+
+    def finished(root: Path, log_path: Path) -> bool:
+        summaries = list(root.glob("gen*/run_summary.json"))
+        if not summaries:
+            return False
+        newest = max(f.stat().st_mtime for f in summaries)
+        if log_path.exists() and log_path.stat().st_mtime > newest + 1.0:
+            return False
+        return True
+
+    assert not finished(tmp_path, log), "no summary yet — the run cannot be finished"
+
+    summary.write_text("{}")
+    log.write_text("old line\n")
+    import os
+    os.utime(log, (time.time() - 60, time.time() - 60))     # log older than summary
+    assert finished(tmp_path, log), "summary newer than the log: genuinely finished"
+
+    os.utime(log, (time.time() + 5, time.time() + 5))       # log has moved on
+    assert not finished(tmp_path, log), "a re-run past a stale summary is NOT finished"
+
+
+def test_run_refuses_a_run_id_that_already_exists(tmp_path: Path):
+    """`run` is not the resume path, and silently behaving like a broken one cost
+    an hour four separate times in a single day.
+
+    It reopens the same LangGraph thread AND the same llm_cache. The checkpoint
+    replayed `halted=True` and exited in 3.1s without re-reaching the gate; the
+    cache matched an architect entry from a DIFFERENT aborted attempt, so the rule
+    writer built on a 21-class taxonomy where the run being continued had 24.
+    Neither failed loudly.
+    """
+    import inspect
+
+    from qmine import cli
+
+    src = inspect.getsource(cli.run)
+    assert "already exists" in src, "an existing run id must be refused"
+    assert "--resume" in src and "new-generation" in src, \
+        "and the refusal must name the paths that DO work"
+    assert "typer.Exit(2)" in src, "refusing means a non-zero exit, not a warning"
+
+
+def test_the_remedy_resume_recommends_is_actually_reachable():
+    """`resume_run` tells the operator to "start a new generation" after a gate
+    halt — deliberately, since resume must not overturn a gate. `new_generation`
+    existed in the runner and had ZERO references in the CLI, so the only correct
+    move after the most common halt could not be made."""
+    from qmine import cli
+
+    names = {c.name or c.callback.__name__ for c in cli.app.registered_commands}
+    assert "new-generation" in names, f"no way to do what resume advises; have {sorted(names)}"

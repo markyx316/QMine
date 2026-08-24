@@ -314,7 +314,15 @@ class LLMConfig(BaseModel):
     request_timeout: float = 180.0
     #: Hard ceilings.  A run that would exceed them aborts rather than surprising you.
     max_total_calls: int = 4000
-    max_total_output_tokens: int = 6_000_000
+    #: Runaway guard, derived as ~2x the whole-run output estimate. The RULE was
+    #: right and its INPUT was stale: 6,000,000 was 2.0x an estimate built from
+    #: `output_tokens_per_call` figures that were 4.4x too low, which made it
+    #: **0.50x** what an honest run needs — it aborted every legitimate full run,
+    #: not just runaways. Re-derived once the annotator, referee and architect
+    #: budgets were measured: honest estimate 12,096,234, so 2x is ~24,000,000.
+    #: Re-derive this whenever a role's budget changes; a guard sized from a
+    #: stale projection is a guard that fires on correct behaviour.
+    max_total_output_tokens: int = 24_000_000
     cache_llm_calls: bool = True
     record_raw_outputs: bool = True
     #: LangGraph's verified default is 10007 super-steps. An unbounded refinement

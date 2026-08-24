@@ -17,6 +17,8 @@ a picture of the old taxonomy rather than of the data.
 
 from __future__ import annotations
 
+import time
+
 from typing import Any
 
 import numpy as np
@@ -125,18 +127,38 @@ def p7_name_shard(payload: dict[str, Any], deps: Deps) -> dict[str, Any]:
         card = cards.get(lid)
         if card is None:
             return None
-        try:
-            return agent.run(card=card)
-        except Exception as exc:  # noqa: BLE001
-            deps.emit(f"  namer[{shard_id}] leaf {lid} failed: {type(exc).__name__}")
-            return None
+        # RETRY, the way `_annotate` does. A namer failure is not a lost row: a
+        # single unnamed leaf fails `p7_all_leaves_named`, which is a BLOCKING
+        # gate, and `resume` refuses to overturn a gate — so one transient blip
+        # among ~60 calls ends a paid run at phase 7 and forces a new generation.
+        # Returning None on the first exception made that a coin-flip on provider
+        # weather, in the one phase where nothing repairs a missing result.
+        last = ""
+        for attempt in range(3):
+            try:
+                return agent.run(card=card)
+            except Exception as exc:  # noqa: BLE001
+                last = type(exc).__name__
+                if attempt < 2:
+                    time.sleep(2 ** attempt)
+        deps.emit(f"  namer[{shard_id}] leaf {lid} failed after 3 attempts: {last}")
+        return None
 
     # Within a shard the clusters are independent too — the shard exists to keep
     # agents from seeing each other's answers, not to serialise their work.
     if len(leaf_ids) > 1 and not ctx.registry.is_offline:
         from concurrent.futures import ThreadPoolExecutor
 
-        with ThreadPoolExecutor(max_workers=min(4, len(leaf_ids))) as pool:
+        # Respect the configured ceiling. This was a hard-coded 4, and the shards
+        # themselves run concurrently — 5 shards x 4 threads put 20 calls on one
+        # provider while `llm.max_concurrency` said 8 and every other fan-out
+        # obeyed it. Worse, it made that knob INERT in exactly the phase whose
+        # blocking gate has no repair path, so turning it down when a provider
+        # throttles had no effect here. Divide the budget across the shards that
+        # share the key rather than multiplying by them.
+        n_shards = max(1, int(getattr(deps.cfg.naming, "n_naming_agents", 1) or 1))
+        per_shard = max(1, deps.cfg.llm.max_concurrency // n_shards)
+        with ThreadPoolExecutor(max_workers=min(per_shard, len(leaf_ids))) as pool:
             out = [n for n in pool.map(_name, leaf_ids) if n is not None]
     else:
         out = [n for n in (_name(l) for l in leaf_ids) if n is not None]
@@ -336,7 +358,17 @@ def p8_governance(state: PipelineState, deps: Deps) -> dict[str, Any]:
     )
     new_labels = detail.pop("leaf_labels", None)
     if detail.get("relabelled"):
-        deps.cache_put("leaf_relabels", {int(k): v for k, v in detail["relabelled"].items()})
+        relabels = {int(k): v for k, v in detail["relabelled"].items()}
+        deps.cache_put("leaf_relabels", relabels)
+        # PERSIST IT TOO. `p10_deliver` reads this through `deps.recover(...)`,
+        # whose whole purpose is to fall back to the artifact store on a resumed
+        # run — but nothing ever WROTE the artifact, so the fallback was dead and
+        # returned the `{}` default. Governance renames then vanished from the
+        # delivered column on any resume, silently, exactly the failure
+        # `recover`'s own docstring describes.
+        deps.store.put_json(
+            "leaf_relabels", {str(k): v for k, v in relabels.items()},
+            producer="p7", summary=f"{len(relabels)} governance renames")
 
     try:
         settled = assert_all_settled(prescriptions)

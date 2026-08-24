@@ -39,6 +39,8 @@ def geometric_audit(
     sample: int = 8000,
     seed: int = SEED_METRIC,
     rule_dependent_threshold: float = 0.5,
+    chance_multiple: float = 2.0,
+    mad_multiple: float = 1.0,
 ) -> dict[str, Any]:
     """Per-class geometry: can the representation see this intent?
 
@@ -47,6 +49,16 @@ def geometric_audit(
     not a filter — the class stays in the taxonomy either way, because the
     taxonomy answers to users rather than to geometry.  What changes is where
     the class gets its accuracy from.
+
+    THE BAR IS RELATIVE TO CHANCE, not an absolute 0.5.  kNN agreement means
+    something different at every class count: with 22 classes a random neighbour
+    agrees about 4.5% of the time, with 5 classes about 20%, and a large class
+    clears a fixed 0.5 on its prior alone while a small one cannot reach it even
+    when the embedding separates it perfectly.  A flat 0.5 read off one corpus's
+    spread therefore calls big classes visible and small ones rule-dependent
+    largely regardless of the geometry.  The effective bar is
+    ``max(rule_dependent_threshold, chance_multiple x share)`` and every row
+    carries the chance level and the lift so the verdict can be checked.
     """
     y = np.asarray(list(labels))
     idx = deterministic_subsample(len(X), min(sample, len(X)), seed)
@@ -74,23 +86,59 @@ def geometric_audit(
         rival_sims = cents[ci] @ cents.T
         rival_sims[ci] = -np.inf
         rival = classes[int(rival_sims.argmax())]
+        share = n / len(ys)   # the bar is set below, from the corpus-wide spread
         rows.append({
             "class": c,
-            "n": n,
-            "share": round(n / len(ys), 4),
+            # NAMED for what they are. These are subsample counts, and they were
+            # reported as `n` and `share` beside population-scale numbers.
+            "n_in_subsample": n,
+            "share_in_subsample": round(share, 4),
             "cohesion": round(cohesion, 4),
             "knn_agreement": round(agree, 4),
+            "chance_agreement": round(share, 4),
+            "lift_over_chance": round(agree / share, 2) if share else None,
             "nearest_rival": rival,
             "rival_centroid_cosine": round(float(rival_sims.max()), 4),
-            "verdict": (
-                "geometry-visible" if agree >= rule_dependent_threshold else "rule-dependent"
-            ),
+            "verdict": "",          # decided below, once the spread is known
         })
+
+    # THE BAR COMES FROM THIS CORPUS'S OWN SPREAD, not from a constant.
+    #
+    # A flat 0.5 was read off the K12 run and is meaningless elsewhere: kNN
+    # agreement depends on how many classes there are and how big they are. On a
+    # 5-class corpus nothing would ever fall below it; on a 200-class one
+    # everything would. Measured on live38 it flagged 5 of 21 — and sat almost
+    # exactly at that corpus's first quartile, which is why it appeared to work.
+    #
+    # Chance alone cannot decide it either: every live38 class ran 3.4x-76x above
+    # its own share, so a chance-relative bar would have flagged NOTHING and the
+    # audit would report nothing ever. What identifies a class the embedding
+    # cannot carry is being an OUTLIER against its neighbours, so the bar is
+    # `median - 1.0 x MAD` — robust to the long tail, and flagging nothing at all
+    # when every class clusters equally well. On live38 that is 0.495 and selects
+    # exactly the same five classes the old constant did.
+    knn = [r["knn_agreement"] for r in rows]
+    if len(knn) >= 5:
+        med = float(np.median(knn))
+        mad = float(np.median([abs(k - med) for k in knn]))
+        spread_bar = med - mad_multiple * mad
+        basis = f"median({med:.3f}) - {mad_multiple}*MAD({mad:.3f})"
+    else:
+        # Too few classes to estimate a spread; fall back to the declared level.
+        spread_bar = rule_dependent_threshold
+        basis = f"absolute floor (only {len(knn)} classes — spread not estimable)"
+
+    for r in rows:
+        r["bar_applied"] = round(max(chance_multiple * r["share_in_subsample"],
+                                     spread_bar), 4)
+        r["verdict"] = ("geometry-visible" if r["knn_agreement"] >= r["bar_applied"]
+                        else "rule-dependent")
 
     rows.sort(key=lambda r: r["knn_agreement"])
     rule_dep = [r["class"] for r in rows if r["verdict"] == "rule-dependent"]
     return {
         "classes": rows,
+        "bar_basis": basis,
         "k": k,
         "n_evaluated": int(len(idx)),
         "rule_dependent_classes": rule_dep,

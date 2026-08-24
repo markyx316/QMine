@@ -378,3 +378,159 @@ def test_the_panel_measures_the_partition_it_labels():
     # The old corpus-level quantity is still available, under a name that says so,
     # and it is exactly the thing that CANNOT tell these two apart.
     assert good.get("kmeans_refit_stability") == bad.get("kmeans_refit_stability")
+
+
+# --- a threshold that only fits one corpus ----------------------------------
+
+
+def test_l2_visibility_is_judged_against_chance_not_a_flat_number():
+    """kNN agreement means something different at every class count.
+
+    With 22 classes a random neighbour agrees ~4.5% of the time; with 2 classes
+    ~50%. A flat 0.5 therefore calls a dominant class "geometry-visible" on its
+    PRIOR alone, and can never be reached by a small one however cleanly the
+    embedding separates it. The bar is now max(floor, 2 x chance), and chance is
+    the class's own share.
+    """
+    import inspect
+
+    from qmine.ops.subintent import geometric_audit
+
+    sig = inspect.signature(geometric_audit)
+    assert "chance_multiple" in sig.parameters, \
+        "the bar must scale with chance, not sit at an absolute level"
+
+    src = inspect.getsource(geometric_audit)
+    # The bar is derived from the corpus's own spread, with a chance-relative
+    # floor beneath it. Assert both terms are present rather than a literal
+    # expression, which changes whenever the formulation is refined.
+    assert "mad_multiple" in src and "np.median" in src, \
+        "the bar must come from this corpus's spread, not from a constant"
+    assert "chance_multiple * r[\"share_in_subsample\"]" in src, \
+        "with a chance-relative floor, so a class cannot pass on its prior alone"
+    # The subsample counts must not masquerade as population counts.
+    assert '"n_in_subsample"' in src and '"share_in_subsample"' in src, \
+        "these are counts from an 8,000-row subsample of a 50k corpus"
+    assert '"lift_over_chance"' in src, \
+        "the verdict is only checkable if the lift travels with it"
+
+
+def test_the_l2_bar_comes_from_the_corpus_not_from_a_constant():
+    """A flat 0.5 was read off K12 and means nothing elsewhere.
+
+    Measured on live38: 21 classes, kNN agreement 0.25-0.886, and every class
+    ran 3.4x-76x above its own share — so a purely chance-relative bar flags
+    NOTHING and the audit reports nothing ever. What identifies a class the
+    embedding cannot carry is being an outlier against its neighbours, so the
+    bar is `median - 1.0 x MAD`. On live38 that is 0.495 and selects exactly the
+    five classes the old constant did.
+    """
+    import numpy as np
+    from sklearn.preprocessing import normalize
+
+    from qmine.ops.subintent import geometric_audit
+
+    rng = np.random.default_rng(0)
+    dim, per = 8, 50
+    X = normalize(np.vstack([
+        rng.normal(loc=np.eye(dim)[i] * 12.0, scale=0.05, size=(per, dim))
+        for i in range(6)]))
+    labels = sum(([f"C{i}"] * per for i in range(6)), [])
+
+    out = geometric_audit(X, labels, sample=len(labels), k=5)
+    assert "bar_basis" in out and "MAD" in out["bar_basis"], \
+        "the bar must state where it came from"
+    flagged = [r for r in out["classes"] if r["verdict"] == "rule-dependent"]
+    assert not flagged, (
+        "six equally well-separated classes have no outlier, so nothing should be "
+        f"called rule-dependent — got {[r['class'] for r in flagged]}. A fixed "
+        "quartile would have condemned 25% regardless.")
+
+
+def test_a_dominant_class_cannot_be_called_visible_on_its_prior_alone():
+    """Two classes, one holding 80% of the rows, embedded as pure noise.
+
+    Under a flat 0.5 the majority class clears the bar because most of anyone's
+    neighbours belong to it. Judged against chance it cannot.
+    """
+    import numpy as np
+
+    from qmine.ops.subintent import geometric_audit
+
+    rng = np.random.default_rng(0)
+    n = 400
+    X = rng.normal(size=(n, 16))          # no structure at all
+    X /= np.linalg.norm(X, axis=1, keepdims=True)
+    labels = ["BIG"] * int(n * 0.8) + ["SMALL"] * (n - int(n * 0.8))
+
+    out = geometric_audit(X, labels, sample=n, k=5)
+    by = {r["class"]: r for r in out["classes"]}
+    big = by["BIG"]
+    # On noise, kNN agreement for BIG lands near its share (~0.8) — that is chance.
+    assert big["knn_agreement"] >= 0.5, "sanity: a flat 0.5 would have passed it"
+    assert big["lift_over_chance"] < 2.0, "but it carries no signal over chance"
+    assert big["verdict"] == "rule-dependent", (
+        "a class the embedding cannot actually separate must not be called "
+        "geometry-visible just because it is large")
+
+
+def test_calibration_is_measured_out_of_fold_like_the_accuracy_beside_it():
+    """ECE was computed on the rows the model had just been fitted to.
+
+    It is printed next to an out-of-fold `cv_accuracy`, which invites reading the
+    two as comparable when only one was honest — and the report says phase 10
+    ROUTES on confidence, so an optimistic calibration figure loosens a live
+    threshold rather than merely looking good.
+    """
+    import numpy as np
+
+    from qmine.ops.classify import train_classifier
+
+    rng = np.random.default_rng(0)
+    n = 300
+    # Pure noise: a well-calibrated model should be near chance and SAY so.
+    X = rng.normal(size=(n, 12))
+    y = [("A" if i % 2 else "B") for i in range(n)]
+
+    out = train_classifier(X, y)
+    assert out.get("ece_basis") == "out-of-fold", (
+        f"ECE basis was {out.get('ece_basis')!r} — it must be measured the same "
+        "way as the accuracy it is reported beside")
+    assert out["cv_accuracy"] < 0.7, "sanity: noise must not be learnable"
+
+
+def test_no_translation_key_is_dead():
+    """Every PROSE_ZH key must be a prefix of prose something actually authors.
+
+    `prose()` matches with `startswith`, so a key that drifts by one word stops
+    matching and the English falls through to a Chinese deliverable. That is how
+    "Low coherence means clusters…" sat un-firing while the code authored "Low
+    coherence means THOSE clusters…".
+
+    The existing coverage test reads the RENDERED report, so it only sees strings
+    the fixture happens to emit — a remediation for a gate that passes never
+    renders, and the drift hides. This checks the mapping against the source.
+    """
+    import pathlib
+
+    from qmine.report.i18n import PROSE_ZH
+
+    src_root = pathlib.Path(__file__).resolve().parents[1] / "src" / "qmine"
+    blob = "\n".join(f.read_text(encoding="utf-8")
+                     for f in src_root.rglob("*.py"))
+
+    dead = []
+    for key in PROSE_ZH:
+        # The authored string must START with the key, so the key has to appear
+        # in the source immediately after a quote.
+        if f'"{key}' in blob or f"'{key}" in blob.replace('"', "'"):
+            continue
+        dead.append(key)
+    # i18n.py itself holds every key, so a key found ONLY there is dead.
+    i18n = (src_root / "report" / "i18n.py").read_text(encoding="utf-8")
+    dead = [k for k in dead + [k for k in PROSE_ZH if blob.count(f'"{k}') <= i18n.count(f'"{k}')]
+            if k in PROSE_ZH]
+    dead = sorted(set(dead))
+    assert not dead, (
+        "these translation keys match no authored prose — the English will reach "
+        "the Chinese reader:\n  " + "\n  ".join(dead[:8]))

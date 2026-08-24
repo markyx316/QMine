@@ -193,7 +193,11 @@ PROSE_ZH: dict[str, str] = {
     "A naming shard failed":
         "有命名分片执行失败。请在运行日志中查异常 — 未命名的叶子会一路带到交付表, "
         "看起来像「没有意图」而不是「没跑成」。",
-    "Low coherence means clusters are carrying more than one intent":
+    "Inter-annotator agreement has reached this annotator's own self-consistency":
+        "标注者之间的一致性已经达到该标注者**自己与自己**的一致性上限, 再修指南也提不上去 —— "
+        "剩余的分歧是标注者噪声, 不是指南歧义。要再高只能换更强的模型或人工标注; "
+        "否则请把自一致性 kappa 当作本语料的诚实天花板, 并据此解读下游每一个数字。",
+    "Low coherence means those clusters are carrying more than one intent":
         "内聚度偏低意味着簇里装了不止一个意图 — 这是**粒度问题, 不是命名问题**。"
         "应回到层级构建重切, 而不是换个名字了事。",
     "If only the seeded pre-screen finds risk content":
@@ -205,9 +209,6 @@ PROSE_ZH: dict[str, str] = {
     "A minority language between 0.5% and 5%":
         "占比在 0.5%–5% 之间的少数语言是**最危险的区间**: 小到撑不起自己的簇, "
         "又大到足以污染别人的簇。需要分层抽样或单独的子意图处理。",
-    "Coverage below the window means the fragmentation metric":
-        "模板群覆盖率低于窗口, 意味着碎裂度指标建立在过少的行上 — 请继续挖掘模板群, "
-        "或明确接受这个指标此次证据偏弱。",
     "The guide is ambiguous before a single gold row":
         "在还没有为任何一行金标付费之前, 指南就已经有歧义了。请修正上面这些易混类目对的"
         "定义与裁决规则, 然后重跑 2a — 手册明确要求此刻回炉, 而不是直接开标。",
@@ -232,9 +233,6 @@ PROSE_ZH: dict[str, str] = {
         "把结构上完全不同的算法送进同一套度量 harness, 问的是「这套结构是语料的性质, "
         "还是 KMeans『簇近似球形』这一假设的产物」。若某个替代算法明显更可复现, "
         "那是一个「家族层应按暂定读取」的警告, 而不是中途换算法的理由。",
-    "Highest replay stability under an identical measurement harness":
-        "在完全相同的度量 harness 下重播稳定性最高。L2 归一化后点落在单位球面上, "
-        "余弦邻域与欧氏邻域一致, 簇近似各向同性 — 正中 KMeans 的假设。",
     "Highest replay stability on this corpus's own clustering task":
         "在**本语料自己的聚类任务**上重播稳定性最高 —— 而不是在公开检索榜单上。",
     "Synthesised from":

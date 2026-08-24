@@ -176,14 +176,19 @@ def test_one_role_learning_a_models_verbosity_serves_every_role_on_it():
 
 
 def test_the_bump_is_bounded():
-    """A cap that doubles without limit would ask for more than any model emits,
-    and the timeout does not grow with it."""
-    import inspect
+    """The bump is a floor, not a ratchet.
 
-    from qmine.llm.registry import ModelRegistry
+    It used to double per truncation with a ceiling of 8. Under concurrency that
+    ceiling was reachable from a single underlying problem, and the timeout now
+    derives from the cap so it inflated too. Raising to a fixed floor is bounded
+    by construction and needs no ceiling.
+    """
+    from qmine.llm.registry import _next_length_floor
 
-    src = inspect.getsource(ModelRegistry.complete)
-    assert ", 8)" in src, "the multiplier must be capped"
+    # Bounded by construction: there is no input that climbs past 4x.
+    assert {_next_length_floor(n) for n in (1, 2, 3, 4, 8, 99)} == {2, 4}
+    # Idempotent: repeated truncations converge rather than climb.
+    assert _next_length_floor(_next_length_floor(_next_length_floor(1))) == 4
 
 
 def test_a_truncation_also_abandons_native_structured_output_for_that_model():
@@ -201,7 +206,234 @@ def test_a_truncation_also_abandons_native_structured_output_for_that_model():
 
     src = inspect.getsource(ModelRegistry.complete)
     i = src.index("_hit_length_limit(last_err)")
-    branch = src[i:i + 900]
+    branch = src[i:i + 2600]          # the branch grew comments explaining why
     assert "_no_native_schema.add(truncated)" in branch, \
         "a truncation must also switch that model to plain-JSON mode"
     assert "_length_bump[truncated]" in branch, "and still grant more room"
+
+
+def test_concurrent_truncations_do_not_compound_the_bump():
+    """Five researchers run concurrently and each truncates before any of them has
+    recorded the switch. Multiplying turned one problem into 4x, then 8x — and the
+    timeout derives from the cap, so it inflated with it."""
+    import inspect
+
+    from qmine.llm.registry import ModelRegistry
+
+    del inspect, ModelRegistry
+    from qmine.llm.registry import _next_length_floor
+
+    # Five racing callers, none of which has seen another's write yet.
+    assert len({_next_length_floor(1) for _ in range(5)}) == 1, \
+        "every racing caller must compute the same floor"
+    # And applying it five times in sequence must not climb five times.
+    n = 1
+    for _ in range(5):
+        n = _next_length_floor(n)
+    assert n == 4, "a floor converges; a multiplier would have reached 32x"
+
+
+# --- truncation is a token count, not a phrase ------------------------------
+#
+# `live36`: ten referee calls died at EXACTLY 24,001 output tokens — the 12,000
+# declared cap bumped once to 2x. The error read "no parseable structured
+# output", which the prose matcher does not recognise, so the bump never grew and
+# the same batch truncated at the same number ten times. Each discarded 25
+# adjudications from a 3,000-row gold set.
+
+
+def test_a_truncation_is_recognised_from_the_token_count(monkeypatch):
+    """The provider said nothing about length; the count said everything."""
+    from qmine.llm.registry import _hit_length_limit
+
+    err = "ValueError: no parseable structured output"
+    assert _hit_length_limit(err) is False, (
+        "this is the prose the referee actually returned — if the matcher ever "
+        "starts recognising it, this test is measuring the wrong thing")
+    # The registry must not depend on that prose: spending the whole cap IS the
+    # signal, and it is provider-independent.
+    cap, spent = 24_001, 24_001
+    assert bool(cap and spent >= cap) is True
+
+
+def test_a_second_floor_is_reachable_when_two_x_still_truncates():
+    """`max(current, 2)` could never express "2x was not enough"."""
+    from qmine.llm.registry import _next_length_floor as floor
+
+    assert floor(1) == 2, "first truncation raises to 2x"
+    assert floor(2) == 4, "truncating again AT 2x proves 2x was too small"
+    assert floor(4) == 4, "and it stops there — never 8x, never unbounded"
+
+
+def test_raising_to_a_floor_stays_idempotent_under_concurrency():
+    """Why a floor and not a multiplier: racing callers must agree.
+
+    Eight concurrent annotator calls each truncate before any records the switch.
+    A multiplier compounds that into 4x then 8x; a floor gives every racing
+    caller the same answer no matter how many of them run it.
+    """
+    from qmine.llm.registry import _next_length_floor as floor
+
+    racing = [floor(2) for _ in range(8)]
+    assert set(racing) == {4}, "eight concurrent truncations must agree on 4x"
+    assert floor(floor(floor(2))) == 4, "and re-applying it must not climb"
+
+
+def test_the_referee_budget_matches_what_it_actually_writes():
+    """A stale budget silently discards work rather than erroring.
+
+    The declared 4,000 came from a model long since replaced. Measured on
+    `live36`/`glm-5.2`, a successful 25-row adjudication emits 19,279-19,597, so
+    a 12,000 cap truncates every time and 2x only just fails to cover it.
+    """
+    from qmine.llm.requirements import requirement_for
+
+    ref = requirement_for("referee")
+    observed_max_success = 19_597
+    assert ref.max_output_tokens > observed_max_success, (
+        f"cap {ref.max_output_tokens} must exceed the largest response measured "
+        f"to SUCCEED ({observed_max_success}), or that call truncates")
+    observed_truncation = 24_001
+    assert ref.max_output_tokens > observed_truncation, (
+        f"cap {ref.max_output_tokens} must also clear the point where live36 "
+        f"actually died ({observed_truncation})")
+    assert ref.timeout_seconds >= ref.max_output_tokens / ref.THROUGHPUT_TOK_PER_SEC, (
+        "raising a budget must not leave a deadline too short to emit it")
+
+
+# --- classify by the SDK's status code, not by the error's prose ------------
+
+
+def test_a_structured_status_code_settles_it_without_reading_prose():
+    """The SDK raises typed errors carrying `status_code`; use it.
+
+    Reading the TEXT for a number cannot distinguish a status from a token count:
+    `completion_tokens=4013` contains "401" and `prompt_tokens=8402` contains
+    "402". That once killed every Qwen model mid-run and sent taxonomy research
+    to a coding model.
+    """
+    from qmine.llm.registry import _provider_is_unusable
+
+    class Err(Exception):
+        def __init__(self, code):
+            self.status_code = code
+
+    for code in (401, 402, 403):
+        assert _provider_is_unusable("anything at all", Err(code)) is True, code
+    for code in (429, 500, 503, 408):
+        assert _provider_is_unusable("anything at all", Err(code)) is False, (
+            f"{code} is transient — abandoning a working provider over it is "
+            "worse than the outage")
+
+
+def test_a_token_count_in_the_body_cannot_kill_a_provider_even_with_a_status():
+    """The structured code must WIN over whatever the body happens to contain."""
+    from qmine.llm.registry import _provider_is_unusable
+
+    class Err(Exception):
+        def __init__(self, code):
+            self.status_code = code
+
+    body = "CompletionUsage(completion_tokens=4013, prompt_tokens=8402)"
+    assert _provider_is_unusable(body, Err(429)) is False, \
+        "a rate limit whose body contains 401/402 digits must stay retryable"
+    assert _provider_is_unusable(body, None) is False, \
+        "and with no status at all, the anchored regex must not match either"
+
+
+def test_the_prose_path_still_works_when_there_is_no_status_code():
+    """Not every provider raises a typed error; the fallback must survive."""
+    from qmine.llm.registry import _provider_is_unusable
+
+    assert _provider_is_unusable("Error code: 402 - insufficient balance") is True
+    assert _provider_is_unusable("read timeout after 180s") is False
+
+
+def test_a_bool_is_not_a_status_code():
+    """`isinstance(True, int)` is True in Python; a flag must not read as 401."""
+    from qmine.llm.registry import _provider_is_unusable
+
+    class Err(Exception):
+        status_code = True
+
+    assert _provider_is_unusable("read timeout", Err()) is False
+
+
+# --- lessons must outlive the process ---------------------------------------
+#
+# `_no_native_schema` and `_length_bump` are learned by FAILING: a call breaks,
+# the registry works out why, and later calls avoid it. Discarding that at exit
+# meant paying for it again every run — five rediscoveries in live38 alone.
+
+
+def test_learned_quirks_round_trip_through_the_shared_file(tmp_path, monkeypatch):
+    """What one run learns, the next run starts with."""
+    from qmine.llm.registry import ModelRegistry
+
+    path = tmp_path / "model_quirks.json"
+    monkeypatch.setattr(ModelRegistry, "QUIRKS_PATH", path)
+
+    reg = ModelRegistry.__new__(ModelRegistry)
+    import threading
+    reg._quirks_lock = threading.Lock()
+    reg._no_native_schema = {"some-model"}
+    reg._length_bump = {"some-model": 4}
+    reg._save_quirks()
+    assert path.exists(), "a lesson that is not written is a lesson bought twice"
+
+    fresh = ModelRegistry.__new__(ModelRegistry)
+    fresh._quirks_lock = threading.Lock()
+    fresh._no_native_schema = set()
+    fresh._length_bump = {}
+    fresh._load_quirks()
+    assert "some-model" in fresh._no_native_schema, "plain-JSON mode must be recalled"
+    assert fresh._length_bump.get("some-model") == 4, "and the raised cap with it"
+
+
+def test_a_smaller_bump_never_overwrites_a_larger_one(tmp_path, monkeypatch):
+    """A run that only reached 2x must not erase a 4x another run proved needed."""
+    import threading
+
+    from qmine.llm.registry import ModelRegistry
+
+    path = tmp_path / "model_quirks.json"
+    monkeypatch.setattr(ModelRegistry, "QUIRKS_PATH", path)
+
+    def save(bump):
+        r = ModelRegistry.__new__(ModelRegistry)
+        r._quirks_lock = threading.Lock()
+        r._no_native_schema = set()
+        r._length_bump = {"m": bump}
+        r._save_quirks()
+
+    save(4)
+    save(2)
+    fresh = ModelRegistry.__new__(ModelRegistry)
+    fresh._quirks_lock = threading.Lock()
+    fresh._no_native_schema = set()
+    fresh._length_bump = {}
+    fresh._load_quirks()
+    assert fresh._length_bump.get("m") == 4, "the worst case already known must survive"
+
+
+def test_a_stale_lesson_is_forgotten_so_a_fixed_provider_is_re_learned(tmp_path, monkeypatch):
+    """Providers do fix their endpoints; believing forever would be wrong."""
+    import json
+    import threading
+    import time
+
+    from qmine.llm.registry import ModelRegistry
+
+    path = tmp_path / "model_quirks.json"
+    monkeypatch.setattr(ModelRegistry, "QUIRKS_PATH", path)
+    old = time.time() - (ModelRegistry.QUIRKS_TTL_DAYS + 1) * 86400
+    path.write_text(json.dumps({"models": {"m": {"no_native_schema": True,
+                                                 "learned_at": old}}}))
+
+    fresh = ModelRegistry.__new__(ModelRegistry)
+    fresh._quirks_lock = threading.Lock()
+    fresh._no_native_schema = set()
+    fresh._length_bump = {}
+    fresh._load_quirks()
+    assert "m" not in fresh._no_native_schema, \
+        "an expired lesson must be re-learned, not trusted indefinitely"

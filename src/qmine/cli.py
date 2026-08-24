@@ -93,7 +93,10 @@ def _load_config(config: Optional[str], domain: Optional[str], **over) -> QMineC
 
 @app.command()
 def run(
-    input: str = typer.Option(..., "--input", "-i", help="CSV/Parquet/XLSX of queries."),
+    input: Optional[str] = typer.Option(
+        None, "--input", "-i",
+        help="CSV/Parquet/XLSX of queries. Not needed with --resume: a resumed "
+             "run restores its own input path from its saved config."),
     domain: str = typer.Option("k12_zh", "--domain", "-d", help="Domain profile name or path."),
     config: Optional[str] = typer.Option(None, "--config", "-c", help="Full config YAML."),
     text_column: str = typer.Option("query", "--text-column"),
@@ -105,6 +108,10 @@ def run(
     offline: bool = typer.Option(False, "--offline", help="No network: hashing encoder + heuristic agents."),
     provider: str = typer.Option("auto", "--provider", help="auto | anthropic | mock."),
     human_review: bool = typer.Option(False, "--human-review", help="Pause at reviewer sign-off points."),
+    reuse_taxonomy: Optional[str] = typer.Option(
+        None, "--reuse-taxonomy",
+        help="Reuse a finished taxonomy (RUN_ID, RUN_ID/genNN, or a taxonomy.json path) "
+             "instead of re-deriving one. Skips p2a and lets the gold set replay from cache."),
     resume: bool = typer.Option(False, "--resume", help="Continue an existing run-id instead of restarting it."),
     dashboard: bool = typer.Option(True, "--dashboard/--plain",
                                    help="Live phase/agent/metric panel (needs a TTY)."),
@@ -120,16 +127,63 @@ def run(
     # command for that case, `--resume` continues from the last checkpoint and
     # falls through to a fresh run when there is nothing to continue.
     if resume and run_id:
+        from .artifacts import latest_generation, resolved_config_path
+
         ckpt = Path(run_root) / run_id / "checkpoints.sqlite"
-        resolved = Path(run_root) / run_id / f"gen{1:02d}" / "config.resolved.yaml"
-        if ckpt.exists() and resolved.exists():
+        # Resume the run's CURRENT generation, not generation 1. The thread id is
+        # per-generation, so after `new-generation` a hardcoded 1 reopens the old
+        # halted thread and exits having done nothing.
+        gen = latest_generation(Path(run_root) / run_id)
+        resolved = resolved_config_path(Path(run_root) / run_id, gen)
+        if ckpt.exists() and resolved is not None:
             cfg = QMineConfig.load(resolved)
             cfg.run_root = run_root
-            console.print(f"[dim]resuming {run_id} from {ckpt} (config {cfg.config_hash})[/dim]")
-            out = resume_run(cfg, run_id)
+            # The reuse flag has to be applied HERE. This branch returns before
+            # the fresh-run setup below ever sees it, so `--reuse-taxonomy` on a
+            # `--resume` was accepted, ignored, and the run silently re-derived a
+            # taxonomy — cascading a cache miss across every gold row, which is
+            # exactly the failure the flag exists to prevent.
+            if reuse_taxonomy:
+                cfg.taxonomy.reuse_taxonomy_from = reuse_taxonomy
+                console.print(f"[dim]reusing taxonomy from {reuse_taxonomy}[/dim]")
+            console.print(f"[dim]resuming {run_id} generation {gen} from {ckpt} "
+                          f"(config {cfg.config_hash})[/dim]")
+            out = resume_run(cfg, run_id, generation=gen)
             _print_summary(out["summary"])
             return
         console.print(f"[yellow]nothing to resume for {run_id}; starting a fresh run[/yellow]")
+
+    # Refuse to re-run an id that already exists. `run` is not the resume path:
+    # it opens the SAME LangGraph thread and the SAME llm_cache, and the two
+    # disagree. Observed four times in one day — the checkpoint replayed
+    # `halted=True` and exited in 3.1s without re-reaching the gate; and the cache
+    # matched an architect entry written by a DIFFERENT aborted attempt, so the
+    # rule writer silently built on a 21-class taxonomy where the run it was
+    # meant to continue had 24. Neither failed loudly; both wasted an hour.
+    if run_id and not resume:
+        existing = Path(run_root) / run_id
+        if (existing / "checkpoints.sqlite").exists() or (existing / "llm_cache").exists():
+            console.print(
+                f"[red]run id {run_id!r} already exists[/red] at {existing}.\n"
+                "`run` is not the resume path — it would reopen that run's graph "
+                "thread and its LLM cache, and those two disagree. Pick one:\n"
+                f"  • [bold]qmine run --resume --run-id {run_id}[/bold]  "
+                "— continue it properly (retries a crash; refuses to overturn a gate)\n"
+                f"  • [bold]qmine new-generation {run_id} --reason '...'[/bold]  "
+                "— keep the evidence, start a fresh generation after fixing a gate\n"
+                "  • [bold]--run-id <something-new>[/bold]  — a clean run with clean provenance\n"
+                f"  • delete {existing} if you truly meant to discard it"
+            )
+            raise typer.Exit(2)
+
+    # Only a FRESH run needs an input path; a resumed one returned above with the
+    # path restored from its own config. Requiring it unconditionally made the
+    # command the gate-halt message tells you to run — `qmine run --resume
+    # --run-id X` — fail with "Missing option '--input'".
+    if input is None:
+        console.print("[red]--input is required to start a new run[/red] "
+                      "(it is restored automatically when you --resume one).")
+        raise typer.Exit(2)
 
     cfg = _load_config(config, domain, run_root=run_root, fast_mode=fast, offline=offline)
     cfg.data.input_path = input
@@ -137,6 +191,8 @@ def run(
     cfg.data.reference_label_columns = [c.strip() for c in reference_columns.split(",") if c.strip()]
     if sample:
         cfg.data.sample_size = sample
+    if reuse_taxonomy:
+        cfg.taxonomy.reuse_taxonomy_from = reuse_taxonomy
     cfg.llm.provider = provider  # type: ignore[assignment]
     if offline:
         cfg.llm.provider = "mock"  # type: ignore[assignment]
@@ -268,18 +324,23 @@ def resume(
     run_root: str = typer.Option("runs", "--run-root"),
     decision: Optional[str] = typer.Option(None, "--decision", help="approve | reject"),
     reason: str = typer.Option("", "--reason"),
-    generation: int = typer.Option(1, "--generation"),
+    generation: Optional[int] = typer.Option(
+        None, "--generation", help="Defaults to the run's newest generation."),
 ) -> None:
     """Resume a checkpointed run, optionally answering a pending review."""
     _load_env()
     _setup_logging(True)
+    from .artifacts import latest_generation, resolved_config_path
     from .runner import resume_run
+
+    if generation is None:
+        generation = latest_generation(Path(run_root) / run_id)
 
     # Restore the run's OWN config. Rebuilding a default here was a real bug: the
     # resumed run lost `reference_label_columns`, so the blindness firewall armed
     # with zero forbidden terms and the anti-anchoring guarantee quietly lapsed.
-    resolved = Path(run_root) / run_id / f"gen{generation:02d}" / "config.resolved.yaml"
-    if resolved.exists() and not config:
+    resolved = resolved_config_path(Path(run_root) / run_id, generation)
+    if resolved is not None and not config:
         cfg = QMineConfig.load(resolved)
         cfg.run_root = run_root
         console.print(f"[dim]restored config from {resolved} (hash {cfg.config_hash})[/dim]")
@@ -288,6 +349,66 @@ def resume(
     value = {"decision": decision, "reason": reason} if decision else None
     out = resume_run(cfg, run_id, generation=generation, resume_value=value)
     _print_summary(out["summary"])
+
+
+@app.command("new-generation")
+def new_generation_cmd(
+    run_id: str = typer.Argument(..., help="Run to open a new generation of."),
+    reason: str = typer.Option(..., "--reason", help="Why the previous generation was set aside."),
+    run_root: str = typer.Option("runs", "--run-root"),
+    from_generation: int = typer.Option(1, "--from-generation"),
+    config: Optional[str] = typer.Option(
+        None, "--config", "-c",
+        help="Config the NEW generation will run under. Without it the new "
+             "generation inherits the old one's, including any limit since fixed."),
+    domain: Optional[str] = typer.Option(None, "--domain", "-d"),
+) -> None:
+    """Open the next generation of a run, keeping the old one intact.
+
+    This is the move `resume` tells you to make after a blocking gate — resume
+    deliberately will not overturn a gate's refusal — and until now there was no
+    way to make it. A rejected generation is evidence, not waste: the source
+    project's discarded 107-leaf tree became its phrasing-pattern library.
+    """
+    from .runner import new_generation
+
+    cfg = _load_config(config, domain, run_root=run_root)
+    nxt = new_generation(cfg, run_id, from_generation=from_generation, reason=reason)
+
+    # SNAPSHOT THE CONFIG THE NEW GENERATION WILL RUN UNDER. Without this,
+    # `resolved_config_path` falls back to the OLD generation's config — so a
+    # generation opened precisely because a limit was wrong would inherit that
+    # same wrong limit and fail the same way. live38 was opened after
+    # `max_total_output_tokens` was found to be half what an honest run needs,
+    # and its gen01 config still pinned the old 6,000,000.
+    if config or domain:
+        gen_dir = Path(run_root) / run_id / f"gen{nxt:02d}"
+        gen_dir.mkdir(parents=True, exist_ok=True)
+        # INHERIT THE RUN'S DATA SETTINGS. `input_path`, `text_column` and
+        # `reference_label_columns` come from CLI flags at launch, not from the
+        # config file, so a snapshot built from the file alone drops them and the
+        # resumed run dies in p1 with "input_path is not set". A new generation
+        # of the SAME run is by definition the same corpus.
+        from .artifacts import resolved_config_path as _rcp
+
+        prev = _rcp(Path(run_root) / run_id, from_generation)
+        if prev is not None:
+            old_cfg = QMineConfig.load(prev)
+            cfg.data.input_path = old_cfg.data.input_path
+            cfg.data.text_column = old_cfg.data.text_column
+            cfg.data.reference_label_columns = list(old_cfg.data.reference_label_columns)
+            cfg.data.sample_size = old_cfg.data.sample_size
+        cfg.dump(gen_dir / "config.resolved.yaml")
+        console.print(f"[dim]generation {nxt} config written "
+                      f"({gen_dir / 'config.resolved.yaml'}, hash {cfg.config_hash})[/dim]")
+    else:
+        console.print("[yellow]no --config given: generation "
+                      f"{nxt} inherits generation {from_generation}'s config, "
+                      "including any limit you may have just fixed[/yellow]")
+
+    console.print(f"[green]{run_id}[/green]: generation {from_generation} kept; "
+                  f"now on generation [bold]{nxt}[/bold] — {reason}")
+    console.print(f"Continue with: [bold]qmine run --resume --run-id {run_id}[/bold]")
 
 
 @app.command()
@@ -554,6 +675,9 @@ def models_cmd(
     chinese: bool = typer.Option(False, "--prefer-chinese-native",
                                  help="Nudge multilingual roles toward Chinese-native labs."),
     cache_dir: str = typer.Option(".cache", "--cache-dir"),
+    config: Optional[str] = typer.Option(
+        None, "--config", "-c",
+        help="Route against THIS config's provider policy — the one a run will use."),
     domain: Optional[str] = typer.Option(None, "--domain",
                                          help="Price against this domain profile's settings."),
     gold: Optional[int] = typer.Option(None, "--gold-sample-size",
@@ -567,13 +691,12 @@ def models_cmd(
     from .llm.providers import detect
     from .llm.router import route
 
-    cfg = QMineConfig()
-    if domain:
-        from pathlib import Path as _P
-
-        from .config import DomainProfile
-
-        cfg.domain = DomainProfile.load(_P("configs/domains") / f"{domain}.yaml")
+    # Route against the config a RUN would use. Without this the command built a
+    # bare `QMineConfig()`, so `excluded_labs` and `model_overrides` were invisible
+    # and the pre-flight reported a different plan from the one that would execute
+    # — it listed labs the live config excludes and ignored every pinned model.
+    # A pre-flight that pre-flights a different configuration is worse than none.
+    cfg = _load_config(config, domain, run_root="runs") if (config or domain) else QMineConfig()
     if gold:
         cfg.taxonomy.gold_sample_size = gold
 
@@ -602,8 +725,20 @@ def models_cmd(
     # estimate read the same for a 600-row gold set and a 3,000-row one.
     from .llm.requirements import scaled_requirements
 
-    plan = route(cat, av.usable, budget_usd=budget, prefer_chinese_native=chinese,
-                 requirements=scaled_requirements(cfg))
+    # Mirror `ModelRegistry`'s own call exactly — every argument it passes, this
+    # passes. Any divergence here silently re-introduces the bug above.
+    plan = route(
+        cat, av.usable, requirements=scaled_requirements(cfg),
+        prefer=cfg.llm.model_overrides or None,
+        budget_usd=budget if budget is not None else cfg.llm.budget_usd,
+        prefer_chinese_native=chinese or cfg.llm.prefer_chinese_native,
+        excluded_labs=cfg.llm.excluded_labs,
+    )
+    if cfg.llm.excluded_labs:
+        console.print(f"[dim]excluded labs: {', '.join(cfg.llm.excluded_labs)}[/dim]")
+    if cfg.llm.model_overrides:
+        pins = ", ".join(f"{r}={m}" for r, m in cfg.llm.model_overrides.items())
+        console.print(f"[dim]pinned: {pins}[/dim]")
     console.print(f"[dim]volumes scaled to this config: gold set "
                   f"{cfg.taxonomy.gold_sample_size or 'derived from corpus size'}, "
                   f"{cfg.taxonomy.kappa_repair_rounds} repair round(s)[/dim]")
@@ -613,6 +748,24 @@ def models_cmd(
                   a.tier, str(a.estimated_calls), f"{a.estimated_cost_usd:.3f}",
                   (a.fallbacks[:1] or [""])[0][:34])
     console.print(r)
+    # The table's "model" column shows the GATEWAY (`qwen:dashscope/...`), and two
+    # different labs reach you through the same gateway — so annotator_b and the
+    # referee can look identical there while being properly independent. The
+    # independence rule is by LAB, so state it in those terms or an operator
+    # cannot check the one property that makes double-blind annotation mean
+    # anything.
+    from .llm.router import lab_of
+
+    trio = {r: lab_of(plan.assignments[r].model)
+            for r in ("annotator_a", "annotator_b", "referee")
+            if r in plan.assignments and plan.assignments[r].model}
+    if len(trio) == 3:
+        ok = len(set(trio.values())) == 3
+        mark = "[green]independent[/green]" if ok else "[red]NOT INDEPENDENT[/red]"
+        console.print("\nannotator/referee labs: "
+                      + ", ".join(f"{r.split('_')[-1]}={lab}" for r, lab in trio.items())
+                      + f" — {mark}")
+
     console.print(f"\n[bold]estimated total: ${plan.total_cost_usd:.2f}[/bold] per full run")
     for n in plan.notes:
         console.print(f"[yellow]{n}[/yellow]")

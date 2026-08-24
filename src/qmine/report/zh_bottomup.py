@@ -599,6 +599,35 @@ def _decision_chain(state: Any) -> str:
     return "\n".join(out)
 
 
+def _kv_cell(d: Any, *, max_items: int = 8, max_chars: int = 320) -> str:
+    """Render a gate's observed/threshold dict as readable `k=v` pairs.
+
+    A markdown cell can hold far more than the 80 characters this used to cut at,
+    and the numbers are the point: a gate row whose observed values are elided is
+    a row the reader cannot check. Long values are shortened individually so that
+    every KEY still appears, rather than losing whole fields off the end.
+    """
+    if not d:
+        return "—"
+    parts: list[str] = []
+    for k, v in list(d.items())[:max_items]:
+        if isinstance(v, float):
+            sv = f"{v:.4g}"
+        elif isinstance(v, (list, tuple)):
+            sv = f"[{len(v)} 项]"
+        elif isinstance(v, dict):
+            sv = f"{{{len(v)} 键}}"
+        else:
+            sv = str(v)
+        if len(sv) > 44:
+            sv = sv[:41] + "…"
+        parts.append(f"`{k}`={sv}")
+    cell = "; ".join(parts)
+    if len(d) > max_items:
+        cell += f"; …另 {len(d) - max_items} 项"
+    return cell[:max_chars].replace("|", "\\|")
+
+
 def _gate_ledger(state: Any) -> str:
     """Every quality gate with its observed value, its bar, and what to do if it failed.
 
@@ -616,10 +645,15 @@ def _gate_ledger(state: Any) -> str:
            "| 质量门 | 阶段 | 结果 | 阻断? | 实测 | 门槛 |", "|---|---|---|---|---|---|"]
     failed = []
     for name, g in sorted(gates.items(), key=lambda kv: str(kv[1].phase)):
-        obs = json.dumps(g.observed, ensure_ascii=False) if g.observed else "—"
-        thr = json.dumps(g.threshold, ensure_ascii=False) if g.threshold else "—"
+        # Render the fields, not a truncated JSON blob. `observed` was dumped and
+        # cut at 80 chars, which on `p2a_pilot_agreement` — 15 fields carrying
+        # kappa, the ceiling, n and the slack — showed about two of them. This
+        # table IS the audit trail of the deliverable; cutting it mid-number
+        # leaves the reader unable to check any claim the report makes.
+        obs = _kv_cell(g.observed)
+        thr = _kv_cell(g.threshold)
         out.append(f"| `{name}` | `{g.phase}` | {icon.get(g.status, g.status)} | "
-                   f"{'是' if g.blocking else '否'} | {obs[:80]} | {thr[:60]} |")
+                   f"{'是' if g.blocking else '否'} | {obs} | {thr} |")
         if g.status in ("failed", "warned", "rejected") and g.remediation:
             failed.append((name, g))
     out.append("")

@@ -20,6 +20,8 @@ anyway — is only true if this check has teeth.
 
 from __future__ import annotations
 
+import logging
+
 import re
 from dataclasses import dataclass, field
 from typing import Any, Iterable, Sequence
@@ -28,6 +30,8 @@ from typing import Any, Iterable, Sequence
 class BlindnessViolation(AssertionError):
     """Raised when label vocabulary reaches a payload that must be blind."""
 
+
+log = logging.getLogger("qmine.prompt")
 
 def _normalise(s: str) -> str:
     return re.sub(r"\s+", "", str(s)).lower()
@@ -201,20 +205,36 @@ def render_card(card: Any, *, firewall: BlindnessFirewall | None = None) -> str:
     return "\n".join(lines)
 
 
-def budget_text(text: str, max_chars: int, *, tail: int = 0) -> str:
+def budget_text(text: str, max_chars: int, *, tail: int = 0, label: str = "") -> str:
     """Trim a long block to a character budget, keeping head and optionally tail.
 
     Used wherever a prompt embeds evidence whose size we do not control (a data
     audit, a metrics panel).  Truncation is announced in-band so the agent knows
     it is reasoning over an excerpt.
+
+    AND ANNOUNCED IN THE LOG. The in-band marker tells the *model* it is reading
+    an excerpt; it tells the operator nothing, because nobody reads the prompt.
+    On `live38` the referee drafted 83 adjudication rules, the rendered rule
+    block reached 18,496 characters against a 9,000 budget, and the entire
+    referee contribution was cut — silently — from every annotation prompt of
+    the guide-repair round whose whole purpose was to apply it. The measured
+    "guide repair does nothing" result had been obtained that way three times.
+    Pass `label` so the log says WHICH block lost content.
     """
     if len(text) <= max_chars:
         return text
+
+    lost = len(text) - max_chars
+    log.warning("prompt block%s truncated: %d of %d chars dropped (%.0f%% kept)%s",
+                f" {label!r}" if label else "", lost, len(text),
+                100.0 * max_chars / max(len(text), 1),
+                "" if tail else " — HEAD ONLY, so anything appended is lost first")
+
     if tail <= 0:
-        return text[:max_chars] + f"\n… [truncated {len(text) - max_chars} chars]"
+        return text[:max_chars] + f"\n… [truncated {lost} chars]"
     head = max_chars - tail
     return (
         text[:head]
-        + f"\n… [truncated {len(text) - max_chars} chars] …\n"
+        + f"\n… [truncated {lost} chars] …\n"
         + text[-tail:]
     )

@@ -344,9 +344,37 @@ class AnnotatorAgent(Agent):
         self, *, queries: Sequence[str] = (), guide: str = "", classes: str = "", rules: str = "", **kw: Any
     ) -> str:
         return (
-            f"## Classes\n{budget_text(classes, 18000)}\n\n"
-            f"## Adjudication rules\n{budget_text(rules, 9000)}\n\n"
-            f"## Labelling guide\n{budget_text(guide, 6000)}\n\n"
+            # KEEP THE TAIL. Both of these blocks are APPENDED to, and a
+            # head-only trim removes exactly the newest content: the referee's
+            # rules are added by `taxonomy.rules.extend(new_rules)`, and the
+            # guide-repair round appends its 边界裁定 section to the guide. Those
+            # are the most authoritative lines in each block — the ones written
+            # in response to observed disagreement — and they sit last.
+            # Measured: 72 rules render to 8,128 chars, 90% of the old 9,000
+            # budget, and the referee adds more on top of that.
+            f"## Classes\n{budget_text(classes, 18000, tail=2000, label='classes')}\n\n"
+            # Sized to FIT, not to trim: a 22-class taxonomy plus the referee's
+            # drafted rules rendered to 18,496 chars on live38, and every char
+            # over the budget was adjudication guidance that never reached the
+            # annotator. `_render_rules` now orders newest-first so that if this
+            # is ever exceeded again, the rules lost are the oldest.
+            # Sized from what the pipeline MEASURABLY produces, not from a guess.
+            # On live38 the referee's 82 rules rendered the block to 46,814 chars
+            # (~478 each — its `when` is the model's proposed rule text, 3x the
+            # architect's) and the guide reached 24,155 because the repair
+            # appended those same rules verbatim. The guide now cites rule ids
+            # instead of repeating them (44,070 -> 8,654), so the BINDING
+            # rulings always fit; the rule block stays reference detail and is
+            # ordered newest-first, so anything cut is the oldest.
+            # Wide enough that nothing the pipeline currently produces is cut:
+            # measured 46,814 chars of rules and 8,654 of binding rulings on
+            # live38, against models with 262,144-1,000,000 token windows. These
+            # are a RUNAWAY GUARD, not a working limit — a corpus with ten times
+            # the classes should be truncated loudly rather than silently blow a
+            # context window, and `_render_rules` orders newest-first so what
+            # goes is the oldest.
+            f"## Adjudication rules\n{budget_text(rules, 60000, tail=10000, label='adjudication rules')}\n\n"
+            f"## Labelling guide\n{budget_text(guide, 20000, tail=4000, label='labelling guide')}\n\n"
             f"## Queries to label ({len(queries)})\n"
             + "\n".join(f"{i + 1}. {q}" for i, q in enumerate(queries))
             + "\n\nLabel every one."

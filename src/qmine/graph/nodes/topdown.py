@@ -14,6 +14,8 @@ adversarial validation.
 
 from __future__ import annotations
 
+import threading
+
 import json
 import re
 from typing import Any
@@ -63,6 +65,40 @@ def p2a_taxonomy(state: PipelineState, deps: Deps) -> dict[str, Any]:
     templates = deps.load("template_groups")
     risk = deps.load("risk_screen")
     ctx = deps.agent_ctx()
+
+    # REUSE A TAXONOMY INSTEAD OF RE-DERIVING ONE.
+    #
+    # The web-using researchers are not deterministic: asked the same question
+    # twice they return different candidate sets, which changes the architect's
+    # prompt, which changes every class and rule below it. Every annotator prompt
+    # then differs too, so a resumed run misses the cache on all 3,000 gold rows
+    # and re-pays for annotation it already bought. That cascade has broken every
+    # resume this project has attempted.
+    #
+    # Pointing at a finished `taxonomy.json` cuts it at the source: identical
+    # classes and rules mean byte-identical annotator prompts, so the gold set
+    # replays for free and only the phases after it actually run.
+    reuse = getattr(cfg.taxonomy, "reuse_taxonomy_from", None)
+    if reuse:
+        reused = _load_taxonomy_for_reuse(deps, str(reuse))
+        n_l1 = sum(1 for n in reused.nodes if n.level == 1)
+        deps.emit(f"P2a taxonomy — REUSED from {reuse}: {n_l1} L1 intents, "
+                  f"{len(reused.rules)} rules; researchers, architect and critic skipped")
+        tax_ref = deps.store.put_json(
+            "taxonomy", {"taxonomy": reused.model_dump(), "submissions": [],
+                         "critique": {"verdict": "reused", "findings": []},
+                         "dropped_candidates": [], "redraw_history": [],
+                         "reused_from": str(reuse)},
+            producer="p2a", summary=f"reused: {n_l1} L1 intents, {len(reused.rules)} rules")
+        deps.cache_put("taxonomy_obj", reused)
+        return {
+            "phase": "p2b",
+            "artifacts": {"taxonomy": tax_ref},
+            "completed_phases": ["p2a"],
+            "events": [f"P2a: taxonomy reused from {reuse} "
+                       f"({n_l1} L1 intents, {len(reused.rules)} rules)"],
+        }
+
     deps.emit(f"P2a taxonomy — {cfg.taxonomy.n_researchers} researchers fanning out")
 
     angles = RESEARCH_ANGLES[: max(cfg.taxonomy.n_researchers, 1)]
@@ -227,7 +263,8 @@ def p2a_taxonomy(state: PipelineState, deps: Deps) -> dict[str, Any]:
     # than stop with nothing delivered and no remaining move.
     redraw_attempted = bool(redraw_history)
     redraw_helped = any(r.get("kept") for r in redraw_history)
-    remedy_exhausted = redraw_attempted and not redraw_helped
+    remedy_exhausted = _remedy_is_exhausted(
+        redraw_history, cfg.taxonomy.max_taxonomy_redraws)
     usable_despite_slack = (
         remedy_exhausted and pilot["kappa"] >= cfg.gates.annotator_fitness_kappa
     )
@@ -261,6 +298,7 @@ def p2a_taxonomy(state: PipelineState, deps: Deps) -> dict[str, Any]:
                   "recoverable_slack_se": pilot.get("recoverable_slack_se"),
                   "target_above_ceiling": pilot.get("target_above_ceiling"),
                   "annotator_fit": annotator_fit,
+                  "ceiling_verdict": pilot.get("ceiling_verdict", ""),
                   "redraw_attempted": redraw_attempted,
                   "redraw_helped": redraw_helped,
                   "proceeded_with_residual_slack": usable_despite_slack,
@@ -284,16 +322,22 @@ def p2a_taxonomy(state: PipelineState, deps: Deps) -> dict[str, Any]:
                     f"{pilot.get('recoverable_slack')} ± {pilot.get('recoverable_slack_se')}"
                     if pilot.get("target_above_ceiling") else "")
                  + (f" — PROCEEDING WITH RESIDUAL SLACK of "
-                    f"{pilot.get('recoverable_slack')}: the redraw ran and did not "
-                    f"improve agreement, so this pipeline has no remaining move; "
+                    f"{pilot.get('recoverable_slack')}: the redraw ran "
+                    + ("and improved agreement but could not close the slack"
+                       if redraw_helped else "and did not improve agreement")
+                    + f", so this pipeline has no remaining move; "
                     f"kappa {pilot['kappa']:.3f} is above the "
                     f"{cfg.gates.annotator_fitness_kappa} reliability floor, and every "
                     f"downstream number must be read against this gap"
                     if usable_despite_slack else "")
                  + (f" — top confusions {pilot['top_confusions']}" if pilot["top_confusions"] else "")),
         remediation=(
-            pilot.get("ceiling_verdict", "")
-            + ". The guide is ambiguous before a single gold row has been paid for. Fix the "
+            # STATIC per branch. This used to be `ceiling_verdict + ". The guide
+            # is ambiguous…"`, and `prose()` matches with `startswith`, so a
+            # dynamic prefix meant the key could never match and the single most
+            # important remediation in the pipeline reached a Chinese reader in
+            # English. The verdict itself is DATA — it travels in `observed`.
+            "The guide is ambiguous before a single gold row has been paid for. Fix the "
             "definitions and adjudication rules for the confused pairs above and re-run "
             "2a — the playbook is explicit that this is the moment to redraft, not to "
             "start annotating (回炉改指南/裁决规则, 而非直接开标)."
@@ -382,6 +426,28 @@ def p2a_taxonomy(state: PipelineState, deps: Deps) -> dict[str, Any]:
     # annotator cannot reproduce against itself (redraw the boundary — a tie-break
     # cannot rescue a distinction the query does not contain) and which pairs two
     # annotators split on while each stayed self-consistent (write the tie-break).
+    # A prescription's FORCE depends on what the gate decided. Blocked, these are
+    # the work that must happen before the run may continue. Passed with residual
+    # slack, the same measurements are a recorded LIMITATION — regions where the
+    # intent is not determinable from the query — and telling an operator to
+    # "merge them" prescribes work the pipeline already attempted, measured, and
+    # deliberately declined to act on. Three live runs printed the imperative on
+    # a gate that had already passed.
+    proceeding = _gate_let_the_run_proceed(pilot_gate)
+    structural_advice = (
+        "The run PROCEEDED with this slack recorded, so this is a limitation to "
+        "report, not an action outstanding: read every downstream number for "
+        "these classes against it."
+        if proceeding else
+        "Merge them, or re-cut them on one basis of division; an adjudication "
+        "rule cannot fix a distinction the query lacks."
+    )
+    guide_advice = (
+        "The run PROCEEDED, so the referee's own rules are where this gets "
+        "settled; no separate action is outstanding at 2a."
+        if proceeding else
+        "This is what an adjudication rule is for."
+    )
     prescriptions: list[Prescription] = []
     for pair, count in pilot.get("structural_confusions", []):
         classes = [c.strip() for c in pair.split("×")]
@@ -390,8 +456,7 @@ def p2a_taxonomy(state: PipelineState, deps: Deps) -> dict[str, Any]:
             target_names=classes, proposed_by="p2a_pilot",
             rationale=(f"{count} of {pilot['n']} pilot queries land differently when the "
                        f"SAME annotator is re-asked, so the boundary between {pair} is not "
-                       "in the data. Merge them, or re-cut them on one basis of division; "
-                       "an adjudication rule cannot fix a distinction the query lacks."),
+                       f"in the data. {structural_advice}"),
         ))
     for pair, count in pilot.get("guide_confusions", []):
         classes = [c.strip() for c in pair.split("×")]
@@ -399,11 +464,13 @@ def p2a_taxonomy(state: PipelineState, deps: Deps) -> dict[str, Any]:
             id=deps.next_prescription_id(), kind="flag_risk",
             target_names=classes, proposed_by="p2a_pilot",
             rationale=(f"{count} pilot disagreements on {pair}, but each annotator was "
-                       "self-consistent — the boundary exists and is merely unstated. "
-                       "This is what an adjudication rule is for."),
+                       f"self-consistent — the boundary exists and is merely unstated. "
+                       f"{guide_advice}"),
         ))
     if prescriptions:
-        deps.emit(f"  prescriptions: {sum(1 for p in prescriptions if p.kind == 'merge_families')} "
+        kind = "recorded limitations" if proceeding else "outstanding actions"
+        deps.emit(f"  prescriptions ({kind}): "
+                  f"{sum(1 for p in prescriptions if p.kind == 'merge_families')} "
                   f"structural (redraw), "
                   f"{sum(1 for p in prescriptions if p.kind == 'flag_risk')} guide (tie-break)")
 
@@ -537,58 +604,149 @@ def p2b_gold(state: PipelineState, deps: Deps) -> dict[str, Any]:
               f"{agree['n_disagreements']} disagreements")
 
     rows: list[GoldRow] = []
+    n_missing = 0
     for i, q in enumerate(queries):
         la, lb = labels_a[i]["label"], labels_b[i]["label"]
+        # A row NOBODY LABELLED is missing data, not agreement. `agreement()`
+        # already excludes UNLABELED from kappa, but this construction did not:
+        # when both annotators omitted the same row, `la == lb == UNLABELED`
+        # satisfied the equality, so the row was recorded agreed with
+        # `final="UNLABELED"`, never reached the referee, and passed p2c's
+        # non-empty filter into the classifier AS A CLASS. The metric was
+        # protected and the gold set was not.
+        missing = UNLABELED in (la, lb)
+        if missing:
+            n_missing += 1
         rows.append(GoldRow(
             query=q, idx=int(idx[i]), label_a=la, label_b=lb,
-            final=la if la == lb else "", agreed=la == lb,
+            final="" if missing else (la if la == lb else ""),
+            agreed=(not missing) and la == lb,
             rationale_a=labels_a[i].get("rationale", ""), rationale_b=labels_b[i].get("rationale", ""),
         ))
+    if n_missing:
+        deps.emit(f"  ⚠ {n_missing}/{len(queries)} rows missing a label from at least "
+                  f"one annotator — excluded from the gold set, not counted as agreement")
 
     new_rules: list[AdjudicationRule] = []
+    # A row one annotator never labelled is not a disagreement either — there is
+    # no second opinion to adjudicate, and sending it to the referee spends a
+    # frontier call asking it to choose between a class and "UNLABELED".
     disagreements = [
         {"query": r.query, "label_a": r.label_a, "label_b": r.label_b,
          "rationale_a": r.rationale_a, "rationale_b": r.rationale_b}
-        for r in rows if not r.agreed
+        for r in rows if not r.agreed and UNLABELED not in (r.label_a, r.label_b)
     ]
     if disagreements:
-        # Sequential on purpose. Adjudication is not a per-row task: the referee is
-        # settling *boundaries*, and a boundary settled in batch 1 must bind batch 5.
-        # Run in parallel, each batch decides the same boundary independently and
-        # they disagree — which is how a rule set acquires two rules that fire on
-        # the same trigger and give opposite answers. The cost is wall-clock on one
-        # phase; the benefit is a rule set that is internally consistent, which is
-        # the entire point of having a referee.
+        # BATCHED BY CLASS PAIR, which is what makes them independent.
+        #
+        # This was chunked by row position and run strictly sequentially, for a
+        # real reason: adjudication is not a per-row task — the referee settles
+        # *boundaries*, and if the same boundary turns up in batch 1 and batch 5
+        # they decide it independently and the rule set acquires two rules that
+        # fire on the same trigger with opposite answers.
+        #
+        # But that argument only requires ordering WITHIN a boundary, never
+        # across boundaries. Rows on `A × B` must be settled together; rows on
+        # `C × D` are independent of them. Packing each pair ENTIRELY into one
+        # batch removes the hazard at the source — a pair can no longer span two
+        # batches, so no two batches can contradict each other — and the batches
+        # become concurrent without giving anything up.
+        #
+        # It also shrinks each response, which is the other half of the problem:
+        # live38's first 25-row batch emitted 34,099 tokens and failed to parse
+        # with 144,000 tokens of room available. Size was the defect, not the cap.
+        # Sequentially it cost ~10-11 min per batch, ~5-6h for a 3,000-row gold
+        # set, making the referee the wall-clock bottleneck of the pipeline.
         verdicts: list[Any] = []
         decided: dict[frozenset[str], dict[str, str]] = {}
-        ref_batches = list(_chunks(disagreements, 25))
+        ref_groups = _batch_by_class_pair(disagreements, target=15)
+        n_batches = sum(len(g) for g in ref_groups)
         n_failed = 0
+        n_pairs = len({frozenset((d["label_a"], d["label_b"])) for d in disagreements})
+        deps.emit(f"  referee: {len(disagreements)} disagreements over {n_pairs} class "
+                  f"pairs → {len(ref_groups)} independent groups, {n_batches} calls")
 
-        for bn, chunk in enumerate(ref_batches, 1):
+        def _adjudicate(part: list[dict[str, Any]], prior: Any = ()) -> Any:
+            """One referee call. Returns verdicts, or None if the call failed.
+
+            `decided` is deliberately NOT passed any more. It existed so a later
+            batch would honour a boundary an earlier one had settled — a real
+            need when a pair could span batches, and unnecessary now that it
+            cannot. Passing the running dict here would also make each prompt
+            depend on which sibling batches happened to finish first, so the same
+            run would send different prompts on a replay and miss its own cache:
+            the resume cascade, re-created inside one phase.
+            """
             try:
-                vs = RefereeAgent(ctx).run(
-                    disagreements=chunk, classes=classes_txt, rules=rules_txt,
-                    decided=list(decided.values()),
+                return RefereeAgent(ctx).run(
+                    disagreements=part, classes=classes_txt, rules=rules_txt,
+                    decided=prior,
                 ).verdicts
             except Exception as exc:  # noqa: BLE001
-                n_failed += 1
-                deps.emit(f"  ⚠ referee batch {bn}/{len(ref_batches)} FAILED: {type(exc).__name__}")
-                continue
-            verdicts.extend(vs)
-            src = {d["query"]: d for d in chunk}
-            for v in vs:
-                d = src.get(v.query)
-                if not d:
-                    continue
-                key = frozenset((d["label_a"], d["label_b"]))
-                decided.setdefault(key, {
-                    "pair": " × ".join(sorted(key)),
-                    "final": v.final_label,
-                    "example": d["query"][:40],
-                })
-            if len(ref_batches) > 1:
-                deps.emit(f"  referee batch {bn}/{len(ref_batches)} — "
-                          f"{len(decided)} boundaries settled so far")
+                deps.emit(f"    referee call on {len(part)} rows failed: {type(exc).__name__}")
+                return None
+
+        _fold_lock = threading.Lock()
+
+        def _fold(vs: Any, part: list[dict[str, Any]]) -> None:
+            """Record the verdicts and the boundaries they settle.
+
+            Folded per call, not per batch, so a bisected half still binds the
+            halves and batches that follow it.
+            """
+            src = {d["query"]: d for d in part}
+            with _fold_lock:
+                verdicts.extend(vs)
+                for v in vs:
+                    d = src.get(v.query)
+                    if not d:
+                        continue
+                    key = frozenset((d["label_a"], d["label_b"]))
+                    decided.setdefault(key, {
+                        "pair": " × ".join(sorted(key)),
+                        "final": v.final_label,
+                        "example": d["query"][:40],
+                    })
+
+        def _one_group(gn_group: tuple[int, list[list[dict[str, Any]]]]) -> int:
+            """Run one group's chunks IN ORDER; groups themselves are independent."""
+            gn, group = gn_group
+            failed = 0
+            for ci, chunk in enumerate(group):
+                # A multi-chunk group is ONE oversized pair, split because it will
+                # not fit in a single call. Its later chunks must honour the ruling
+                # its earlier ones made, or the split re-creates exactly the
+                # contradiction this batching exists to prevent. Deterministic
+                # here, unlike across groups, because these run in order.
+                prior: Any = ()
+                if ci and len(group) > 1:
+                    key = frozenset((chunk[0]["label_a"], chunk[0]["label_b"]))
+                    with _fold_lock:
+                        got = decided.get(key)
+                    prior = (got,) if got else ()
+                failed_here, recovered = _run_batch_with_bisect(
+                    lambda part, _p=prior: _adjudicate(part, _p), _fold, chunk)
+                failed += failed_here
+                if failed_here or recovered < len(chunk):
+                    deps.emit(f"  ⚠ referee group {gn}/{len(ref_groups)} lost rows; "
+                              f"split recovered {recovered}/{len(chunk)}")
+            deps.emit(f"  referee group {gn}/{len(ref_groups)} done — "
+                      f"{len(decided)} boundaries settled so far")
+            return failed
+
+        # Concurrent ACROSS groups, sequential within one. Each group owns its
+        # boundaries outright, so no two groups can rule against each other. This
+        # phase was the pipeline's wall-clock bottleneck at ~10-11 min per
+        # sequential call — measured on live38's own 524 disagreements, 87 pairs
+        # become ~31 calls, which is ~5.7h serially and well under an hour here.
+        if len(ref_groups) > 1 and not deps.registry.is_offline:
+            from concurrent.futures import ThreadPoolExecutor
+
+            workers = max(1, min(cfg.llm.max_concurrency, len(ref_groups)))
+            with ThreadPoolExecutor(max_workers=workers) as pool:
+                n_failed += sum(pool.map(_one_group, enumerate(ref_groups, 1)))
+        else:
+            n_failed += sum(_one_group(g) for g in enumerate(ref_groups, 1))
         by_q = {v.query: v for v in verdicts}
         for r in rows:
             if r.agreed:
@@ -614,7 +772,12 @@ def p2b_gold(state: PipelineState, deps: Deps) -> dict[str, Any]:
                     classes=[r.label_a, r.label_b], added_in_round=1,
                     added_because=f"disagreement on {r.query!r}",
                 ))
-        n_unresolved = sum(1 for r in rows if not r.agreed and not r.adjudicated)
+        # Count ONLY rows the referee was actually given. `not r.agreed` also
+        # matches rows excluded for missing a label, which never entered
+        # `disagreements` — subtracting them from 483 under-reported coverage on
+        # both sides of the fraction (450/483 when 459 rows were adjudicated).
+        n_unresolved = sum(1 for r in rows if not r.agreed and not r.adjudicated
+                           and UNLABELED not in (r.label_a, r.label_b))
         new_rules = _dedupe_rules(new_rules, taxonomy, deps)
         deps.emit(f"  referee adjudicated {len(disagreements) - n_unresolved}/{len(disagreements)}, "
                   f"drafted {len(new_rules)} rules"
@@ -635,14 +798,68 @@ def p2b_gold(state: PipelineState, deps: Deps) -> dict[str, Any]:
     # could not settle, fold everything into the guide, and re-annotate.
     repair_meta: dict[str, Any] = {}
     rounds = cfg.taxonomy.kappa_repair_rounds
+    # Snapshot what the repair is allowed to overwrite, so a repair that makes
+    # agreement worse can be undone rather than merely regretted.
+    guide_before_repair = taxonomy.labeling_guide
+    rules_before_repair = list(taxonomy.rules)
     if rounds > 0 and agree["kappa"] < cfg.gates.kappa and not deps.registry.is_offline:
         repair_meta = _repair_guide_and_reannotate(
             deps, ctx, cfg, df, taxonomy, rows, idx, strata, kappa_trace, rounds
         )
         if repair_meta.get("agreement"):
-            agree = repair_meta["agreement"]
-            rows = repair_meta["rows"]
-            idx = repair_meta["idx"]
+            # A REPAIR THAT LOWERS AGREEMENT IS A REPAIR TO DISCARD — the same
+            # rule the redraw has had since it was built, and for the same
+            # reason: keeping a change because it is newer is how a loop walks a
+            # guide downhill. Measured on live38 gen05, the first run in which
+            # the repair's own rules actually reached the annotator (before that
+            # they were truncated out of the prompt): kappa 0.822 -> 0.794, about
+            # 3.5 standard errors at n≈2978, and BELOW the 0.80 reliability
+            # floor — so the repair turned a gate that would have passed into a
+            # halt. Adding 112 tie-breaks cannot resolve a query that carries no
+            # marker, but it can give two readers more ways to justify differing.
+            #
+            # The fresh ROWS are kept either way: they are real annotations and
+            # more gold data is still gold data. It is the GUIDE that is unproven,
+            # so that is what reverts.
+            before_k = agree["kappa"]
+            after_k = repair_meta["agreement"]["kappa"]
+            if after_k < before_k:
+                deps.emit(f"  ⚠ guide repair lowered kappa {before_k:.3f} → {after_k:.3f} "
+                          f"— reverting the guide and rules; the fresh rows are kept")
+                taxonomy.labeling_guide = guide_before_repair
+                taxonomy.rules = list(rules_before_repair)
+                repair_meta["reverted"] = True
+                repair_meta["kappa_reverted_from"] = round(after_k, 4)
+            else:
+                agree = repair_meta["agreement"]
+            # MERGE, do not replace. With `repair_on_fresh_sample` (the default)
+            # round 2 annotates DIFFERENT queries, so swapping the lists threw
+            # away all ~3,000 round-1 rows INCLUDING every referee verdict — the
+            # entire adjudication phase, discarded silently — and substituted a
+            # set whose only labelled rows are the ones both annotators already
+            # agreed on, because the referee runs before repair and never sees
+            # round 2. The gold set became agreement-only, i.e. systematically
+            # the easy rows, and every classifier number computed from it reads
+            # high for that reason alone.
+            fresh_rows = repair_meta["rows"]
+            if cfg.taxonomy.repair_on_fresh_sample:
+                seen_idx = {r.idx for r in rows}
+                added_rows = [r for r in fresh_rows if r.idx not in seen_idx]
+                kept = sum(1 for r in rows if r.adjudicated)
+                rows = rows + added_rows
+                idx = np.concatenate([np.asarray(idx, dtype=np.int64),
+                                      np.asarray([r.idx for r in added_rows], dtype=np.int64)])
+                deps.emit(f"  guide repair added {len(added_rows)} fresh rows "
+                          f"(gold set now {len(rows)}); {kept} refereed rows kept")
+            else:
+                # Same queries re-labelled: the newer labels supersede, but say so
+                # — the referee's verdicts on those rows go with them.
+                dropped = sum(1 for r in rows if r.adjudicated)
+                rows = fresh_rows
+                idx = repair_meta["idx"]
+                if dropped:
+                    deps.emit(f"  ⚠ guide repair re-labelled the SAME sample — "
+                              f"{dropped} referee verdicts superseded")
             rules_txt = _render_rules(taxonomy)
 
     # --- round 2: active learning on the boundary -------------------------
@@ -697,13 +914,52 @@ def p2b_gold(state: PipelineState, deps: Deps) -> dict[str, Any]:
     coverage = agree["n"] / n_sub
     unsound = coverage < cfg.gates.min_annotation_coverage
 
+    # THE SAME QUESTION p2a ALREADY LEARNED TO ASK. This gate was
+    # `kappa >= cfg.gates.kappa`, a flat bar, while p2a — on the same corpus and
+    # the same annotators — reasons about the annotator's own ceiling. On
+    # `live38` that produced an incoherent pair: p2a PASSED at kappa 0.824
+    # (89.3% of a 0.9228 ceiling) and p2b HALTED at 0.832 (90.2%). The HIGHER
+    # number blocked. A 0.90 bar there demands 97.5% of what one annotator
+    # manages against ITSELF, which is the condition p2a's own comment describes
+    # as making a gate unpassable by a perfect guide.
+    #
+    # So ask p2a's three questions here too: did we reach the target, is the
+    # target above the ceiling, or is the remedy spent with agreement still above
+    # the reliability floor? And keep failing when the annotator itself is unfit,
+    # which no amount of guide work can repair.
+    pilot_gate = (state.get("gates") or {}).get("p2a_pilot_agreement")
+    pilot_obs = getattr(pilot_gate, "observed", {}) or {}
+    pilot_ceiling = pilot_obs.get("annotator_self_consistency_kappa")
+
+    share_of_ceiling = (round(agree["kappa"] / pilot_ceiling, 4)
+                        if pilot_ceiling else None)
+    target_above_ceiling = bool(pilot_ceiling and cfg.gates.kappa > pilot_ceiling)
+    # The remedy here is the guide repair, not the redraw. It is spent when every
+    # configured round has run; `kappa_trace` holds the initial round plus one
+    # entry per repair.
+    repair_exhausted = (max(0, len(kappa_trace) - 1) >= cfg.taxonomy.kappa_repair_rounds
+                        and not deps.registry.is_offline)
+    usable_despite_slack = (repair_exhausted
+                            and agree["kappa"] >= cfg.gates.annotator_fitness_kappa)
+    annotator_fit = (deps.registry.is_offline or pilot_ceiling is None
+                     or pilot_ceiling >= cfg.gates.annotator_fitness_kappa)
+    p2b_pass = annotator_fit and (
+        agree["kappa"] >= cfg.gates.kappa or target_above_ceiling or usable_despite_slack)
+
+
     gate = deps.gate(
         "p2b_kappa", "p2b",
-        passed=(not unsound) and agree["kappa"] >= cfg.gates.kappa,
+        passed=(not unsound) and p2b_pass,
         observed={"kappa": agree["kappa"], "raw_agreement": agree["raw_agreement"], "n": agree["n"],
                   "kappa_trace": [round(k["kappa"], 4) for k in kappa_trace],
                   "n_unscored_unlabelled": agree.get("n_unscored_unlabelled", 0),
-                  "annotation_coverage": round(coverage, 4)},
+                  "annotation_coverage": round(coverage, 4),
+                  "annotator_self_consistency_kappa": pilot_ceiling,
+                  "share_of_ceiling_reached": share_of_ceiling,
+                  "target_above_ceiling": target_above_ceiling,
+                  "repair_rounds_run": max(0, len(kappa_trace) - 1),
+                  "repair_exhausted": repair_exhausted,
+                  "proceeded_with_residual_slack": usable_despite_slack},
         threshold={"kappa": cfg.gates.kappa},
         message=(
             (f"MEASUREMENT UNSOUND — only {agree['n']}/{n_sub} rows ({coverage:.0%}) were "
@@ -711,6 +967,18 @@ def p2b_gold(state: PipelineState, deps: Deps) -> dict[str, Any]:
              "rows that survived, not the guide. "
              if unsound else "")
             + f"kappa {agree['kappa']:.3f} on {agree['n']} double-annotated queries"
+            + (f"; annotator self-consistency {pilot_ceiling} "
+               f"({share_of_ceiling} of ceiling reached)" if pilot_ceiling else "")
+            + (f" — NOTE the target {cfg.gates.kappa} is ABOVE this annotator's own "
+               f"ceiling of {pilot_ceiling}, so no guide can reach it"
+               if target_above_ceiling else "")
+            + (f" — PROCEEDING WITH RESIDUAL SLACK: the guide repair ran its "
+               f"{cfg.taxonomy.kappa_repair_rounds} configured round(s) and agreement "
+               f"is {agree['kappa']:.3f}, above the "
+               f"{cfg.gates.annotator_fitness_kappa} reliability floor but short of "
+               f"{cfg.gates.kappa}; every downstream number must be read against "
+               f"that gap" if usable_despite_slack and agree["kappa"] < cfg.gates.kappa
+               else "")
             + (" — NOTE: offline stand-ins are deterministic functions, so this number "
                "measures the stand-in, not annotator agreement" if deps.registry.is_offline else "")
         ),
@@ -726,13 +994,192 @@ def p2b_gold(state: PipelineState, deps: Deps) -> dict[str, Any]:
         warn_only=deps.registry.is_offline,
     )
 
+    # PERSIST THE TAXONOMY THE REFEREE AND THE REPAIR ACTUALLY PRODUCED.
+    # `taxonomy.rules.extend(new_rules)` and the repaired `labeling_guide` were
+    # applied to the in-memory object only, and p2b returned no taxonomy
+    # artifact — so `runs/live38/gen02/taxonomy.json` still showed 50 rules and a
+    # guide with no 边界裁定 section while the run had 133 rules and a rewritten
+    # guide in hand. On a resumed run `deps.taxonomy()` recovered the PRE-referee
+    # version, and the deliverable reported the wrong rule count. `taxonomy()`
+    # already prefers `taxonomy_v2`; it simply was never written.
+    tax_v2_ref = deps.store.put_json(
+        "taxonomy_v2",
+        {"taxonomy": taxonomy.model_dump(),
+         "referee_rules_added": len(new_rules),
+         "guide_repaired": bool(repair_meta),
+         "provenance": "p2b: taxonomy after the referee's rules and any guide repair"},
+        producer="p2b",
+        summary=(f"{sum(1 for n in taxonomy.nodes if n.level == 1)} L1 intents, "
+                 f"{len(taxonomy.rules)} rules ({len(new_rules)} from the referee)"))
+    deps.cache_put("taxonomy_obj", taxonomy)
+    deps.emit(f"  taxonomy_v2 persisted: {len(taxonomy.rules)} rules "
+              f"({len(new_rules)} drafted by the referee), guide "
+              f"{'repaired' if repair_meta else 'unchanged'}")
+
     return {
         "phase": "p2c",
-        "artifacts": {"gold": gold_ref, "gold_agreement": agree_ref},
+        "artifacts": {"gold": gold_ref, "gold_agreement": agree_ref,
+                      "taxonomy_v2": tax_v2_ref},
         "gates": {gate.name: gate},
         "completed_phases": ["p2b"],
         "events": [f"P2b: kappa {agree['kappa']:.3f}, {len(new_rules)} rules drafted from disagreements"],
     }
+
+
+def _gate_let_the_run_proceed(gate: Any) -> bool:
+    """Did this gate allow the run to continue?
+
+    `GateResult` carries `status`, never `passed`. Asking for the latter with a
+    default — `getattr(gate, "passed", False)` — turns a wrong attribute name
+    into a silent wrong ANSWER rather than an AttributeError: on `live38` the
+    p2a gate PASSED and the prescriptions still printed "outstanding actions",
+    telling an operator to redo work the pipeline had already declined to do.
+
+    `warned` counts as proceeding. A warned gate is non-blocking by construction,
+    so the run continues and its findings are limitations to report, not actions
+    outstanding.
+    """
+    return getattr(gate, "status", "") in ("passed", "warned")
+
+
+def _load_taxonomy_for_reuse(deps: Deps, spec: str) -> Taxonomy:
+    """Load a finished taxonomy from `RUN_ID`, `RUN_ID/genNN`, or a path.
+
+    Raises rather than falling back to re-deriving one. Asking to reuse a
+    taxonomy and silently getting a fresh one is the worst outcome: the run looks
+    like it obeyed, costs a full architect pass, and misses the cache it was
+    pointed at — which is exactly the cascade this exists to prevent.
+    """
+    from pathlib import Path
+
+    cand: list[Path] = []
+    direct = Path(spec)
+    if direct.suffix == ".json":
+        cand.append(direct)
+    else:
+        root = Path(deps.cfg.run_root) / spec if "/" not in spec else Path(deps.cfg.run_root) / spec
+        cand.append(root / "taxonomy.json")
+        if root.is_dir():
+            cand.extend(sorted(root.glob("gen*/taxonomy.json"), reverse=True))
+
+    for c in cand:
+        if not c.exists():
+            continue
+        blob = json.loads(c.read_text(encoding="utf-8"))
+        payload = blob.get("taxonomy", blob)
+        deps.emit(f"  reusing taxonomy from {c}")
+        return Taxonomy.model_validate(payload)
+
+    raise FileNotFoundError(
+        f"--reuse-taxonomy {spec!r}: no taxonomy.json found (looked in "
+        + ", ".join(str(c) for c in cand) + ")")
+
+
+def _remedy_is_exhausted(
+    redraw_history: list[dict[str, Any]], max_redraws: int,
+) -> bool:
+    """Has the redraw loop run out of moves?
+
+    "Exhausted" must mean THE LOOP HAS NO MOVE LEFT, which happens two ways: its
+    last attempt was reverted, or it used every attempt it is allowed.
+
+    Asking instead whether *any* attempt helped is the wrong aggregation, and it
+    inverted the gate on `live36`: redraw 1 raised kappa 0.781 → 0.806 and redraw
+    2 was reverted at 0.795, so the loop was finished — but `any(kept)` was True,
+    `remedy_exhausted` came out False, and the gate FAILED a run whose agreement
+    had gone UP. A redraw that helps must never make this gate harder to pass
+    than a redraw that fails.
+    """
+    if not redraw_history:
+        return False
+    return (not redraw_history[-1].get("kept")
+            or len(redraw_history) >= max_redraws)
+
+
+def _batch_by_class_pair(
+    disagreements: list[dict[str, Any]], *, target: int = 15,
+) -> list[list[list[dict[str, Any]]]]:
+    """Group disagreements into GROUPS of sequential chunks.
+
+    Returns ``[[chunk, chunk, ...], [chunk], ...]``. Chunks inside a group must
+    run IN ORDER; groups are independent of each other and run concurrently.
+
+    The referee settles boundaries, not rows. Two calls that both see `A × B`
+    decide that boundary independently and can rule opposite ways — the hazard
+    that forced this entire phase to run sequentially. A group holds all the rows
+    for a set of class pairs, so no two GROUPS can contradict each other and they
+    are safe to run at once.
+
+    A pair bigger than `target` cannot fit in one call — measured on live38, one
+    pair had 52 rows while 25-row batches were already emitting 34,099 tokens and
+    failing to parse. Splitting it is unavoidable, so its chunks stay in one
+    group and run in order, threading the earlier ruling forward. That is the one
+    place `decided` is still needed, and it is deterministic there because the
+    chunks are sequential.
+    """
+    from collections import defaultdict
+
+    by_pair: dict[frozenset[str], list[dict[str, Any]]] = defaultdict(list)
+    for d in disagreements:
+        by_pair[frozenset((d["label_a"], d["label_b"]))].append(d)
+
+    groups: list[list[list[dict[str, Any]]]] = []
+    cur: list[dict[str, Any]] = []
+    for _pair, rows_ in sorted(by_pair.items(), key=lambda kv: (-len(kv[1]), sorted(kv[0]))):
+        if len(rows_) > target:
+            # One boundary, too big for a single call: sequential chunks, own group.
+            groups.append(list(_chunks(rows_, target)))
+        elif len(cur) + len(rows_) <= target:
+            cur.extend(rows_)
+        else:
+            if cur:
+                groups.append([cur])
+            cur = list(rows_)
+    if cur:
+        groups.append([cur])
+    return groups
+
+
+def _run_batch_with_bisect(
+    run_batch: Any, fold: Any, chunk: list[dict[str, Any]],
+) -> tuple[int, int]:
+    """Adjudicate one batch; if the whole call fails, split once and retry halves.
+
+    Returns ``(failed_sub_batches, rows_covered)``.
+
+    A referee batch dies for two reasons and halving addresses both: more to write
+    than the model's cap allows, or a transient provider failure that a second
+    call clears. Dropping it outright cost `live36` four of its first seven
+    batches — 100 adjudications — and those are BY CONSTRUCTION the hardest rows
+    in the gold set, so losing them strips the difficult cases and every
+    downstream number reads optimistically.
+
+    `fold` is applied per successful call, NOT once at the end, so a recovered
+    half still binds the halves and batches that follow it. Adjudication is not a
+    per-row task: a boundary settled early must bind later, or the rule set
+    acquires two rules that fire on the same trigger with opposite answers.
+
+    Split ONCE, not recursively: the failure budget stays bounded at two extra
+    calls per bad batch, which is what keeps a systematically-failing referee from
+    turning one bad batch into a retry storm.
+    """
+    vs = run_batch(chunk)
+    if vs is not None:
+        fold(vs, chunk)
+        return 0, len(chunk)
+
+    mid = len(chunk) // 2
+    failed = covered = 0
+    for half in (chunk[:mid], chunk[mid:]):
+        if not half:
+            continue
+        hv = run_batch(half)
+        if hv is None:
+            failed += 1
+        else:
+            fold(hv, half)
+            covered += len(half)
+    return failed, covered
 
 
 def _redraw_until_stable(
@@ -752,8 +1199,10 @@ def _redraw_until_stable(
         structural = pilot.get("structural_confusions") or []
         if deps.registry.is_offline or not structural or not pilot.get("slack_is_significant"):
             break
+        n_b = len(structural)
         deps.emit(f"  redraw {attempt + 1}/{cfg.taxonomy.max_taxonomy_redraws} — "
-                  f"{len(structural)} boundaries the annotator could not reproduce")
+                  f"{n_b} boundar{'y' if n_b == 1 else 'ies'} the annotator "
+                  f"could not reproduce")
         try:
             redrawn = TaxonomyRedrawAgent(ctx).run(
                 nodes=taxonomy.nodes, pairs=structural[:6],
@@ -770,6 +1219,23 @@ def _redraw_until_stable(
         before_codes = {n.code for n in before_nodes}
         taxonomy = taxonomy.model_copy(update={"nodes": list(redrawn.nodes)})
         after_codes = {n.code for n in taxonomy.nodes}
+        # A MERGE ORPHANS THE RULES THAT ROUTED TO THE CLASS IT REMOVED. The
+        # redraw replaces nodes only, so the rule set survives intact — and a
+        # rule reading "when X → INTERPRET_LITERARY_MEANING" now sends the
+        # annotator to a label that is not in its class list. Measured on
+        # `live36` gen02: dropping one class left 4 of 45 rules dangling, 2 of
+        # them routing straight to the deleted code, and BOTH governed a pair the
+        # redraw had targeted — so the damage landed exactly on the rows the
+        # before/after kappa is decided by. That comparison (0.825 -> 0.809,
+        # reverted) was therefore measuring this bug as much as the redraw.
+        gone = before_codes - after_codes
+        if gone:
+            keep = [r for r in taxonomy.rules if r.then not in gone]
+            n_orphaned = len(taxonomy.rules) - len(keep)
+            if n_orphaned:
+                taxonomy = taxonomy.model_copy(update={"rules": keep})
+                deps.emit(f"  dropped {n_orphaned} rule(s) routing to "
+                          f"{', '.join(sorted(gone))} — merged away by this redraw")
         candidate = _pilot_agreement(deps, ctx, df, taxonomy)
         deps.emit(f"  redraw {attempt + 1}: {len(before_codes)} → {len(after_codes)} classes, "
                   f"kappa {pilot['kappa']:.3f} → {candidate['kappa']:.3f}, "
@@ -910,13 +1376,30 @@ def _pilot_agreement(deps: Deps, ctx: Any, df: Any, taxonomy: Taxonomy) -> dict[
     # itself. Saying so is the difference between "your guide needs work" and
     # "this target was never reachable with this annotator".
     target_above_ceiling = ceiling is not None and target > ceiling
+
+    # A COUNT FLOOR, not just a rank. Measured by replaying all three live36
+    # pilots against an UNCHANGED class list: 36 disagreements spread over 25
+    # distinct pairs, 19 of them seen exactly once, so the expected count per
+    # pair is about 1.4 — and "the top 6" did not survive re-measurement, with
+    # only 3 of 6 pairs recurring between consecutive pilots. Ranking noise sent
+    # the architect a target list that was half chance, at ~350s of frontier
+    # model plus a full three-pass re-pilot per round. A pair seen once is not
+    # evidence of a boundary; it is the tail of a flat distribution.
+    top_structural = [(pr, c) for pr, c in structural.most_common(6) if c >= 2]
+    top_guide = [(pr, c) for pr, c in guide_only.most_common(6) if c >= 2]
+    thin = len(structural.most_common(6)) - len(top_structural)
+    if thin:
+        # Never cap silently: a dropped target is a boundary nobody will look at.
+        deps.emit(f"  {thin} confused pair(s) seen only once — below the noise "
+                  f"floor at n={agree['n']}, not sent to the redraw")
     return {
         "n": agree["n"],
         "self_consistency_kappa": ceiling,
         "self_consistency_raw": self_agree.get("raw_agreement"),
         "share_of_ceiling_reached": headroom,
-        "structural_confusions": structural.most_common(6),
-        "guide_confusions": guide_only.most_common(6),
+        "structural_confusions": top_structural,
+        "guide_confusions": top_guide,
+        "confusions_below_noise_floor": thin,
         "recoverable_slack": slack,
         "recoverable_slack_se": slack_se,
         "slack_is_significant": slack_is_real,
@@ -1074,14 +1557,17 @@ def _repair_guide_and_reannotate(
                   f"({agree2['kappa'] - prev:+.3f} vs {prev:.3f} on n={prev_n}) — "
                   "两轮样本不同, 差值不可直接解读为指南改进")
 
-        rows2 = [
-            GoldRow(query=q, idx=int(new_idx[i]), label_a=la[i]["label"], label_b=lb[i]["label"],
-                    final=la[i]["label"] if la[i]["label"] == lb[i]["label"] else "",
-                    agreed=la[i]["label"] == lb[i]["label"],
-                    rationale_a=la[i].get("rationale", ""), rationale_b=lb[i].get("rationale", ""),
-                    round=attempt + 1, source="guide_repair")
-            for i, q in enumerate(queries)
-        ]
+        def _row2(i: int, q: str) -> GoldRow:
+            a, b = la[i]["label"], lb[i]["label"]
+            missing = UNLABELED in (a, b)   # nobody labelled it: not agreement
+            return GoldRow(
+                query=q, idx=int(new_idx[i]), label_a=a, label_b=b,
+                final="" if missing else (a if a == b else ""),
+                agreed=(not missing) and a == b,
+                rationale_a=la[i].get("rationale", ""), rationale_b=lb[i].get("rationale", ""),
+                round=attempt + 1, source="guide_repair")
+
+        rows2 = [_row2(i, q) for i, q in enumerate(queries)]
         out.update({"agreement": agree2, "rows": rows2, "idx": new_idx})
         out["summary"] = {
             "rounds_run": attempt, "decisions": decisions,
@@ -1112,9 +1598,16 @@ def _guide_with_decisions(guide: str, decisions: list[dict[str, Any]],
         if not d.get("decided"):
             lines.append(f"- {pair}: 证据不足, 仍为开放边界 — 如遇到请在 rationale 中说明理由。")
             continue
+        # CITE the rule; do not repeat it. These same rules are already sent in
+        # full in the `## Adjudication rules` block, so rendering their text here
+        # duplicated ~24,000 characters of an annotation prompt — and both copies
+        # were then truncated for being too big, which is how the binding
+        # rulings ended up 75% cut on live38. The guide's job is different from
+        # the rule list's: it states which boundaries are BINDING. That needs the
+        # pair, the winner, and an id to look up, not the rule text again.
         rules = [r for r in added if set(r.classes) == set(d["pair"])]
         for r in rules:
-            lines.append(f"- {pair}: {r.when} → **{r.then}**  ({r.rationale})")
+            lines.append(f"- {pair} → **{r.then}**  [{r.id}]")
     return (guide or "") + "\n".join(lines)
 
 
@@ -1337,7 +1830,17 @@ def _render_rules(t: Taxonomy) -> str:
     can cite, and the section is budgeted downstream, so anything truncated should
     be the free text rather than the ids.
     """
-    lines = [f"- [{r.id}] when {r.when} → {r.then} ({r.rationale})" for r in t.rules]
+    # NEWEST FIRST, so truncation eats the oldest rules rather than the freshest.
+    # The referee's rules are APPENDED to this list and are the most
+    # evidence-driven in it — each was written in response to a disagreement
+    # actually observed on this corpus. Rendered in insertion order they sit at
+    # the end, which is exactly what a head-limited budget discards: on `live38`
+    # 83 referee rules pushed the block to 18,496 chars against a 9,000 budget
+    # and every one of them was cut from the guide-repair round that existed to
+    # apply them. Ordering by round descending makes the survivors the rules
+    # worth keeping, whatever the budget turns out to be.
+    ordered = sorted(t.rules, key=lambda r: -(r.added_in_round or 0))
+    lines = [f"- [{r.id}] when {r.when} → {r.then} ({r.rationale})" for r in ordered]
     seen = {line.strip() for line in lines}
     for node in t.nodes:
         for raw in node.adjudication_rules:
@@ -1497,22 +2000,49 @@ def p2d_validate(state: PipelineState, deps: Deps) -> dict[str, Any]:
 
     ctx = deps.agent_ctx()
     results: list[Any] = []
+    n_failed_chunks = 0
     for chunk in _chunks(rows, 30):
-        out = AdversaryAgent(ctx).run(rows=chunk, classes=_render_classes(taxonomy) if taxonomy else "")
-        results.extend(out.results)
+        try:
+            out = AdversaryAgent(ctx).run(
+                rows=chunk, classes=_render_classes(taxonomy) if taxonomy else "")
+            results.extend(out.results)
+        except Exception as exc:  # noqa: BLE001
+            # An unguarded call here crashed the whole phase on any provider
+            # blip. Losing 30 attacks is recoverable; losing the run is not — so
+            # record the loss in the coverage figure below and carry on.
+            n_failed_chunks += 1
+            deps.emit(f"  ⚠ adversary chunk failed ({type(exc).__name__}) — "
+                      f"{len(chunk)} labels not attacked")
 
     verdicts = [r.verdict for r in results]
-    n = max(len(verdicts), 1)
+    n_attacked = len(rows)
+    n_verdicts = len(verdicts)
     wrong = sum(v == "wrong" for v in verdicts)
     defensible = sum(v == "defensible" for v in verdicts)
-    est = 1 - wrong / n
-    deps.emit(f"  survived attack: {est:.3f} ({wrong} wrong, {defensible} defensible of {n})")
+    # THE DENOMINATOR IS THE ROWS THAT GOT A VERDICT, AND THE COVERAGE IS
+    # REPORTED BESIDE IT. This was `n = max(len(verdicts), 1)`, so a short
+    # response silently shrank the denominator and a response with NO verdicts
+    # gave `1 - 0/1` = a perfect 1.000. An accuracy no row was actually judged
+    # for must be undefined, never flattering.
+    est = None if not n_verdicts else 1 - wrong / n_verdicts
+    coverage = n_verdicts / max(n_attacked, 1)
+    shown = "undefined" if est is None else f"{est:.3f}"
+    deps.emit(f"  survived attack: {shown} ({wrong} wrong, {defensible} defensible "
+              f"of {n_verdicts} verdicts on {n_attacked} attacked; "
+              f"coverage {coverage:.0%})")
+    if est is None:
+        deps.emit("  ⚠ the adversary returned no verdicts — no accuracy is estimable")
+    elif coverage < 0.8:
+        deps.emit(f"  ⚠ only {coverage:.0%} of attacked labels came back — read the "
+                  f"estimate against that, not as an accuracy over {n_attacked}")
 
     ref = deps.store.put_json(
         "adversarial_validation",
         {
-            "n_attacked": n, "n_wrong": wrong, "n_defensible": defensible,
-            "estimated_accuracy": round(est, 4),
+            "n_attacked": n_attacked, "n_verdicts": n_verdicts,
+            "coverage": round(coverage, 4), "n_failed_chunks": n_failed_chunks,
+            "n_wrong": wrong, "n_defensible": defensible,
+            "estimated_accuracy": None if est is None else round(est, 4),
             "knn_label_scan": scan,
             "results": [r.model_dump() for r in results[:200]],
             "method": (
@@ -1520,13 +2050,15 @@ def p2d_validate(state: PipelineState, deps: Deps) -> dict[str, Any]:
                 "share of labels whose attack failed, not a self-reported confidence"
             ),
         },
-        producer="p2d", summary=f"adversarial accuracy estimate {est:.3f}",
+        producer="p2d",
+        summary=f"adversarial accuracy estimate {shown} on {n_verdicts}/{n_attacked}",
     )
     return {
         "phase": "p3",
         "artifacts": {"adversarial_validation": ref},
         "completed_phases": ["p2d"],
-        "events": [f"P2d: adversarial accuracy estimate {est:.3f} over {n} attacked labels"],
+        "events": [f"P2d: adversarial accuracy {shown} on {n_verdicts} verdicts "
+                   f"over {n_attacked} attacked labels ({coverage:.0%} coverage)"],
     }
 
 

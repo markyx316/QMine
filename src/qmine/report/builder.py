@@ -568,13 +568,32 @@ def topdown_report(state: PipelineState, deps: Any) -> str:
 
     p += ["## 5. Adversarial validation", ""]
     if adv:
+        _acc = adv.get("estimated_accuracy")
+        _nv = adv.get("n_verdicts")
+        _na = adv.get("n_attacked")
+        _cov = adv.get("coverage")
+        # State the denominator next to the number. An accuracy computed over the
+        # verdicts that came BACK reads as an accuracy over the rows attacked,
+        # and the two differ by however many the adversary dropped.
         p += [f"> {adv.get('method', '')}", "",
-              f"- labels attacked: **{adv.get('n_attacked')}**",
+              f"- labels attacked: **{_na}**"
+              + (f"; verdicts returned: **{_nv}** ({_cov:.0%} coverage)"
+                 if _nv is not None and _cov is not None else ""),
               f"- judged wrong: **{adv.get('n_wrong')}**; defensible-but-arguable: **{adv.get('n_defensible')}**",
-              f"- **estimated accuracy: {adv.get('estimated_accuracy')}**", "",
-              "This number is lower and more trustworthy than cross-validated accuracy. CV measures "
-              "agreement with the gold set the model was fitted to; this measures survival against "
-              "an agent whose instruction was to prove the label wrong.", ""]
+              (f"- **estimated accuracy: {_acc}**" if _acc is not None else
+               "- **estimated accuracy: 无法估计** — 对抗代理未返回任何裁决"), "",]
+        if _cov is not None and _acc is not None and _cov < 0.8:
+            p += [f"> ⚠ 该准确率仅基于 {_nv}/{_na} 条返回裁决计算"
+                  f"（覆盖率 {_cov:.0%}），不可读作对全部 {_na} 条标签的准确率。", ""]
+        p += [
+              "CV measures agreement with the gold set the model was fitted to; this measures "
+              "survival against an agent instructed to prove the label wrong. THE TWO ARE NOT "
+              "COMPARABLE AS LEVELS, because they are computed on different populations: the "
+              "gold set is deliberately enriched with the contested rows a referee had to "
+              "adjudicate, while the attack samples the corpus at random and therefore draws "
+              "mostly easy rows. Measured on live38 the attack scored HIGHER (0.953) than CV "
+              "(0.852) for exactly that reason. Read this as 'how often is a prediction "
+              "defensible on typical traffic', not as a stricter version of CV.", ""]
 
     p += ["## 6. Decisions", "", _decision_table(state, ("p2",)), ""]
     p += ["## 7. What we rejected", "", _failure_history(state, ("p2",)), ""]

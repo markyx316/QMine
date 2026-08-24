@@ -235,19 +235,35 @@ def train_classifier(
         result["population_weighted_accuracy"] = round(
             float(np.average((pred == yk).astype(float), weights=w)), 4
         )
-    result["ece"] = expected_calibration_error(model, Xk, yk)
+    # OUT OF FOLD, like the accuracy it is printed beside. This was
+    # `expected_calibration_error(model, Xk, yk)` — the model scoring the very
+    # rows it was fitted on, which is optimistic exactly where it matters: the
+    # report states that phase 10 ROUTES on confidence, so a calibration number
+    # flattered by in-sample fitting loosens a live routing threshold. Reporting
+    # it next to an out-of-fold `cv_accuracy` also invited reading the two as
+    # comparable when only one of them was honest.
+    try:
+        proba_oof = cross_val_predict(
+            LogisticRegression(max_iter=2000, C=best["C"]), Xk, yk, cv=cv,
+            method="predict_proba")
+        result["ece"] = _ece_from_proba(proba_oof, np.unique(yk), yk)
+        result["ece_basis"] = "out-of-fold"
+    except Exception:  # noqa: BLE001 — a fold can lack a class on a tiny gold set
+        result["ece"] = expected_calibration_error(model, Xk, yk)
+        result["ece_basis"] = "in-sample (out-of-fold unavailable — read as a floor)"
     return result
 
 
-def expected_calibration_error(model: Any, X: np.ndarray, y: Sequence[str], *, bins: int = 10) -> float:
-    """How far the model's stated confidence is from its actual accuracy.
+def _ece_from_proba(proba: np.ndarray, classes: np.ndarray, y: Sequence[str],
+                    *, bins: int = 10) -> float:
+    """Expected calibration error from probabilities that are already computed.
 
-    Needed because Phase 10 routes on confidence.  A model that says 0.9 and is
-    right 0.6 of the time makes the routing threshold meaningless.
+    Split out so the same binning serves both the out-of-fold path and the
+    in-sample fallback; the difference between them is WHICH probabilities are
+    handed in, and that difference is what the old code got wrong.
     """
-    proba = model.predict_proba(X)
     conf = proba.max(1)
-    pred = model.classes_[proba.argmax(1)]
+    pred = np.asarray(classes)[proba.argmax(1)]
     correct = (pred == np.asarray(list(y))).astype(float)
     edges = np.linspace(0, 1, bins + 1)
     ece = 0.0
@@ -257,6 +273,15 @@ def expected_calibration_error(model: Any, X: np.ndarray, y: Sequence[str], *, b
             continue
         ece += (m.mean()) * abs(correct[m].mean() - conf[m].mean())
     return round(float(ece), 4)
+
+
+def expected_calibration_error(model: Any, X: np.ndarray, y: Sequence[str], *, bins: int = 10) -> float:
+    """How far the model's stated confidence is from its actual accuracy.
+
+    Needed because Phase 10 routes on confidence.  A model that says 0.9 and is
+    right 0.6 of the time makes the routing threshold meaningless.
+    """
+    return _ece_from_proba(model.predict_proba(X), model.classes_, y, bins=bins)
 
 
 # ==========================================================================

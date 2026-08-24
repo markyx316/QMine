@@ -26,7 +26,7 @@ import re
 import threading
 import time
 from pathlib import Path
-from typing import Any, Literal, TypeVar
+from typing import Any, ClassVar, Literal, TypeVar
 
 from langchain_core.language_models import BaseChatModel
 from langchain_core.messages import HumanMessage, SystemMessage
@@ -156,6 +156,14 @@ class ModelRegistry:
         #: annotators run concurrently, so a plain attribute would race and
         #: attribute one thread's tokens to another's failure.
         self._raw = threading.local()
+        # The generation cap actually in force for the call in flight. The failure
+        # path needs it to recognise a truncation from the token count, which is
+        # ground truth no matter what prose the provider returns.
+        self._cap = threading.local()
+        #: Role -> cumulative output tokens at its last reported call, so a call
+        #: can be announced with ITS OWN cost rather than the role's running total.
+        self._reported_out: dict[str, int] = {}
+        self._reported_lock = threading.Lock()
         #: Providers that have proved unusable this run, and why. A dead provider
         #: must be remembered: with eight concurrent batches, rediscovering it per
         #: call costs three failed attempts each time.
@@ -176,6 +184,8 @@ class ModelRegistry:
         #: this run. Retrying it per call is expensive: at 240 annotation calls,
         #: a wasted first attempt of 30-180s each roughly doubles the run.
         self._no_native_schema: set[str] = set()
+        self._quirks_lock = threading.Lock()
+        self._load_quirks()
         self._routed: dict[str, tuple[str, str]] = {}   # role -> (provider, model)
         self._model_output_cap: dict[tuple[str, str], int] = {}
         if cfg.provider == "router":
@@ -206,6 +216,79 @@ class ModelRegistry:
     @property
     def is_offline(self) -> bool:
         return self.provider == "offline"
+
+    #: Where the per-model lessons live. NOT under `runs/<id>/`: the point is to
+    #: carry them ACROSS runs, and a per-run path relearns them every time.
+    QUIRKS_PATH: ClassVar[Path] = Path(".cache") / "model_quirks.json"
+    #: Providers do fix their endpoints. Re-learn rather than believe forever.
+    QUIRKS_TTL_DAYS: ClassVar[float] = 14.0
+
+    def _load_quirks(self) -> None:
+        """Start the run already knowing what earlier runs discovered.
+
+        `_no_native_schema` and `_length_bump` are learned the expensive way: a
+        call fails, the registry works out why, and every later call on that
+        model avoids it. That knowledge was then thrown away at process exit, so
+        every run paid for it again. Measured on `live38`: FIVE rediscoveries in
+        one run — `deepseek-v4-pro` and `deepseek-v4-flash` each rejecting
+        `response_format`, `qwen3-next-80b` demanding the word "json", and
+        `glm-5.2` truncating a researcher for 226s and then 528s before
+        completing in 11,634 tokens on the plain-JSON path it could have started
+        on.
+
+        Learned, not hardcoded: nothing here names a model in the source, so a
+        provider we have never seen is treated on its merits, and a provider that
+        FIXES its endpoint is re-learned once the entry ages out.
+        """
+        try:
+            raw = json.loads(self.QUIRKS_PATH.read_text(encoding="utf-8"))
+        except Exception:  # noqa: BLE001 — absent or unreadable is simply "learn it again"
+            return
+        cutoff = time.time() - self.QUIRKS_TTL_DAYS * 86400
+        n_schema = n_bump = 0
+        for model, rec in (raw.get("models") or {}).items():
+            if float(rec.get("learned_at", 0)) < cutoff:
+                continue
+            if rec.get("no_native_schema"):
+                self._no_native_schema.add(model)
+                n_schema += 1
+            bump = int(rec.get("length_bump", 1) or 1)
+            if bump > 1:
+                self._length_bump[model] = bump
+                n_bump += 1
+        if n_schema or n_bump:
+            log.info("provider quirks recalled from %s: %d model(s) start in "
+                     "plain-JSON mode, %d with a raised output cap — not "
+                     "rediscovered this run", self.QUIRKS_PATH, n_schema, n_bump)
+
+    def _save_quirks(self) -> None:
+        """Record a lesson so the next run does not buy it twice."""
+        try:
+            with self._quirks_lock:
+                try:
+                    raw = json.loads(self.QUIRKS_PATH.read_text(encoding="utf-8"))
+                except Exception:  # noqa: BLE001
+                    raw = {}
+                models = raw.setdefault("models", {})
+                now = time.time()
+                for m in self._no_native_schema:
+                    models.setdefault(m, {})["no_native_schema"] = True
+                    models[m]["learned_at"] = now
+                for m, bump in self._length_bump.items():
+                    if bump > 1:
+                        # Keep the HIGHEST bump ever needed. A run that only got
+                        # as far as 2x must not overwrite a 4x another run proved
+                        # necessary — the point of remembering is to start from
+                        # the worst case already known, not the most recent.
+                        prev = int(models.get(m, {}).get("length_bump", 1) or 1)
+                        models.setdefault(m, {})["length_bump"] = max(prev, int(bump))
+                        models[m]["learned_at"] = now
+                self.QUIRKS_PATH.parent.mkdir(parents=True, exist_ok=True)
+                tmp = self.QUIRKS_PATH.with_suffix(".json.tmp")
+                tmp.write_text(json.dumps(raw, indent=1, sort_keys=True), encoding="utf-8")
+                tmp.replace(self.QUIRKS_PATH)      # atomic: concurrent workers race here
+        except Exception:  # noqa: BLE001 — never let bookkeeping break a run
+            pass
 
     def _build_routing_plan(self, cache_dir: Any) -> None:
         """Resolve a model per role from the live catalogue and available keys.
@@ -407,6 +490,7 @@ class ModelRegistry:
         # deadline: the architect once doubled to 84,000 tokens with 1,365s to
         # emit them, and a researcher at 24,000 needs ~630s against a 390s
         # timeout. Two constants that only make sense together, moved apart.
+        self._cap.last = cap
         needed = (cap / req.THROUGHPUT_TOK_PER_SEC) * 1.3
         timeout = max(self.cfg.request_timeout, req.timeout_seconds,
                       min(1800.0, max(180.0, needed)))
@@ -583,10 +667,33 @@ class ModelRegistry:
                 # Ran out of room, not out of capability. Give it more and ask
                 # again — swapping providers here would abandon a working model
                 # for a problem the model did not have.
-                if _hit_length_limit(last_err) and attempt < max_repair:
+                # A truncation is a TOKEN COUNT, not a phrase. `glm-5.2` returns
+                # "no parseable structured output" for a response that stopped at
+                # its ceiling, and the prose matcher below never fired: on
+                # `live36` ten referee calls died at exactly 24,001 tokens — the
+                # cap — and none was recognised as needing more room.
+                cap_in_force = int(getattr(self._cap, "last", 0) or 0)
+                out_spent = int(usage.get("output_tokens", 0) or 0)
+                ran_out_of_room = bool(cap_in_force and out_spent >= cap_in_force)
+                if (_hit_length_limit(last_err) or ran_out_of_room) and attempt < max_repair:
                     truncated = self.model_name(tier, role)
-                    self._length_bump[truncated] = min(
-                        self._length_bump.get(truncated, 1) * 2, 8)
+                    # RAISE TO a floor, do not multiply. Concurrent callers each
+                    # truncate before any of them has recorded the switch, so
+                    # multiplying compounds one problem into 4x or 8x — and the
+                    # timeout now derives from the cap, so it inflates with it.
+                    # The plain-JSON switch below is what actually fixes this;
+                    # the multiplier only has to cover the difference between a
+                    # schema-wrapped answer and a plain one.
+                    # RAISE TO A FLOOR, never multiply: concurrent callers each
+                    # truncate before any records the switch, and multiplying
+                    # compounds one problem into 4x then 8x. Raising to a floor is
+                    # idempotent — every racing caller computes the same value.
+                    # But a 2x floor that ALSO truncates proves 2x was not enough,
+                    # and `max(current, 2)` could never say so: the referee sat at
+                    # 24,001 for ten consecutive calls. Step to a second floor on
+                    # that evidence, and stop there.
+                    self._length_bump[truncated] = _next_length_floor(
+                        self._length_bump.get(truncated, 1))
                     # More room is only half of it. Measured four times on
                     # `glm-5.2`: the call truncates past 12,000 tokens in NATIVE
                     # structured-output mode and then completes in ~5,300 on the
@@ -595,13 +702,14 @@ class ModelRegistry:
                     # cap, so a truncation is also evidence that mode is unsuited
                     # to this model, exactly as an unparseable response is.
                     self._no_native_schema.add(truncated)
+                    self._save_quirks()
                     log.warning(
                         "role=%s hit its output cap on %s; retrying with %dx room "
                         "in plain-JSON mode (both apply to every role on this model)",
                         role, truncated, self._length_bump[truncated])
                     model = self.get(role)
                     continue
-                if _provider_is_unusable(last_err):
+                if _provider_is_unusable(last_err, exc):
                     failed_provider = (self.route_for(role) or (self.provider, ""))[0]
                     self.mark_provider_dead(failed_provider, last_err, role)
                     routed = self.route_for(role)
@@ -624,6 +732,7 @@ class ModelRegistry:
                     key = self.model_name(tier, role)
                     if key not in self._no_native_schema:
                         self._no_native_schema.add(key)
+                        self._save_quirks()
                         log.warning(
                             "%s returns unparseable structured output; switching to "
                             "plain-JSON mode for the remainder of this run", key
@@ -738,12 +847,22 @@ class ModelRegistry:
         if not self.on_call:
             return
         u = self.ledger.by_role.get(role, {})
+        total_out = int(u.get("output_tokens", 0) or 0)
+        # THIS CALL's cost, not the role's running total. Announcing the total on
+        # a per-call line reads as per-call and is wrong by a factor of the call
+        # count: a referee line saying "out 298,406" was in fact 24,001 for that
+        # call on a role that had spent 298,406 overall. Exact for a sequential
+        # role; for a concurrent one the calls interleave, so the split between
+        # simultaneous callers is approximate while their sum stays right.
+        with self._reported_lock:
+            call_out = max(0, total_out - self._reported_out.get(role, 0))
+            self._reported_out[role] = total_out
         try:
             self.on_call({
                 "role": role, "model": model, "tier": tier, "ok": ok,
                 "latency_s": round(latency, 1), "note": note,
                 "calls": u.get("calls", 0), "errors": u.get("errors", 0),
-                "output_tokens": u.get("output_tokens", 0),
+                "output_tokens": total_out, "call_output_tokens": call_out,
                 "returned": summarize_return(value) if ok else note,
             })
         except Exception:  # noqa: BLE001 — a watcher must never break a run
@@ -776,6 +895,8 @@ class ModelRegistry:
             )
         self.report_call(role, model, tier, time.time() - t0, payload, ok=True)
         if self.cfg.record_raw_outputs:
+            _spent = getattr(self._raw, "last", None)
+            _usage = getattr(_spent, "usage_metadata", None) or {}
             self.raw_log.append(
                 {
                     "role": role,
@@ -783,6 +904,12 @@ class ModelRegistry:
                     "model": model,
                     "cache_key": key,
                     "latency_s": round(time.time() - t0, 2),
+                    # PER CALL. Setting a role's budget used to require
+                    # differencing cumulative totals out of `run.log`, which only
+                    # works for sequential roles and silently misleads for
+                    # concurrent ones. Record it where it is already known.
+                    "input_tokens": int(_usage.get("input_tokens", 0) or 0),
+                    "output_tokens": int(_usage.get("output_tokens", 0) or 0),
                     "system_head": system[:200],
                     "user_head": user[:400],
                     "output": payload,
@@ -944,21 +1071,57 @@ _STATUS_RE = re.compile(
 )
 
 
-def _provider_is_unusable(err: str) -> bool:
-    """Whether `err` means this provider is done for the run, not just this call.
+#: HTTP statuses that mean the CREDENTIAL or the account is done, not this call.
+#: 429 and 5xx are deliberately absent: they are transient, and abandoning a
+#: working provider over one is worse than the outage it was meant to survive.
+_DEAD_STATUS = frozenset({401, 402, 403})
 
-    A 402 on a live run took twelve gold batches — 300 rows — while the retry loop
-    asked the same dead endpoint three times per batch and the two declared
+
+def _provider_is_unusable(err: str, exc: BaseException | None = None) -> bool:
+    """Whether this provider is done for the run, not just for this call.
+
+    A 402 on a live run took twelve gold batches — 300 rows — while the retry
+    loop asked the same dead endpoint three times per batch and the two declared
     fallbacks sat unused in the routing plan.
 
-    Rate limits, timeouts and truncations are deliberately NOT here: those are
-    transient or fixable, and abandoning a working provider over one is worse than
-    the outage it was meant to survive.
+    PREFER THE STRUCTURED STATUS. The SDK raises typed errors carrying
+    `status_code`, and reading it settles the question exactly. Scanning the
+    error TEXT for a number cannot: `completion_tokens=4013` contains "401" and
+    `prompt_tokens=8402` contains "402", which once killed every Qwen model on a
+    live run and sent taxonomy research to a coding model. The regex below is now
+    anchored, but the string path stays a fallback for providers that raise plain
+    exceptions — the structured answer is always better when there is one.
+
+    Rate limits, timeouts and truncations are deliberately NOT here.
     """
+    code = getattr(exc, "status_code", None)
+    if isinstance(code, bool):        # bool is an int subclass; never a status
+        code = None
+    if isinstance(code, int):
+        return code in _DEAD_STATUS   # authoritative: no prose involved
+
     low = err.lower()
     if any(phrase in low for phrase in _PROVIDER_DEAD_PHRASES):
         return True
     return bool(_STATUS_RE.search(err))
+
+
+def _next_length_floor(current: int) -> int:
+    """Raise a model's generation cap to a FLOOR, never by a multiplier.
+
+    Concurrent callers each truncate before any of them has recorded the switch,
+    so multiplying compounds one problem into 4x and then 8x — and the timeout
+    derives from the cap, so it inflates with it. A floor is idempotent: every
+    racing caller computes the same value, however many of them run it.
+
+    TWO floors, not one. `max(current, 2)` could not express "2x was still not
+    enough", and on `live36` that cost ten consecutive referee calls: each died
+    at exactly 24,001 tokens — the 12,000 cap already bumped to 2x — and each
+    silently discarded 25 adjudications. Truncating while ALREADY at 2x is
+    evidence for 4x. It stops there; beyond that the budget itself is wrong and
+    should be fixed in `requirements.py`, not papered over here.
+    """
+    return 4 if current >= 2 else 2
 
 
 def _hit_length_limit(err: str) -> bool:

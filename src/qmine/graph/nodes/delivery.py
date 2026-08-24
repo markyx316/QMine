@@ -125,7 +125,9 @@ def p10_deploy(state: PipelineState, deps: Deps) -> dict[str, Any]:
         names[int(n["leaf_id"])] = n.get("name_zh", "")
         needs[int(n["leaf_id"])] = n.get("user_need", "")
     # Governance renames land in the delivered column, not just the ledger.
-    names.update(deps.recover("leaf_relabels", "leaf_relabels", default={}) or {})
+    # Keys come back as strings from JSON; the column is keyed by int leaf id.
+    names.update({int(k): v for k, v in
+                  (deps.recover("leaf_relabels", "leaf_relabels", default={}) or {}).items()})
 
     clf = CentroidClassifier(centroids, final_family, names=names,
                              margin_threshold=cfg.deployment.margin_threshold,

@@ -378,7 +378,18 @@ def test_the_pilot_gate_is_blocking_and_precedes_the_gold_set():
     assert "p2a_pilot_agreement" in src, "the declared gate must actually be emitted"
     # It has to run in 2a — the whole point is to fire before 2b spends anything.
     assert "_pilot_agreement" in src
-    assert "p2a_pilot_agreement" not in inspect.getsource(topdown.p2b_gold)
+    # p2b must not EMIT this gate — that is what "precedes the gold set" means.
+    # Reading the ceiling p2a already measured is the opposite of moving the gate
+    # later: it reuses a cheap measurement instead of paying for it again, and
+    # p2b needs it to tell "the guide is ambiguous" from "the bar exceeds what
+    # this annotator can do against itself". Assert on the EMISSION, not on any
+    # mention of the name.
+    p2b_src = inspect.getsource(topdown.p2b_gold)
+    assert 'deps.gate(\n        "p2a_pilot_agreement"' not in p2b_src
+    assert '"p2a_pilot_agreement", "p2a"' not in p2b_src, \
+        "the pilot gate must fire in 2a, before 2b spends anything"
+    assert "_pilot_agreement(deps" not in p2b_src, \
+        "and 2b must not re-run the pilot either"
 
 
 def test_figure_cells_do_not_rebind_names_the_setup_cell_owns():
@@ -715,3 +726,393 @@ def test_a_gate_with_no_remaining_move_proceeds_rather_than_stopping_dead():
 
     # An unfit annotator halts regardless.
     assert not gate(0.844, 0.888, False, True, reverted)
+
+
+def test_prescriptions_read_as_limitations_when_the_gate_let_the_run_proceed():
+    """A prescription's FORCE depends on what the gate decided.
+
+    Blocked, they are work that must happen. Passed with residual slack, the same
+    measurements are a limitation to report — telling an operator to "merge them"
+    prescribes work the pipeline already tried, measured, and declined to act on.
+
+    This regressed the moment it was written: the check read
+    `getattr(pilot_gate, "passed", False)`, but `GateResult` carries `status`, so
+    the default silently chose the false branch and a PASSED gate still printed
+    "outstanding actions" on live38.
+    """
+    from qmine.graph.nodes.topdown import _gate_let_the_run_proceed
+    from qmine.records import GateResult
+
+    def g(status):
+        return GateResult(name="p2a_pilot_agreement", phase="p2a", status=status)
+
+    assert _gate_let_the_run_proceed(g("passed")) is True
+    assert _gate_let_the_run_proceed(g("warned")) is True, \
+        "a warned gate is non-blocking — the run proceeds, so these are limitations"
+    assert _gate_let_the_run_proceed(g("failed")) is False
+    assert _gate_let_the_run_proceed(g("pending")) is False
+
+    # The defect itself: `passed` is not a field, so anything reading it with a
+    # default silently reports "the gate did not pass" for a gate that did.
+    assert not hasattr(g("passed"), "passed"), (
+        "GateResult carries `status`; if a `passed` field is ever added, revisit "
+        "every getattr default that was papering over its absence")
+
+
+# --- the gold set must not silently lose the referee's work -----------------
+
+
+def test_a_row_nobody_labelled_is_not_agreement():
+    """`UNLABELED == UNLABELED` satisfied the equality check.
+
+    `agreement()` already excludes UNLABELED from kappa, so the METRIC was safe
+    while the GOLD SET was not: a row both annotators omitted was recorded
+    agreed with `final="UNLABELED"`, never reached the referee, and passed p2c's
+    non-empty filter into the classifier as a real class.
+    """
+    import inspect
+
+    from qmine.graph.nodes import topdown
+
+    src = inspect.getsource(topdown.p2b_gold)
+    assert "missing = UNLABELED in (la, lb)" in src, \
+        "a row missing a label must be excluded, not counted as agreement"
+    assert "UNLABELED not in (r.label_a, r.label_b)" in src, \
+        "and must not be sent to the referee, which has no second opinion to weigh"
+
+
+def test_guide_repair_on_a_fresh_sample_keeps_the_refereed_rows():
+    """Round 2 annotates DIFFERENT queries, so replacing the list is pure loss.
+
+    It discarded ~3,000 round-1 rows including every referee verdict, and
+    substituted a set whose only labelled rows are ones both annotators already
+    agreed on — the referee runs before repair and never sees round 2. The gold
+    set became agreement-only, i.e. systematically the easy rows, which inflates
+    every classifier number computed from it.
+    """
+    import inspect
+
+    from qmine.config import QMineConfig
+    from qmine.graph.nodes import topdown
+
+    assert QMineConfig().taxonomy.repair_on_fresh_sample is True, \
+        "the merge path is the default path; if this flips, re-read the branch"
+
+    src = inspect.getsource(topdown.p2b_gold)
+    assert "rows = rows + added_rows" in src, \
+        "disjoint samples must be merged, never swapped"
+    # Match whole statements, not substrings: `rows = repair_meta["rows"]` is a
+    # substring of the legitimate `fresh_rows = repair_meta["rows"]`, and a loose
+    # `not in` check fails on the correct code.
+    statements = {ln.strip() for ln in src.splitlines()}
+    assert 'rows = repair_meta["rows"]' not in statements, \
+        "the unconditional replacement is what discarded the adjudications"
+    assert any("refereed rows kept" in ln for ln in src.splitlines()), \
+        "and the count kept must be reported, not assumed"
+
+
+def test_an_adversary_that_returns_nothing_cannot_report_perfect_accuracy():
+    """`n = max(len(verdicts), 1)` made an EMPTY response score 1.000.
+
+    `1 - 0/1` is a perfect accuracy produced by a provider failure. The
+    denominator must be the rows that actually got a verdict, the coverage must
+    be reported beside it, and no verdicts at all must be undefined — never
+    flattering.
+    """
+    import inspect
+
+    from qmine.graph.nodes import topdown
+
+    src = inspect.getsource(topdown.p2d_validate)
+    statements = {ln.strip() for ln in src.splitlines()}
+    assert "n = max(len(verdicts), 1)" not in statements, \
+        "this is the expression that turned an empty response into 1.000"
+    assert "est = None if not n_verdicts else 1 - wrong / n_verdicts" in statements, \
+        "no verdicts must mean undefined, not perfect"
+    assert "coverage = n_verdicts / max(n_attacked, 1)" in statements, \
+        "and the share of attacked rows that answered must travel with the number"
+
+    # The phase must also survive a provider failure rather than crashing the run.
+    assert "adversary chunk failed" in src, \
+        "an unguarded call here ended the whole run on any blip"
+
+
+def test_the_annotator_prompt_keeps_the_newest_rules_not_just_the_oldest():
+    """Both blocks are APPENDED to, so a head-only trim cuts the newest content.
+
+    The referee's rules arrive via `taxonomy.rules.extend(new_rules)` and the
+    guide-repair round appends its 边界裁定 section to the guide — the most
+    authoritative lines in each block, written in response to observed
+    disagreement, and they sit LAST. Measured: 72 rules render to 8,128 chars,
+    90% of the old 9,000 budget, before the referee adds any.
+    """
+    import inspect
+
+    from qmine.agents.roles import AnnotatorAgent, budget_text
+
+    src = inspect.getsource(AnnotatorAgent.build_user)
+    assert "budget_text(rules, 9000)" not in src, \
+        "a head-only trim on an appended block discards the referee's own rules"
+    for block in ("rules", "guide", "classes"):
+        assert f"budget_text({block}," in src and "tail=" in src, \
+            f"the {block} block must retain its tail"
+
+    # And the helper must actually keep both ends when asked.
+    text = "HEAD" + ("x" * 5000) + "TAIL"
+    out = budget_text(text, 1000, tail=200)
+    assert out.startswith("HEAD"), "the head must survive"
+    assert out.endswith("TAIL"), "and so must the tail — that is the whole point"
+
+
+def test_adjudication_coverage_counts_only_rows_the_referee_was_given():
+    """`not r.agreed` also matches rows excluded for a MISSING label.
+
+    Those never entered `disagreements`, so counting them as unresolved
+    subtracts them from a denominator they were never in: live38 reported
+    "adjudicated 450/483" while 459 rows were in fact adjudicated. A coverage
+    figure has to use the same population on both sides of the fraction.
+    """
+    import inspect
+
+    from qmine.graph.nodes import topdown
+
+    src = inspect.getsource(topdown.p2b_gold)
+    i = src.index("n_unresolved = sum(")
+    expr = src[i:i + 260]
+    assert "UNLABELED not in (r.label_a, r.label_b)" in expr, \
+        "rows the referee never saw must not count against its coverage"
+
+
+# --- p2b must ask the same question p2a already learned to ask ---------------
+
+
+def test_the_two_kappa_gates_do_not_contradict_each_other():
+    """`live38`: p2a PASSED at kappa 0.824 and p2b HALTED at 0.832.
+
+    Same corpus, same annotators, same 0.9228 ceiling — and the HIGHER number
+    blocked, because p2a reasons about the annotator's own self-consistency
+    while p2b used a flat 0.90. That bar demands 97.5% of what one annotator
+    manages against ITSELF, which is the condition p2a's own comment describes
+    as making a gate unpassable by a perfect guide.
+    """
+    import inspect
+
+    from qmine.graph.nodes import topdown
+
+    src = inspect.getsource(topdown.p2b_gold)
+    statements = {ln.strip() for ln in src.splitlines()}
+    assert 'passed=(not unsound) and agree["kappa"] >= cfg.gates.kappa,' not in statements, \
+        "a flat bar here contradicts p2a on identical data"
+    for concept in ("target_above_ceiling", "usable_despite_slack", "annotator_fit"):
+        assert concept in src, f"p2b must weigh {concept}, as p2a does"
+
+
+def test_p2b_still_fails_when_agreement_is_genuinely_poor():
+    """The escape hatch must not become an unconditional pass.
+
+    A gate that cannot fail is not a gate — the same invariant the pilot has.
+    """
+    import inspect
+
+    from qmine.graph.nodes import topdown
+
+    src = inspect.getsource(topdown.p2b_gold)
+    # Below the reliability floor, `usable_despite_slack` is False by
+    # construction, so a poor kappa still blocks.
+    assert 'agree["kappa"] >= cfg.gates.annotator_fitness_kappa' in src, \
+        "proceeding on residual slack must still require the reliability floor"
+    # And an unfit ANNOTATOR blocks regardless of what the guide work achieved.
+    assert "annotator_fit and (" in src, \
+        "no amount of guide repair fixes an annotator that cannot reproduce itself"
+    assert "(not unsound)" in src, \
+        "a measurement on collapsed coverage must still block"
+
+
+# --- the referee's rules must reach the annotator ---------------------------
+#
+# There is already a test that the ARCHITECT's rules reach the annotator. The
+# REFEREE's were unguarded, and on live38 all 83 of them were silently truncated
+# out of the guide-repair round whose entire purpose was to apply them.
+
+
+def _annotator_budget(block: str) -> tuple[int, int]:
+    """The (budget, tail) the annotator prompt applies to a named block.
+
+    Read out of the source rather than hardcoded in each test, so revising a
+    budget does not break every test that merely needs to know what it is.
+    """
+    import inspect
+    import re
+
+    from qmine.agents import roles
+
+    src = inspect.getsource(roles.AnnotatorAgent.build_user)
+    m = re.search(rf"budget_text\({block},\s*(\d+)(?:,\s*tail=(\d+))?", src)
+    assert m, f"no budget_text call found for {block!r}"
+    return int(m.group(1)), int(m.group(2) or 0)
+
+
+def test_every_rule_the_referee_drafts_reaches_the_annotator():
+    """83 referee rules pushed the block to 18,496 chars against a 9,000 budget.
+
+    They are APPENDED, so a head-limited budget discards exactly them. Two
+    defences, both required: the budget fits the observed set, and rendering is
+    newest-round-first so that if it is ever exceeded the rules lost are the
+    oldest rather than the freshest.
+    """
+    import inspect
+
+    from qmine.agents import roles
+    from qmine.graph.nodes.topdown import _render_rules
+    from qmine.memory.context import budget_text
+    from qmine.records import AdjudicationRule, Taxonomy, TaxonomyNode
+
+    nodes = [TaxonomyNode(code=f"C{i}", name=f"c{i}", level=1, definition="d" * 120,
+                          user_need="n", positive_examples=["x"], negative_examples=[])
+             for i in range(22)]
+    old_rules = [AdjudicationRule(id=f"R{i:03d}", when="w" * 60, then="C1",
+                                  rationale="r" * 40, classes=["C1", "C2"],
+                                  added_in_round=0) for i in range(50)]
+    ref_rules = [AdjudicationRule(id=f"REF{i:03d}", when="w" * 60, then="C2",
+                                  rationale="r" * 40, classes=["C1", "C2"],
+                                  added_in_round=1) for i in range(83)]
+    tax = Taxonomy(version="v1", nodes=nodes, rules=old_rules + ref_rules)
+
+    rendered = _render_rules(tax)
+    # The budget the annotator prompt actually applies.
+    # Assert the PROPERTY, not the literal. A budget is a number that will be
+    # revised; what must stay true is that it exceeds what the pipeline actually
+    # produces. Pinning "20000" made this test fail the moment the budget was
+    # correctly widened.
+    budget, tail = _annotator_budget("rules")
+    assert budget >= 46_814, (
+        f"rules budget {budget:,} is below the 46,814 chars live38 measured — "
+        "the referee's rules would be truncated out of the prompt again")
+
+    kept = budget_text(rendered, budget, tail=tail)
+    kept_ids = {ln.split("]")[0].strip("- [") for ln in kept.splitlines()
+                if ln.startswith("- [")}
+    missing = [r.id for r in ref_rules if r.id not in kept_ids]
+    assert not missing, (
+        f"{len(missing)} of {len(ref_rules)} referee rules never reach the "
+        f"annotator — the guide-repair round cannot apply what it cannot see")
+
+
+def test_referee_rules_survive_first_when_the_budget_is_exceeded():
+    """Newest-first ordering is the defence that does not depend on a magic number."""
+    from qmine.graph.nodes.topdown import _render_rules
+    from qmine.records import AdjudicationRule, Taxonomy, TaxonomyNode
+
+    tax = Taxonomy(
+        version="v1",
+        nodes=[TaxonomyNode(code="A", name="a", level=1, definition="d",
+                            user_need="n", positive_examples=["x"], negative_examples=[])],
+        rules=[AdjudicationRule(id="OLD", when="w", then="A", rationale="r",
+                                classes=["A"], added_in_round=0),
+               AdjudicationRule(id="NEW", when="w", then="A", rationale="r",
+                                classes=["A"], added_in_round=2)])
+    lines = [ln for ln in _render_rules(tax).splitlines() if ln.startswith("- [")]
+    assert lines[0].startswith("- [NEW]"), \
+        "the freshest, most evidence-driven rule must not be the one truncated"
+
+
+def test_p2b_persists_the_taxonomy_the_referee_produced():
+    """The referee's rules and the repaired guide were in-memory only.
+
+    `deps.taxonomy()` already prefers `taxonomy_v2`; nothing wrote it, so a
+    resumed run recovered the PRE-referee taxonomy and the deliverable reported
+    50 rules when the run had 133.
+    """
+    import inspect
+
+    from qmine.graph.nodes import topdown
+
+    src = inspect.getsource(topdown.p2b_gold)
+    assert 'put_json(\n        "taxonomy_v2"' in src or '"taxonomy_v2",' in src, \
+        "p2b must persist the taxonomy it actually produced"
+    assert '"taxonomy_v2": tax_v2_ref' in src, \
+        "and return it as an artifact so downstream and resume can find it"
+
+
+def test_the_guide_cites_the_referees_rules_instead_of_repeating_them():
+    """The annotator was receiving the referee's rules TWICE.
+
+    `_guide_with_decisions` rendered each rule's full text into the 边界裁定
+    section, while the same rules were already sent in `## Adjudication rules`.
+    On live38 that duplicated ~24,000 chars of every annotation prompt — and
+    BOTH copies were then truncated for being oversized, so 75% of the binding
+    rulings were cut from the round whose whole purpose was to apply them.
+    """
+    import itertools
+
+    from qmine.graph.nodes.topdown import _guide_with_decisions
+    from qmine.records import AdjudicationRule
+
+    names = [f"LOOKUP_SOMETHING_RATHER_LONG_{i:02d}" for i in range(22)]
+    pairs = list(itertools.combinations(names, 2))[:82]
+    added, decisions = [], []
+    for i, (a, b) in enumerate(pairs):
+        added.append(AdjudicationRule(
+            id=f"R{500+i}", when="当查询" + "详" * 370, then=a,
+            rationale="drafted by the referee", classes=[a, b], added_in_round=1))
+        decisions.append({"pair": [a, b], "decided": True})
+
+    out = _guide_with_decisions("原始指南", decisions, added)
+    assert "详" * 50 not in out, \
+        "the guide must not repeat rule text that the rules block already carries"
+    for r in added[:5]:
+        assert f"[{r.id}]" in out, "it must cite the rule id so the ruling is traceable"
+        assert f"**{r.then}**" in out, "and state which class wins — that is the binding part"
+
+    # It has to FIT, or the binding rulings are what gets cut.
+    budget, _tail = _annotator_budget("guide")
+    assert len(out) < budget, (
+        f"82 binding rulings render to {len(out):,} chars against a {budget:,} "
+        "budget — if this ever exceeds it, the rulings are truncated again")
+
+
+def test_an_undecided_boundary_is_still_reported_as_open():
+    """Honest openness beats a fabricated ruling — the pair must still appear."""
+    from qmine.graph.nodes.topdown import _guide_with_decisions
+
+    out = _guide_with_decisions("g", [{"pair": ["A", "B"], "decided": False}], [])
+    assert "A × B" in out and "开放边界" in out, \
+        "a boundary the evidence could not settle must be named, not silently dropped"
+
+
+def test_a_guide_repair_that_lowers_agreement_is_reverted():
+    """The redraw has had this guard since it was built; the repair had none.
+
+    Measured on live38 gen05 — the FIRST run in which the repair's own rules
+    actually reached the annotator, earlier ones having truncated them out of the
+    prompt: kappa 0.822 -> 0.794, about 3.5 standard errors at n≈2978, and below
+    the 0.80 reliability floor. The repair turned a gate that would have passed
+    into a halt, and nothing undid it.
+    """
+    import inspect
+
+    from qmine.graph.nodes import topdown
+
+    src = inspect.getsource(topdown.p2b_gold)
+    assert "guide_before_repair = taxonomy.labeling_guide" in src, \
+        "the repair can overwrite the guide, so the guide must be snapshotted first"
+    assert "if after_k < before_k:" in src, \
+        "a repair that lowers agreement must be undone, not merely regretted"
+    assert "taxonomy.labeling_guide = guide_before_repair" in src
+    assert "guide repair lowered kappa" in src, "and the revert must be announced"
+    # The fresh rows are real annotations; only the unproven GUIDE reverts.
+    assert "the fresh rows are kept" in src, \
+        "reverting the guide must not throw away 3,000 genuine annotations"
+
+
+def test_the_repair_revert_mirrors_the_redraw_revert():
+    """Two loops, one rule: do not adopt a change you cannot show is an improvement."""
+    import inspect
+
+    from qmine.graph.nodes import topdown
+
+    redraw = inspect.getsource(topdown._redraw_until_stable)
+    gold = inspect.getsource(topdown.p2b_gold)
+    assert "reverting to the previous taxonomy" in redraw
+    assert "reverting the guide and rules" in gold, \
+        "the guide repair needs the same guard the redraw already has"

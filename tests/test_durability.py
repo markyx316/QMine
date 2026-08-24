@@ -321,3 +321,264 @@ def test_no_undefined_names_anywhere_in_the_package():
         capture_output=True, text=True,
     )
     assert out.returncode == 0, f"undefined names found:\n{out.stdout}"
+
+
+# --- resuming the right generation -----------------------------------------
+#
+# `live36` halted on a gate. The gate's own message says to fix the cause and
+# open a new generation — but both resume paths hardcoded generation 1, and the
+# LangGraph thread id is `f"{run_id}-gen{generation}"`. So the recommended
+# recovery reopened the OLD thread, read `halted=True`, logged "stays halted"
+# and exited having done nothing, while gen02 sat untouched.
+
+
+def test_latest_generation_finds_the_newest(tmp_path):
+    from qmine.artifacts import latest_generation
+
+    run = tmp_path / "live36"
+    for g in (1, 2, 3):
+        (run / f"gen{g:02d}").mkdir(parents=True)
+    assert latest_generation(run) == 3
+
+
+def test_latest_generation_defaults_to_one_for_a_fresh_run(tmp_path):
+    from qmine.artifacts import latest_generation
+
+    run = tmp_path / "live99"
+    run.mkdir()
+    assert latest_generation(run) == 1, "a run with no generations resumes gen01"
+
+
+def test_a_new_generation_inherits_the_previous_config(tmp_path):
+    """`new_generation` opens a directory and a note, not a config.
+
+    Looking for `config.resolved.yaml` only in the current generation found
+    nothing, which sent `run --resume` down its "nothing to resume" branch and
+    into the guard that refuses an existing run id — a dead end on the exact
+    path the halt message recommends.
+    """
+    from qmine.artifacts import resolved_config_path
+
+    run = tmp_path / "live36"
+    (run / "gen01").mkdir(parents=True)
+    (run / "gen01" / "config.resolved.yaml").write_text("x: 1")
+    (run / "gen02").mkdir()  # opened by new_generation: no config of its own
+
+    found = resolved_config_path(run, 2)
+    assert found is not None, "gen02 must fall back to the config it inherited"
+    assert found == run / "gen01" / "config.resolved.yaml"
+
+
+def test_resolved_config_prefers_the_current_generation(tmp_path):
+    """A generation that DOES have its own config must not read gen01's."""
+    from qmine.artifacts import resolved_config_path
+
+    run = tmp_path / "live36"
+    for g in (1, 2):
+        (run / f"gen{g:02d}").mkdir(parents=True)
+        (run / f"gen{g:02d}" / "config.resolved.yaml").write_text(f"gen: {g}")
+    assert resolved_config_path(run, 2) == run / "gen02" / "config.resolved.yaml"
+
+
+def test_resolved_config_is_absent_when_nothing_was_ever_written(tmp_path):
+    from qmine.artifacts import resolved_config_path
+
+    run = tmp_path / "live99"
+    (run / "gen01").mkdir(parents=True)
+    assert resolved_config_path(run, 1) is None
+
+
+# --- phase 7 naming: the one blocking gate with no repair path --------------
+#
+# `p7_all_leaves_named` is blocking and fails on a SINGLE unnamed leaf, and
+# `resume` refuses to overturn a gate — so one transient failure among ~60 namer
+# calls ends a paid run at phase 7 and forces a new generation. Nothing anywhere
+# re-names a lost leaf.
+
+
+def test_the_namer_retries_before_giving_up_on_a_leaf():
+    """`_annotate` retries; `_name` returned None on the first exception.
+
+    The asymmetry mattered because the consequences are opposite: a lost
+    annotation batch is excluded and reported, a lost NAMING trips a blocking
+    gate that no later phase repairs.
+    """
+    import inspect
+
+    from qmine.graph.nodes import naming
+
+    src = inspect.getsource(naming.p7_name_shard)
+    assert "for attempt in range(3)" in src, "a namer failure must be retried"
+    assert "time.sleep" in src, "and backed off between attempts"
+
+
+def test_the_naming_pool_respects_the_configured_concurrency():
+    """The shards run concurrently, so a per-shard pool MULTIPLIES by shard count.
+
+    A hard-coded 4 with 5 shards put 20 calls on one provider while
+    `llm.max_concurrency` said 8 — and made that knob inert in exactly the phase
+    whose blocking gate has no repair path, so turning it down when a provider
+    throttles had no effect here at all.
+    """
+    import inspect
+
+    from qmine.config import QMineConfig
+    from qmine.graph.nodes import naming
+
+    src = inspect.getsource(naming.p7_name_shard)
+    assert "min(4, len(leaf_ids))" not in src, "the pool must not be hard-coded"
+    assert "max_concurrency" in src, "it must read the configured ceiling"
+
+    cfg = QMineConfig()
+    n_shards = max(1, cfg.naming.n_naming_agents)
+    per_shard = max(1, cfg.llm.max_concurrency // n_shards)
+    assert n_shards * per_shard <= cfg.llm.max_concurrency, (
+        f"{n_shards} shards x {per_shard} threads exceeds the "
+        f"{cfg.llm.max_concurrency} the operator configured")
+
+
+def test_every_recovered_artifact_is_actually_written_somewhere():
+    """`recover(key, artifact)` is only resume-safe if the artifact EXISTS.
+
+    The sibling guard above catches bare `_cache.get`. This catches the inverse,
+    which is just as quiet: `deps.recover("leaf_relabels", "leaf_relabels")` had
+    no writer at all, so the fallback never fired and it returned its `{}`
+    default — governance renames vanished from the delivered column on every
+    resumed run, looking exactly like "there were no renames".
+
+    A `rebuild=` callable is an acceptable substitute: that path reconstructs the
+    value from something else on disk.
+    """
+    import re
+    from pathlib import Path
+
+    src = Path(__file__).resolve().parents[1] / "src" / "qmine"
+    blob = "\n".join(f.read_text(encoding="utf-8") for f in src.rglob("*.py"))
+
+    offenders = []
+    for f in (src / "graph" / "nodes").glob("*.py"):
+        text = f.read_text(encoding="utf-8")
+        for m in re.finditer(r"recover\(\s*['\"]([^'\"]+)['\"]\s*,\s*['\"]([^'\"]+)['\"]", text):
+            key, artifact = m.group(1), m.group(2)
+            # a rebuild= in the same call is its own fallback
+            tail = text[m.end(): m.end() + 200]
+            if "rebuild=" in tail.split(")")[0] or "rebuild=" in tail[:120]:
+                continue
+            written = re.search(
+                rf"put_json\(\s*['\"]{re.escape(artifact)}['\"]"
+                rf"|put_table\(\s*['\"]{re.escape(artifact)}['\"]"
+                rf"|put_matrix\(\s*['\"]{re.escape(artifact)}['\"]"
+                rf"|put_model\(\s*['\"]{re.escape(artifact)}['\"]"
+                rf"|register_file\(\s*['\"]{re.escape(artifact)}['\"]",
+                blob)
+            if not written:
+                offenders.append(f"{f.name}: recover(..., {artifact!r}) — nothing writes it")
+
+    assert not offenders, (
+        "these recoveries can never fall back, so the value is lost on resume:\n  "
+        + "\n  ".join(offenders))
+
+
+# --- reusing a taxonomy instead of re-deriving one --------------------------
+
+
+def test_reuse_finds_a_taxonomy_by_run_id_generation_or_path(tmp_path):
+    """The root fix for the resume cascade.
+
+    The web-using researchers are not deterministic, so a resumed run re-derives
+    a different taxonomy, every annotator prompt changes, and all 3,000 gold rows
+    miss the cache the run already paid for.
+    """
+    import json
+    from types import SimpleNamespace
+
+    from qmine.graph.nodes.topdown import _load_taxonomy_for_reuse
+
+    node = {"code": "A", "name": "a", "level": 1, "definition": "d",
+            "user_need": "n", "positive_examples": ["x"], "negative_examples": []}
+    payload = {"taxonomy": {"version": "v1", "nodes": [node], "rules": []}}
+    run = tmp_path / "runX"
+    (run / "gen02").mkdir(parents=True)
+    (run / "gen02" / "taxonomy.json").write_text(json.dumps(payload), encoding="utf-8")
+
+    deps = SimpleNamespace(cfg=SimpleNamespace(run_root=str(tmp_path)), emit=lambda m: None)
+    assert len(_load_taxonomy_for_reuse(deps, "runX").nodes) == 1
+    assert len(_load_taxonomy_for_reuse(deps, "runX/gen02").nodes) == 1
+    direct = str(run / "gen02" / "taxonomy.json")
+    assert len(_load_taxonomy_for_reuse(deps, direct).nodes) == 1
+
+
+def test_reuse_prefers_the_newest_generation(tmp_path):
+    """gen02's taxonomy supersedes gen01's when only a run id is given."""
+    import json
+    from types import SimpleNamespace
+
+    from qmine.graph.nodes.topdown import _load_taxonomy_for_reuse
+
+    def tx(code):
+        return {"taxonomy": {"version": "v1", "rules": [], "nodes": [
+            {"code": code, "name": code, "level": 1, "definition": "d",
+             "user_need": "n", "positive_examples": ["x"], "negative_examples": []}]}}
+
+    run = tmp_path / "runY"
+    for g, code in (("gen01", "OLD"), ("gen02", "NEW")):
+        (run / g).mkdir(parents=True)
+        (run / g / "taxonomy.json").write_text(json.dumps(tx(code)), encoding="utf-8")
+
+    deps = SimpleNamespace(cfg=SimpleNamespace(run_root=str(tmp_path)), emit=lambda m: None)
+    assert _load_taxonomy_for_reuse(deps, "runY").nodes[0].code == "NEW"
+
+
+def test_reuse_raises_rather_than_silently_re_deriving(tmp_path):
+    """Asking to reuse and quietly getting a fresh taxonomy is the worst outcome.
+
+    The run would look like it obeyed, pay for a full architect pass, and miss
+    the cache it was pointed at — the exact cascade reuse exists to prevent.
+    """
+    from types import SimpleNamespace
+
+    import pytest
+
+    from qmine.graph.nodes.topdown import _load_taxonomy_for_reuse
+
+    deps = SimpleNamespace(cfg=SimpleNamespace(run_root=str(tmp_path)), emit=lambda m: None)
+    with pytest.raises(FileNotFoundError):
+        _load_taxonomy_for_reuse(deps, "nothing_here")
+
+
+def test_reuse_taxonomy_is_honoured_on_the_resume_path_too():
+    """`--resume` returns before the fresh-run setup, so the flag must be applied
+    inside that branch.
+
+    Accepted-and-ignored is the worst outcome: the run re-derives a taxonomy from
+    non-deterministic web researchers, every annotator prompt changes, and all
+    3,000 gold rows miss the cache the flag was pointed at — silently, and at
+    full price.
+    """
+    import inspect
+
+    from qmine import cli
+
+    src = inspect.getsource(cli.run)
+    resume_branch = src[src.index("if resume and run_id:"):src.index("nothing to resume")]
+    assert "cfg.taxonomy.reuse_taxonomy_from = reuse_taxonomy" in resume_branch, \
+        "the resume branch returns early; setting the flag after it is a no-op"
+
+
+def test_a_new_generation_inherits_the_runs_data_settings():
+    """`input_path` comes from a CLI flag, not the config file.
+
+    A generation snapshot built from the config file alone drops it, and the
+    resumed run dies in p1 with "config.data.input_path is not set". A new
+    generation of the SAME run is by definition the same corpus, so the data
+    block must carry over even when the rest of the config is replaced.
+    """
+    import inspect
+
+    from qmine import cli
+
+    src = inspect.getsource(cli.new_generation_cmd)
+    for field in ("input_path", "text_column", "reference_label_columns"):
+        assert f"cfg.data.{field}" in src, (
+            f"{field} is set at launch, not in the config file — a snapshot that "
+            "drops it cannot be resumed")

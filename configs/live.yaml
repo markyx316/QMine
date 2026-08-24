@@ -29,3 +29,12 @@ llm:
     taxonomy_architect: deepseek-v4-pro
     taxonomy_critic: deepseek-v4-pro
     tree_auditor: deepseek-v4-pro
+    # DIRECT, not through a gateway. The router picked `stepfun/step-3.7-flash`
+    # via OpenRouter for this role once the annotator cost estimate was
+    # corrected — cheaper on paper, but it is the highest-volume role in the
+    # pipeline (256 calls) and a previous run was halted specifically because
+    # OpenRouter-served models were measurably slower than the same models
+    # called directly. This is also the one annotator model this project has
+    # actually exercised end-to-end. Its lab (qwen) still differs from
+    # annotator_a (deepseek) and the referee (zhipu), so independence holds.
+    annotator_b: dashscope/qwen3-next-80b-a3b-instruct
