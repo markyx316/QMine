@@ -922,8 +922,16 @@ class ModelRegistry:
         u["provider"] = self.provider
         if self.plan is not None:
             u["routing"] = self.plan.as_dict()
-        u["deep_model"] = self.model_name("deep")
-        u["fast_model"] = self.model_name("fast")
+        # Same trap: with no role these resolve to the CONFIG defaults, not to
+        # anything that ran. Keep them for the unrouted case, but say plainly
+        # what they are and publish the models actually used alongside.
+        if self._routed:
+            u["models_used"] = sorted({m for _, m in self._routed.values()})
+            u["deep_model"] = u["fast_model"] = None
+            u["tier_defaults_unused"] = [self.cfg.deep_model, self.cfg.fast_model]
+        else:
+            u["deep_model"] = self.cfg.deep_model
+            u["fast_model"] = self.cfg.fast_model
         u["estimated_cost_usd"] = round(self.ledger.estimated_cost_usd(), 2)
         # Name any role priced by the fallback rather than by its model's own
         # rate, so a guess is never read as a measurement.
@@ -957,15 +965,41 @@ class ModelRegistry:
                 "and are marked `offline-heuristic`. Quantitative results (embeddings, "
                 "clustering, metrics) are unaffected and fully real."
             )
+        # NAME THE MODELS THAT ACTUALLY RAN. `model_name(tier)` takes no role, so
+        # its routing lookup is skipped and it returns `cfg.deep_model` /
+        # `cfg.fast_model` — the DEFAULTS. On `live38` that put
+        # "claude-opus-5 / claude-sonnet-5" into a client-facing Chinese report
+        # for a run served entirely by deepseek, qwen and zhipu. A deliverable
+        # that misstates which models produced it is worse than one that says
+        # nothing, and no test would catch it because the sentence is well-formed.
+        by_model: dict[str, list[str]] = {}
+        for role, (_prov, model) in sorted(self._routed.items()):
+            by_model.setdefault(model, []).append(role)
+        if by_model:
+            parts = [f"{m} ({', '.join(rs)})" for m, rs in sorted(by_model.items())]
+            if zh:
+                return (
+                    f"需要 LLM 判断的环节由路由按角色分派给 {len(by_model)} 个模型: "
+                    + "; ".join(parts)
+                    + f"。temperature={self.cfg.temperature}, 响应按内容哈希缓存以保证可复现。"
+                )
+            return (
+                f"LLM-judgment steps were routed per role across {len(by_model)} model(s): "
+                + "; ".join(parts)
+                + f". temperature={self.cfg.temperature}, responses cached by content "
+                  "hash for reproducibility."
+            )
+
+        # No routing plan: the tier defaults ARE what ran.
         if zh:
             return (
-                f"需要 LLM 判断的环节使用了 {self.model_name('deep')} (深层) 与 "
-                f"{self.model_name('fast')} (快层), temperature={self.cfg.temperature}, "
+                f"需要 LLM 判断的环节使用了 {self.cfg.deep_model} (深层) 与 "
+                f"{self.cfg.fast_model} (快层), temperature={self.cfg.temperature}, "
                 "响应按内容哈希缓存以保证可复现。"
             )
         return (
-            f"LLM-judgment steps used {self.model_name('deep')} (deep tier) and "
-            f"{self.model_name('fast')} (fast tier) at temperature {self.cfg.temperature}, "
+            f"LLM-judgment steps used {self.cfg.deep_model} (deep tier) and "
+            f"{self.cfg.fast_model} (fast tier) at temperature {self.cfg.temperature}, "
             f"with responses cached by content hash for reproducibility."
         )
 

@@ -185,6 +185,27 @@ def decision_question(text: str, language: str = "zh") -> str:
 #: so small edits to the English tail do not silently drop a translation; a test
 #: asserts that everything reaching a real report is covered.
 PROSE_ZH: dict[str, str] = {
+    # --- uniform-panel footnotes -------------------------------------------
+    # Authored in `ops/panel.py`, which has no language. They carry the three
+    # fairness caveats a reader needs in order to not over-read the table, and
+    # on a `report_language: zh` run they shipped in English.
+    "Every number in this table was produced by the same code":
+        "本表中每一个数字都由**同一份代码**、以**同一个随机种子**产生。"
+        "需要子样的指标用同一个子样本, 其余指标跑全量 —— **每个指标各自带着自己的 n**, "
+        "比较两个数之前必须先看 n。从不同阶段各引一个 silhouette 放在一起, "
+        "比较的是两次碰巧同名的不同测量。",
+    "Silhouette is ADVISORY":
+        "**silhouette 只报告, 不投票。** 它在「簇内紧凑」时取到最大值, 而**措辞相同的 query 天然最紧凑** —— "
+        "这恰恰就是决定性指标要去发现的失败模式: 同一个意图被按句式劈成多个「模板孪生」家族。"
+        "因此它在本表中列出仅为完整起见, **不具备任何裁决权**。",
+    "Template fragmentation is POSITIVELY correlated with cluster count":
+        "**模板碎裂度与簇数正相关**: 簇越多, 可供碎裂的去处也越多 "
+        "(本次面板实测 Pearson +0.90)。必须与 `n_clusters` 并排读, "
+        "并且结论要写成**双条件**句式 (「更细**并且**更不碎」), 绝不可只比碎裂度本身。",
+    "Distillation accuracy measures learnability":
+        "**蒸馏准确率量的是簇标签的可学习性, 不是与人类判断的一致性。** "
+        "后者需要金标准 (第 2b 阶段) 与对抗验证 (第 2d 阶段) 才能回答 —— "
+        "一个完全自洽但与人类理解无关的划分, 同样可以拿到很高的蒸馏准确率。",
     "Open a new generation":
         "开一个新 generation 重新推导; **不要就地打补丁** — 被否决的产物本身也是证据。",
     "A partition that only exists when it can see every row":

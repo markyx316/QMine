@@ -367,3 +367,42 @@ def test_the_referee_prompt_does_not_depend_on_sibling_completion_order():
     assert "prior = (got,) if got else ()" in statements
     assert "if ci and len(group) > 1:" in statements, \
         "a single-chunk group has no earlier ruling to honour"
+
+
+def test_a_referee_typo_is_repaired_and_an_invented_class_is_refused():
+    """A malformed verdict must not become a one-row class.
+
+    live38's gold set carried five labels that are not classes in its taxonomy:
+    `LOOKUP_WORD_MEANNING`, `UNDERSPECIFIED_OR_NOICE`, `UNDDERSPECIFIED_OR_NOISE`,
+    `LOOKUP_WORD词语释义`, and a literal `LOOKUP_WORD_MEADAR = LOOKUP_WORD_MEANING`.
+    Each became its own one-row class, was dropped from cross-validation as too
+    rare, and the report told the reader it had lost 5 rows to *rarity* — a wrong
+    explanation for a typo the pipeline never checked for.
+
+    Repair the near-misses; refuse anything that is not clearly one, because a
+    guessed class is indistinguishable from a real one downstream.
+    """
+    from qmine.graph.nodes.topdown import _snap_label_to_taxonomy
+
+    codes = {"LOOKUP_WORD_MEANING", "UNDERSPECIFIED_OR_NOISE", "LOOKUP_CHAR_PRONUNCIATION"}
+
+    for typo, want in (
+        ("LOOKUP_WORD_MEANNING", "LOOKUP_WORD_MEANING"),
+        ("UNDDERSPECIFIED_OR_NOISE", "UNDERSPECIFIED_OR_NOISE"),
+        ("UNDERSPECIFIED_OR_NOICE", "UNDERSPECIFIED_OR_NOISE"),
+        ("LOOKUP_WORD_MEADAR = LOOKUP_WORD_MEANING", "LOOKUP_WORD_MEANING"),
+        ("  lookup_word_meaning  ", "LOOKUP_WORD_MEANING"),
+    ):
+        got, note = _snap_label_to_taxonomy(typo, codes)
+        assert got == want, f"{typo!r} -> {got!r}, expected {want!r}"
+        assert note, "a repaired label must say it was repaired"
+
+    got, _ = _snap_label_to_taxonomy("LOOKUP_WORD_MEANING", codes)
+    assert got == "LOOKUP_WORD_MEANING", "an exact code must pass through"
+    assert _snap_label_to_taxonomy("LOOKUP_WORD_MEANING", codes)[1] == "", \
+        "an exact code must not be announced as repaired"
+
+    for bogus in ("TOTALLY_MADE_UP_CLASS", "", "   ", "LOOKUP"):
+        got, note = _snap_label_to_taxonomy(bogus, codes)
+        assert got == "", f"{bogus!r} was accepted as {got!r} — a guess, not a repair"
+        assert note, "a refusal must say why"

@@ -68,6 +68,34 @@ def p9_panel(state: PipelineState, deps: Deps) -> dict[str, Any]:
             panel.measure(f"alpha_{a}", Ha, kmeans_labels(Ha, k, seed=cfg.seed_metric),
                           template_masks=masks, reference_labels=ref_labels, heldout=False)
 
+    # THE PANEL EXISTS TO COMPARE THE TWO ROUTES, AND IT WAS NOT DOING SO.
+    # live38 measured 11 metrics for the bottom-up leaves and exactly ONE for the
+    # top-down route — kappa, which is inter-annotator agreement on the gold set,
+    # not a property of a partition at all. So the headline claim of the whole
+    # method ("two routes, one uniform harness") was never actually delivered:
+    # nothing in the panel put the two schemes on a common axis.
+    #
+    # The top-down labels are a partition of the same 49,999 rows in the same
+    # representation, so the representation-neutral metrics apply directly.
+    # `compute_stability`/`heldout` are deliberately OFF: replay-ARI and held-out
+    # reproduction ask "does re-running the CLUSTERING land in the same place",
+    # which is undefined for labels a classifier assigned from a taxonomy. Its
+    # analogue is the classifier's own cross-validated accuracy, reported in the
+    # top-down report. Printing a blank is honest; printing a zero is not.
+    for subject, key, artifact, col in (
+        ("topdown_l1", "topdown_preds", "topdown_labels", "l1_pred"),
+        ("topdown_l2", "topdown_sub", "topdown_l2_labels", "td_l2"),
+    ):
+        vals = deps.recover(key, artifact, rebuild=lambda d, c=col: d[c].to_numpy())
+        if vals is None or len(vals) != len(H):
+            deps.emit(f"  {subject} not measurable in the panel — the two routes "
+                      f"will not be comparable in this run")
+            continue
+        codes = pd.factorize(pd.Series(vals).astype(str))[0]
+        panel.measure(subject, H, codes, template_masks=masks,
+                      reference_labels=ref_labels,
+                      compute_stability=False, heldout=False)
+
     naming = deps.load("tree_naming") if deps.has("tree_naming") else {}
     if naming.get("mean_coherence"):
         panel.add_external("leaves", "coherence", naming["mean_coherence"],
@@ -128,6 +156,28 @@ def p10_deploy(state: PipelineState, deps: Deps) -> dict[str, Any]:
     # Keys come back as strings from JSON; the column is keyed by int leaf id.
     names.update({int(k): v for k, v in
                   (deps.recover("leaf_relabels", "leaf_relabels", default={}) or {}).items()})
+
+    # EVERY DELIVERED LEAF MUST HAVE A NAME. `p7_all_leaves_named` is blocking
+    # but runs in p7, and p8 governance then changes the partition — 6 splits and
+    # 2 isolates took live38 from 29 leaves to 36, and the 7 new ones shipped
+    # nameless in 4,931 rows (9.9% of the table) while that gate read PASSED.
+    # p8 now names what it creates; this checks the partition actually delivered,
+    # so any other cause is caught too.
+    delivered = sorted({int(v) for v in np.unique(deps.leaf_labels_final())})
+    unnamed = [i for i in delivered if not str(names.get(i, "")).strip()]
+    deps.gate(
+        "p10_delivered_leaves_named", "p10",
+        passed=not unnamed,
+        observed={"n_leaves_delivered": len(delivered), "n_unnamed": len(unnamed),
+                  "unnamed_leaf_ids": unnamed[:20]},
+        threshold={"unnamed_allowed": 0},
+        message=(f"all {len(delivered)} delivered leaves carry a name" if not unnamed else
+                 f"{len(unnamed)} of {len(delivered)} DELIVERED leaves have no name "
+                 f"({unnamed[:8]}) — those rows ship with an empty name column"),
+        remediation=("A leaf reaches the delivered table without a name when a phase "
+                     "changes the partition after p7 named it. Name it where it is "
+                     "created; re-asserting the gate later only reports the loss."),
+    )
 
     clf = CentroidClassifier(centroids, final_family, names=names,
                              margin_threshold=cfg.deployment.margin_threshold,

@@ -79,7 +79,9 @@ for ax, (col, title) in zip(axes, [('stability_ari', '重播稳定性 ARI vs K  
     ax.axvline(K, color='#c0392b', ls=':', lw=1.6)
     ax.set_xlabel('K'); ax.set_title(title, fontsize=10)
     ax.grid(alpha=.25, ls=':'); ax.legend(fontsize=8)
-fig.suptitle(f'K 扫描 (6k 子样重算): 定案 K={{K}} 取自稳定性峰 — 各空间的曲线形状并不一致', fontsize=11)
+_loc = str(tri.get('locator', '')).split(' ')[0]
+_locz = {{'intent_alignment_ami': '意图对齐 AMI', 'stability_ari': '重播稳定性 ARI'}}.get(_loc, _loc or '未记录')
+fig.suptitle(f'K 扫描 (6k 子样重算): 定案 K={{K}} 由「{{_locz}}」定位, 稳定性只用于否决不可复现的 K — 各空间曲线形状并不一致', fontsize=10)
 plt.tight_layout(); SAVE(fig, 'fig1_ksweep'); plt.show()
 
 # The full-effort sweep for the chosen space, including the metric the two

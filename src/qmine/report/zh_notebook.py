@@ -71,7 +71,11 @@ rep     = J('representation');   gran = J('granularity')
 meta    = J('hierarchy_meta');   naming = J('tree_naming')
 gov     = J('governance');       dep  = J('deployment')
 panel   = J('metrics_panel')['table']
-labels  = NPY('leaf_labels');    fam  = NPY('leaf_family_final') if (GEN/'leaf_family_final.npy').exists() else NPY('leaf_family')
+# THE DELIVERED partition on both halves. `leaf_labels` is p6's, written before
+# governance splits leaves, so pairing it with `leaf_family_final` described two
+# different trees at once — 29 leaves' sizes grouped into 12 final families.
+labels  = NPY('leaf_labels_final') if (GEN/'leaf_labels_final.npy').exists() else NPY('leaf_labels')
+fam     = NPY('leaf_family_final') if (GEN/'leaf_family_final.npy').exists() else NPY('leaf_family')
 famrow  = np.asarray(fam)[labels]   # fam 是 叶→家族 的映射, famrow 是每行的家族
 df      = pd.read_parquet(GEN/'corpus.parquet')
 print(f'语料 {{len(df):,}} 条 | 家族 {{len(set(fam.tolist())):,}} | 叶 {{int(labels.max())+1}}')
@@ -250,7 +254,21 @@ print("> 是对这份样本的描述, 而不是对现象的描述。")"""))
     out.append(("code", """# %% [7] 完整家族 → 叶子清单
 sizes = np.bincount(labels, minlength=int(labels.max())+1)
 total = len(labels)
-fam_names = {f['family_id']: f.get('name_zh','') for f in naming.get('audit',{}).get('families',[])}
+# Join on leaf_ids, NOT family_id: the auditor numbers its own families (19 on
+# live38) and the partition numbers its own (12). Matching by integer id was
+# wrong for 19 of 19 and titled a family of classical-poetry leaves
+# "中考录取分数与学校排名查询".
+_aud = naming.get('audit', {}).get('families', [])
+_leafname = {int(l): f.get('name_zh', '') for f in _aud for l in (f.get('leaf_ids') or [])}
+_w = {}
+for _lid, _nm in _leafname.items():
+    if _lid < len(fam) and _nm:
+        _w.setdefault(int(fam[_lid]), {})
+        _w[int(fam[_lid])][_nm] = _w[int(fam[_lid])].get(_nm, 0) + int(sizes[_lid])
+fam_names = {}
+for _f, _nms in _w.items():
+    _r = sorted(_nms.items(), key=lambda kv: -kv[1])
+    fam_names[_f] = _r[0][0] if len(_r) == 1 else f"{_r[0][0]} 等 {len(_r)} 类"
 by_fam = {}
 for n in naming['namings']:
     by_fam.setdefault(int(fam[n['leaf_id']]), []).append(n)

@@ -272,10 +272,25 @@ def test_distillation_metric_carries_its_own_disclaimer():
 
 
 def test_panel_footnotes_state_what_the_numbers_do_not_mean():
+    """The three caveats must be present AND point the right way.
+
+    This test used to assert the literal string "negatively correlated", which
+    froze an inverted footnote in place: the panel told readers fragmentation
+    falls as clusters rise, while the sentence immediately after it explained the
+    opposite mechanism ("more clusters, more places to fragment into"). Measured
+    across live38's own panel rows the correlation is **+0.901 Pearson**.
+
+    Pinning wording rather than meaning is how a wrong caveat survives a test
+    suite, so this asserts the direction and rejects the inverted phrasing.
+    """
     notes = " ".join(UniformPanel(100, subsample=50).footnotes()).lower()
     assert "advisory" in notes
     assert "learnab" in notes
-    assert "negatively correlated" in notes
+    assert "correlated with cluster count" in notes, "the fairness caveat is gone"
+    assert "positively correlated" in notes
+    assert "negatively correlated" not in notes, (
+        "fragmentation rises with cluster count; the inverted wording is back"
+    )
 
 
 def test_an_agent_cannot_declare_its_own_prescription_executed():

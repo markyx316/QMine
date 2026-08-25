@@ -581,6 +581,85 @@ class ReportDraft(BaseModel):
     limitations: list[str] = Field(default_factory=list)
 
 
+class Observation(BaseModel):
+    severity: str = "note"                 # blocking | warn | note
+    claim: str = ""
+    artifact_key: str = ""
+    evidence: str = ""
+    would_change: str = ""
+
+
+class ObservationList(BaseModel):
+    observations: list[Observation] = Field(default_factory=list)
+    checked: list[str] = Field(default_factory=list)
+
+
+class ObserverAgent(Agent):
+    """Reads a phase's artifacts WHILE THE RUN IS STILL GOING.
+
+    It decides nothing. Every observation must cite an artifact key that really
+    exists, which `agents.observe.verified_observations` checks mechanically —
+    the same discipline as the numeric check on authored prose, for the same
+    reason: a claim that cannot be traced to an artifact is not evidence.
+    """
+
+    role = "observer"
+    prompt_name = "observer"
+    schema = ObservationList
+
+    def build_user(self, *, phase: str = "", artifacts: str = "", decisions: str = "",
+                   gates: str = "", **kw: Any) -> str:
+        parts = [f"## Phase just finished\n{phase}\n",
+                 "## Artifacts it produced\n"
+                 f"{budget_text(artifacts, 60000, tail=8000, label='artifacts')}\n"]
+        if decisions:
+            parts.append(f"## Decisions it recorded\n{budget_text(decisions, 12000, tail=2000)}\n")
+        if gates:
+            parts.append(f"## Gates it evaluated\n{budget_text(gates, 8000, tail=1500)}\n")
+        return "\n".join(parts)
+
+
+class Interpretation(BaseModel):
+    reading: str = ""
+    caveats: list[str] = Field(default_factory=list)
+    unavailable: list[str] = Field(default_factory=list)
+
+
+class InterpreterAgent(Agent):
+    """Explains ONE result. Every number it writes is checked against the sheet.
+
+    Deliberately narrow. A whole-report author has to be trusted across thousands
+    of words; an interpreter answers one question with a bounded fact sheet, and
+    `agents.verify.check_numbers` can decide mechanically whether it stayed inside
+    it. See `agents/interpret.py` for the rejection-and-retry loop.
+    """
+
+    role = "interpreter"
+    prompt_name = "interpreter"
+    schema = Interpretation
+
+    def build_user(self, *, question: str = "", facts: str = "", context: str = "",
+                   language: str = "zh", rejected: str = "", **kw: Any) -> str:
+        parts = [
+            f"## Report language\nWrite `reading` and `caveats` in: {language}\n",
+            f"## The question\n{question}\n",
+            "## Fact sheet — THE ONLY NUMBERS YOU MAY USE\n"
+            f"{budget_text(facts, 24000, tail=4000, label='fact sheet')}\n",
+        ]
+        if context:
+            parts.append("## Context from the run's artifacts\n"
+                         f"{budget_text(context, 30000, tail=5000, label='context')}\n")
+        if rejected:
+            # External feedback naming the exact failure. Re-asking without it
+            # is intrinsic self-correction, which degrades rather than improves.
+            parts.append(
+                "## YOUR PREVIOUS ANSWER WAS REJECTED\n"
+                "These numbers are not in the fact sheet. Remove them, or replace "
+                "them with a value that is in the sheet, or say the number is not "
+                f"available:\n{rejected}\n")
+        return "\n".join(parts)
+
+
 class ReporterAgent(Agent):
     role = "reporter"
     prompt_name = "reporter"
@@ -629,6 +708,8 @@ ALL_ROLES = {
     "namer": NamerAgent,
     "tree_auditor": AuditorAgent,
     "risk_sentinel": RiskSentinelAgent,
+    "observer": ObserverAgent,
+    "interpreter": InterpreterAgent,
     "reporter": ReporterAgent,
     "maintainer": MaintainerAgent,
 }

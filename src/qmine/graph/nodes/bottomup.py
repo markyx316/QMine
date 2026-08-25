@@ -10,6 +10,7 @@ import numpy as np
 from ...config import alpha_sweep_k_for
 from ...determinism import hash_texts
 from ...ops.stats import proportion_gate
+from ...agents.observe import observe_phase
 from ...ops.cluster import (
     partition_stability,
     algorithm_battery,
@@ -170,6 +171,8 @@ def p3_represent(state: PipelineState, deps: Deps) -> dict[str, Any]:
             f"P3c: silhouette would have chosen alpha={sweep['silhouette_would_have_chosen']} "
             "— overruled by design (Principle 3)"
         )
+    if deps.cfg.observe_phases and not deps.cfg.fast_mode:
+        observe_phase(deps, "p3", {"representation": deps.load("representation")}, decisions=decisions)
     return {
         "phase": "p4",
         "artifacts": {"emb_base": emb_ref, "emb_svd_char": svd_ref, "emb_hybrid": hyb_ref,
@@ -226,6 +229,8 @@ def p4_battery(state: PipelineState, deps: Deps) -> dict[str, Any]:
             f"P4: density methods held back for the novelty sentinel "
             f"(best HDBSCAN: {d['noise_rate'] * 100:.0f}% noise, {d['n_clusters']} clusters)"
         )
+    if deps.cfg.observe_phases and not deps.cfg.fast_mode:
+        observe_phase(deps, "p4", {"battery": deps.load("battery")}, decisions=[decision])
     return {
         "phase": "p5",
         "artifacts": {"battery": ref},
@@ -291,6 +296,8 @@ def p5_granularity(state: PipelineState, deps: Deps) -> dict[str, Any]:
         events.append(f"P5: estimators did NOT converge — {tri['divergence_note']}")
     if tri["silhouette_disagrees"]:
         events.append(f"P5: silhouette peaks at K={tri['estimates']['silhouette_peak_k']} — advisory only")
+    if deps.cfg.observe_phases and not deps.cfg.fast_mode:
+        observe_phase(deps, "p5", {"granularity": deps.load("granularity")}, decisions=[decision])
     return {
         "phase": "p6",
         "artifacts": {"granularity": ref},
@@ -456,6 +463,8 @@ def p6_hierarchy(state: PipelineState, deps: Deps) -> dict[str, Any]:
         ),
         warn_only=verdict["verdict"] == "underpowered",
     )
+    if deps.cfg.observe_phases and not deps.cfg.fast_mode:
+        observe_phase(deps, "p6", {"hierarchy_meta": deps.load("hierarchy_meta")}, decisions=[])
     return {
         "phase": "p7",
         "artifacts": artifacts,

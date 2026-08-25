@@ -12,7 +12,13 @@ from __future__ import annotations
 #: Deliverables default to Chinese, so the bottom-up report ships under its
 #: Chinese name. Tests assert the *contract* (the report exists and states its
 #: limits), not the language it happens to be written in.
+# The test config runs `report_language: zh`, so every deliverable carries its
+# Chinese filename. Until this release only the bottom-up report honoured the
+# setting; the other three shipped English on a zh run.
 BOTTOMUP_REPORT = "自下而上聚类最终报告.md"
+TOPDOWN_REPORT = "自上而下类目体系最终报告.md"
+PANEL_REPORT = "统一度量面板.md"
+LEAF_CATALOGUE = "叶清单.md"
 
 import json
 from pathlib import Path
@@ -73,7 +79,7 @@ def test_core_artifacts_exist_on_disk(completed_run):
                  "hierarchy_meta.json", "tree_naming.json", "governance.json",
                  "metrics_panel.json", "labels_full.csv", "deployment.json",
                  "maintenance.json", BOTTOMUP_REPORT,
-                 "Report_TopDown_Approach.md", "Leaf_Catalogue.md"):
+                 TOPDOWN_REPORT, PANEL_REPORT, LEAF_CATALOGUE):
         assert (gen / name).exists(), f"{name} not produced"
 
 
@@ -135,7 +141,7 @@ def test_decisions_record_what_was_rejected(completed_run):
 def test_reports_carry_the_provenance_note(completed_run):
     """An offline run must say so in every report it writes."""
     gen = Path(completed_run["summary"]["artifact_root"])
-    for name in (BOTTOMUP_REPORT, "Report_TopDown_Approach.md"):
+    for name in (BOTTOMUP_REPORT, TOPDOWN_REPORT):
         text = (gen / name).read_text()
         assert (
             "offline heuristic" in text.lower()
@@ -330,3 +336,173 @@ def test_every_authored_rationale_reaches_the_reader_in_the_report_language(comp
     assert prose("Low kappa means the guide is ambiguous, whatever follows") != \
         "Low kappa means the guide is ambiguous, whatever follows"
     assert prose("a string nobody has translated") == "a string nobody has translated"
+
+
+def test_every_delivered_leaf_carries_a_name(completed_run):
+    """A leaf created AFTER p7 named the partition still reaches the reader.
+
+    `p7_all_leaves_named` is blocking and it passed on live38 — "all 29 leaves
+    named" — while the delivered table carried 36 leaves and **4,931 rows (9.9%)
+    had an empty name**, because p8 governance ran 6 `split_leaf` and 2
+    `isolate_leaf` prescriptions afterwards and `p10_deliver` builds its name
+    column from p7's namings plus renames only. A gate placed before the
+    operation that invalidates it guarantees nothing.
+
+    This asserts on the table the reader actually receives. NOTE it is a guard for
+    LIVE runs only: the offline stand-in never issues a `split_leaf`, so this
+    passes with the fix disabled (verified). The load-bearing tests that can
+    actually fail are in `test_governance_naming.py`.
+    """
+    import pandas as pd
+
+    df = pd.read_csv(Path(completed_run["summary"]["artifact_root"]) / "labels_full.csv")
+    unnamed = df[df["bu_leaf_name"].isna() | (df["bu_leaf_name"].astype(str).str.strip() == "")]
+    assert unnamed.empty, (
+        f"{len(unnamed)} of {len(df)} delivered rows have no leaf name "
+        f"(leaves {sorted(unnamed['bu_leaf'].unique())[:10]})"
+    )
+    assert df["bu_leaf"].nunique() == df.groupby("bu_leaf")["bu_leaf_name"].nunique().sum(), \
+        "a leaf id maps to more than one name"
+
+
+def test_the_chinese_report_does_not_contradict_its_own_metrics_table(completed_run):
+    """Self-consistency of the shipped document: the executive summary's
+    "N 家族 / M 叶" must equal the 簇数 row of the table below it.
+
+    A LIVE-run guard — offline never splits, so pre- and post-governance counts
+    coincide and this cannot fail there. `test_the_reported_shape_is_the_delivered_shape`
+    is the one that can.
+    """
+    import re
+
+    md = (Path(completed_run["summary"]["artifact_root"]) / "自下而上聚类最终报告.md").read_text()
+    summary = re.search(r"\*\*(\d+) 家族 / (\d+) 叶\*\*", md)
+    assert summary, "executive summary no longer states the shape"
+    row = re.search(r"^\| 簇数.*?\|\s*(\d+)\s*\|\s*\*\*(\d+)\*\*\s*\|\s*(\d+)\s*\|", md, re.M)
+    assert row, "metrics table no longer carries a 簇数 row"
+    assert (summary.group(1), summary.group(2)) == (row.group(2), row.group(3)), (
+        f"summary says {summary.group(1)}家族/{summary.group(2)}叶 but the table says "
+        f"{row.group(2)}/{row.group(3)}"
+    )
+
+
+def test_every_report_is_written_in_the_configured_language(completed_run):
+    """`report_language: zh` must reach EVERY deliverable, not just one.
+
+    Only the bottom-up report and the notebook ever branched on the setting.
+    `Report_Uniform_Panel.md` shipped 0% Chinese, `Report_TopDown_Approach.md`
+    38% and `Leaf_Catalogue.md` 62% — on a run configured `zh`. The top-down
+    route is half the methodology and it reached a Chinese reader in English.
+
+    The check is on SECTION HEADINGS, not on the document's character mix. A
+    character-share bar cannot separate the two cases: measured on live38 the
+    English catalogue was 61.9% Han (its leaf names come from the namer and are
+    Chinese) while the genuinely Chinese bottom-up report was only 46.9% (it
+    quotes metric names and class codes). Headings are pure authored scaffolding
+    with no agent content, and they separate the two perfectly — 0 English
+    headings in all four correct reports, 7 / 11 / 14 in the three English ones.
+    """
+    import re
+
+    gen = Path(completed_run["summary"]["artifact_root"])
+    for name in (BOTTOMUP_REPORT, TOPDOWN_REPORT, PANEL_REPORT, LEAF_CATALOGUE):
+        english = []
+        for line in (gen / name).read_text().splitlines():
+            if not re.match(r"^#{1,3} ", line):
+                continue
+            body = re.sub(r"^#+ ", "", line)
+            # A heading of pure codes/numbers is fine; one with real English words
+            # and no Han character is untranslated scaffolding.
+            if not re.search(r"[\u4e00-\u9fff]", body) and re.search(r"[A-Za-z]{3}", body):
+                english.append(body[:60])
+        assert not english, (
+            f"{name} has {len(english)} untranslated headings: {english[:3]}"
+        )
+
+
+def test_a_family_is_named_after_the_leaves_it_actually_contains(completed_run):
+    """The auditor's `family_id` is not the partition's, and joining them broke.
+
+    `tree_naming["audit"]["families"]` numbers its own families — 19 of them on
+    live38 — while the partition had 10 pre-governance and 12 final. Looking a
+    partition family up by integer id matched a different family for **19 of 19**,
+    and the shipped catalogue titled a family of four classical-poetry leaves
+    "中考录取分数与学校排名查询" (high-school admission scores). Every family
+    heading in the delivered document was wrong.
+
+    The join must go through `leaf_ids`.
+    """
+    import json
+
+    import numpy as np
+
+    from qmine.report._shape import family_names
+
+    gen = Path(completed_run["summary"]["artifact_root"])
+    naming = json.loads((gen / "tree_naming.json").read_text())
+    # `*_final.npy` only exists when governance actually changed the partition,
+    # which the offline stand-in never does.
+    def _arr(final: str, base: str):
+        return np.load(gen / (final if (gen / final).exists() else base))
+
+    fam = _arr("leaf_family_final.npy", "leaf_family.npy")
+    labels = _arr("leaf_labels_final.npy", "leaf_labels.npy")
+    sizes = np.bincount(labels, minlength=len(fam))
+
+    names = family_names(naming, fam, sizes)
+    audit = (naming.get("audit") or {}).get("families") or []
+    if not audit or not any(f.get("leaf_ids") for f in audit):
+        pytest.skip("this run's auditor produced no family groupings to join on")
+
+    assert names, "no family could be named at all"
+    # Every name must be traceable to a leaf that is actually in that family.
+    by_leaf = {int(l): str(f.get("name_zh") or "")
+               for f in audit for l in (f.get("leaf_ids") or [])}
+    for fid, label in names.items():
+        members = [l for l in by_leaf if l < len(fam) and int(fam[l]) == fid]
+        assert members, f"family {fid} was named {label!r} with no member leaves"
+        assert any(by_leaf[l] and by_leaf[l] in label for l in members), (
+            f"family {fid} is titled {label!r}, which is not the audit name of any "
+            f"leaf it contains ({sorted({by_leaf[l] for l in members})})"
+        )
+    assert len(set(names.values())) == len(names), \
+        f"two partition families share a title, so a reader cannot tell them apart: {names}"
+
+
+def test_the_report_names_the_metric_that_actually_located_k(completed_run):
+    """The K label must name the locator, not a metric that only rejects.
+
+    `test_k_is_located_by_intent_alignment_and_only_filtered_by_stability` guards
+    the CODE, and the code was right — `locator` reads `intent_alignment_ami`.
+    The LABEL contradicted it in three shipped places, because the estimate was
+    stored under the key `stability_peak_k`: the report printed
+    「稳定性峰 K (主证据)」 and fig1's title read 「定案 K=10 取自稳定性峰」.
+
+    On live38 that was not merely mis-worded, it was false: the true stability
+    peak was k=8 (ARI 0.9191) and the delivered k=10 ranked **9th of 14** on
+    stability. A reader was told the headline granularity decision rested on the
+    one metric the code, the artifact and a passing test all say cannot rank K.
+    """
+    import json
+
+    gen = Path(completed_run["summary"]["artifact_root"])
+    gran = json.loads((gen / "granularity.json").read_text())
+    tri = gran.get("triangulation", {})
+    locator = str(tri.get("locator", ""))
+    assert locator, "the granularity artifact no longer records what located K"
+
+    md = (gen / BOTTOMUP_REPORT).read_text()
+    if locator.startswith("intent_alignment_ami"):
+        assert "稳定性峰 K" not in md, (
+            "the report credits the stability peak for a K located by intent alignment"
+        )
+        # and the sweep must actually disagree, or the claim would be harmless
+        sweep = gran.get("k_sweep") or tri.get("k_sweep") or []
+        if sweep and all(r.get("stability_ari") is not None for r in sweep):
+            peak = max(sweep, key=lambda r: r["stability_ari"])["k"]
+            chosen = tri.get("chosen_family_k")
+            if peak != chosen:
+                assert "意图对齐" in md, (
+                    f"K={chosen} was located by AMI while the stability peak is "
+                    f"K={peak}; the report must say which one chose"
+                )

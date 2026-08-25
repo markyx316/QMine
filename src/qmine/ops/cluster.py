@@ -543,7 +543,16 @@ def triangulate_k(
     da_family = deep_aligned["k_estimate"] / max(leaf_ratio, 1)
     lo, hi = expert_range
     estimates = {
-        "stability_peak_k": peak["k"],
+        # NAMED AFTER WHAT ACTUALLY LOCATED IT. This key used to be
+        # `stability_peak_k`, and both the report label ("稳定性峰 K (主证据)") and
+        # fig1's title ("定案 K 取自稳定性峰") inherited that name — while
+        # `locator` three lines above says `intent_alignment_ami` and
+        # `test_k_is_located_by_intent_alignment_and_only_filtered_by_stability`
+        # enforces it. On live38 the true stability peak was k=8; the delivered
+        # k=10 ranks 9th of 14 on stability. The code was right and the label
+        # contradicted it in three shipped places.
+        "located_k": peak["k"],
+        "located_by": locator,
         "deep_aligned_leaf_k": deep_aligned["k_estimate"],
         "deep_aligned_implied_family_k": round(da_family, 1),
         "expert_range": [lo, hi],

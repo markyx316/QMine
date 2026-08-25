@@ -265,6 +265,11 @@ class GateConfig(BaseModel):
             "p6_heldout_reproduction",
             "p7_all_leaves_named",
             "p8_governance_executed",
+            # p7_all_leaves_named runs BEFORE governance changes the partition, so
+            # it cannot see the leaves p8 creates. live38 passed it with 29 leaves
+            # and delivered 36, 4,931 rows nameless. This one reads the table the
+            # reader receives.
+            "p10_delivered_leaves_named",
         ]
     )
     #: Human sign-off points (Principle 2 — the reviewer holds a veto).
@@ -385,6 +390,19 @@ class QMineConfig(BaseModel):
 
     #: Skip the expensive optional phases when smoke-testing the wiring.
     fast_mode: bool = False
+    #: Run a second-opinion agent over each bottom-up phase's artifacts while the
+    #: run is still going. Measured on live38, the bottom-up path used 36 of 966
+    #: agent calls (3.7%) and none before P7 — every representation, algorithm, K
+    #: and hierarchy decision was made with no agent looking at it. The observer
+    #: decides nothing; it cites artifact keys and can fail a gate. Off in
+    #: `fast_mode` so the demo stays cheap.
+    observe_phases: bool = True
+    #: Let an agent write the "what this means for THIS corpus" sentences in the
+    #: deliverables. Every number it writes is checked against a fact sheet built
+    #: from artifacts, and an unverifiable one is rejected and re-asked; after
+    #: three failures the section ships with no commentary rather than unchecked
+    #: commentary. Off in `fast_mode`.
+    interpret_results: bool = True
     offline: bool = Field(
         default=False, description="No network: hashing encoder + mock LLM."
     )

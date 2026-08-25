@@ -12,65 +12,104 @@
 
 ---
 
-## 1. Status — last updated 2026-08-24 (23:00)
+## 1. Status — last updated 2026-08-25
 
-# THE PIPELINE COMPLETED. All 17 phases, all 8 gates, real agents.
-
-| | |
-|---|---|
-| Tests | **294 passing**; `ruff --select F src/qmine/` clean |
-| `live38` gen06 | **17/17 phases, halted=False, 8/8 gates passed, 57.2 min, $1.10** |
-| Provenance | `llm_usage.provider = routed` — real agents, not the offline stand-in |
-| Deliverables | `runs/live38/gen06/` — Chinese report + executed notebook + 3 English reports |
-
-### The first complete run, and what it produced
-
-```
-runs/live38/gen06/
-  自下而上聚类最终报告.md     38,913 chars, Chinese, gate ledger shows real numbers
-  自下而上聚类全流程.ipynb    executed, 0 cell errors, 7 figures generated live
-  Report_TopDown_Approach.md  (English by design)
-  Report_Uniform_Panel.md     (English by design)
-  Leaf_Catalogue.md
-```
-
-**Headline numbers, all to be read against the p2b gate's own caveat — kappa
-0.822 with ~0.10 of residual slack, so these are accuracies against a gold set
-two annotators agreed on 82% of the time, not against ground truth:**
+# THE RUN COMPLETED, AND THEN READING ITS DELIVERABLES FOUND 9 DEFECTS. All fixed.
 
 | | |
 |---|---|
-| taxonomy | 22 L1 intents, 50 rules |
-| gold set | 6,000 rows, 465 referee adjudications |
-| classifier | CV accuracy **0.852**, macro-F1 0.771, ECE 0.023 out-of-fold |
-| adversary | **0.953** survived attack, coverage 100% |
-| clustering | 10 families / 29 leaves, held-out reproduction **98.0%** (n=10,000) |
-| L2 | 5 of 21 classes rule-dependent |
-| naming | 29/29 leaves named, blind coherence 3.59/5 |
-| governance | 15 prescriptions executed, 2 explicitly declined |
+| Tests | **304 passing** (was 294); `ruff --select F src/qmine/` clean |
+| `live38` gen06 | 17/17 phases, halted=False, 57.2 min, $1.10, `provider = routed` |
+| Deliverables | **all four now honour `report_language: zh`** — three used to ship English |
 
-### Tomorrow
+### What live38 gen06 ACTUALLY delivered
 
-The run is DONE — nothing is waiting. Start by reading the deliverables and
-checking their claims:
+The numbers previously recorded here were the **pre-governance** ones. p8 rewrote
+the partition after p6 measured it and p7 named it:
 
-```bash
-cd QMine
-open runs/live38/gen06/自下而上聚类最终报告.md
-jupyter notebook runs/live38/gen06/自下而上聚类全流程.ipynb   # 7 figures — LOOK at them
-qmine inspect live38 --generation 6 --what gates
-```
+| | recorded before | actually delivered |
+|---|---|---|
+| families | 10 | **12** |
+| leaves | 29 | **36** |
+| leaves named | "29/29" | **29 of 36** — 4,931 rows (9.9%) shipped nameless |
+| gold set | 6,000 rows | **6,200** rows, 3 provenances; **5,534 (89.3%)** usable |
+| adjudications | 465 | 483 sent to the referee, **465 returned** — 18 unresolved |
 
-Highest-value next steps, in order:
-1. **Read the figures and the report critically.** This is the first time these
-   have ever been produced from live agents; the reference deliverables
-   (`BottomUp_Approach_Final_Report.md`) set the bar for depth.
-2. **`§2` open questions** — the mixed-provenance gold set (item 6), `then`
-   carrying prose (5f), the catch-all threshold (5d).
-3. **Top-down/bottom-up concurrency** (§8) — now safe to build, because there is
-   finally a known-good complete baseline to regress against.
+Unchanged and correct: classifier CV **0.852**, macro-F1 0.771, ECE 0.023
+out-of-fold; adversary **0.953** at 100% coverage over n=150; κ **0.8221** on
+2,991/3,000 (±0.0074); blind coherence 3.59/5; 15 prescriptions executed, 2 declined.
 
----
+### Defects fixed this session (nine from reading, plus these from the audit)
+
+From reading the deliverables: unnamed delivered leaves; a blocking gate placed
+before the operation that invalidates it; a report contradicting its own table;
+pre/post-governance mixing in report and notebook; **every family heading wrong**
+(auditor `family_id` is a different namespace — 19 of 19 mismatched); the panel
+never comparing the two routes; three of four reports in English on a `zh` run;
+`guide_repair.comparable` computed as `prev_n == n`; false model provenance.
+
+From the 74-agent audit, **independently re-verified before acting**:
+
+| defect | evidence |
+|---|---|
+| **A split leaves the name on the wrong half** | leaf 8 keeps 「汉字拼音查询」 with 0/122 pinyin rows; leaf 23 the same. Retained-fraction 0.34 and 0.25. Both halves now re-named. |
+| **Referee typos became one-row classes** | `LOOKUP_WORD_MEANNING`, `UNDERSPECIFIED_OR_NOICE`, … 5 rows dropped and explained to the reader as *rarity*. Now snapped or refused. |
+| **Panel footnote sign inverted** | said fragmentation falls as k rises; measured **+0.901 Pearson**. A test pinned the wrong wording. |
+| **Panel footnote overclaimed the sub-sample** | only 3 of 10 metrics used it; 6 ran on all 49,999. |
+| **fig1 credited the stability peak for K** | locator is `intent_alignment_ami`; true stability peak is k=8 and k=10 ranks 9th of 14. Key was literally named `stability_peak_k`. |
+| ADULT_OR_ABUSE_RISK | a safety class with F1 exactly 0.000 at n=9, presented as working. |
+| battery "falsification" | reference == best alternative == `kmeans_k15`, gap 0.0. |
+| 813 of 1,499 risk rows | sit in leaves the catalogue calls unflagged; `risk_screen` never reaches the report. |
+| rule count | report says 50; the guide that shipped carries 132. |
+| min leaf size | stated 150; delivered leaves of 104 and 122. |
+
+Not confirmed on re-check: "no family merge took effect" (the merge map shows six
+real remappings — what is true is that the 10→12 rise comes only from the two
+isolations, and every prescription carries an identical batch-level delta).
+
+### The one new methodology result
+
+With both routes finally on one harness, **top-down L1 fragments phrasing families
+less than bottom-up does at any granularity**: 1.319 at k=22, below bottom-up's
+1.761 at k=10, on a curve that otherwise rises monotonically with k (10→12→36
+gives 1.761→1.900→2.479). Finer AND less fragmented — not a granularity trade.
+It edges ahead on NMI too (0.3246 vs 0.3218 / 0.3188). See
+`qmine-panel-never-compared-the-routes` in auto-memory.
+
+### Agents now enter the pipeline in three places (new this session)
+
+Measured first: on live38 the **bottom-up path used 36 of 966 agent calls (3.7%)**,
+all in P7 — every representation, algorithm, K and hierarchy decision was made
+with no agent looking, and **0 calls wrote any report**. Three doors added, each
+with a mechanical guardrail, none able to change a parameter:
+
+1. **`agents/verify.py` + `interpret.py`** — authored prose in the deliverable.
+   Every number must be in a fact sheet built from artifacts; rejection re-asks
+   with the offending values quoted back; three failures ⇒ the section ships with
+   no commentary. Counts exact, percentages may round, `%` matched only to shares.
+2. **`agents/observe.py`** — a phase observer over p3/p4/p5/p6. Every claim must
+   cite an artifact key that resolves; uncited claims are dropped. Records a gate;
+   **warns, never halts** (a false positive must not kill a paid run).
+3. Prescriptions — the existing settled-or-fail ledger.
+
+Grounding: intrinsic self-correction degrades without external feedback (Huang
+et al., ICLR 2024), and LLM judges are dominated by *style* bias (~0.76–0.92, far
+above position bias) — so nothing here asks a model to rate quality; it asks
+arithmetic questions against artifacts.
+
+**Known limit, stated in the module:** the numeric check is value-level. It
+catches invented numbers and share/count confusion, not a real number attached to
+the wrong quantity. Mitigation is structural — keep fact sheets small.
+
+### Next
+
+
+- A **fresh live run** is now worth it: every fix above changes the deliverables,
+  and gen06's artifacts still carry all nine defects.
+- `converged=False` in `hierarchy_meta` is a **limit cycle**, not divergence: the
+  refinement alternates one merge and one split every round, 28↔29 leaves, with
+  `moved_fraction` decaying 0.092→0.018. It stopped at the round cap, so the
+  delivered leaf count is arbitrary between 28 and 29. Not yet addressed.
 
 ## 2. Open questions — EDIT THIS SECTION, DO NOT APPEND
 

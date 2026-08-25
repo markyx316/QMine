@@ -28,6 +28,7 @@ from typing import Any
 import numpy as np
 
 from .i18n import decision_question, num, pct, prose, stars, vocab
+from ._shape import delivered_shape, family_names
 
 
 def _t(d: dict[str, Any] | None, *path: str, default: Any = None) -> Any:
@@ -55,8 +56,13 @@ def build(state: Any, deps: Any, figs: dict[str, Any]) -> str:
     n_rows = len(df)
     alpha = state.get("chosen_alpha", 0.0)
     encoder = state.get("chosen_encoder", "?")
-    n_fam = _t(meta, "n_families", default="?")
-    n_leaf = _t(meta, "n_leaves", default="?")
+    # THE SUMMARY MUST DESCRIBE THE TREE THAT SHIPS. `hierarchy_meta` is written in
+    # p6, BEFORE governance changes the partition, so reading it here printed
+    # "after blind naming and audit merging: 10 families / 29 leaves" for a run
+    # that delivered 12 and 36 — contradicting this report's own metrics table
+    # three lines below, which reads the panel. The panel measures the partition
+    # it labels, so take the counts from there and fall back only if it is absent.
+    n_fam, n_leaf = delivered_shape(panel, meta)
     gen_dir = Path(deps.store.gen_dir).name
 
     # ---------------------------------------------------------------- header
@@ -256,7 +262,14 @@ def build(state: Any, deps: Any, figs: dict[str, Any]) -> str:
     tri = _t(gran, "triangulation", default={})
     if tri.get("estimates"):
         L += ["三条**独立**路线估计家族尺度, 收敛才定案:", "", "| 估计来源 | 数值 |", "|---|---|"]
-        label = {"stability_peak_k": "稳定性峰 K (主证据)",
+        _loc_zh = {"intent_alignment_ami": "意图对齐 AMI",
+                   "stability_ari": "重播稳定性 ARI"}
+        _by = str(tri.get("locator", "")).split(" ")[0]
+        _by_zh = _loc_zh.get(_by, _by or "未记录")
+        label = {"located_k": f"由「{_by_zh}」定位的 K (主证据)",
+                 # Artifacts written before the rename. The name was wrong, so it
+                 # is NOT reproduced here verbatim.
+                 "stability_peak_k": f"由「{_by_zh}」定位的 K (主证据)",
                  "deep_aligned_leaf_k": "DeepAligned 过聚类存活 (叶尺度)",
                  "deep_aligned_implied_family_k": "↑ 折算家族尺度",
                  "expert_range": "领域先验区间", "silhouette_peak_k": "silhouette 峰 (仅参考)"}
@@ -316,7 +329,25 @@ def build(state: Any, deps: Any, figs: dict[str, Any]) -> str:
             L.append(f"| {h['round']} | {h['merges']} | {h['splits']} | "
                      f"{pct(h['moved_fraction'],2)} | {h['n_leaves']} | {num(h['silhouette'])} |")
         L.append("")
-    L.append(_fig(figs, "fig_refinement", "精化收敛轨迹: 以「移动停止」为准, 而非固定轮数"))
+        L += _refinement_verdict(hist, meta, deps)
+        # An agent explains THIS run's convergence behaviour. The fact sheet is
+        # deliberately tiny — only the numbers this one question needs — because
+        # the numeric check is value-level and a small sheet leaves few wrong
+        # values to reach for. See `agents/verify.py`.
+        L += _agent_reading(
+            deps,
+            "这次迭代精化没有收敛。请解释它是怎么没收敛的, 以及这对交付的叶数意味着什么。"
+            "特别注意: 叶数在两个值之间反复, 而每轮移动的行数在单调下降。",
+            {"rounds": len(hist),
+             "first_moved_fraction": hist[0].get("moved_fraction"),
+             "last_moved_fraction": hist[-1].get("moved_fraction"),
+             "tolerance": deps.cfg.clustering.refine_move_tolerance,
+             "leaves_min": min(h["n_leaves"] for h in hist),
+             "leaves_max": max(h["n_leaves"] for h in hist),
+             "leaves_final": hist[-1]["n_leaves"]},
+            context=json.dumps(hist, ensure_ascii=False),
+            label="本轮解读")
+    L.append(_fig(figs, "fig_refinement", "精化收敛轨迹"))
 
     hr = _t(meta, "heldout_reproduction", default={})
     if hr:
@@ -462,6 +493,77 @@ def build(state: Any, deps: Any, figs: dict[str, Any]) -> str:
 
 # --------------------------------------------------------------------------
 
+
+
+def _agent_reading(deps: Any, question: str, facts: dict[str, Any],
+                   *, context: str = "", label: str = "解读") -> list[str]:
+    """Ask an agent to explain one result; ship nothing if it cannot be verified.
+
+    This is where authored prose enters the deliverable. Until now the reports
+    were pure templating — 0 of live38's 966 agent calls went to writing one —
+    which is why nine defects survived into a shipped document that read fluently
+    and no one had checked. A template cannot say "this particular corpus did an
+    unusual thing"; that is the sentence a reader needs and the one only a reader
+    of the actual numbers can write.
+
+    The safety is not trust. `interpret()` rejects any number outside the fact
+    sheet, re-asks with the offending values quoted back, and returns nothing
+    after three failures — so the worst case is a section without commentary,
+    never a section with confident invented commentary.
+    """
+    try:
+        from ..agents.interpret import interpret
+    except Exception:  # noqa: BLE001
+        return []
+    if not getattr(deps.cfg, "interpret_results", True) or deps.cfg.fast_mode:
+        return []
+    try:
+        got = interpret(deps, question, facts, context=context,
+                        language=deps.cfg.report_language, suffix="_report")
+    except Exception as exc:  # noqa: BLE001
+        deps.emit(f"  interpretation unavailable: {type(exc).__name__}")
+        return []
+    md = got.as_markdown(label)
+    return [md, ""] if md else []
+
+def _refinement_verdict(hist: list, meta: dict, deps: Any) -> list[str]:
+    """Say whether the loop converged, and if not, HOW it failed to.
+
+    The table showed 29 / 28 / 29 / 28 / 29 leaves and the caption underneath said
+    the loop is judged "by movement stopping, not by a fixed round count" — which
+    is exactly what did NOT happen: `converged` was False and it stopped at the
+    round cap. A reader cannot tell an oscillation from a divergence from a table
+    of counts, and the two mean opposite things about the delivered tree.
+    """
+    tol = deps.cfg.clustering.refine_move_tolerance
+    last = hist[-1]
+    if _t(meta, "converged", default=None):
+        return [f"> ✅ **已收敛**: 末轮移动 {pct(last['moved_fraction'], 2)} < 判据 "
+                f"{tol:.1%}, 迭代自行停止。", ""]
+
+    counts = [h["n_leaves"] for h in hist]
+    tail = counts[-4:]
+    oscillating = len(set(tail)) == 2 and all(
+        tail[i] != tail[i + 1] for i in range(len(tail) - 1))
+    out = [f"> ⚠️ **未收敛**: 末轮仍移动 {pct(last['moved_fraction'], 2)}, "
+           f"未达到 {tol:.1%} 的判据 — 迭代是**用满轮数上限后停下的**, "
+           "不是自行停下的。", ""]
+    if oscillating:
+        a, b = sorted(set(tail))
+        out += [f"更具体地说, 这是一个**极限环**而不是发散: 叶数在 {a} 与 {b} 之间反复 "
+                f"({' → '.join(str(c) for c in counts)}), 每轮一合一拆, "
+                f"而移动比例本身是**单调下降**的 "
+                f"({pct(hist[0]['moved_fraction'], 2)} → {pct(last['moved_fraction'], 2)})。"
+                "也就是说整体结构已经稳定, 只有**一条边界**在两种划法之间来回。", "",
+                f"**这对交付物意味着什么**: 最终叶数 ({counts[-1]}) 取决于迭代"
+                f"停在第几轮, 在 {a} 与 {b} 之间是**任意的**。该边界两侧的簇不应被当作"
+                "确定的划分来解读; 其余部分不受影响 —— 请对照 held-out 复现率与重播 ARI, "
+                "两者都很高, 说明动摇的只是这一处。", ""]
+    else:
+        out += ["叶数没有呈现出规律性的振荡, 因此这更可能是**判据设得过严**或"
+                "**轮数上限过低**, 而不是某一条边界不稳。可提高上限重跑一次以区分二者。", ""]
+    return out
+
 def _fig(figs: dict[str, Any], name: str, caption: str) -> str:
     if name not in figs:
         return ""
@@ -484,16 +586,23 @@ def _tree_listing(deps: Any, naming: dict, meta: dict) -> list[str]:
     if not namings:
         return [vocab("zh")["no_data"]]
     try:
-        labels = deps.load("leaf_labels")
+        # The DELIVERED partition, not p6's. Loading `leaf_labels` here paired
+        # pre-governance leaf sizes (29 leaves) with post-governance families
+        # (12), so the two halves of every row described different trees.
+        labels = deps.leaf_labels_final()
         fam = deps._cache.get("leaf_family_final")
         if fam is None:
             fam = deps.load("leaf_family_final") if deps.has("leaf_family_final") else deps.load("leaf_family")
-        sizes = np.bincount(labels, minlength=len(namings))
+        sizes = np.bincount(labels, minlength=max(len(namings), len(fam)))
         total = len(labels)
     except Exception:
         return [vocab("zh")["no_data"]]
 
-    fam_names = {f["family_id"]: f.get("name_zh", "") for f in _t(naming, "audit", "families", default=[])}
+    # Join on leaf_ids, NOT on family_id: the auditor numbers its own families
+    # (19 of them on live38) and the partition numbers its own (10 pre / 12
+    # final). Matching by integer id mismatched 19 of 19 and shipped a family of
+    # four classical-poetry leaves titled "中考录取分数与学校排名查询".
+    fam_names = family_names(naming, fam, sizes)
     by_fam: dict[int, list[dict]] = {}
     for n in namings:
         lid = n["leaf_id"]
@@ -520,15 +629,22 @@ def _leaf_catalogue(deps: Any, naming: dict, meta: dict) -> list[str]:
     if not namings:
         return [vocab("zh")["no_data"]]
     try:
-        labels = deps.load("leaf_labels")
+        # The DELIVERED partition, not p6's. Loading `leaf_labels` here paired
+        # pre-governance leaf sizes (29 leaves) with post-governance families
+        # (12), so the two halves of every row described different trees.
+        labels = deps.leaf_labels_final()
         fam = deps._cache.get("leaf_family_final")
         if fam is None:
             fam = deps.load("leaf_family_final") if deps.has("leaf_family_final") else deps.load("leaf_family")
-        sizes = np.bincount(labels, minlength=len(namings))
+        sizes = np.bincount(labels, minlength=max(len(namings), len(fam)))
     except Exception:
         return [vocab("zh")["no_data"]]
 
-    fam_names = {f["family_id"]: f.get("name_zh", "") for f in _t(naming, "audit", "families", default=[])}
+    # Join on leaf_ids, NOT on family_id: the auditor numbers its own families
+    # (19 of them on live38) and the partition numbers its own (10 pre / 12
+    # final). Matching by integer id mismatched 19 of 19 and shipped a family of
+    # four classical-poetry leaves titled "中考录取分数与学校排名查询".
+    fam_names = family_names(naming, fam, sizes)
     by_fam: dict[int, list[dict]] = {}
     for n in namings:
         by_fam.setdefault(int(fam[n["leaf_id"]]) if n["leaf_id"] < len(fam) else 0, []).append(n)
@@ -548,7 +664,7 @@ def _leaf_catalogue(deps: Any, naming: dict, meta: dict) -> list[str]:
     return out
 
 
-def _decision_chain(state: Any) -> str:
+def _decision_chain(state: Any, phases: tuple[str, ...] | None = None) -> str:
     """Every parameter decision, in order, with what lost and on what evidence.
 
     The pipeline records this in full — question, candidates, winner, who decided,
@@ -559,6 +675,8 @@ def _decision_chain(state: Any) -> str:
     themselves. This is that chain, once, in sequence.
     """
     rows = list(state.get("decisions", []))
+    if phases:
+        rows = [d for d in rows if str(d.phase).startswith(phases)]
     if not rows:
         return "_本次运行未记录任何决策 — 这本身是个缺陷。_"
     # Sub-phases are recorded as p3a / p3c, so sort on (number, suffix) rather than
@@ -628,7 +746,7 @@ def _kv_cell(d: Any, *, max_items: int = 8, max_chars: int = 320) -> str:
     return cell[:max_chars].replace("|", "\\|")
 
 
-def _gate_ledger(state: Any) -> str:
+def _gate_ledger(state: Any, phases: tuple[str, ...] | None = None) -> str:
     """Every quality gate with its observed value, its bar, and what to do if it failed.
 
     Gates are the only place the pipeline says "this is not good enough", and the
@@ -636,6 +754,8 @@ def _gate_ledger(state: Any) -> str:
     computed on every run and neither reached the reader.
     """
     gates = state.get("gates", {}) or {}
+    if phases:
+        gates = {k: g for k, g in gates.items() if str(g.phase).startswith(phases)}
     if not gates:
         return "_本次运行未评估任何质量门。_"
     icon = {"passed": "✅ 通过", "warned": "⚠️ 警告", "failed": "❌ 未通过",
@@ -685,8 +805,10 @@ def _governance_ledger(state: Any, gov: dict) -> str:
     return "\n".join(out)
 
 
-def _failure_history(state: Any) -> str:
+def _failure_history(state: Any, phases: tuple[str, ...] | None = None) -> str:
     rows = [d for d in state.get("decisions", []) if getattr(d, "rejected", None)]
+    if phases:
+        rows = [d for d in rows if str(d.phase).startswith(phases)]
     if not rows:
         return "_本次运行没有记录被否决的方案 — 这通常意味着尝试得不够多。_"
     parts: list[str] = []

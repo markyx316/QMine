@@ -334,6 +334,106 @@ def p7_audit(state: PipelineState, deps: Deps) -> dict[str, Any]:
     }
 
 
+def _name_leaves_governance_created(
+    deps: Deps, new_labels: np.ndarray, cents: np.ndarray, n_new: int,
+    old_labels: np.ndarray | None = None, churn: float = 0.20,
+) -> None:
+    """Name the leaves p8 just created, because p7's gate can no longer see them.
+
+    `p7_all_leaves_named` is BLOCKING and it ran in p7 — before this phase
+    exists. Governance does not only merge: on `live38` it executed 6
+    `split_leaf` and 2 `isolate_leaf` prescriptions, taking the partition from 29
+    leaves to 36. The seven new leaves were never named, and `p10_deliver` builds
+    its name column from p7's namings plus governance RENAMES only — so **4,931
+    rows, 9.9% of the delivered table, shipped with an empty `bu_leaf_name`**
+    while the gate guaranteeing "all leaves named" had passed.
+
+    A gate placed before the operation that invalidates it is not a guarantee.
+    This closes the hole at its source rather than re-asserting the gate later:
+    whatever governance creates gets a name in the same phase.
+    """
+    naming = deps.load("tree_naming") if deps.has("tree_naming") else {}
+    namings = list(naming.get("namings", []))
+    have = {int(n["leaf_id"]) for n in namings}
+    live = [i for i in range(n_new) if int((new_labels == i).sum())]
+    missing = [i for i in live if i not in have]
+
+    # A SPLIT LEAVES TWO LEAVES NEEDING A NAME, NOT ONE. The new id is obviously
+    # unnamed, but the REMNANT keeps a name the namer assigned to a cluster that
+    # no longer exists — and on live38 the name went to the wrong half three
+    # times. Leaf 8 kept 「汉字拼音查询」 while every one of its 122 remaining rows
+    # is a 怎么写 (how-to-write) query and the actual pinyin rows moved to the new
+    # leaf; leaf 23 kept 「汉字读音笔顺查询」 while its pronunciation rows likewise
+    # left. A name that actively misdescribes its rows is worse than no name,
+    # because nothing downstream can tell it is wrong.
+    stale: list[int] = []
+    if old_labels is not None and len(old_labels) == len(new_labels):
+        for i in live:
+            if i not in have:
+                continue
+            now = new_labels == i
+            before = old_labels == i
+            n_now = int(now.sum())
+            if not n_now:
+                continue
+            kept = int((now & before).sum())
+            # Fraction of the NAMED cluster that is still here, and fraction of
+            # what is here that the namer actually saw. Either drifting far means
+            # the name describes a different set of rows.
+            held = kept / max(1, int(before.sum()))
+            pure = kept / n_now
+            if held < (1 - churn) or pure < (1 - churn):
+                stale.append(i)
+    if stale:
+        deps.emit(f"  {len(stale)} leaf/leaves changed membership past {churn:.0%} — "
+                  f"their p7 name no longer describes them: {stale}")
+        namings = [n for n in namings if int(n["leaf_id"]) not in set(stale)]
+    missing = sorted(set(missing) | set(stale))
+    if not missing:
+        return
+
+    deps.emit(f"  naming {len(missing)} leaf/leaves after governance "
+              f"({len(missing) - len(stale)} new, {len(stale)} re-named)")
+    from ...ops.cards import build_naming_cards
+
+    cfg = deps.cfg
+    cards = build_naming_cards(
+        deps.df, new_labels, deps.embedding("emb_hybrid"), cents,
+        text_col=cfg.data.text_column, n_center=cfg.naming.card_center,
+        n_random=cfg.naming.card_random, n_edge=cfg.naming.card_edge,
+        n_ngrams=cfg.naming.card_top_ngrams, seed=cfg.seed_metric,
+    )
+    by_id = {c.leaf_id: c for c in cards}
+    agent = NamerAgent(deps.agent_ctx(), suffix="_postgov")
+    named = 0
+    for lid in missing:
+        card = by_id.get(lid)
+        if card is None:
+            continue
+        last = ""
+        for attempt in range(3):      # same retry the shard namer uses
+            try:
+                out = agent.run(card=card)
+                d = out.model_dump()
+                d["leaf_id"] = lid
+                d["named_by"] = "namer_postgov@routed"
+                namings.append(d)
+                named += 1
+                break
+            except Exception as exc:  # noqa: BLE001
+                last = type(exc).__name__
+                if attempt < 2:
+                    time.sleep(2 ** attempt)
+        else:
+            deps.emit(f"  ⚠ leaf {lid} could not be named after 3 attempts: {last}")
+
+    naming["namings"] = sorted(namings, key=lambda n: int(n["leaf_id"]))
+    deps.store.put_json("tree_naming", naming, producer="p8",
+                        summary=f"{len(namings)} namings ({named} written after governance)")
+    deps.cache_put("tree_naming", naming)
+    deps.emit(f"  named {named}/{len(missing)} leaves affected by governance")
+
+
 def p8_governance(state: PipelineState, deps: Deps) -> dict[str, Any]:
     """Execute every prescription against the data, then prove none were left open."""
     prescriptions: list[Prescription] = list(state.get("prescriptions", []))
@@ -396,6 +496,7 @@ def p8_governance(state: PipelineState, deps: Deps) -> dict[str, Any]:
             "leaf_centroids_final", cents, producer="p8", summary="post-split centroids")
         deps.cache_put("leaf_labels_final", new_labels)
         deps.cache_put("leaf_centroids_final", cents)
+        _name_leaves_governance_created(deps, new_labels, cents, n_new, old_labels=labels)
     fam_ref = deps.store.put_matrix("leaf_family_final", new_family, producer="p8",
                                     summary=f"post-governance families ({len(np.unique(new_family))})")
     ledger_ref = deps.store.put_json(

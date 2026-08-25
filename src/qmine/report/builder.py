@@ -61,15 +61,39 @@ def build_all_reports(state: PipelineState, deps: Any) -> dict[str, ArtifactRef]
         refs["report_bottomup"] = deps.store.put_markdown(
             "Report_BottomUp_Approach", bottomup_report(state, deps, figs),
             producer="p11", summary="bottom-up route: representation → tree → governance → deployment")
-    refs["report_topdown"] = deps.store.put_markdown(
-        "Report_TopDown_Approach", topdown_report(state, deps),
-        producer="p11", summary="top-down route: taxonomy → gold → classifier → validation")
-    refs["report_panel"] = deps.store.put_markdown(
-        "Report_Uniform_Panel", panel_report(state, deps, figs),
-        producer="p11", summary="cross-candidate comparison under one measurement harness")
-    refs["leaf_catalogue"] = deps.store.put_markdown(
-        "Leaf_Catalogue", leaf_catalogue(state, deps),
-        producer="p11", summary="every leaf with its user_need definition")
+    # `report_language` was honoured by the bottom-up report and the notebook only.
+    # The top-down route — half the methodology — shipped in English on a run
+    # configured `zh`, and the panel report shipped 0% Chinese.
+    if zh:
+        from .zh_topdown import build as zh_topdown
+
+        refs["report_topdown"] = deps.store.put_markdown(
+            "自上而下类目体系最终报告", zh_topdown(state, deps),
+            producer="p11", summary="自上而下路线: 类目体系 → 金标准 → 分类器 → 对抗验证")
+    else:
+        refs["report_topdown"] = deps.store.put_markdown(
+            "Report_TopDown_Approach", topdown_report(state, deps),
+            producer="p11", summary="top-down route: taxonomy → gold → classifier → validation")
+    if zh:
+        from .zh_panel import build as zh_panel
+
+        refs["report_panel"] = deps.store.put_markdown(
+            "统一度量面板", zh_panel(state, deps, figs),
+            producer="p11", summary="同一度量下的跨方案对照, 含两条路线的对比")
+    else:
+        refs["report_panel"] = deps.store.put_markdown(
+            "Report_Uniform_Panel", panel_report(state, deps, figs),
+            producer="p11", summary="cross-candidate comparison under one measurement harness")
+    if zh:
+        from .zh_catalogue import build as zh_catalogue
+
+        refs["leaf_catalogue"] = deps.store.put_markdown(
+            "叶清单", zh_catalogue(state, deps),
+            producer="p11", summary="每个已交付叶子的定义与 user_need")
+    else:
+        refs["leaf_catalogue"] = deps.store.put_markdown(
+            "Leaf_Catalogue", leaf_catalogue(state, deps),
+            producer="p11", summary="every leaf with its user_need definition")
     return refs
 
 
@@ -276,6 +300,9 @@ def _panel_table_md(table: dict[str, Any], metrics: list[str] | None = None) -> 
 # Reports
 # ==========================================================================
 
+from ._shape import delivered_shape as _shape
+
+
 def bottomup_report(state: PipelineState, deps: Any, figs: dict[str, ArtifactRef]) -> str:
     rep = deps.load("representation") if deps.has("representation") else {}
     gran = deps.load("granularity") if deps.has("granularity") else {}
@@ -303,7 +330,7 @@ def bottomup_report(state: PipelineState, deps: Any, figs: dict[str, ArtifactRef
         "votes with weight **α², not α** — a tie-breaker, not a co-equal signal.",
         f"- **Algorithm**: `{state.get('chosen_algorithm')}` — won a six-algorithm battery run "
         "through one identical measurement harness.",
-        f"- **Shape**: {meta.get('n_families', '?')} families → **{meta.get('n_leaves', '?')} leaves**, "
+        f"- **Shape**: {_shape(panel, meta)[0]} families → **{_shape(panel, meta)[1]} leaves**, "
         f"held-out structure reproduction **{meta.get('heldout_reproduction', {}).get('agreement', '?')}**.",
         "",
     ]

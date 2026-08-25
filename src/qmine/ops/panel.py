@@ -225,14 +225,25 @@ class UniformPanel:
 
     def footnotes(self) -> list[str]:
         return [
-            "Every number in this table was produced by the same code, on the same "
-            f"{self.subsample}-row sub-sample, under seed {self.seed} (panel {self.panel_id}).",
+            # WAS: "every number ... on the same N-row sub-sample". Measured on
+            # live38 only 3 of 10 metrics used the sub-sample — 6 ran on all
+            # 49,999 rows and held-out reproduction on 10,000. Each metric
+            # carries its own `n`; the guarantee is one code path and one seed,
+            # not one denominator.
+            "Every number in this table was produced by the same code under seed "
+            f"{self.seed} (panel {self.panel_id}). Metrics that sub-sample use "
+            f"{self.subsample} rows; the rest run on the full corpus. Each metric "
+            "carries its own n — read it before comparing two of them.",
             "Silhouette is ADVISORY. It is maximised by clusters that are tight in "
             "surface form, which is precisely the failure mode — one intent split "
             "into several phrasing-shaped families — that the decisive metrics exist "
             "to detect. It is reported for completeness and given no vote.",
-            "Template fragmentation is negatively correlated with cluster count: a "
-            "partition with fewer clusters has fewer places to fragment into. Read it "
+            # SIGN WAS INVERTED, and contradicted the very next clause. More
+            # clusters means more places to fragment into, so fragmentation rises
+            # with k. Measured across this panel's own rows on live38: Pearson
+            # +0.901, Spearman +0.655.
+            "Template fragmentation is POSITIVELY correlated with cluster count: a "
+            "partition with more clusters has more places to fragment into. Read it "
             "beside n_clusters and phrase conclusions as two-condition statements "
             "(\"finer AND less fragmented\"), never as a bare comparison.",
             "Distillation accuracy measures learnability of the cluster labels, not "

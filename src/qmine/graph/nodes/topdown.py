@@ -748,6 +748,9 @@ def p2b_gold(state: PipelineState, deps: Deps) -> dict[str, Any]:
         else:
             n_failed += sum(_one_group(g) for g in enumerate(ref_groups, 1))
         by_q = {v.query: v for v in verdicts}
+        # The class list the referee was given. Anything outside it is a
+        # malformed verdict, not a new class.
+        valid_codes = {n.code for n in taxonomy.nodes if getattr(n, "code", None)}
         for r in rows:
             if r.agreed:
                 continue
@@ -761,13 +764,24 @@ def p2b_gold(state: PipelineState, deps: Deps) -> dict[str, Any]:
                 r.final, r.adjudicated = "", False
                 r.referee_rationale = "no referee verdict — excluded from the gold set"
                 continue
+            snapped, note = _snap_label_to_taxonomy(v.final_label, valid_codes)
+            if not snapped:
+                # Not a class in this taxonomy. Writing it through creates a
+                # one-row phantom class that later reads as "too rare to
+                # cross-validate" — a wrong explanation for a malformed verdict.
+                deps.emit(f"  ⚠ referee returned {v.final_label!r}, {note} — row left unresolved")
+                r.final, r.adjudicated = "", False
+                r.referee_rationale = f"referee verdict rejected: {note}"
+                continue
+            if note:
+                deps.emit(f"  referee label repaired: {note} → {snapped}")
             r.final, r.rule_cited, r.referee_rationale, r.adjudicated = (
-                v.final_label, v.rule_cited, v.rationale, True
+                snapped, v.rule_cited, v.rationale, True
             )
             if v.rule_gap and v.proposed_rule:
                 rid = f"R{len(taxonomy.rules) + len(new_rules) + 1:03d}"
                 new_rules.append(AdjudicationRule(
-                    id=rid, when=v.proposed_rule, then=v.final_label,
+                    id=rid, when=v.proposed_rule, then=snapped,
                     rationale="drafted by the referee to close a gap this disagreement exposed",
                     classes=[r.label_a, r.label_b], added_in_round=1,
                     added_because=f"disagreement on {r.query!r}",
@@ -1094,6 +1108,44 @@ def _remedy_is_exhausted(
         return False
     return (not redraw_history[-1].get("kept")
             or len(redraw_history) >= max_redraws)
+
+
+
+def _snap_label_to_taxonomy(raw: str, codes: set[str]) -> tuple[str, str]:
+    """Map a referee verdict onto a real class code, or refuse it.
+
+    The referee's `final_label` used to be written into the gold set unchecked.
+    On live38 five rows carried codes that do not exist —
+    `LOOKUP_WORD_MEANNING`, `UNDERSPECIFIED_OR_NOICE`, `UNDDERSPECIFIED_OR_NOISE`,
+    `LOOKUP_WORD词语释义`, and one literal `LOOKUP_WORD_MEADAR = LOOKUP_WORD_MEANING`.
+    Every one is a typo of a real class. They became five one-row "classes",
+    were dropped from cross-validation as too rare, and the report explained the
+    loss to the reader as rarity rather than as a malformed verdict.
+
+    Returns (code, note). An empty code means the verdict could not be trusted;
+    the caller must leave the row unresolved rather than guess.
+    """
+    import difflib
+    import re as _re
+
+    if not raw:
+        return "", "empty verdict"
+    txt = str(raw).strip()
+    if txt in codes:
+        return txt, ""
+    # "A = B" — the referee spelling out a correction. Prefer a side that exists.
+    for part in _re.split(r"[=:\u2192>]+", txt):
+        part = part.strip()
+        if part in codes:
+            return part, f"verdict {txt!r} carried an explicit mapping"
+    norm = _re.sub(r"[^A-Z0-9_]", "", txt.upper())
+    by_norm = {_re.sub(r"[^A-Z0-9_]", "", c.upper()): c for c in codes}
+    if norm in by_norm:
+        return by_norm[norm], f"verdict {txt!r} normalised"
+    close = difflib.get_close_matches(norm, list(by_norm), n=1, cutoff=0.90)
+    if close:
+        return by_norm[close[0]], f"verdict {txt!r} snapped (typo)"
+    return "", f"verdict {txt!r} is not a class in this taxonomy"
 
 
 def _batch_by_class_pair(
@@ -1573,7 +1625,14 @@ def _repair_guide_and_reannotate(
             "rounds_run": attempt, "decisions": decisions,
             "n_rules_added": len(added), "kappa_before": prev, "kappa_after": agree2["kappa"],
             "n_before": prev_n, "n_after": agree2["n"],
-            "comparable": prev_n == agree2["n"],
+            # EQUAL n IS NOT THE SAME ROWS. This flag used to read
+            # `prev_n == agree2["n"]`, which reports "comparable" for two
+            # DISJOINT samples that happen to be the same size — precisely the
+            # case a reader needs warned about. On a fresh sample the rows differ
+            # by construction, so nothing is paired and the delta is a
+            # between-sample z-test, never a before/after on the same rows.
+            "comparable": (not cfg.taxonomy.repair_on_fresh_sample) and prev_n == agree2["n"],
+            "paired": not cfg.taxonomy.repair_on_fresh_sample,
             "sample": "fresh" if cfg.taxonomy.repair_on_fresh_sample else "original",
         }
         rows = rows2
