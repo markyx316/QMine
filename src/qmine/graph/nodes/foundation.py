@@ -257,16 +257,81 @@ def p1_audit(state: PipelineState, deps: Deps) -> dict[str, Any]:
                     "— reference only, not an inheritable skeleton"
                 )
 
+    # WHEN THE VERTICAL IS UNKNOWN, GO AND LOOK. `DomainScoutAgent` has existed,
+    # been registered, been given a prompt and a routing requirement — and was
+    # never called, so a run on an unfamiliar corpus proceeded on the generic
+    # profile's deliberate blanks and nothing tried to fill them.
+    #
+    # It emits HYPOTHESES, not configuration. Its seeds are candidate phrasing
+    # families that Phase 1's miner and Phase 3's tightness test still have to
+    # accept or reject; its risk categories are candidates for a human to
+    # approve; its vertical is a steer for the P2a researchers, who are the ones
+    # actually chartered to work out what the corpus is. Nothing it says changes
+    # a parameter, and it runs ONLY when no vertical was declared — a supplied
+    # profile is the operator's statement about their own data and outranks it.
+    scout_ref = None
+    if cfg.domain.key == "generic" and not deps.registry.is_offline:
+        scout_ref = _scout_unknown_domain(deps, df, report)
+        if scout_ref is not None:
+            events.append("P1: no vertical was declared — the domain scout's "
+                          "hypotheses are recorded for P2a, and nothing else")
+
+    arts = {"corpus": corpus_ref, "data_audit": audit_ref,
+            "template_groups": tg_ref, "risk_screen": risk_ref,
+            "language_profile": lang_ref}
+    if scout_ref is not None:
+        arts["domain_scout"] = scout_ref
     return {
         "phase": "p2",
-        "artifacts": {"corpus": corpus_ref, "data_audit": audit_ref,
-                      "template_groups": tg_ref, "risk_screen": risk_ref,
-                      "language_profile": lang_ref},
+        "artifacts": arts,
         "gates": {gate.name: gate, lang_gate.name: lang_gate},
         "completed_phases": ["p1"],
         "events": events,
     }
 
+
+
+def _scout_unknown_domain(deps: Deps, df: Any, audit: dict[str, Any]) -> Any:
+    """Ask what this corpus is, when nobody told us. Hypotheses only.
+
+    Fails soft on purpose: a scout that cannot run must not stop a run that is
+    otherwise fine, and its absence simply leaves the generic profile's blanks
+    blank — which is where they started.
+    """
+    from ...agents.roles import DomainScoutAgent
+    from ...ops.audit import stratified_sample
+
+    cfg = deps.cfg
+    try:
+        n = min(300, len(df))
+        idx = stratified_sample(df, n, seed=cfg.seed_metric)
+        sample = [str(x) for x in df[cfg.data.text_column].iloc[idx].tolist()]
+        # The measured profile only — no scores, and no guesses about the
+        # vertical, which is the thing being asked.
+        profile = {k: audit.get(k) for k in
+                   ("n_rows", "n_unique", "median_chars", "p90_chars") if k in audit}
+        out = DomainScoutAgent(deps.agent_ctx()).run(sample=sample, profile=profile)
+    except Exception as exc:  # noqa: BLE001
+        deps.emit(f"  domain scout unavailable ({type(exc).__name__}) — "
+                  "continuing on the generic profile")
+        return None
+
+    deps.emit(f"  domain scout: {out.vertical or '(undetermined)'} "
+              f"(confidence {out.confidence}"
+              + (", spans multiple verticals" if out.spans_multiple_verticals else "")
+              + f"); {len(out.candidate_template_seeds)} candidate phrasing seed(s), "
+              f"{len(out.candidate_risk_categories)} candidate risk categor(ies)")
+    if out.confidence == "low":
+        deps.emit("  ⚠ the scout is NOT confident — treat its vertical as a guess and "
+                  "read P2a's researchers as the actual answer")
+    return deps.store.put_json(
+        "domain_scout",
+        {**out.model_dump(),
+         "status": "HYPOTHESES ONLY — seeds are validated by the Phase 1 miner and "
+                   "the Phase 3 tightness test; risk categories need human approval; "
+                   "nothing here changed a parameter in this run"},
+        producer="p1",
+        summary=f"vertical={out.vertical or '?'} ({out.confidence})")
 
 def _load_input(cfg: Any) -> pd.DataFrame:
     path = cfg.data.input_path

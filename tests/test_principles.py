@@ -549,3 +549,62 @@ def test_no_translation_key_is_dead():
     assert not dead, (
         "these translation keys match no authored prose — the English will reach "
         "the Chinese reader:\n  " + "\n  ".join(dead[:8]))
+
+
+def test_no_domain_does_not_silently_mean_chinese():
+    """`--domain` omitted means "unknown vertical", not "K12 Chinese".
+
+    A bare `QMineConfig()` reported `key="generic"` while carrying
+    `language=zh`, `tokenizer=jieba`, Chinese-only bake-off candidates, ZERO risk
+    categories and ZERO pragmatic-intent hints — strictly worse than
+    `--domain generic`, and silently so on an English corpus.
+    """
+    from qmine.config import DomainProfile, QMineConfig
+
+    d = QMineConfig().domain
+    assert d.key == "generic"
+    assert d.language == "multi", "a generic profile must not assume Chinese"
+    assert d.tokenizer == "auto", "the tokeniser must be resolved from the corpus"
+    assert not any("-zh" in c for c in d.embedding_candidates), d.embedding_candidates
+
+    # And the profile the CLI actually loads carries the universal parts.
+    from qmine.cli import CONFIG_DIR
+
+    g = DomainProfile.load(CONFIG_DIR / "domains" / "generic.yaml")
+    assert len(g.risk_categories) >= 5, "a generic run must still screen for harm"
+    assert g.pragmatic_intents_hint, "the top-down route needs its brief"
+    assert g.template_seeds == [], (
+        "phrasing families are exactly what differs between verticals — they must "
+        "be mined and validated, never assumed"
+    )
+
+
+def test_an_unknown_domain_says_what_exists():
+    """A bare FileNotFoundError naming a path inside the package tells a user
+    nothing about what they could have typed instead."""
+    import pytest as _pytest
+
+    from qmine.cli import _load_domain
+
+    with _pytest.raises(SystemExit) as ei:
+        _load_domain("medical_en")
+    msg = str(ei.value)
+    assert "medical_en" in msg
+    assert "k12_zh" in msg and "generic" in msg, f"available profiles not listed: {msg}"
+    assert "--domain ./" in msg, "the bring-your-own-profile route is not mentioned"
+
+
+def test_the_domain_scout_only_runs_when_no_vertical_was_declared():
+    """A supplied profile is the operator's statement about their own data and
+    outranks a guess from a 300-row sample."""
+    import inspect
+
+    from qmine.graph.nodes import foundation
+
+    src = inspect.getsource(foundation.p1_audit)
+    assert 'cfg.domain.key == "generic"' in src, (
+        "the scout must not second-guess a declared vertical"
+    )
+    scout = inspect.getsource(foundation._scout_unknown_domain)
+    assert "HYPOTHESES ONLY" in scout, "the scout's output must be marked as hypotheses"
+    assert "return None" in scout, "a scout that cannot run must not stop the run"

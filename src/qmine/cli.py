@@ -49,6 +49,29 @@ def _setup_logging(verbose: bool) -> None:
     )
 
 
+
+def _load_domain(domain: str) -> "DomainProfile":
+    """Resolve a domain name or path, and say what exists when it does not.
+
+    An unknown name used to raise a bare `FileNotFoundError` naming a path inside
+    the package, which tells a user nothing about what they could have typed.
+    """
+    path = Path(domain)
+    if path.exists():
+        return DomainProfile.load(path)
+    path = CONFIG_DIR / "domains" / f"{domain}.yaml"
+    if path.exists():
+        return DomainProfile.load(path)
+    known = sorted(p.stem for p in (CONFIG_DIR / "domains").glob("*.yaml"))
+    raise SystemExit(
+        f"Unknown domain {domain!r}.\n"
+        f"  Built-in profiles: {', '.join(known)}\n"
+        f"  Or pass a path to your own profile YAML: --domain ./my_domain.yaml\n"
+        f"  Or use --domain generic, which assumes no vertical: it mines phrasing\n"
+        f"  families from the corpus and carries only universal risk categories."
+    )
+
+
 def _load_config(config: Optional[str], domain: Optional[str], **over) -> QMineConfig:
     """Build the run config from a YAML file and/or a domain profile.
 
@@ -66,17 +89,14 @@ def _load_config(config: Optional[str], domain: Optional[str], **over) -> QMineC
         cfg = QMineConfig.load(config)
         declares_domain = "domain" in (yaml.safe_load(Path(config).read_text()) or {})
         if domain and not declares_domain:
-            path = Path(domain)
-            if not path.exists():
-                path = CONFIG_DIR / "domains" / f"{domain}.yaml"
-            cfg.domain = DomainProfile.load(path)
+            cfg.domain = _load_domain(domain)
     else:
         cfg = QMineConfig()
-        if domain:
-            path = Path(domain)
-            if not path.exists():
-                path = CONFIG_DIR / "domains" / f"{domain}.yaml"
-            cfg.domain = DomainProfile.load(path)
+        # NO --domain still means "unknown vertical", not "Chinese". Load the
+        # generic profile explicitly rather than relying on class defaults: it
+        # carries the seven universal risk categories and the pragmatic-intent
+        # hints, which a bare `DomainProfile()` does not.
+        cfg.domain = _load_domain(domain or "generic")
     for k, v in over.items():
         if v is None:
             continue

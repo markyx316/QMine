@@ -1027,10 +1027,36 @@ def p2b_gold(state: PipelineState, deps: Deps) -> dict[str, Any]:
     # guide in hand. On a resumed run `deps.taxonomy()` recovered the PRE-referee
     # version, and the deliverable reported the wrong rule count. `taxonomy()`
     # already prefers `taxonomy_v2`; it simply was never written.
+    # MEASURE which rules actually contradict each other on THIS corpus.
+    # `_dedupe_rules` can only compare rules structurally: identical trigger on an
+    # identical pair, or 85% text similarity for prose. It cannot see two rules
+    # that are worded differently, fire on overlapping queries, and disagree —
+    # which is the case that reaches an annotator as two instructions for one row.
+    # Measured on live39: R018/R019 co-fire on 301 rows and point opposite ways,
+    # while R006/R007 co-fire on 4 and are a legitimate discriminating pair. The
+    # difference is only visible by running the triggers over the corpus.
+    from ...ops.rule_conflict import find_conflicts
+
+    conflicts = find_conflicts(
+        taxonomy.rules, deps.df[cfg.data.text_column].astype(str).tolist())
+    if conflicts.overlaps:
+        deps.emit(f"  ⚠ {len(conflicts.overlaps)} rule pair(s) fire on the SAME rows and "
+                  "disagree — the boundary needs a tie-break for that region:")
+        for o in conflicts.overlaps[:3]:
+            deps.emit(f"      {o.rule_a}/{o.rule_b} on {' x '.join(o.classes)}: "
+                      f"{o.n_both:,} rows, e.g. {o.examples[:2]}")
+    if conflicts.crowded_pairs:
+        deps.emit(f"  {len(conflicts.crowded_pairs)} class pair(s) carry many two-way "
+                  "rules — the boundary itself is contested:")
+        for c in conflicts.crowded_pairs[:3]:
+            deps.emit(f"      {' x '.join(c['classes'])}: {c['n_rules']} rules "
+                      f"({c['n_with_trigger']} measurable)")
+
     tax_v2_ref = deps.store.put_json(
         "taxonomy_v2",
         {"taxonomy": taxonomy.model_dump(),
          "referee_rules_added": len(new_rules),
+         "rule_conflicts": conflicts.as_record(),
          "guide_repaired": bool(repair_meta),
          "provenance": "p2b: taxonomy after the referee's rules and any guide repair"},
         producer="p2b",

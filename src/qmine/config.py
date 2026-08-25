@@ -55,22 +55,28 @@ class RiskCategory(BaseModel):
 class DomainProfile(BaseModel):
     """Everything that changes when you move from K12 to finance to sports."""
 
+    # THE CLASS DEFAULTS MUST NOT BE CHINESE WHILE CALLING THEMSELVES GENERIC.
+    # Constructing `QMineConfig()` with no `--domain` produced key="generic" with
+    # `language=zh`, `tokenizer=jieba`, Chinese-only bake-off candidates, ZERO
+    # risk categories and ZERO pragmatic hints — strictly worse than
+    # `--domain generic`, and silently so on an English corpus. These defaults now
+    # match `configs/domains/generic.yaml`, which the CLI also loads explicitly.
     key: str = "generic"
-    display_name: str = "Generic query log"
-    language: Literal["zh", "en", "multi"] = "zh"
+    display_name: str = "Unknown / mixed-vertical query log"
+    language: Literal["zh", "en", "multi"] = "multi"
 
     #: Tokenisation and n-gram ranges (Part IV section 4.5).
     #: ``auto`` is resolved in Phase 1 from the corpus's actual script mix. Use it
     #: whenever the language is not known in advance — assuming a tokeniser is
     #: one of the cheapest ways to quietly degrade every downstream phase.
-    tokenizer: Literal["jieba", "whitespace", "none", "auto"] = "jieba"
+    tokenizer: Literal["jieba", "whitespace", "none", "auto"] = "auto"
     char_ngram_range: tuple[int, int] = (1, 3)
     word_ngram_range: tuple[int, int] = (1, 2)
 
     #: Base encoder candidates for the bake-off (Phase 3a).  Order is a hint,
     #: not a decision — the bake-off decides.
     embedding_candidates: list[str] = Field(
-        default_factory=lambda: ["BAAI/bge-small-zh-v1.5", "BAAI/bge-base-zh-v1.5"]
+        default_factory=lambda: ["intfloat/multilingual-e5-small", "BAAI/bge-m3"]
     )
     instruction_prefix: str | None = None
 

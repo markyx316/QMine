@@ -251,6 +251,39 @@ def build(state: Any, deps: Any) -> str:
               "若真实分歧与该上限之间的空隙很小, 说明剩下的分歧是**语料内在的**, "
               "此时把预算花在扩大金标准上, 比花在写规则上更划算。", ""]
 
+    # Rules that contradict each other ON THIS CORPUS, measured.
+    rc = _t(tax2, "rule_conflicts", default={}) or {}
+    ov, crowded = rc.get("measured_overlaps") or [], rc.get("crowded_class_pairs") or []
+    if rc:
+        L += ["### 3.5 规则之间的冲突 (在本语料上实测)", "",
+              f"- 规则总数 **{rc.get('n_rules', '?')}**, 其中 **{rc.get('n_with_executable_trigger', 0)}** "
+              "条带有可执行的触发式, 因而可以真正拿到语料上跑一遍", "",
+              "**为什么要实测而不是比对措辞。** 两条规则可以用完全不同的说法描述**重叠的**"
+              "条件, 却指向不同的类目 —— 标注者遇到落在重叠区的 query 时会同时收到两条"
+              "互相矛盾的指令。比措辞看不出这一点; 把触发式跑到语料上就能看出来。", ""]
+        if ov:
+            L += [f"> ⚠️ **{len(ov)} 组规则在同一批行上同时触发且给出不同答案。**", "",
+                  "| 规则 | 类目对 | 同时命中行数 | 分别指向 | 例子 |", "|---|---|---|---|---|"]
+            for o in ov[:6]:
+                L.append(f"| `{'` / `'.join(o['rules'])}` | {' × '.join(o['classes'])} | "
+                         f"**{o['n_rows_both_fire']:,}** | {o['then'][0]} vs {o['then'][1]} | "
+                         f"{'; '.join(o['examples'][:2])} |")
+            L += ["", "> **这些规则没有被删掉。** 重叠 300 行的正确处置不是把两条都撤掉 —— "
+                  "那会连指引一起拿走, 边界反而更没人管; 而是**给重叠区补一条更细的裁定**。"
+                  "本项目曾用「措辞相似就撤掉」的做法, 一次运行里 41 条规则被砍掉 32 条, "
+                  "而且砍掉的正是最有信息量的那些。", ""]
+        else:
+            L += ["> ✅ 带触发式的规则之间, 没有发现「同时命中且指向不同类目」的行。", ""]
+        if crowded:
+            L += [f"**另有 {len(crowded)} 个类目对上堆了很多互相反向的规则** —— "
+                  "这通常不是某一条规则的问题, 而是**这条边界本身没定清楚**。"
+                  "它们大多不带触发式, 无法实测重叠, 规则条数是唯一可用的信号。", "",
+                  "| 类目对 | 规则数 | 其中可实测 | 指向 |", "|---|---|---|---|"]
+            for c in crowded[:6]:
+                L.append(f"| {' × '.join(c['classes'])} | **{c['n_rules']}** | "
+                         f"{c['n_with_trigger']} | {', '.join(c['distinct_targets'])} |")
+            L.append("")
+
     nr = agree.get("new_rules") or []
     if nr:
         L += [f"<details><summary>展开裁判起草的 {len(nr)} 条规则</summary>", "",
