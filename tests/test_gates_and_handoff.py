@@ -1116,3 +1116,46 @@ def test_the_repair_revert_mirrors_the_redraw_revert():
     assert "reverting to the previous taxonomy" in redraw
     assert "reverting the guide and rules" in gold, \
         "the guide repair needs the same guard the redraw already has"
+
+
+def test_a_gate_that_passed_with_slack_says_so_to_the_reader():
+    """`通过` is not `没有保留`, and the ledger used to hide the difference.
+
+    `p2b_kappa` on live38 rendered as ✅ 通过 with 实测 `kappa`=0.8221 beside
+    门槛 `kappa`=0.9 and no explanation — while the gate's own message read
+    "PROCEEDING WITH RESIDUAL SLACK … above the 0.8 reliability floor but short of
+    0.9; every downstream number …". The caveat was computed on every run and
+    printed only for gates that FAILED, so it reached no reader on any run that
+    succeeded.
+    """
+    from types import SimpleNamespace
+
+    from qmine.report.zh_bottomup import _gate_ledger, _passed_below_threshold
+
+    def gate(**kw):
+        d = dict(phase="p2b", status="passed", blocking=True, message="", remediation="",
+                 observed={}, threshold={})
+        d.update(kw)
+        return SimpleNamespace(**d)
+
+    slack = gate(observed={"kappa": 0.8221, "n": 2991}, threshold={"kappa": 0.9},
+                 message="PROCEEDING WITH RESIDUAL SLACK — 0.822 is short of 0.9")
+    assert _passed_below_threshold(slack) is True
+
+    assert _passed_below_threshold(gate(observed={"kappa": 0.93},
+                                        threshold={"kappa": 0.9})) is False
+    # `max_` thresholds run the other way round.
+    assert _passed_below_threshold(gate(observed={"noise_rate": 0.4},
+                                        threshold={"max_noise_rate": 0.3})) is True
+    assert _passed_below_threshold(gate(observed={"noise_rate": 0.1},
+                                        threshold={"max_noise_rate": 0.3})) is False
+    # A threshold about one quantity must never be checked against another's value.
+    assert _passed_below_threshold(gate(observed={"coherence": 3.59},
+                                        threshold={"max_weak_share": 0.15})) is False
+    # A failing gate is already visible; it is not a "slack" case.
+    assert _passed_below_threshold(gate(status="failed", observed={"kappa": 0.5},
+                                        threshold={"kappa": 0.9})) is False
+
+    md = _gate_ledger({"gates": {"p2b_kappa": slack}})
+    assert "带保留通过" in md, "the table does not flag a pass that sits under its bar"
+    assert "RESIDUAL SLACK" in md, "the gate's own message still does not reach the reader"

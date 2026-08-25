@@ -99,7 +99,9 @@ def build(state: Any, deps: Any) -> str:
     L += [
         "## 2. 意图类目体系", "",
         f"- L1 意图类目: **{len(l1)}** 个",
-        f"- 裁定规则 (adjudication rules): **{len(rules)}** 条",
+        f"- 裁定规则 (adjudication rules): **{len(rules)}** 条 (初稿)"
+        + (f"; **实际下发给标注者的是 {_shipped_rule_count(tax2, agree)} 条**"
+           if _shipped_rule_count(tax2, agree) > len(rules) else ""),
         f"- 被标记为「聚类不可见」的类目: **{len(invisible)}** 个"
         + (f" — {', '.join('`' + str(n.get('code')) + '`' for n in invisible[:8])}"
            if invisible else ""),
@@ -129,6 +131,25 @@ def build(state: Any, deps: Any) -> str:
             L.append(f"| `{s.get('parent') or s.get('l1') or ''}` | {s.get('name') or s.get('code') or ''} "
                      f"| {str(s.get('rationale') or s.get('definition') or '')[:120]} |")
         L.append("")
+
+    # Which research angles actually searched. A taxonomy presented as
+    # web-researched should be able to say which parts of it were: a tool loop
+    # that dies still returns plausible candidates from parametric knowledge, and
+    # the phase result looks identical either way.
+    subs_meta = _t(tax, "submissions", default=[]) or []
+    if subs_meta and any("web_researched" in x for x in subs_meta if isinstance(x, dict)):
+        web = [x for x in subs_meta if isinstance(x, dict) and x.get("web_researched")]
+        off = [x for x in subs_meta if isinstance(x, dict) and not x.get("web_researched")]
+        L += ["### 2.0 各研究角度的证据来源", "",
+              f"- 实际检索了外部资料的角度: **{len(web)}/{len(subs_meta)}**"
+              + (f" ({', '.join('`' + str(x.get('angle', '?')) + '`' for x in web)})" if web else ""),
+              ""]
+        if off:
+            L += ["> ⚠️ 以下角度**没有成功检索**, 其候选类目来自模型自身的先验知识: "
+                  + ", ".join(f"`{x.get('angle', '?')}`" for x in off)
+                  + "。这类角度返回的候选**看起来与检索过的角度没有区别** —— "
+                  "工具循环失败后, agent 仍会给出一份完整的清单。"
+                  "评估本体系的证据强度时请把它们区别对待。", ""]
 
     crit = _t(tax, "critique", "findings", default=[]) or []
     if crit:
@@ -248,7 +269,8 @@ def build(state: Any, deps: Any) -> str:
         L += [
             f"- 交叉验证准确率: **{num(metrics.get('cv_accuracy'))}**",
             f"- macro-F1: **{num(metrics.get('macro_f1'))}**"
-            + "  ← 每个类目等权, 小类目的失败在这里才看得见",
+            + "  ← 每个类目等权, 小类目的失败在这里才看得见"
+            + _population_weighted_note(metrics),
             f"- 期望校准误差 ECE: **{num(metrics.get('ece'))}** "
             f"(计算方式: **{metrics.get('ece_basis', '?')}**)",
             f"- 训练类目数: {metrics.get('n_classes')}; **训练行数: {nt}**"
@@ -275,6 +297,12 @@ def build(state: Any, deps: Any) -> str:
         per = {k: v for k, v in rep.items() if isinstance(v, dict) and "f1-score" in v
                and k not in ("macro avg", "weighted avg", "micro avg")}
         if per:
+            dead = [(c, m) for c, m in per.items() if float(m.get("recall", 1)) == 0.0]
+            if dead:
+                L += ["> ❌ **以下类目的召回率恰好为 0 —— 它们什么也没检出。** "
+                      + ", ".join(f"`{c}` (n={int(m.get('support', 0))})" for c, m in dead)
+                      + "。若其中含**安全/风控**类目, 这不是「有提升空间」, 而是"
+                      "**该防护在本次交付中完全不生效**; 不要按它的存在来设计下游流程。", ""]
             worst = sorted(per.items(), key=lambda kv: kv[1].get("f1-score", 0))[:8]
             L += ["### 4.1 最弱的类目 (按 F1 升序)", "",
                   "报告整体准确率而不报最弱的类目, 等于把失败藏进平均数。"
@@ -335,6 +363,36 @@ def build(state: Any, deps: Any) -> str:
     L += ["## 9. 质量门", "", _gate_ledger(state, ("p2",)), ""]
     return "\n".join(L)
 
+
+
+def _shipped_rule_count(tax2: dict, agree: dict) -> int:
+    """How many rules the ANNOTATOR actually saw, not how many were first drafted.
+
+    The report said "adjudication rules: 50" — the architect's first draft —
+    while `taxonomy_v2` carried 132 and §3 listed 82 of them on the same page.
+    A reader sizing the annotation burden, or auditing whether a rule reached the
+    annotator, was reading the wrong number by a factor of nearly three.
+    """
+    return len(_t(tax2, "taxonomy", "rules", default=[]) or []) or len(agree.get("new_rules", []) or [])
+
+
+def _population_weighted_note(metrics: dict) -> str:
+    """Only report a population-weighted accuracy when it IS one.
+
+    live38 printed "population-weighted accuracy: 0.8515" beside
+    "cross-validated accuracy: 0.8515" — the same number twice. No frequency
+    weights existed for that run, so the weighted figure fell back to the
+    unweighted one, and printing it as a separate line implies a second
+    measurement that was never made.
+    """
+    pw, cv = metrics.get("population_weighted_accuracy"), metrics.get("cv_accuracy")
+    if pw is None:
+        return ""
+    if cv is not None and abs(float(pw) - float(cv)) < 5e-5:
+        return ("\n- 按语料频次加权的准确率: **与上面的交叉验证准确率相同** —— "
+                "本次运行没有可用的类目频次权重, 该指标退化为未加权值, "
+                "**不是一次独立的测量**")
+    return f"\n- 按语料频次加权的准确率: **{num(pw)}**"
 
 def _gold_provenance(deps: Any) -> list[str]:
     """The gold set's composition, from the file itself.

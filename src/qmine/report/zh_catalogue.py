@@ -67,6 +67,48 @@ def build(state: Any, deps: Any) -> str:
               "这一条是对**交付划分**做的检查, 而不是对命名阶段当时的划分做的检查 —— "
               "后者会在治理阶段新增叶子之后失效。", ""]
 
+    # ---------------------------------------------------------------- 风险分布
+    # The blind namer flags a leaf when its SAMPLE looks risky. The risk screen
+    # scans every row. On live38 those disagreed badly: 1,499 rows were screened
+    # as risky and 813 of them (54%) sat in leaves the namer had not flagged, so
+    # a reader trusting the catalogue's risk marks would have missed most of the
+    # risk. `risk_screen.json` appeared nowhere in any deliverable.
+    risk_by_leaf: dict[int, int] = {}
+    risk_total = 0
+    try:
+        rs = deps.load("risk_screen") if deps.has("risk_screen") else {}
+        idx = rs.get("flag_mask_indices") or []
+        risk_total = int(rs.get("total_flagged") or len(idx))
+        for i in idx:
+            if 0 <= int(i) < len(labels):
+                lid = int(labels[int(i)])
+                risk_by_leaf[lid] = risk_by_leaf.get(lid, 0) + 1
+    except Exception:  # noqa: BLE001
+        pass
+    if risk_by_leaf:
+        namer_flagged = {i for i in delivered if by_id.get(i, {}).get("risk_flag")}
+        inside = sum(n for l, n in risk_by_leaf.items() if l in namer_flagged)
+        outside = sum(risk_by_leaf.values()) - inside
+        L += ["## 风险行的实际分布", "",
+              f"- 风险筛查命中: **{risk_total:,}** 行, 分布在 **{len(risk_by_leaf)}** 个叶中",
+              f"- 位于**盲评命名者标记为风险**的叶内: **{inside:,}** 行",
+              f"- 位于**未被标记**的叶内: **{outside:,}** 行"
+              + (f" ({pct(outside / max(1, inside + outside))})" if inside + outside else ""),
+              ""]
+        if outside:
+            L += ["> ⚠️ **命名者的风险标记不能当作风险清单来用。** 它看的是每个叶的"
+                  "**抽样卡片**, 而风险筛查扫的是**每一行** —— 两者本就不该一致。"
+                  "下面每个叶都单独给出自己的风险命中数, 请按这个数做处置, "
+                  "不要只看「风控标记」那一行。", ""]
+        top = sorted(risk_by_leaf.items(), key=lambda kv: -kv[1])[:10]
+        L += ["| 叶 | 名称 | 风险命中 | 占该叶 | 命名者标记 |", "|---|---|---|---|---|"]
+        for lid, n in top:
+            nm = str(by_id.get(lid, {}).get("name_zh", "")) or f"(未命名 {lid})"
+            share = pct(n / max(1, int(sizes[lid])))
+            mark = "✓" if lid in namer_flagged else "—"
+            L.append(f"| {lid} | {nm} | {n:,} | {share} | {mark} |")
+        L.append("")
+
     # ---------------------------------------------------------------- 家族分组
     by_family: dict[int, list[int]] = {}
     for lid in delivered:
@@ -76,6 +118,27 @@ def build(state: Any, deps: Any) -> str:
     # See `family_names`: the auditor's family_id is a different namespace from
     # the partition's, and matching them by integer mislabelled every family.
     fam_names = family_names(naming, fam, sizes)
+
+    # A NAME OR CODE THAT IS NOT UNIQUE CANNOT BE A KEY. live38 shipped two
+    # leaves called 生僻字词释义查询 and two carrying `chinese_pinyin_lookup`;
+    # anything downstream that groups by either silently merges them.
+    from collections import Counter
+
+    dup_names = [n for n, c in Counter(
+        str(by_id.get(i, {}).get("name_zh", "")).strip() for i in delivered).items()
+        if c > 1 and n]
+    dup_codes = [c for c, n in Counter(
+        str(by_id.get(i, {}).get("code", "")).strip() for i in delivered).items()
+        if n > 1 and c]
+    if dup_names or dup_codes:
+        L += ["> ⚠️ **有叶子共用同一个名称或代码, 因此二者都不能当作主键。**", ""]
+        for nm in dup_names:
+            ids = [i for i in delivered if str(by_id.get(i, {}).get("name_zh", "")).strip() == nm]
+            L.append(f"> - 名称 「{nm}」 → 叶 {', '.join(str(i) for i in ids)}")
+        for cd in dup_codes:
+            ids = [i for i in delivered if str(by_id.get(i, {}).get("code", "")).strip() == cd]
+            L.append(f"> - 代码 `{cd}` → 叶 {', '.join(str(i) for i in ids)}")
+        L += ["", "> 下游请按 **`bu_leaf` 的整数 id** 聚合 —— 它唯一。", ""]
 
     L += ["---", ""]
     for f in sorted(by_family, key=lambda k: -sum(int(sizes[i]) for i in by_family[k])):
@@ -105,5 +168,9 @@ def build(state: Any, deps: Any) -> str:
                 L.append(f"- 命名者: `{n['named_by']}`")
             if n.get("risk_flag"):
                 L.append(f"- ⚠️ **盲评命名者标记的风险**: {n.get('risk_reason', '')}")
+            hits = risk_by_leaf.get(lid, 0)
+            if hits:
+                L.append(f"- 🔍 **风险筛查命中 {hits:,} 行** ({pct(hits / max(1, sz))} 的该叶)"
+                         + ("" if n.get("risk_flag") else " —— 命名者未标记此叶"))
             L.append("")
     return "\n".join(L)

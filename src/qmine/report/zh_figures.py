@@ -25,7 +25,7 @@ from __future__ import annotations
 # chose, and — when they differ — the alpha *silhouette* would have chosen. That
 # third panel is Principle 3 rendered as a picture: it shows what the rejected
 # criterion would have built, next to what was built instead.
-_SPACES = "\ndef spaces_to_compare():\n    # [(alpha, label), ...] - base, the chosen alpha, and a contrast.\n    sw = rep.get('alpha_sweep', {}) or {}\n    rows = sw.get('rows', []) or []\n    chosen = float(sw.get('chosen_alpha') or 0.0)\n    out = [(0.0, 'base (α=0, 纯语义)')]\n    if chosen > 0:\n        out.append((chosen, f'hybrid α={chosen} (最终)'))\n    sil = sw.get('silhouette_would_have_chosen')\n    if sil is None and rows:\n        sil = max(rows, key=lambda r: r.get('silhouette', -9)).get('alpha')\n    if sil is not None and float(sil) > 0 and abs(float(sil) - chosen) > 1e-9:\n        out.append((float(sil), f'hybrid α={sil} (silhouette 会选)'))\n    else:\n        alt = [r['alpha'] for r in rows if abs(r['alpha'] - chosen) > 1e-9 and r['alpha'] > 0]\n        if alt:\n            out.append((float(max(alt)), f'hybrid α={max(alt)}'))\n    return out[:3]\n\n\ndef space_matrix(alpha):\n    # Rebuild a hybrid space at any alpha from the two blocks already on disk.\n    if not alpha or not (GEN/'emb_svd_char.npy').exists():\n        return NPY('emb_base')\n    from qmine.ops.represent import hybrid\n    return hybrid(NPY('emb_base'), NPY('emb_svd_char'), float(alpha))\n\n\ndef families_in(X, k, seed=0):\n    # Each panel is coloured by ITS OWN families, not the chosen space's - the\n    # spaces disagreeing about what the families ARE is the point of the figure.\n    from sklearn.cluster import KMeans\n    return KMeans(n_clusters=int(k), n_init=4, random_state=seed).fit_predict(X)\n"
+_SPACES = "\ndef spaces_to_compare():\n    # [(alpha, label), ...] - base, the chosen alpha, and a contrast.\n    sw = rep.get('alpha_sweep', {}) or {}\n    rows = sw.get('rows', []) or []\n    chosen = float(sw.get('chosen_alpha') or 0.0)\n    out = [(0.0, 'base (α=0, 纯语义)')]\n    if chosen > 0:\n        out.append((chosen, f'hybrid α={chosen} (最终)'))\n    sil = sw.get('silhouette_would_have_chosen')\n    if sil is None and rows:\n        sil = max(rows, key=lambda r: r.get('silhouette', -9)).get('alpha')\n    if sil is not None and float(sil) > 0 and abs(float(sil) - chosen) > 1e-9:\n        out.append((float(sil), f'hybrid α={sil} (silhouette 会选)'))\n    else:\n        alt = [r['alpha'] for r in rows if abs(r['alpha'] - chosen) > 1e-9 and r['alpha'] > 0]\n        if alt:\n            out.append((float(max(alt)), f'hybrid α={max(alt)}'))\n    return out[:3]\n\n\ndef space_matrix(alpha):\n    # Rebuild a hybrid space at any alpha from the two blocks already on disk.\n    if not alpha or not (GEN/'emb_svd_char.npy').exists():\n        return NPY('emb_base')\n    from qmine.ops.represent import hybrid\n    return hybrid(NPY('emb_base'), NPY('emb_svd_char'), float(alpha))\n\n\ndef families_in(X, k, seed=0):\n    # Each panel is coloured by ITS OWN families, not the chosen space's - the\n    # spaces disagreeing about what the families ARE is the point of the figure.\n    #\n    # MUST be the pipeline's own fit. This used to be a local KMeans(n_init=4)\n    # while the pipeline uses n_init=10, so the figure drew a WORSE local\n    # optimum than the panel beside it: fig5's alpha=0.5 panel read 2.16\n    # where metrics_panel.json says 1.20, and 1.17/1.20 at other seeds. The\n    # figure's headline argument was restart noise.\n    from qmine.ops.cluster import kmeans_labels\n    return kmeans_labels(X, int(k), seed=seed)\n"
 
 # Shared by every projection figure: a 2-D view of a high-dimensional space,
 # preferring UMAP's local-structure preservation but never requiring it.
@@ -179,8 +179,24 @@ try:
     is_density = rows.get('noise_rate', pd.Series(0, index=rows.index)).fillna(0) > 0.01
 
     fig, ax = plt.subplots(figsize=(9.2, 5.6))
-    palette = {f: c for f, c in zip(sorted(algo_fam.unique()),
-               ['#4c3bcf','#eb6834','#1baf7a','#2a78d6','#c9a227','#9257c9','#d24d78'] * 4)}
+    # The hand-picked list holds 7 colours; live38's battery has 8 algorithm
+    # families, and `* 4` made the 8th silently reuse the 1st — two families in
+    # the identical colour on a scatter whose whole job is telling them apart.
+    # Past the hand-picked set, generate as many distinguishable colours as the
+    # data needs instead of wrapping.
+    _fams = sorted(algo_fam.unique())
+    _base = ['#4c3bcf','#eb6834','#1baf7a','#2a78d6','#c9a227','#9257c9','#d24d78']
+    if len(_fams) <= len(_base):
+        palette = dict(zip(_fams, _base))
+    else:
+        # `matplotlib.cm.get_cmap` was REMOVED in matplotlib 3.9; this env runs
+        # 3.11, so the fix for the colour collision raised AttributeError and the
+        # battery figure vanished from the deliverables. The cell caught it and
+        # printed a note, so the notebook still reported "0 cell errors".
+        # Verified against the installed matplotlib, not assumed.
+        import matplotlib as _mpl
+        _cmap = _mpl.colormaps['tab20'].resampled(len(_fams))
+        palette = {f: _cmap(i) for i, f in enumerate(_fams)}
     for f in sorted(algo_fam.unique()):
         m = ((algo_fam == f) & ~is_density).to_numpy()
         if m.any():
@@ -206,8 +222,27 @@ try:
                     textcoords='offset points', color=ORANGE, fontweight='bold', fontsize=10)
     ax.set_xlabel('重播稳定性 ARI  (→ 可复现)')
     ax.set_ylabel('silhouette  (→ 结构紧致)')
-    ax.set_title(f'算法选优 battery ({len(rows)} 个配置): Upper right is better'
-                 f'\\n当选 {chosen} — {battery["verdict"]["chosen_by"]}', fontsize=10.5)
+    # A CONFIG THAT CANNOT BE PLOTTED MUST BE ACCOUNTED FOR, NOT DROPPED.
+    # The three HDBSCAN runs carry stability_ari = NaN, and matplotlib silently
+    # discards NaN coordinates — so the title said "18 configs" over 15 dots and
+    # a reader counting them could not tell why. The reason is itself the most
+    # interesting result in the figure: 86-91% of rows came back as noise, which
+    # is density clustering failing on this corpus, not a missing measurement.
+    _unplot = rows[rows['stability_ari'].isna() | rows['silhouette'].isna()]
+    _note = ''
+    if len(_unplot):
+        _nr = rows.get('noise_rate')
+        _lo, _hi = (_unplot['noise_rate'].min(), _unplot['noise_rate'].max()) \
+            if _nr is not None else (float('nan'), float('nan'))
+        _note = (f'\\n未画出 {len(_unplot)} 个配置 ({", ".join(sorted(_unplot["algorithm"]))}): '
+                 f'重播稳定性无定义 — 其 {_lo:.0%}-{_hi:.0%} 的行被判为噪声')
+    # `chosen_by` is authored in English in the artifact; the deliverable is zh.
+    # Imported IN THE CELL — this is generated code that runs standalone in the
+    # notebook, where the report package is not already in scope.
+    from qmine.report.i18n import prose as _prose
+    _why = _prose(str(battery['verdict']['chosen_by']), 'zh')
+    ax.set_title(f'算法选优 battery ({len(rows)} 个配置, 已画出 {len(rows) - len(_unplot)}): 越靠右上越好'
+                 f'\\n当选 {chosen} — {_why}{_note}', fontsize=9.5)
     ax.grid(alpha=.25, ls=':')
     ax.legend(fontsize=8, title='算法族', title_fontsize=8.5, loc='lower right')
     plt.tight_layout(); SAVE(fig, 'fig3_battery'); plt.show()
@@ -278,6 +313,7 @@ if probe is None:
 else:
     q_all = df['query'].astype(str).to_numpy()
     fig, axes = plt.subplots(1, len(_spaces), figsize=(5.9*len(_spaces), 5.6), squeeze=False)
+    _efs = []
     for ax, (a, title) in zip(axes[0], _spaces):
         X = space_matrix(a)
         P, idx, how = project(X)
@@ -296,6 +332,7 @@ else:
             pr = cnt / cnt.sum(); ef = float(np.exp(-(pr*np.log(pr)).sum()))
         else:
             ef = float('nan')
+        _efs.append((title, ef))
         ax.set_title(f'{{title}}\\n「{{probe["name"]}}」有效散布于 {{ef:.2f}} 个家族', fontsize=10)
         ax.set_xticks([]); ax.set_yticks([])
     fig.suptitle(f'同一意图 (彩色, 按家族着色) 在各空间被劈开的程度 — 灰=其余 query  ·  n={{int(hit.sum())}}',
@@ -303,7 +340,18 @@ else:
     plt.tight_layout(); SAVE(fig, 'fig5_intent_split'); plt.show()
     print('「有效家族数」= exp(香农熵), 与碎裂度是同一个公式 —')
     print('1.00 = 该意图完整落在一个家族里; 3.00 = 被切成三份等大的碎片。')
-    print('跨面板比较才是重点: 措辞话语权越高的空间, 同一意图散得越开。')"""
+    # DERIVED FROM THE PANELS, NOT ASSERTED. This line used to read "the more
+    # weight phrasing gets, the more one intent scatters" as an unconditional
+    # claim. Measured with the pipeline's own fit the sequence is 1.34 -> 1.41
+    # -> 1.20: it rises then falls, so the sentence was false and the figure was
+    # arguing the alpha decision from a claim its own numbers contradict.
+    _vals = [e for _, e in _efs if e == e]
+    if len(_vals) >= 2:
+        _mono = all(b >= a for a, b in zip(_vals, _vals[1:]))
+        print('跨面板比较: ' + ' → '.join(f'{{e:.2f}}' for e in _vals) +
+              ('  措辞话语权越高, 该意图散得越开。' if _mono else
+               '  注意: 并非单调 —— 该意图在措辞权重最高的空间里反而更集中, '
+               '因此本图不足以单独支撑 α 的选择, 请以统一面板为准。'))"""
 
 
 def fig_panel_bars() -> str:

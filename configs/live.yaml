@@ -37,4 +37,29 @@ llm:
     # called directly. This is also the one annotator model this project has
     # actually exercised end-to-end. Its lab (qwen) still differs from
     # annotator_a (deepseek) and the referee (zhipu), so independence holds.
-    annotator_b: dashscope/qwen3-next-80b-a3b-instruct
+    # BARE, per the rule three lines above — which this pin itself used to break.
+    # The catalogue now keys this model `qwen/qwen3-next-80b-a3b-instruct`, so the
+    # old `dashscope/...` form matched no card, fell through to provider
+    # "explicit" with api_model=None, and died in `init_chat_model`. Verified:
+    # bare -> provider `qwen` (DIRECT, what this pin is for);
+    # `qwen/...` -> provider `openrouter` (the gateway this pin exists to avoid).
+    annotator_b: qwen3-next-80b-a3b-instruct
+    # The router picked `glm-5-code` for both of these on price, and this account
+    # gets 403 "您无权访问glm-5-code" — the model is listed in the catalogue but
+    # not entitled. Both roles fail safe (the interpreter ships a section with no
+    # prose, the proposer returns the configured grid), so a run would survive it
+    # and silently lose both features. Pinned to the flagship this project has
+    # actually exercised. Neither role has an independence constraint: the
+    # interpreter writes prose about numbers it is checked against, and the
+    # proposer's suggestions must still beat the incumbent by >2 se.
+    # The researchers are the only TOOL-USING agents here, and deepseek-v4-pro
+    # rejects the `tool_choice` that LangChain's `create_agent` sets when a
+    # response_format is bound: 400 "Thinking mode does not support this
+    # tool_choice", two seconds in, zero tool calls made. The agent still returns
+    # candidates from parametric knowledge, so the failure is INVISIBLE in the
+    # phase result — live38 hit its tool cap at step 24 (tools working hard),
+    # live39 hit a 400 at step 0 (tools never used) and both logged "2 tool loop
+    # failures". glm-5.2 is what live38 actually searched the web with.
+    researcher: glm-5.2
+    interpreter: deepseek-v4-pro
+    proposer: deepseek-v4-pro

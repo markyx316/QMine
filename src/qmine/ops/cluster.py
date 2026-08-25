@@ -490,7 +490,8 @@ def triangulate_k(
     stability_floor: float = 0.55,
     #: AMI differences at or under this are treated as ties. Measured, not assumed:
     #: the seed-to-seed sd of AMI on these corpora is 0.005-0.023.
-    ami_tie_band: float = 0.02,
+    ami_tie_band: float = 0.02,   # fallback only; the band is measured when it can be
+    ami_tie_z: float = 2.0,
 ) -> dict[str, Any]:
     """Locate the family scale, and name every K the measurement cannot rule out.
 
@@ -498,7 +499,8 @@ def triangulate_k(
     estimates the *leaf* scale, so it enters the comparison divided by the
     expected leaves-per-family.  The expert range is a prior from someone who
     knows the vertical.  Agreement is strong evidence; disagreement is not
-    resolved by averaging — we take the stability peak and record the dissent,
+    resolved by averaging — we take the K the LOCATOR points at (intent alignment;
+    stability only rejects) and record the dissent,
     because a number nobody can defend is worse than a number with a caveat.
     """
     valid = [r for r in sweep if not np.isnan(r["stability_ari"])]
@@ -526,8 +528,22 @@ def triangulate_k(
     located = [r for r in stable if not np.isnan(r.get("intent_alignment_ami", float("nan")))]
 
     if located:
+        # THE TIE BAND IS MEASURED, NOT ASSUMED. It used to be the constant 0.02,
+        # with a comment beside it recording that AMI's seed sd is "~0.01" — i.e.
+        # a 2-sd band, correct for THIS corpus and imported everywhere else. This
+        # codebase's worst recurring defect is exactly that. `noise_floor` reads
+        # the sweep's own roughness and returns 0.0105 here, which is the same
+        # answer arrived at independently, and adapts on a corpus where it is not.
+        #
+        # Estimated on the FULL sweep, never on a filtered subset.
+        from .select import noise_floor
+
         best = max(located, key=lambda r: r["intent_alignment_ami"])
-        band = ami_tie_band
+        se = noise_floor([r["intent_alignment_ami"] for r in sweep])
+        if np.isnan(se):
+            band, band_source = ami_tie_band, f"configured {ami_tie_band} (sweep too short to measure)"
+        else:
+            band, band_source = ami_tie_z * se, f"{ami_tie_z:g}x measured noise (se={se:.4f})"
         tie_set = [r for r in located
                    if best["intent_alignment_ami"] - r["intent_alignment_ami"] <= band]
         peak = min(tie_set, key=lambda r: r["k"])   # inside a tie, prefer the simpler tree
@@ -539,6 +555,7 @@ def triangulate_k(
         peak = max(valid, key=lambda r: r["stability_ari"])
         tie_set = [peak]
         locator = "stability_ari (no phrasing groups available — weak evidence)"
+        band, band_source = 0.0, "not applicable — no locator metric available"
     sil_peak = max(valid, key=lambda r: r["silhouette"])
     da_family = deep_aligned["k_estimate"] / max(leaf_ratio, 1)
     lo, hi = expert_range
@@ -603,7 +620,7 @@ def triangulate_k(
                     for r in sorted(tie_set, key=lambda r: r["k"])],
         "chosen_by": (
             f"stability >= {stability_floor} rejects irreproducible K; among survivors the "
-            f"highest {locator}; ties within {ami_tie_band} broken toward the simpler tree"
+            f"highest {locator}; ties within {band:.4f} — {band_source} — broken toward the simpler tree"
         ),
         "converged": agreement == "full",
         "agreement": agreement,

@@ -141,7 +141,11 @@ def build(state: Any, deps: Any, figs: dict[str, Any]) -> str:
               f"{sp.get('vocab_size', '?'):,} 维 → TruncatedSVD 压到 {sp.get('n_components','?')} 维 "
               f"(解释方差 {num(sp.get('explained_variance'))})。", "",
               "TF-IDF 代表**措辞/模板**, 与 embedding 的**语义**互补; SVD 只是把它压成"
-              "**可与稠密块拼接**的形态, 信息基本无损。", ""]
+              "**可与稠密块拼接**的形态。", "",
+              "> ⚠️ **不要把这一步读成「无损」。** 256 维只解释了原始 TF-IDF 方差的一部分 "
+              "(见上方的解释方差)。SVD 保留的是**主要的共现方向**, 低频、长尾的措辞差异"
+              "在压缩中就已丢失 —— 这对措辞轴是可以接受的取舍, 但它是一个**取舍**, "
+              "不是一次无代价的变形。", ""]
 
     surface = alpha ** 2 / (1 + alpha ** 2)
     L += ["### 1.2 Hybrid 拼接与 α 的精确含义", "",
@@ -165,7 +169,16 @@ def build(state: Any, deps: Any, figs: dict[str, Any]) -> str:
                      f"{num(r['silhouette'])} |")
         L.append("")
         if sweep.get("chosen_by"):
-            L.append(f"**选择规则**: {sweep['chosen_by']}。")
+            # Translated rule + the numbers as data. Quoting `chosen_by` raw put
+            # an English sentence into the Chinese report on every run.
+            _band = sweep.get("tie_band_value")
+            _src = sweep.get("tie_band_source", "")
+            L.append(f"**选择规则**: {prose(sweep.get('chosen_by', ''))}"
+                     + (f" 本次容差带 = {_band}"
+                        + (f" (= 最低碎裂度 x {1 + sweep.get('tie_band_relative_pct', 0) / 100:.2f})"
+                           if sweep.get("tie_band_relative_pct") else "")
+                        if _band is not None else "")
+                     + (f" ({prose(_src)})" if _src else "") + "。")
         if sweep.get("contenders"):
             L.append(
                 f"碎裂度差异在 {sweep.get('tie_band', 0.05):.0%} 带内视为打平 "
@@ -241,10 +254,21 @@ def build(state: Any, deps: Any, figs: dict[str, Any]) -> str:
                   "**结构换一种算法还在不在?** 在, 说明它是语料的性质; 不在, 说明它是 "
                   "KMeans「簇近似球形」这一假设的产物。", ""]
             alt, mg = verdict.get("best_alternative"), verdict.get("alternative_beats_reference_by")
+            # A "strongest alternative" that IS the reference makes the gap 0.0 by
+            # construction, and the row then reads as a passed falsification test
+            # when nothing was actually compared. live38 shipped exactly this:
+            # reference kmeans_k15, best_alternative kmeans_k15, gap 0.0.
+            self_cmp = alt is not None and alt == verdict.get("reference_algorithm")
             L += ["| 参照 (交付所用) | 最强替代算法 | 稳定性差距 | 结论 |", "|---|---|---|---|",
                   f"| `{verdict.get('reference_algorithm')}` | `{alt}` | "
                   f"{num(mg) if mg is not None else '—'} | "
                   f"{'⚠️ 假设被质疑' if verdict.get('kmeans_assumption_contradicted') else '✅ 未被证伪'} |", ""]
+            if self_cmp:
+                L += ["> ⚠️ **本行是一次自我比较, 不是一次证伪检验。** 「最强替代算法」"
+                      f"与参照同为 `{alt}`, 因此稳定性差距必然为 0 —— "
+                      "这说明**没有任何一个替代算法比参照更可复现**, "
+                      "而不是说明参照通过了与其他算法的对比。两者的证据强度不同: "
+                      "前者只排除了「有更好的」, 没有排除「都一样差」。", ""]
             # The artifact keeps the English note for machine readers; the report
             # renders the same judgement in the deliverable's language.
             L += ["> " + ("**KMeans 的球形簇假设在此处被质疑**: 一个结构上完全不同的算法比它"
@@ -300,7 +324,8 @@ def build(state: Any, deps: Any, figs: dict[str, Any]) -> str:
         if tri.get("divergence_note"):
             L += [f"> ⚠️ {tri['divergence_note']}", ""]
     L.append(_fig(figs, "fig_battery",
-                  "算法 battery: 纵轴 (稳定性) 裁决, 横轴 (silhouette) 只旁听"))
+                  "算法 battery: 横轴 = 重播稳定性 (裁决), 纵轴 = silhouette (只旁听) —— "
+                  "越靠右越可复现, 越靠上只是越紧致"))
     L.append(_fig(figs, "fig_k_sweep",
                   "K 扫描: 各候选空间的稳定性与 silhouette 曲线 — 形状并不一致, "
                   "所以一个空间选出的 K 不能搬到另一个空间"))
@@ -315,7 +340,8 @@ def build(state: Any, deps: Any, figs: dict[str, Any]) -> str:
           f"1. **家族层**: 全量 KMeans, K = 稳定性峰 ({tri.get('chosen_family_k','?')});",
           f"2. **家族内局部选 k**: 每个家族单独试 k=2..{deps.cfg.clustering.max_leaves_per_family}, "
           f"以 cosine silhouette 择优 — **每个家族根据自身结构自主决定形成几个叶子**。"
-          f"约束: 最小叶 {_t(meta,'min_leaf_size_applied',default='?')} 条。", "",
+          f"约束: 最小叶 {_t(meta,'min_leaf_size_applied',default='?')} 条"
+          + _delivered_min_leaf(deps, _t(meta, "min_leaf_size_applied", default=None)) + "。", "",
           "> **为什么不用一步到位的大 K?** K 扫描显示细粒度全局划分**可复现性太差**; "
           "「稳定粗分 + 家族内局部细分」让每层都工作在各自更好复现的尺度上。", ""]
 
@@ -364,7 +390,15 @@ def build(state: Any, deps: Any, figs: dict[str, Any]) -> str:
             L += [f"> ⚠️ 本次检验**样本不足以判定** — 置信区间跨过阈值, "
                   f"约需 {sv.get('n_needed')} 行 held-out 才能定论。既不算通过, 也不算失败。", ""]
 
-    L.append(_fig(figs, "fig_umap", "UMAP-2D 语义空间: 各点按最终家族着色"))
+    # The figure is a THREE-panel comparison of different spaces, each coloured by
+    # ITS OWN families — that disagreement is the point. The old caption said
+    # "coloured by the FINAL families", which describes a single-panel picture
+    # this figure is not, and invites the reader to compare colours across panels
+    # as though they meant the same thing.
+    L.append(_fig(figs, "fig_umap",
+                  "UMAP-2D: 同一批 query 在几个候选表征中的分布。"
+                  "**每一栏各自按自己空间里的家族着色** —— 栏与栏之间颜色不可对照, "
+                  "要看的是同一团点在不同空间里是否还聚在一起"))
 
     # ------------------------------------------------------------- 4 命名
     L += [f"## 4. {v['naming']}", "", v["blind_protocol"], ""]
@@ -478,9 +512,18 @@ def build(state: Any, deps: Any, figs: dict[str, Any]) -> str:
           "- **聚类对功能型意图结构性不可见**: 措辞与内容正常、意图藏在语用里的类别 "
           "(用法判断、解题、导航、闲聊) 只能由自上而下体系承担, 本报告不硬凑。", ""]
     if langp:
-        L += [f"- **语言构成**: 主体 `{langp.get('dominant')}` {pct(langp.get('dominant_share'))}, "
-              f"少数语种 {pct(langp.get('minority_share'))} ({langp.get('posture')})。"
-              f"{langp.get('rationale','')}", ""]
+        # Read the UNROUNDED share. `dominant_share` is stored as round(x, 4) —
+        # 0.9764595 becomes 0.9765 — and `pct` then rounds again to 97.7%, while
+        # the rationale string beside it computes 97.6% from the raw value. Two
+        # different numbers for one quantity, in one sentence, from rounding twice.
+        dom = langp.get("dominant")
+        share = (langp.get("shares") or {}).get(dom, langp.get("dominant_share"))
+        minority = langp.get("minority_share") or 0.0
+        L += [f"- **语言构成**: 主体 `{dom}` {pct(share)}, "
+              f"少数语种 {pct(minority)}"
+              + ("" if minority else " (无其他语种达到可分层的规模)")
+              + f" ({langp.get('posture')})。", ""]
+        L += [f"> {_language_posture_zh(langp)}", ""]
 
     # ------------------------------------------------------------ 11 档案
     L += [f"## 14. {v['leaf_catalogue']}", "",
@@ -525,6 +568,59 @@ def _agent_reading(deps: Any, question: str, facts: dict[str, Any],
         return []
     md = got.as_markdown(label)
     return [md, ""] if md else []
+
+
+
+#: Keyed on `posture`, which is a STABLE enum, not on the rationale prose.
+#: `ops/language.py` authors that rationale as f"{dominant} accounts for …" —
+#: it begins with a corpus-specific value, so no `prose()` prefix key can match
+#: it on a corpus whose dominant script is not the one the key was written for.
+#: Translating the verdict rather than the sentence is what makes it portable.
+_POSTURE_ZH = {
+    "monolingual":
+        "**单一语种语料**: 没有任何其他文字达到可分层的规模。直接使用针对主体语言的"
+        "单语编码器即可 —— 此处没有需要分层处理的少数语种。",
+    "minority_at_risk":
+        "**存在规模偏小但非空的少数语种 —— 有被压成「垃圾簇」的风险。** "
+        "占比很低的语种在全量聚类中往往被并成一个混杂簇, 而**换多语种编码器并不能"
+        "解决这个问题**。请对该部分单独分层检查。",
+    "genuinely_multilingual":
+        "**真正的多语种语料**: 少数语种规模足以自成结构。必须分层建模与分层评估, "
+        "不要用一次全量聚类的指标代表所有语种。",
+}
+
+
+def _language_posture_zh(langp: dict[str, Any]) -> str:
+    posture = str(langp.get("posture", ""))
+    zh = _POSTURE_ZH.get(posture)
+    if zh:
+        return zh
+    # An unrecognised posture must show the original rather than disappear.
+    return prose(langp.get("rationale", "")) or f"语言态势: `{posture}`"
+
+def _delivered_min_leaf(deps: Any, stated: Any) -> str:
+    """Say when the DELIVERED tree breaks the constraint the text just stated.
+
+    The report says 「最小叶 150 条」 and live38 delivered leaves of 104 and 122 —
+    because p8 governance splits after p6 applied the floor. Stating a constraint
+    the shipped object violates, with no note, teaches the reader a guarantee that
+    is not there.
+    """
+    try:
+        import numpy as np
+
+        labels = deps.leaf_labels_final()
+        sizes = np.bincount(labels)
+        sizes = sizes[sizes > 0]
+        lo = int(sizes.min())
+    except Exception:  # noqa: BLE001
+        return ""
+    if stated is None or lo >= int(stated):
+        return f" (交付树的最小叶为 {lo} 条, 满足该约束)"
+    n_under = int((sizes < int(stated)).sum())
+    return (f" —— 但**交付树的最小叶只有 {lo} 条**, 共 {n_under} 个叶低于该值。"
+            "该约束由 p6 施加, 而 p8 治理会在其后再拆分, 因此它约束的是精化结果, "
+            "不是交付结果")
 
 def _refinement_verdict(hist: list, meta: dict, deps: Any) -> list[str]:
     """Say whether the loop converged, and if not, HOW it failed to.
@@ -772,11 +868,30 @@ def _gate_ledger(state: Any, phases: tuple[str, ...] | None = None) -> str:
         # leaves the reader unable to check any claim the report makes.
         obs = _kv_cell(g.observed)
         thr = _kv_cell(g.threshold)
-        out.append(f"| `{name}` | `{g.phase}` | {icon.get(g.status, g.status)} | "
+        # A GATE THAT PASSED WITH SLACK MUST SAY SO IN THE TABLE. `p2b_kappa`
+        # rendered as ✅ 通过 with 实测 0.8221 beside 门槛 0.9 and no explanation,
+        # while the gate's own message read "PROCEEDING WITH RESIDUAL SLACK …
+        # short of 0.9; every downstream number …". The caveat existed on every
+        # run and reached no reader, because the ledger printed `message` only
+        # for gates that failed.
+        slack = _passed_below_threshold(g)
+        mark = " ⚠️ 带保留通过" if slack else ""
+        out.append(f"| `{name}` | `{g.phase}` | {icon.get(g.status, g.status)}{mark} | "
                    f"{'是' if g.blocking else '否'} | {obs} | {thr} |")
         if g.status in ("failed", "warned", "rejected") and g.remediation:
             failed.append((name, g))
     out.append("")
+
+    # Every gate's own conclusion, passing ones included.
+    with_msg = [(n, g) for n, g in sorted(gates.items(), key=lambda kv: str(kv[1].phase))
+                if getattr(g, "message", "")]
+    if with_msg:
+        out += ["#### 每一道门实际得出的结论", "",
+                "**通过 ≠ 没有保留。** 下面是每一道门自己写下的结论 —— 包括通过的那些, "
+                "因为一道门可以在实测值低于门槛时仍然放行, 而放行的理由只写在这里。", ""]
+        for n, g in with_msg:
+            flag = "⚠️ **带保留通过** — " if _passed_below_threshold(g) else ""
+            out += [f"**`{n}`** — {flag}{g.message}", ""]
     if failed:
         out += ["#### 未通过/警告的门 — 处置建议", ""]
         for name, g in failed:
@@ -787,6 +902,35 @@ def _gate_ledger(state: Any, phases: tuple[str, ...] | None = None) -> str:
                 "一道从不触发的门与一道通过的门在报告里长得一模一样, 因此这里单独列出。", ""]
     return "\n".join(out)
 
+
+
+def _passed_below_threshold(g: Any) -> bool:
+    """Did this gate pass while its own observed value sits under its bar?
+
+    Not a failure — several gates legitimately proceed with a recorded caveat —
+    but a reader seeing ✅ beside a number below the threshold, with no
+    explanation, will read it as clean. Compares like-named fields only, so a
+    threshold about one quantity is never checked against another's observation.
+    """
+    if getattr(g, "status", "") != "passed":
+        return False
+    obs, thr = getattr(g, "observed", None) or {}, getattr(g, "threshold", None) or {}
+    if not isinstance(obs, dict) or not isinstance(thr, dict):
+        return False
+    for tk, tv in thr.items():
+        if not isinstance(tv, (int, float)) or isinstance(tv, bool):
+            continue
+        base = str(tk).replace("min_", "").replace("max_", "").replace("_floor", "")
+        for ok, ov in obs.items():
+            if not isinstance(ov, (int, float)) or isinstance(ov, bool):
+                continue
+            if str(ok) == base or str(ok).endswith(base) or base.endswith(str(ok)):
+                if str(tk).startswith("max_"):
+                    if ov > tv:
+                        return True
+                elif ov < tv:
+                    return True
+    return False
 
 def _governance_ledger(state: Any, gov: dict) -> str:
     """Every prescription: who proposed it, what happened to it, and why."""

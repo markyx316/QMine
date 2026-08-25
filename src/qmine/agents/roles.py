@@ -50,6 +50,12 @@ class CandidateCategory(BaseModel):
 
 class ResearchSubmission(BaseModel):
     angle: str = ""
+    #: Did this angle's tool loop actually run? Set by the phase, not the model —
+    #: an agent cannot be asked whether it searched. Without it `taxonomy.json`
+    #: cannot distinguish an angle that ran a dozen web searches from one whose
+    #: tool loop died and answered from parametric knowledge, and the taxonomy is
+    #: described to the reader as web-researched either way.
+    web_researched: bool = False
     candidates: list[CandidateCategory] = Field(default_factory=list)
     observations: list[str] = Field(default_factory=list)
     contradictions: list[str] = Field(
@@ -581,6 +587,37 @@ class ReportDraft(BaseModel):
     limitations: list[str] = Field(default_factory=list)
 
 
+class GridProposal(BaseModel):
+    parameter: str = ""
+    add: list[float] = Field(default_factory=list)
+    drop: list[float] = Field(default_factory=list)
+    rationale: str = ""
+    corpus_signals: list[str] = Field(default_factory=list)
+
+
+class ProposerAgent(Agent):
+    """Proposes search-grid values from corpus characteristics, never from scores.
+
+    Blind by construction: `ops.propose.assert_blind` refuses the payload if any
+    score-shaped token reaches it, which is what makes the additions
+    pre-registered rather than an adaptive search around a peak it was shown.
+    """
+
+    role = "proposer"
+    prompt_name = "proposer"
+    schema = GridProposal
+
+    def build_user(self, *, parameter: str = "", corpus: str = "",
+                   incumbent: str = "", limits: str = "", **kw: Any) -> str:
+        return (
+            f"## Parameter to propose for\n{parameter}\n\n"
+            f"## The grid currently swept\n{incumbent}\n\n"
+            f"## Legal range and limits\n{limits}\n\n"
+            f"## What this corpus is like (no scores, by design)\n"
+            f"{budget_text(corpus, 24000, tail=4000, label='corpus profile')}\n"
+        )
+
+
 class Observation(BaseModel):
     severity: str = "note"                 # blocking | warn | note
     claim: str = ""
@@ -708,6 +745,7 @@ ALL_ROLES = {
     "namer": NamerAgent,
     "tree_auditor": AuditorAgent,
     "risk_sentinel": RiskSentinelAgent,
+    "proposer": ProposerAgent,
     "observer": ObserverAgent,
     "interpreter": InterpreterAgent,
     "reporter": ReporterAgent,

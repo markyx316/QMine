@@ -310,6 +310,15 @@ class LLMConfig(BaseModel):
     #: truncates mid-answer.
     max_tokens: int = 16000
     max_concurrency: int = 8
+    #: Run the two gold-set annotators at the same time. They are independent by
+    #: design, so there is no ordering dependency — only that the code used to
+    #: call one and then the other. Measured on live38 this returns ~16% of the
+    #: run's wall clock (p2b is 75% of the pipeline; the annotators are 94% of
+    #: its calls, and they are unbalanced enough that the saving is the whole of
+    #: the faster one). NOTE it doubles peak in-flight requests to
+    #: `2 x max_concurrency` while p2b runs, because splitting one budget between
+    #: them is worse than sequential. Turn off if a provider rate-limits.
+    annotators_concurrent: bool = True
     #: Kept low on purpose: the provider SDK already retries, and LangGraph node
     #: policies retry on top of that. Three layers at 3 attempts each is 27 calls
     #: for one logical request.
@@ -403,6 +412,16 @@ class QMineConfig(BaseModel):
     #: three failures the section ships with no commentary rather than unchecked
     #: commentary. Off in `fast_mode`.
     interpret_results: bool = True
+    #: Let an agent propose additional grid values from CORPUS CHARACTERISTICS —
+    #: never from scores, which `ops.propose.assert_blind` enforces on the payload.
+    #: The grids are K12 artefacts (`alpha_grid`, `k_sweep`, `expected_family_range`)
+    #: applied unchanged to every corpus, and this is how a grid can come from the
+    #: corpus instead. ON by default: the guardrails make widening safe rather
+    #: than merely cheap — additions are capped (the cap IS the multiple-
+    #: comparisons budget), a challenger must clear the incumbent by >2x the
+    #: metric's measured noise, and every run grades whether a proposal actually
+    #: won. Off in `fast_mode` regardless.
+    propose_grids: bool = True
     offline: bool = Field(
         default=False, description="No network: hashing encoder + mock LLM."
     )

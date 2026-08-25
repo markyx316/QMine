@@ -220,7 +220,13 @@ def _native_id(key: str, provider: str) -> str:
     DeepSeek needs the bare name and 404s on the prefixed one.
     """
     if provider == "openrouter":
-        return key
+        # OpenRouter needs `vendor/model` — but LiteLLM's own keys ALREADY carry
+        # the gateway prefix ("openrouter/openai/gpt-4.1"), so returning the key
+        # unchanged produced `openrouter/openrouter/...` as the api id and every
+        # OpenRouter-routed role died on "is not a valid model ID". It stayed
+        # hidden while the router happened to prefer direct providers; the moment
+        # OpenRouter won a role, 13 of 13 assignments were malformed.
+        return key[len("openrouter/"):] if key.lower().startswith("openrouter/") else key
     low = key.lower()
     for pre in _STRIP_PREFIXES:
         if low.startswith(pre):
@@ -248,8 +254,12 @@ def _from_litellm(blob: dict[str, Any]) -> dict[str, ModelCard]:
         if not prov:
             continue
         ic, oc = spec.get("input_cost_per_token"), spec.get("output_cost_per_token")
-        out[f"{prov}/{key}"] = ModelCard(
-            id=key, provider=prov, api_id=_native_id(key, prov),
+        # Key on the NATIVE id, so a LiteLLM entry and the provider's own listing
+        # for the same model collapse onto one card instead of shipping a
+        # near-duplicate whose api id differs by a redundant prefix.
+        _native = _native_id(key, prov)
+        out[f"{prov}/{_native}"] = ModelCard(
+            id=_native, provider=prov, api_id=_native,
             input_per_mtok=float(ic) * 1_000_000 if ic is not None else None,
             output_per_mtok=float(oc) * 1_000_000 if oc is not None else None,
             context_tokens=spec.get("max_input_tokens") or spec.get("max_tokens"),

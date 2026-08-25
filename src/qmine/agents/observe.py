@@ -43,6 +43,15 @@ class ObserverResult:
     kept: list[Any] = field(default_factory=list)
     dropped: list[tuple[Any, str]] = field(default_factory=list)
     checked: list[str] = field(default_factory=list)
+    #: The gate this observation produced. `deps.gate()` returns a GateResult and
+    #: registers nothing, so the CALLING NODE has to place it in state — the first
+    #: version dropped it on the floor and the observer's verdict reached the log
+    #: and nowhere else, which is the exact failure this module was written
+    #: against. `as_state_gates()` is what a node merges into its return.
+    gate: Any = None
+
+    def as_state_gates(self) -> dict[str, Any]:
+        return {self.gate.name: self.gate} if self.gate is not None else {}
 
     @property
     def blocking(self) -> list[Any]:
@@ -140,7 +149,7 @@ def observe_phase(
         for o in res.kept:
             deps.emit(f"    [{o.severity}] {o.claim[:120]}  ← {o.artifact_key}")
 
-    deps.gate(
+    res.gate = deps.gate(
         f"{phase}_observer", phase,
         passed=not (blocking_enabled and res.blocking),
         observed={"n_blocking": len(res.blocking), "n_warn": len(res.warnings),

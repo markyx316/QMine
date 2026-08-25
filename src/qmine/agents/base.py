@@ -170,6 +170,20 @@ class Agent:
         }
 
 
+
+def _is_response_format_rejection(exc: Exception) -> bool:
+    """Is this the "tools yes, structured output no" refusal, not a real outage?
+
+    Matched on the phrases providers actually return. Kept narrow on purpose: a
+    genuine outage must NOT be retried as if it were a capability quirk.
+    """
+    msg = str(exc).lower()
+    if "400" not in msg and "invalid_request" not in msg:
+        return False
+    return any(k in msg for k in
+               ("tool_choice", "response_format", "structured output",
+                "json_schema", "does not support"))
+
 def _tool_loop_usage(result: Any) -> dict[str, int]:
     """Total the tokens every model turn in a tool loop actually spent."""
     totals = {"input_tokens": 0, "output_tokens": 0}
@@ -228,13 +242,20 @@ class ToolAgent(Agent):
                 model, tools=self.tools, system_prompt=system,
                 response_format=self.schema,
             )
-            result = agent.invoke(
-                {"messages": [{"role": "user", "content": user}]},
-                {"recursion_limit": self.max_tool_iterations * 2},
-            )
-            parsed = result.get("structured_response")
+            # STREAM, DO NOT INVOKE. `recursion_limit` is 2 x tool calls (measured:
+            # 24 -> exactly 12 searches), and `invoke()` raises GraphRecursionError
+            # carrying NO state — so a researcher that spent all twelve searches
+            # had every finding discarded and then answered from parametric
+            # knowledge alone. That is not "cut off early", it is a total loss of
+            # the work, and it hit 2 of 5 researchers on live38 and 1 of 5 on
+            # live39. Streaming keeps the last state, so the findings survive.
+            # Verified equivalent to `invoke()` when the loop completes normally.
+            result, cutoff = self._stream_tool_loop(agent, user)
+            parsed = (result or {}).get("structured_response")
             if parsed is None:
-                raise ValueError("tool agent returned no structured response")
+                parsed = self._salvage_partial(role, system, user, result, cutoff)
+            if parsed is None:
+                raise cutoff or ValueError("tool agent returned no structured response")
             self.used_tools = True
             # A tool loop is several model calls, and this recorded a hardcoded
             # zero for all of them: every web-researching agent's spend was
@@ -255,10 +276,120 @@ class ToolAgent(Agent):
                 role, "deep", system, user, parsed, time.time() - t0)
             return self.postprocess(parsed, **kwargs)
         except Exception as exc:  # noqa: BLE001
-            log.warning("tool loop failed for %s (%s); falling back to a single call",
+            # SOME MODELS SUPPORT TOOLS BUT NOT `response_format` ALONGSIDE THEM.
+            # LangChain implements a structured response by forcing a
+            # `tool_choice`, and a thinking-mode model can reject exactly that:
+            # deepseek-v4-pro answers 400 "Thinking mode does not support this
+            # tool_choice" while `bind_tools` and a plain agent loop both work.
+            #
+            # Falling straight through to a single call throws the tools away and
+            # the agent still returns plausible candidates from parametric
+            # knowledge — so a WEB researcher that never searched looks identical
+            # in the phase result. live38 hit its tool cap at step 24 (searching
+            # hard) and live39 hit this 400 at step 0 (never searched); both
+            # logged "tool loop failed" and both produced candidates.
+            #
+            # So: retry the loop WITHOUT the structured response, then parse the
+            # final message into the schema separately. Tools survive.
+            if _is_response_format_rejection(exc):
+                try:
+                    salvaged = self._tool_loop_without_schema(role, system, user, t0)
+                    if salvaged is not None:
+                        log.warning("tool loop for %s rejected response_format (%s); "
+                                    "re-ran WITHOUT it so the tools still run",
+                                    role, str(exc)[:90])
+                        return self.postprocess(salvaged, **kwargs)
+                except Exception as exc2:  # noqa: BLE001
+                    log.warning("schema-free tool retry for %s also failed (%s)",
+                                role, str(exc2)[:110])
+            log.warning("tool loop failed for %s (%s); falling back to a single call "
+                        "WITHOUT TOOLS — this agent did not search",
                         role, str(exc)[:140])
             self.used_tools = False
             out = self.ctx.registry.complete(role, system, user, schema=self.schema)
             return self.postprocess(out, **kwargs)
+
+    def _tool_loop_without_schema(self, role: str, system: str, user: str, t0: float) -> Any:
+        """Run the tool loop with no bound response format, then parse the answer.
+
+        The tools are the point of this path; the structured wrapper is a
+        convenience. When a model can have one but not both, keep the tools.
+        """
+        from langchain.agents import create_agent
+
+        model = self.ctx.registry.get(role)
+        agent = create_agent(model, tools=self.tools, system_prompt=system)
+        result = agent.invoke(
+            {"messages": [{"role": "user", "content": user}]},
+            {"recursion_limit": self.max_tool_iterations * 2},
+        )
+        msgs = result.get("messages") or []
+        text = ""
+        for m in reversed(msgs):
+            text = getattr(m, "content", "") or ""
+            if isinstance(text, str) and text.strip():
+                break
+        if not text:
+            return None
+        # Reuse the registry's own repair path, which already handles fenced JSON
+        # and the providers that will not emit a native schema.
+        parsed = self.ctx.registry.complete(
+            role, "Return ONLY the structured object described by the schema.",
+            f"Convert this research write-up into the schema verbatim; invent nothing.\n\n{text}",
+            schema=self.schema)
+        self.used_tools = True
+        usage = _tool_loop_usage(result)
+        self.ctx.registry.ledger.record(role, **usage)
+        self.ctx.registry.record_external_turn(
+            role, "deep", system, user, parsed, time.time() - t0)
+        return parsed
+
+
+    def _stream_tool_loop(self, agent: Any, user: str) -> tuple[Any, Exception | None]:
+        """Run the loop keeping the last state, so a cutoff is not a total loss."""
+        last, err = None, None
+        try:
+            for chunk in agent.stream(
+                {"messages": [{"role": "user", "content": user}]},
+                {"recursion_limit": self.max_tool_iterations * 2},
+                stream_mode="values",
+            ):
+                last = chunk
+        except Exception as exc:  # noqa: BLE001
+            err = exc
+        return last, err
+
+    def _salvage_partial(self, role: str, system: str, user: str,
+                         state: Any, cutoff: Exception | None) -> Any:
+        """Turn whatever the tools found into the schema, or return None.
+
+        Only worth doing when tools ACTUALLY RAN. A cutoff with no tool output is
+        just a failure, and pretending otherwise would report an un-researched
+        answer as researched.
+        """
+        msgs = (state or {}).get("messages") or []
+        n_tools = sum(1 for m in msgs if getattr(m, "type", "") == "tool")
+        if not n_tools:
+            return None
+        found = "\n\n".join(
+            str(getattr(m, "content", ""))[:4000]
+            for m in msgs if getattr(m, "type", "") == "tool"
+        )
+        why = ("hit the tool-call limit of "
+               f"{self.max_tool_iterations}" if cutoff is not None else
+               "finished without emitting the structured object")
+        log.warning("%s %s after %d tool call(s) — keeping what it found rather "
+                    "than discarding the research", role, why, n_tools)
+        try:
+            return self.ctx.registry.complete(
+                role,
+                "Return ONLY the structured object described by the schema.",
+                "Research notes gathered from the tools are below. Convert them into "
+                "the schema. Use ONLY what is here; invent nothing, and do not fill "
+                f"gaps from memory.\n\n{found[:40000]}",
+                schema=self.schema)
+        except Exception as exc:  # noqa: BLE001
+            log.warning("could not convert %s's partial research (%s)", role, type(exc).__name__)
+            return None
 
     used_tools: bool = False

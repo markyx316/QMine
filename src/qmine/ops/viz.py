@@ -61,8 +61,17 @@ def plot_k_sweep(sweep: list[dict[str, Any]], path: Path, chosen_k: int | None =
     ax2.tick_params(axis="y", labelcolor="#9ca3af")
     if chosen_k:
         ax.axvline(chosen_k, color="#dc2626", ls=":", lw=1.6)
-        ax.annotate(f"chosen K={chosen_k}\n(stability peak)", xy=(chosen_k, max(r["stability_ari"] for r in sweep)),
-                    xytext=(6, -28), textcoords="offset points", color="#dc2626", fontsize=9)
+        # NOT "(stability peak)". K is located by intent alignment; stability only
+        # rejects. On live38 the true stability peak was k=8 and the delivered
+        # k=10 ranked 9th of 14 on stability; on live39, 9th of 16. The same false
+        # claim was fixed in fig1's title and in the report label, and survived
+        # here because the earlier search was for the KEY NAME rather than the
+        # PHRASE — `grep "stability peak"` would have found all four sites at once.
+        _peak = max(sweep, key=lambda r: r["stability_ari"])["k"]
+        _lbl = (f"chosen K={chosen_k}" if _peak == chosen_k
+                else f"chosen K={chosen_k}\n(stability peaks at K={_peak};\nK is located by intent alignment)")
+        ax.annotate(_lbl, xy=(chosen_k, max(r["stability_ari"] for r in sweep)),
+                    xytext=(6, -34), textcoords="offset points", color="#dc2626", fontsize=8)
     lines = ax.get_lines() + ax2.get_lines()
     ax.legend(lines, [l.get_label() for l in lines], loc="best", fontsize=8)
     ax.set_title("Granularity: the two curves do not peak together")
@@ -188,15 +197,37 @@ def plot_refinement(history: list[dict[str, Any]], path: Path, language: str = "
     plt = setup_matplotlib(language)
     if not history:
         return path
+    # This function already took `language` and ignored it for labels, so the
+    # figure shipped 100% English inside a report configured `zh`.
+    zh = language == "zh"
     r = [h["round"] for h in history]
     fig, ax = plt.subplots(figsize=(6.6, 3.8))
-    ax.plot(r, [h["n_leaves"] for h in history], "o-", color="#2563eb", label="leaves")
-    ax.set_xlabel("refinement round"); ax.set_ylabel("leaf count", color="#2563eb")
+    ax.plot(r, [h["n_leaves"] for h in history], "o-", color="#2563eb",
+            label="叶数" if zh else "leaves")
+    ax.set_xlabel("精化轮次" if zh else "refinement round")
+    ax.set_ylabel("叶数" if zh else "leaf count", color="#2563eb")
     ax2 = ax.twinx()
-    ax2.plot(r, [h["moved_fraction"] * 100 for h in history], "s--", color="#dc2626", label="rows moved %")
-    ax2.set_ylabel("rows moved (%)", color="#dc2626")
-    ax.set_title("Refinement converges when movement stops, not at a fixed round count")
+    ax2.plot(r, [h["moved_fraction"] * 100 for h in history], "s--", color="#dc2626",
+             label="移动行占比 %" if zh else "rows moved %")
+    ax2.set_ylabel("移动行占比 (%)" if zh else "rows moved (%)", color="#dc2626")
+    # Says what actually happened rather than asserting the ideal: live38 did NOT
+    # converge — it oscillated 28<->29 and stopped at the round cap.
+    _n = [h["n_leaves"] for h in history]
+    _osc = len(set(_n[-4:])) == 2 and all(a != b for a, b in zip(_n[-4:], _n[-3:]))
+    ax.set_title(
+        ("精化以「移动停止」为准, 而非固定轮数" if not _osc else
+         f"精化未收敛: 叶数在 {min(_n)}–{max(_n)} 之间往复, 用满轮数后停止")
+        if zh else
+        ("Refinement converges when movement stops, not at a fixed round count"
+         if not _osc else
+         f"Did NOT converge: leaf count cycles {min(_n)}-{max(_n)}, stopped at the cap"),
+        fontsize=10)
     ax.set_xticks(r)
+    # A leaf COUNT axis reading 28.2 / 28.4 invites the reader to look for a
+    # precision that does not exist. Integer ticks only.
+    from matplotlib.ticker import MaxNLocator
+
+    ax.yaxis.set_major_locator(MaxNLocator(integer=True))
     fig.savefig(path)
     plt.close(fig)
     return path

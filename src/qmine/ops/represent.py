@@ -259,17 +259,43 @@ def alpha_sweep(
     # stability difference (0.67 vs 0.90). So fragmentation differences within
     # `tie_band` are treated as ties and broken on stability, which is the
     # sturdier of the two measurements.
+    # `tie_band` STAYS A CONSTANT HERE, DELIBERATELY. It is the same class of
+    # single-corpus constant that `ami_tie_band` was, and replacing it with the
+    # measured `noise_floor` was tried and REVERTED: that estimator reads
+    # point-to-point roughness as noise, which holds for the K sweep (a smooth
+    # curve) and fails here. Fragmentation across alpha on live39 runs
+    # 1.98, 2.02, 2.42, 1.98, 2.41, 2.29, 2.72 — genuinely non-monotone, so the
+    # roughness IS signal. The estimate came out at se=0.2205, widening the band
+    # from 2.08 to 2.42 and making alpha=0.5 (fragmentation 2.41) "tied" with
+    # 1.98; the winner flipped from 0.1 to 0.5 on nothing.
+    #
+    # Measuring this band properly needs repeated fits at the SAME alpha under
+    # different seeds — separating noise from signal requires replication, which
+    # a single sweep cannot supply. Until then the constant is honest and its
+    # provenance is stated in `chosen_by`.
     best_frag = min(r["template_fragmentation"] for r in rows)
     band = best_frag * (1 + tie_band)
+    # NO INTERPOLATION. `prose()` matches a literal prefix, and an f-string whose
+    # placeholder lands early has no literal prefix to match — so a translatable
+    # sentence must keep its numbers out. The percentage goes out as data below.
+    band_src = ("configured relative band, NOT measured — this sweep is non-monotone "
+                "in alpha, so its roughness cannot estimate noise")
     contenders = [r for r in rows if r["template_fragmentation"] <= band]
     winner = max(contenders, key=lambda r: (r["stability_ari"], -r["template_fragmentation"]))
     sil_winner = max(rows, key=lambda r: r["silhouette"])
     return {
         "rows": rows,
         "chosen_alpha": winner["alpha"],
+        # Numbers as data, not baked into an English sentence. `prose()` matches a
+        # prefix and returns a FIXED translation, so a sentence carrying
+        # interpolated values can only be shipped untranslated — which is how the
+        # English selection rule reached the Chinese report in the first place.
+        "tie_band_value": round(float(band), 4),
+        "tie_band_source": band_src,
+        "tie_band_relative_pct": round(tie_band * 100, 1),
         "chosen_by": (
-            f"lowest template_fragmentation within a {tie_band:.0%} tie-band "
-            f"(<= {band:.4f}), broken on highest stability_ari"
+            "lowest template_fragmentation within a tie-band, broken on "
+            "highest stability_ari"
         ),
         "tie_band": tie_band,
         "contenders": [r["alpha"] for r in contenders],

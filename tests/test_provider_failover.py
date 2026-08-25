@@ -437,3 +437,237 @@ def test_a_stale_lesson_is_forgotten_so_a_fixed_provider_is_re_learned(tmp_path,
     fresh._load_quirks()
     assert "m" not in fresh._no_native_schema, \
         "an expired lesson must be re-learned, not trusted indefinitely"
+
+
+def test_a_model_that_refuses_response_format_keeps_its_tools(monkeypatch):
+    """Tools are the point of the tool loop; the structured wrapper is not.
+
+    `deepseek-v4-pro` supports tools — `bind_tools` and a plain agent loop both
+    work — but rejects LangChain's `create_agent(..., response_format=...)`,
+    which implements a structured response by forcing a `tool_choice`, with
+    400 "Thinking mode does not support this tool_choice".
+
+    The old path fell straight through to a single tool-free call, and the agent
+    still returned plausible candidates from parametric knowledge. That makes a
+    WEB researcher that never searched indistinguishable from one that did:
+    live38 hit its recursion cap at step 24 (searching hard) and live39 hit this
+    400 at step 0 (never searched), and both logged "tool loop failed".
+    """
+    from qmine.agents.base import _is_response_format_rejection
+
+    for msg in (
+        "Error code: 400 - {'error': {'message': 'Thinking mode does not support "
+        "this tool_choice', 'type': 'invalid_request_error'}}",
+        "Error code: 400 - response_format is not supported with tools",
+        "400 invalid_request: json_schema not supported",
+    ):
+        assert _is_response_format_rejection(Exception(msg)), msg
+
+    # A real outage must NOT be retried as though it were a capability quirk —
+    # that would double the cost of every genuine failure.
+    for msg in (
+        "Error code: 402 - insufficient balance",
+        "Error code: 429 - rate limited",
+        "Error code: 500 - internal server error",
+        "Recursion limit of 24 reached without hitting a stop condition",
+        "Connection timeout",
+    ):
+        assert not _is_response_format_rejection(Exception(msg)), msg
+
+
+def _runaway_tool_agent(max_iters=4, stop_after=None):
+    """A ToolAgent whose model never stops calling the tool (or stops after N)."""
+    from types import SimpleNamespace
+
+    from langchain_core.language_models.chat_models import BaseChatModel
+    from langchain_core.messages import AIMessage
+    from langchain_core.outputs import ChatGeneration, ChatResult
+    from langchain_core.tools import tool
+    from pydantic import BaseModel
+
+    from qmine.agents.base import ToolAgent
+
+    class Out(BaseModel):
+        candidates: list = []
+
+    @tool
+    def search(q: str) -> str:
+        """Search the web."""
+        return f"FINDING about {q}"
+
+    class Model(BaseChatModel):
+        @property
+        def _llm_type(self): return "t"
+        def bind_tools(self, tools, **kw): return self
+        def _generate(self, messages, stop=None, run_manager=None, **kw):
+            n = sum(1 for m in messages if getattr(m, "type", "") == "tool")
+            if stop_after is not None and n >= stop_after:
+                msg = AIMessage(content="done")
+            else:
+                msg = AIMessage(content="", tool_calls=[
+                    {"name": "search", "args": {"q": "x"}, "id": f"c{len(messages)}"}])
+            return ChatResult(generations=[ChatGeneration(message=msg)])
+
+    seen = {"n": 0, "payload": "", "role": ""}
+
+    class Registry:
+        is_offline = False
+        ledger = SimpleNamespace(record=lambda *a, **k: None)
+        def get(self, role): return Model()
+        def replay_external_turn(self, *a, **k): return None
+        def record_external_turn(self, *a, **k): pass
+        def complete(self, role, system, user, schema=None):
+            seen["n"] += 1; seen["payload"] = user; seen["role"] = role
+            return Out(candidates=["salvaged"])
+
+    class R(ToolAgent):
+        role = "researcher_test"; prompt_name = ""; schema = Out
+        max_tool_iterations = max_iters; suffix = ""
+        def __init__(self, ctx):
+            self.ctx = ctx; self.tools = [search]; self.used_tools = False
+            self.prompt_text = ""; self.prompt_sha = ""
+        def build_user(self, **kw): return "research this"
+        def postprocess(self, out, **kw): return out
+
+    return R(SimpleNamespace(registry=Registry(), cfg=SimpleNamespace())), seen
+
+
+def test_a_tool_loop_cut_off_at_its_limit_keeps_what_it_found():
+    """`recursion_limit` is 2x tool calls (measured: 24 -> exactly 12 searches),
+    and `invoke()` raises carrying NO state.
+
+    So a researcher that spent all twelve searches had every finding thrown away
+    and then answered from parametric knowledge — not "cut off early" but a total
+    loss of the work. It hit 2 of 5 researchers on live38 and 1 of 5 on live39.
+    Streaming keeps the last state, so the findings survive the cutoff.
+    """
+    agent, seen = _runaway_tool_agent(max_iters=4)
+
+    out = agent.run()
+
+    assert out.candidates == ["salvaged"], out
+    assert agent.used_tools is True, "research was done but not reported as research"
+    assert seen["n"] == 1, "the partial findings were not converted"
+    assert "FINDING about" in seen["payload"], "the conversion never saw the tool output"
+    assert "invent nothing" in seen["payload"], (
+        "the conversion prompt must forbid filling gaps from memory, or a partial "
+        "search becomes a confident complete answer"
+    )
+
+
+def test_a_cutoff_with_no_tool_output_does_not_claim_research():
+    """Pretending otherwise would report an un-researched answer as researched."""
+    from qmine.agents.base import ToolAgent
+
+    agent, _ = _runaway_tool_agent(max_iters=4)
+    assert ToolAgent._salvage_partial(
+        agent, "researcher_test", "sys", "usr", {"messages": []}, RuntimeError("cut")) is None
+    assert ToolAgent._salvage_partial(
+        agent, "researcher_test", "sys", "usr", None, RuntimeError("cut")) is None
+
+
+def test_the_happy_path_still_completes_without_salvage():
+    """Streaming must not change a loop that finishes on its own."""
+    agent, seen = _runaway_tool_agent(max_iters=8, stop_after=2)
+
+    agent.run()
+
+    assert agent.used_tools is True
+    # The model produced a final answer, so no partial-conversion call was needed
+    # beyond whatever the normal structured path does.
+    assert seen["n"] <= 1
+
+
+def _registry_for_probe(monkeypatch, behaviour):
+    """A registry whose routing is stubbed so only the probe is under test."""
+    from types import SimpleNamespace
+
+    from qmine.llm.registry import ModelRegistry
+
+    reg = ModelRegistry.__new__(ModelRegistry)
+    reg._no_native_schema = set()
+    reg._routed = {"referee": ("zhipu", "glm-4.5-airx"),
+                   "annotator_a": ("qwen", "fine-model")}
+    reg._save_quirks = lambda: None
+    reg.get = lambda role: SimpleNamespace(role=role)
+
+    def _structured(model, msgs, schema):
+        return behaviour(model.role)
+
+    reg._structured_call = _structured
+    return reg
+
+
+def test_the_probe_finds_a_broken_model_before_a_real_call_pays_for_it():
+    """live39's referee launched 8 concurrent calls, every one checked the quirk
+    set before any had failed, and all 8 paid the discovery — at 69-555 seconds
+    each, returning nothing.
+
+    The repair machinery was working; what it could not do is make the DISCOVERY
+    cheap, because it happens on whichever call runs first and roles fan out
+    concurrently. A tiny probe at startup costs seconds.
+    """
+    import pytest as _pytest
+
+    def behaviour(role):
+        if role == "referee":
+            raise ValueError("Invalid JSON: expected value at line 1 column 1")
+        return object(), None
+
+    reg = _registry_for_probe(None, behaviour)
+    reg._probe_structured_output()
+
+    assert "glm-4.5-airx" in reg._no_native_schema
+    assert "fine-model" not in reg._no_native_schema, (
+        "a model that answers correctly must not be forced onto the slower path"
+    )
+
+
+def test_a_model_already_known_is_not_probed_again():
+    """A stable fleet should probe nothing and pay nothing."""
+    probed = []
+
+    def behaviour(role):
+        probed.append(role)
+        return object(), None
+
+    reg = _registry_for_probe(None, behaviour)
+    reg._no_native_schema = {"glm-4.5-airx", "fine-model"}
+    reg._probe_structured_output()
+
+    assert probed == [], f"already-known models were re-probed: {probed}"
+
+
+def test_a_hanging_probe_cannot_block_the_run():
+    """`get(role)` carries the ROLE's timeout — minutes for the referee — so a
+    hung endpoint could stall startup outright. A probe is a convenience and
+    must never delay a run."""
+    import time
+
+    def behaviour(role):
+        if role == "referee":
+            time.sleep(5)
+        return object(), None
+
+    reg = _registry_for_probe(None, behaviour)
+    reg.PROBE_TIMEOUT_S = 0.3
+    t0 = time.time()
+    reg._probe_structured_output()
+
+    assert time.time() - t0 < 4.0, "the probe waited for a hung endpoint"
+    assert "glm-4.5-airx" in reg._no_native_schema, "a timed-out probe must fail safe"
+
+
+def test_the_probe_schema_is_shaped_like_the_ones_that_actually_fail():
+    """A flat `{ok, note}` probe passed on `deepseek-v4-flash` and `glm-5.2`
+    while the same run learned from real failures that both need plain-JSON.
+    Native structured output can work for two scalars and break on a keyed map
+    of nested objects — which is exactly what `RefereeBatch` is."""
+    from qmine.llm.registry import ModelRegistry
+
+    schema = ModelRegistry._Probe.model_json_schema()
+    assert "$defs" in schema, "the probe schema has no nested object"
+    props = schema.get("properties", {})
+    assert "items" in props and props["items"].get("type") == "object", (
+        "the probe must exercise a keyed map, not just scalars"
+    )

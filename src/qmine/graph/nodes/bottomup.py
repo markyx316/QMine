@@ -11,6 +11,8 @@ from ...config import alpha_sweep_k_for
 from ...determinism import hash_texts
 from ...ops.stats import proportion_gate
 from ...agents.observe import observe_phase
+from ...agents.propose_grid import propose_grid
+from ...ops.propose import grade_proposal
 from ...ops.cluster import (
     partition_stability,
     algorithm_battery,
@@ -42,6 +44,7 @@ def p3_represent(state: PipelineState, deps: Deps) -> dict[str, Any]:
     recorded explicitly, because "the metric everyone reports would have chosen
     differently" is exactly the kind of thing a reader deserves to see.
     """
+    _obs_gates: dict[str, Any] = {}
     cfg = deps.cfg
     df = deps.df
     texts = df[cfg.data.text_column].astype(str).tolist()
@@ -115,9 +118,16 @@ def p3_represent(state: PipelineState, deps: Deps) -> dict[str, Any]:
         cohesion["kept_because_seeded"] = sorted(seeded - set(cohesion["trusted"]))
 
     # --- 3c: alpha sweep ---------------------------------------------------
-    deps.emit(f"P3c alpha sweep — {cfg.representation.alpha_grid}")
+    # The grid is a K12 artefact under a comment saying not to inherit the K12
+    # answer. A proposer may widen it from CORPUS characteristics only (blindness
+    # enforced on the payload), and anything it adds still has to win on merit.
+    from ...ops.propose import ALPHA_SPEC
+
+    alpha_grid, alpha_proposal = propose_grid(
+        deps, "alpha", list(cfg.representation.alpha_grid), ALPHA_SPEC)
+    deps.emit(f"P3c alpha sweep — {alpha_grid}")
     sweep = alpha_sweep(
-        dense, sp["svd_block"], alphas=cfg.representation.alpha_grid,
+        dense, sp["svd_block"], alphas=alpha_grid,
         k=alpha_sweep_k_for(cfg), template_masks=masks,
         seeds=tuple(cfg.seed_replay), silhouette_sample=cfg.clustering.silhouette_sample,
         reference_labels=ref_labels,
@@ -132,6 +142,9 @@ def p3_represent(state: PipelineState, deps: Deps) -> dict[str, Any]:
         "representation",
         {"bakeoff": bake, "template_cohesion": cohesion, "sparse": {k: v for k, v in sp.items() if k in ("vocab_size", "explained_variance", "n_components")},
          "alpha_sweep": sweep,
+         # Graded, not just recorded: whether a PROPOSED alpha actually won is the
+         # only way to tell over runs whether the proposer earns its comparisons.
+         "grid_proposal": grade_proposal(alpha_proposal, alpha),
          "alpha_algebra": {
              "formula": "cos(H,H') = (cos_semantic + a^2 * cos_surface) / (1 + a^2)",
              "chosen_alpha": alpha,
@@ -153,10 +166,38 @@ def p3_represent(state: PipelineState, deps: Deps) -> dict[str, Any]:
         ),
         deps.decision(
             "p3c", "How much weight should phrasing get?", f"alpha = {alpha}",
-            f"Lowest template fragmentation with highest stability. At alpha={alpha} the phrasing "
-            f"block controls {surface_vote_share(alpha) * 100:.1f}% of the cosine — a tie-breaker, "
-            "not a co-equal signal.",
-            evidence={"sweep": sweep["rows"]}, decisive_metrics=["template_fragmentation", "stability_ari"],
+            # STATE THE RULE THAT ACTUALLY RAN — as a STABLE, TRANSLATABLE
+            # sentence, with this run's numbers in `evidence` beside it.
+            #
+            # It used to read "Lowest template fragmentation with highest
+            # stability", and on live39 the chosen alpha=0.1 had NEITHER
+            # (fragmentation 2.0193 vs 1.9799 at alpha=0.0; alpha=0.5 had higher
+            # stability). The phase observer caught it. The artifact's
+            # `chosen_by` was right all along; only the sentence a reader sees
+            # was false.
+            #
+            # The numbers live in `evidence`, not in this string: `prose()`
+            # matches a prefix and returns a FIXED translation, so interpolating
+            # run-specific values here would either defeat the translation or
+            # ship English into a Chinese report — which is exactly what the
+            # first attempt at this fix did.
+            "Alpha is not chosen by taking the lowest fragmentation outright. "
+            "Fragmentation differences inside a tie-band are treated as ties and "
+            "broken on replay stability, which is the sturdier measurement — so "
+            "the winner is the most reproducible option among those effectively "
+            "tied on fragmentation, and is normally neither extreme. The phrasing "
+            "block enters the cosine with weight alpha SQUARED, so a small alpha "
+            "is a tie-breaker rather than a co-equal signal.",
+            evidence={
+                "chosen_alpha": alpha,
+                "its_fragmentation": _alpha_row(sweep, alpha).get("template_fragmentation"),
+                "its_stability": _alpha_row(sweep, alpha).get("stability_ari"),
+                "lowest_fragmentation_in_sweep": min(r["template_fragmentation"] for r in sweep["rows"]),
+                "highest_stability_in_sweep": max(r["stability_ari"] for r in sweep["rows"]),
+                "surface_vote_share_pct": round(surface_vote_share(alpha) * 100, 1),
+                "tie_band": sweep.get("chosen_by", ""),
+            },
+            decisive_metrics=["template_fragmentation", "stability_ari"],
             rejected=[{"option": f"alpha={r['alpha']}", "why_rejected": "higher fragmentation or lower stability",
                        "metrics": {k: r[k] for k in ("template_fragmentation", "stability_ari", "silhouette")}}
                       for r in sweep["rows"] if r["alpha"] != alpha],
@@ -172,9 +213,10 @@ def p3_represent(state: PipelineState, deps: Deps) -> dict[str, Any]:
             "— overruled by design (Principle 3)"
         )
     if deps.cfg.observe_phases and not deps.cfg.fast_mode:
-        observe_phase(deps, "p3", {"representation": deps.load("representation")}, decisions=decisions)
+        _obs_gates.update(observe_phase(deps, "p3", {"representation": deps.load("representation")}, decisions=decisions).as_state_gates())
     return {
         "phase": "p4",
+        "gates": _obs_gates,
         "artifacts": {"emb_base": emb_ref, "emb_svd_char": svd_ref, "emb_hybrid": hyb_ref,
                       "representation": rep_ref},
         "decisions": decisions,
@@ -185,8 +227,17 @@ def p3_represent(state: PipelineState, deps: Deps) -> dict[str, Any]:
     }
 
 
+
+def _alpha_row(sweep: dict[str, Any], alpha: float) -> dict[str, Any]:
+    """The sweep row for one alpha, so a rationale can quote its own numbers."""
+    for r in sweep.get("rows", []):
+        if abs(float(r.get("alpha", -1)) - float(alpha)) < 1e-9:
+            return r
+    return {}
+
 def p4_battery(state: PipelineState, deps: Deps) -> dict[str, Any]:
     """Run every clustering algorithm through one identical harness."""
+    _obs_gates: dict[str, Any] = {}
     cfg = deps.cfg
     H = deps.embedding("emb_hybrid")
     deps.emit(f"P4 algorithm battery — {len(cfg.clustering.battery_k)} K values × 6 algorithms")
@@ -230,9 +281,10 @@ def p4_battery(state: PipelineState, deps: Deps) -> dict[str, Any]:
             f"(best HDBSCAN: {d['noise_rate'] * 100:.0f}% noise, {d['n_clusters']} clusters)"
         )
     if deps.cfg.observe_phases and not deps.cfg.fast_mode:
-        observe_phase(deps, "p4", {"battery": deps.load("battery")}, decisions=[decision])
+        _obs_gates.update(observe_phase(deps, "p4", {"battery": deps.load("battery")}, decisions=[decision]).as_state_gates())
     return {
         "phase": "p5",
+        "gates": _obs_gates,
         "artifacts": {"battery": ref},
         "decisions": [decision],
         "chosen_algorithm": family,
@@ -243,15 +295,21 @@ def p4_battery(state: PipelineState, deps: Deps) -> dict[str, Any]:
 
 def p5_granularity(state: PipelineState, deps: Deps) -> dict[str, Any]:
     """Triangulate the family scale from three independent estimators."""
+    _obs_gates: dict[str, Any] = {}
     cfg = deps.cfg
     H = deps.embedding("emb_hybrid")
     masks = deps.template_masks()
-    deps.emit(f"P5 granularity — K sweep over {len(cfg.clustering.k_sweep)} values")
+    from ...ops.propose import k_spec
+
+    ks, k_proposal = propose_grid(
+        deps, "family_k", list(cfg.clustering.k_sweep),
+        k_spec(len(deps.df), cfg.clustering.min_leaf_size))
+    deps.emit(f"P5 granularity — K sweep over {len(ks)} values")
 
     # Full-effort unless this is an explicit smoke run: the cheap estimator was
     # measured at only 0.43 rank correlation with the full sweep on this corpus,
     # and K is inherited by every phase after this one.
-    sweep = k_sweep(H, cfg.clustering.k_sweep, seeds=tuple(cfg.seed_replay),
+    sweep = k_sweep(H, ks, seeds=tuple(cfg.seed_replay),
                     silhouette_sample=cfg.clustering.silhouette_sample, template_masks=masks,
                     fast=cfg.fast_mode)
     expected_mid = int(sum(cfg.domain.expected_family_range) / 2)
@@ -259,11 +317,13 @@ def p5_granularity(state: PipelineState, deps: Deps) -> dict[str, Any]:
                                seed=cfg.seed_metric)
     tri = triangulate_k(sweep, da, tuple(cfg.domain.expected_family_range))
     k = tri["chosen_family_k"]
-    deps.emit(f"  stability peak K={k}; DeepAligned leaf estimate {da['k_estimate']}; "
+    deps.emit(f"  located K={k} (by {tri.get('locator', '?')}); "
+              f"DeepAligned leaf estimate {da['k_estimate']}; "
               f"converged={tri['converged']}")
 
     ref = deps.store.put_json(
-        "granularity", {"k_sweep": sweep, "deep_aligned": da, "triangulation": tri},
+        "granularity", {"k_sweep": sweep, "deep_aligned": da, "triangulation": tri,
+                        "grid_proposal": grade_proposal(k_proposal, tri.get("chosen_family_k"))},
         producer="p5", summary=f"family K={k}",
     )
     tie_ks = {t["k"] for t in tri.get("tie_set", [])}
@@ -297,9 +357,10 @@ def p5_granularity(state: PipelineState, deps: Deps) -> dict[str, Any]:
     if tri["silhouette_disagrees"]:
         events.append(f"P5: silhouette peaks at K={tri['estimates']['silhouette_peak_k']} — advisory only")
     if deps.cfg.observe_phases and not deps.cfg.fast_mode:
-        observe_phase(deps, "p5", {"granularity": deps.load("granularity")}, decisions=[decision])
+        _obs_gates.update(observe_phase(deps, "p5", {"granularity": deps.load("granularity")}, decisions=[decision]).as_state_gates())
     return {
         "phase": "p6",
+        "gates": _obs_gates,
         "artifacts": {"granularity": ref},
         "decisions": [decision],
         "family_k": k,
@@ -316,6 +377,7 @@ def p6_hierarchy(state: PipelineState, deps: Deps) -> dict[str, Any]:
     that produced an undeliverable partition in the source project; splitting the
     question in two is the fix.
     """
+    _obs_gates: dict[str, Any] = {}
     cfg = deps.cfg
     H = deps.embedding("emb_hybrid")
     k = state.get("family_k") or int(sum(cfg.domain.expected_family_range) / 2)
@@ -464,11 +526,11 @@ def p6_hierarchy(state: PipelineState, deps: Deps) -> dict[str, Any]:
         warn_only=verdict["verdict"] == "underpowered",
     )
     if deps.cfg.observe_phases and not deps.cfg.fast_mode:
-        observe_phase(deps, "p6", {"hierarchy_meta": deps.load("hierarchy_meta")}, decisions=[])
+        _obs_gates.update(observe_phase(deps, "p6", {"hierarchy_meta": deps.load("hierarchy_meta")}, decisions=[]).as_state_gates())
     return {
         "phase": "p7",
         "artifacts": artifacts,
-        "gates": {gate.name: gate},
+        "gates": {gate.name: gate, **_obs_gates},
         "leaf_count": ref_out["n_leaves"],
         "completed_phases": ["p6"],
         "events": [

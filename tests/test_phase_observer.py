@@ -33,7 +33,11 @@ def _deps():
     ev, gates = [], {}
 
     def gate(name, phase, **kw):
+        # The real `deps.gate` BUILDS and RETURNS a GateResult and registers
+        # nothing. A stub that returns None hides the very propagation bug these
+        # tests exist to catch, so it returns a record like the real one.
         gates[name] = kw
+        return SimpleNamespace(name=name, phase=phase, **kw)
 
     return SimpleNamespace(emit=ev.append, gate=gate, agent_ctx=lambda: None), ev, gates
 
@@ -138,3 +142,46 @@ def test_warnings_reach_the_operator_without_halting(monkeypatch):
     assert gates["p9_observer"]["passed"] is True
     assert gates["p9_observer"]["observed"]["n_warn"] == 1
     assert res.warnings and not res.blocking
+
+
+def test_the_observer_gate_is_handed_back_for_the_node_to_register(monkeypatch):
+    """`deps.gate()` RETURNS a GateResult and registers nothing.
+
+    The calling node must place it in the state it returns. The first version of
+    `observe_phase` called `deps.gate(...)` and discarded the result, so the
+    observer's verdict reached the run log and nothing else — absent from
+    `run_summary`, from the report's gate ledger, and from any operator's view.
+    A pre-flight caught it: 10 gates recorded where 15 were created.
+
+    That is the precise failure this module's docstring is about, reproduced by
+    the module itself. `as_state_gates()` is what a node merges into its return.
+    """
+    import qmine.agents.roles as roles
+
+    class Quiet:
+        def __init__(self, ctx, suffix=""): pass
+        def run(self, **kw):
+            return SimpleNamespace(observations=[], checked=[])
+
+    monkeypatch.setattr(roles, "ObserverAgent", Quiet)
+    deps, ev, gates = _deps()
+
+    res = observe_phase(deps, "p5", ARTIFACTS)
+
+    assert res.gate is not None, "the gate was created and dropped on the floor"
+    assert res.as_state_gates() == {"p5_observer": res.gate}
+    assert res.gate.name == "p5_observer"
+
+
+def test_a_dead_observer_hands_back_nothing_to_register(monkeypatch):
+    """No gate was earned, so none must appear — not even a passing one."""
+    import qmine.agents.roles as roles
+
+    class Dead:
+        def __init__(self, ctx, suffix=""): pass
+        def run(self, **kw): raise RuntimeError("down")
+
+    monkeypatch.setattr(roles, "ObserverAgent", Dead)
+    deps, ev, gates = _deps()
+
+    assert observe_phase(deps, "p5", ARTIFACTS).as_state_gates() == {}

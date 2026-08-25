@@ -165,7 +165,7 @@ def p10_deploy(state: PipelineState, deps: Deps) -> dict[str, Any]:
     # so any other cause is caught too.
     delivered = sorted({int(v) for v in np.unique(deps.leaf_labels_final())})
     unnamed = [i for i in delivered if not str(names.get(i, "")).strip()]
-    deps.gate(
+    named_gate = deps.gate(
         "p10_delivered_leaves_named", "p10",
         passed=not unnamed,
         observed={"n_leaves_delivered": len(delivered), "n_unnamed": len(unnamed),
@@ -319,6 +319,11 @@ def p10_deploy(state: PipelineState, deps: Deps) -> dict[str, Any]:
     return {
         "phase": "p11",
         "artifacts": {"labels_full": labels_ref, "centroid_classifier": model_ref, "deployment": deploy_ref},
+        # `deps.gate()` RETURNS a GateResult and registers nothing — the node has
+        # to put it in state. Discarding it left `p10_delivered_leaves_named`,
+        # which is BLOCKING, reaching the log and nothing else: a blocking gate
+        # that could never block, absent from run_summary and from every report.
+        "gates": {named_gate.name: named_gate},
         "completed_phases": ["p10"],
         "events": [
             f"P10: delivered {len(out)} rows; model {clf.size_bytes() / 1024:.0f} KB; "

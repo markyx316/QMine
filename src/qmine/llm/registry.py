@@ -191,6 +191,109 @@ class ModelRegistry:
         if cfg.provider == "router":
             self._build_routing_plan(cache_dir)
 
+
+    #: SHAPED LIKE THE SCHEMAS THAT ACTUALLY FAIL, not like the cheapest possible
+    #: one. A first attempt used `{ok: bool, note: str}` and `deepseek-v4-flash`
+    #: and `glm-5.2` both passed it — while the same run learned from real
+    #: failures that both need plain-JSON mode. Native structured output can work
+    #: for a flat pair of scalars and break on a keyed map of nested objects,
+    #: which is exactly what `RefereeBatch` is. Probe the hard shape or the probe
+    #: reports success on models that will fail in production.
+    class _ProbeItem(BaseModel):
+        label: str = ""
+        confident: bool = False
+        why: str = ""
+
+    class _Probe(BaseModel):
+        items: dict[str, "ModelRegistry._ProbeItem"] = {}
+        summary: str = ''
+
+    def _probe_structured_output(self) -> None:
+        """Find out which routed models cannot do native structured output —
+        BEFORE a real call pays for the discovery.
+
+        The repair machinery already handles a model that returns markdown or
+        prose instead of JSON: it switches that model to plain-JSON mode for the
+        rest of the run and remembers it in `model_quirks.json`. What it cannot
+        do is make the discovery cheap, because the discovery happens on whatever
+        call runs first — and roles fan out CONCURRENTLY.
+
+        Measured on live39: the referee launched 8 calls at once, every one
+        checked `_no_native_schema` before any had failed, and all 8 paid the
+        discovery. Those calls take 69-555 seconds each and returned nothing.
+        The model in question (`glm-4.5-airx`) was new to this run — live38's
+        referee was `glm-5.2` — so a persisted quirk from the previous run could
+        not have helped either.
+
+        One tiny call per distinct model, once, costs a few tokens and seconds and
+        removes the whole class of waste. Models already known from the quirks
+        file are skipped, so a stable fleet probes nothing.
+        """
+        models: dict[str, tuple[str, str]] = {}
+        for role, (prov, mid) in self._routed.items():
+            if mid not in self._no_native_schema:
+                models.setdefault(mid, (prov, role))
+        if not models:
+            return
+        log.info("probing native structured output on %d model(s) so a real call "
+                 "does not pay for the discovery", len(models))
+
+        def _probe_one(mid: str, role: str) -> tuple[str, str | None]:
+            try:
+                model = self.get(role)
+                # The literal word "json" is REQUIRED by some OpenAI-compatible
+                # endpoints when a JSON response format is requested — DashScope
+                # 400s with "'messages' must contain the word 'json'" otherwise,
+                # which the first version of this probe mistook for the model
+                # being incapable.
+                msgs = [
+                    SystemMessage(content="Reply with a json object matching the schema."),
+                    HumanMessage(content=
+                        'Return this json exactly: {"items": {"1": {"label": "A", '
+                        '"confident": true, "why": "probe"}}, "summary": "ok"}'),
+                ]
+                parsed, _ = self._structured_call(model, msgs, ModelRegistry._Probe)
+                if parsed is None:
+                    raise ValueError("no parseable structured output")
+                return mid, None
+            except Exception as exc:  # noqa: BLE001
+                # Anything at all — an unparseable answer, a refusal, a transport
+                # blip — is treated as "do not rely on native mode here". The
+                # plain-JSON path is universal and only slightly more expensive,
+                # so a false positive costs far less than a false negative.
+                return mid, str(exc)[:110]
+
+        # Probed CONCURRENTLY and under a hard deadline. A probe is a convenience;
+        # it must never be able to delay, let alone block, a run. `self.get(role)`
+        # carries the ROLE's timeout, which for the referee is minutes — long
+        # enough for a hung endpoint to stall startup outright.
+        from concurrent.futures import ThreadPoolExecutor, TimeoutError as _FTimeout
+
+        # NOT a `with` block. `ThreadPoolExecutor.__exit__` joins every worker, so
+        # a hung endpoint blocks at TEARDOWN even after its deadline has passed —
+        # the deadline governs how long we READ for, not how long the pool lives.
+        # Shut down without waiting and let the HTTP client's own timeout collect
+        # the straggler; the run proceeds either way.
+        pool = ThreadPoolExecutor(max_workers=min(8, len(models)))
+        try:
+            futs = {pool.submit(_probe_one, mid, role): mid
+                    for mid, (_prov, role) in models.items()}
+            deadline = time.time() + self.PROBE_TIMEOUT_S
+            for fut, mid in futs.items():
+                try:
+                    _mid, err = fut.result(timeout=max(0.0, deadline - time.time()))
+                except _FTimeout:
+                    _mid, err = mid, f"no answer in {self.PROBE_TIMEOUT_S:.0f}s"
+                except Exception as exc:  # noqa: BLE001
+                    _mid, err = mid, str(exc)[:110]
+                if err:
+                    self._no_native_schema.add(_mid)
+                    log.warning("%s failed the structured-output probe (%s); it will "
+                                "start in plain-JSON mode", _mid, err)
+        finally:
+            pool.shutdown(wait=False, cancel_futures=True)
+        self._save_quirks()
+
     # -- provider selection -------------------------------------------------
     @staticmethod
     def _has_anthropic_credentials() -> bool:
@@ -221,6 +324,9 @@ class ModelRegistry:
     #: carry them ACROSS runs, and a per-run path relearns them every time.
     QUIRKS_PATH: ClassVar[Path] = Path(".cache") / "model_quirks.json"
     #: Providers do fix their endpoints. Re-learn rather than believe forever.
+    #: A probe that has not answered by now is not worth waiting for; the model
+    #: simply starts in plain-JSON mode, which works everywhere.
+    PROBE_TIMEOUT_S: float = 45.0
     QUIRKS_TTL_DAYS: ClassVar[float] = 14.0
 
     def _load_quirks(self) -> None:
@@ -352,6 +458,7 @@ class ModelRegistry:
             self.provider = "routed"
             log.info("routing plan: %d roles, estimated $%.2f, catalogue %s",
                      len(self._routed), self.plan.total_cost_usd, cat.sources)
+            self._probe_structured_output()
         except Exception as exc:  # noqa: BLE001
             log.warning("routing unavailable (%s); falling back to the static tiers", exc)
             self.provider = self._resolve_provider("auto")

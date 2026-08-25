@@ -101,15 +101,32 @@ arithmetic questions against artifacts.
 catches invented numbers and share/count confusion, not a real number attached to
 the wrong quantity. Mitigation is structural — keep fact sheets small.
 
+### Audit items cleared (all re-verified independently before acting)
+
+| item | what it was |
+|---|---|
+| **fig5 argued from restart noise** | the figure fitted its own `KMeans(n_init=4)` while the pipeline uses 10, so its α=0.5 panel read **2.16** where `metrics_panel.json` says **1.20**. Now uses `kmeans_labels` — all three panels match the panel to 4 dp — and the takeaway is *derived* from the measured values, which detects that the sequence 1.34→1.41→1.20 is **not monotone** and says the figure cannot carry the α decision alone. |
+| **gate messages never reached the reader** | `p2b_kappa` rendered ✅ 通过 with 实测 0.8221 beside 门槛 0.9 and no explanation, while its own message read "PROCEEDING WITH RESIDUAL SLACK". Every gate's conclusion now prints, and a pass sitting under its own bar is flagged **带保留通过**. |
+| **risk screen reached nothing** | 1,499 screened rows; **813 (54%) sat in leaves the namer never flagged**, and `risk_screen.json` appeared in no deliverable. Now a per-leaf table — leaf 5 (342 hits, 18.1%) and leaf 3 (332, 35.1%) were entirely invisible. |
+| **a safety class that detects nothing** | `ADULT_OR_ABUSE_RISK` recall exactly 0.000 at n=9, presented as working. Now named explicitly as *not in effect*. |
+| **rule count off by ~3x** | reported 50 (the architect's draft); 132 shipped to the annotator. |
+| **battery self-comparison** | reference == best_alternative == `kmeans_k15`, gap 0.0, rendered as a passed falsification test. Now says only that no alternative was stronger. |
+| **fig3 colour collision** | 8 algorithm families, 7 colours, `* 4` wrap — `agglo_average` and `minibatch` drew in the identical colour. |
+| **two captions described other figures** | fig3's axes were stated backwards; fig4 claimed "coloured by final families" for a 3-panel figure coloured per-space. |
+| **min-leaf constraint vs reality** | text stated 150; delivered tree has leaves of 104 and 122 (p8 splits after p6 applies the floor). Now states both. |
+| **"essentially lossless" SVD** | at 0.2628 explained variance. Reworded as the trade-off it is. |
+| **97.7% vs 97.6% in one sentence** | double-rounding: 0.9764595 stored as `round(,4)`=0.9765 then rounded again. Reads the raw share now. |
+| **duplicate accuracy metric** | `population_weighted_accuracy` == `cv_accuracy` exactly; no weights existed. |
+| **non-unique leaf keys** | two leaves named 生僻字词释义查询, two coded `chinese_pinyin_lookup`. Flagged, with `bu_leaf` named as the only safe key. |
+| **fig_refinement 100% English** | on a `zh` run; also titled "converges when movement stops" for a run that did NOT converge. Now Chinese, integer ticks, and the title reports the 28↔29 limit cycle. |
+
+Two things I got wrong and corrected mid-flight: I first estimated the selector's
+noise on the Pareto-filtered frontier (inflating se 0.0105 → 0.0220), and I added
+`PROSE_ZH` keys beginning `"han accounts for"` — a corpus-specific prefix that
+could never fire on a corpus with a different dominant script. The language
+verdict is now keyed on the stable `posture` enum instead.
+
 ### Next
-
-
-- A **fresh live run** is now worth it: every fix above changes the deliverables,
-  and gen06's artifacts still carry all nine defects.
-- `converged=False` in `hierarchy_meta` is a **limit cycle**, not divergence: the
-  refinement alternates one merge and one split every round, 28↔29 leaves, with
-  `moved_fraction` decaying 0.092→0.018. It stopped at the round cap, so the
-  delivered leaf count is arbitrary between 28 and 29. Not yet addressed.
 
 ## 2. Open questions — EDIT THIS SECTION, DO NOT APPEND
 

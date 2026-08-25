@@ -185,6 +185,23 @@ def decision_question(text: str, language: str = "zh") -> str:
 #: so small edits to the English tail do not silently drop a translation; a test
 #: asserts that everything reaching a real report is covered.
 PROSE_ZH: dict[str, str] = {
+    # --- algorithm battery verdicts, authored in `ops/battery.py` ----------
+    # Interpolated straight into a Chinese figure title, so they shipped as
+    # English inside an otherwise-Chinese chart.
+    "lowest template_fragmentation within a tie-band, broken on":
+        "在容差带以内取碎裂度最低者视为并列, 再以重播稳定性最高者胜出",
+    "configured relative band, NOT measured":
+        "沿用配置的 5% 相对容差带, **不是实测值** —— 本次 alpha 扫描并非单调, "
+        "其起伏本身带有真实信号, 因此无法用曲线粗糙度估计噪声",
+    "Alpha is not chosen by taking the lowest fragmentation outright":
+        "**alpha 不是直接取碎裂度最低的那个。** 碎裂度差异落在容差带以内时视为并列, "
+        "再用**重播稳定性**破并列 —— 稳定性是两者中更扎实的测量。因此当选的 alpha 是"
+        "「碎裂度实质并列者之中最可复现的那个」, 通常**两头都不占**: 既不是碎裂度最低的, "
+        "也不是稳定性最高的。具体数值见下方证据行。措辞块以 **alpha 的平方**进入余弦, "
+        "所以较小的 alpha 是破并列用的权重, 而不是与语义平起平坐的信号。",
+    "not a selection - the tree is built with KMeans regardless":
+        "这不是一次「选择」—— 交付的树始终由 KMeans 构建。本图跑其他算法, "
+        "是为了回答另一个问题: **换一种算法, 这个结构还在不在?**",
     # --- uniform-panel footnotes -------------------------------------------
     # Authored in `ops/panel.py`, which has no language. They carry the three
     # fairness caveats a reader needs in order to not over-read the table, and

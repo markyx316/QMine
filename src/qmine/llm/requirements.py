@@ -229,6 +229,40 @@ ROLE_REQUIREMENTS: dict[str, RoleRequirement] = {
         rationale="A missed risk category is a production incident, not a metric "
                   "regression. Never route this to the cheap tier to save a few cents.",
     ),
+    # TIER IS DECIDED BY HOW THE ROLE FAILS, NOT BY HOW IMPORTANT IT SOUNDS.
+    # This file's own doctrine: "under-powering it fails silently while
+    # over-powering it merely costs." The two new roles sit on opposite sides of
+    # that line, so they get different tiers rather than both being maxed out.
+    "proposer": RoleRequirement(
+        role="proposer", reasoning="strong", blast_radius="contained",
+        min_context_tokens=32_000, typical_calls=2, output_tokens_per_call=1200,
+        multilingual_critical=True,
+        rationale="Proposes grid values from corpus characteristics. NOT frontier: a "
+                  "bad proposal simply loses in scoring, so it fails visibly and "
+                  "cheaply — what it cannot do is win by luck, and that is enforced "
+                  "by the challenger margin in ops/select.py, not by model quality.",
+    ),
+    "observer": RoleRequirement(
+        role="observer", reasoning="frontier", blast_radius="run",
+        min_context_tokens=200_000, typical_calls=4, output_tokens_per_call=4000,
+        multilingual_critical=True,
+        rationale="Reads a whole phase's artifacts looking for a conclusion its own "
+                  "numbers do not support — the hardest reasoning task here, and the "
+                  "one that found nine shipped defects when a human did it by hand. "
+                  "It cannot change anything, so its blast radius is not its own "
+                  "output: it is the run-wide defect that ships when it MISSES. A "
+                  "weak observer fails silently and, worse, supplies false assurance.",
+    ),
+    "interpreter": RoleRequirement(
+        role="interpreter", reasoning="strong", blast_radius="contained",
+        min_context_tokens=64_000, typical_calls=6, output_tokens_per_call=1500,
+        multilingual_critical=True,
+        rationale="Writes one section's prose against a small fact sheet. Deliberately "
+                  "NOT frontier: every number is checked mechanically, so a weaker "
+                  "model fails VISIBLY — rejected, retried, or the section ships with "
+                  "no commentary. Paying frontier rates here buys nicer sentences, not "
+                  "safety, and it is called several times per report.",
+    ),
     "reporter": RoleRequirement(
         role="reporter", reasoning="strong", blast_radius="phase",
         min_context_tokens=200_000, typical_calls=3, output_tokens_per_call=8000,

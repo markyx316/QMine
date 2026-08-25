@@ -338,6 +338,20 @@ def test_every_authored_rationale_reaches_the_reader_in_the_report_language(comp
     assert prose("a string nobody has translated") == "a string nobody has translated"
 
 
+def test_the_delivered_leaves_gate_reaches_the_operator(completed_run):
+    """A blocking gate absent from state is a blocking gate that cannot block.
+
+    `p10_delivered_leaves_named` is in `cfg.gates.blocking`, but `p10_deploy`
+    called `deps.gate(...)` and discarded the return — and `deps.gate` registers
+    nothing, it only builds the record. The gate existed in the log and nowhere
+    a person or a test would look.
+    """
+    gates = completed_run["summary"].get("gates", {})
+    assert "p10_delivered_leaves_named" in gates, (
+        f"the blocking delivery gate never reached state; recorded: {sorted(gates)}"
+    )
+
+
 def test_every_delivered_leaf_carries_a_name(completed_run):
     """A leaf created AFTER p7 named the partition still reaches the reader.
 

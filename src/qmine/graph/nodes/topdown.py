@@ -117,6 +117,17 @@ def p2a_taxonomy(state: PipelineState, deps: Deps) -> dict[str, Any]:
             domain_notes=cfg.domain.domain_notes,
         )
         sub.angle = angle["key"]
+        # WHETHER THIS ANGLE ACTUALLY SEARCHED IS PROVENANCE, NOT A LOG DETAIL.
+        # `used_tools` reached the log line below and nothing else, so
+        # `taxonomy.json` could not distinguish an angle that ran twelve web
+        # searches from one whose tool loop died and answered from parametric
+        # knowledge. On live38 that was 2 of 5 angles; on live39, 1 of 5. A
+        # taxonomy described as web-researched should be able to say which parts
+        # of it were.
+        try:
+            sub.web_researched = bool(getattr(agent, "used_tools", False))
+        except (AttributeError, ValueError):
+            pass
         # An angle that returns nothing is a paid-for perspective missing from the
         # design record, and it is silent: the phase still announces five
         # researchers fanning out. One live run had `literature` return zero while
@@ -596,8 +607,8 @@ def p2b_gold(state: PipelineState, deps: Deps) -> dict[str, Any]:
     rules_txt = _render_rules(taxonomy)
     kappa_trace: list[dict[str, Any]] = []
 
-    labels_a = _annotate(ctx, "a", queries, classes_txt, rules_txt, taxonomy.labeling_guide, deps)
-    labels_b = _annotate(ctx, "b", queries, classes_txt, rules_txt, taxonomy.labeling_guide, deps)
+    labels_a, labels_b = _annotate_both(
+        ctx, queries, classes_txt, rules_txt, taxonomy.labeling_guide, deps)
 
     agree = agreement([l["label"] for l in labels_a], [l["label"] for l in labels_b])
     deps.emit(f"  raw agreement {agree['raw_agreement']:.3f}, kappa {agree['kappa']:.3f}, "
@@ -1348,8 +1359,8 @@ def _pilot_agreement(deps: Deps, ctx: Any, df: Any, taxonomy: Taxonomy) -> dict[
     idx = deterministic_subsample(len(df), n, cfg.seed_metric)
     queries = df[cfg.data.text_column].astype(str).iloc[idx].tolist()
     classes_txt, rules_txt = _render_classes(taxonomy), _render_rules(taxonomy)
-    la = _annotate(ctx, "a", queries, classes_txt, rules_txt, taxonomy.labeling_guide, deps)
-    lb = _annotate(ctx, "b", queries, classes_txt, rules_txt, taxonomy.labeling_guide, deps)
+    la, lb = _annotate_both(
+        ctx, queries, classes_txt, rules_txt, taxonomy.labeling_guide, deps)
     agree = agreement([x["label"] for x in la], [x["label"] for x in lb])
 
     # The ceiling: annotator A again, same queries, shuffled so the batches differ.
@@ -1593,8 +1604,8 @@ def _repair_guide_and_reannotate(
         deps.emit(f"  re-annotating {len(queries)} "
                   f"{'fresh' if cfg.taxonomy.repair_on_fresh_sample else 'original'} queries "
                   "under the repaired guide")
-        la = _annotate(ctx, "a", queries, classes_txt, rules_txt, taxonomy.labeling_guide, deps)
-        lb = _annotate(ctx, "b", queries, classes_txt, rules_txt, taxonomy.labeling_guide, deps)
+        la, lb = _annotate_both(
+            ctx, queries, classes_txt, rules_txt, taxonomy.labeling_guide, deps)
         agree2 = agreement([x["label"] for x in la], [x["label"] for x in lb])
         # Read the previous kappa BEFORE appending, rather than indexing [-2]
         # afterwards: the caller owns the trace and may hand over an empty one.
@@ -1669,6 +1680,72 @@ def _guide_with_decisions(guide: str, decisions: list[dict[str, Any]],
             lines.append(f"- {pair} → **{r.then}**  [{r.id}]")
     return (guide or "") + "\n".join(lines)
 
+
+
+def _annotate_both(ctx: Any, queries: list[str], classes: str, rules: str,
+                   guide: str, deps: Deps) -> tuple[list[dict], list[dict]]:
+    """Run the two annotators AT THE SAME TIME.
+
+    They are independent by design — that independence is the whole
+    methodological point of having two — so there was never an ordering
+    dependency between them, only the fact that the code called one and then the
+    other. Measured on live38, per call:
+
+        annotator_a  deepseek-v4-flash   median 161.3s   ~20,600 output tokens
+        annotator_b  qwen3-next-80b       median  23.5s   ~1,792 output tokens
+
+    At the configured 8-way batch concurrency that is roughly 142 min and 27 min.
+    Sequentially the phase costs their SUM; concurrently it costs their MAX, so
+    this returns ~16% of the run's wall clock. p2b is 75% of the pipeline, and
+    the two annotators are 94% of its calls.
+
+    **This is a `max()`, not a halving.** The two are wildly unbalanced, so the
+    saving is `min(a, b)` — the whole of the faster annotator disappears into the
+    shadow of the slower one, and nothing more.
+
+    **Peak concurrency doubles while this runs**: each annotator keeps its own
+    `llm.max_concurrency` batch pool, so p2b issues up to `2 x max_concurrency`
+    requests. Splitting one budget between them instead would be WORSE than
+    sequential — halving annotator_a's pool roughly doubles its 142 min, which
+    more than eats the 27 min saved. If a provider rate-limits, lower
+    `llm.max_concurrency` or set `llm.annotators_concurrent: false`.
+
+    Results are unaffected: `_annotate` rebuilds its return as
+    `[got.get(q) for q in queries]`, i.e. in QUERY order rather than completion
+    order, so the positional pairing the kappa computation relies on holds
+    however the batches interleave.
+    """
+    args = (queries, classes, rules, guide, deps)
+    if ctx.registry.is_offline or not getattr(ctx.cfg.llm, "annotators_concurrent", True):
+        # Offline is deterministic and near-instant; there is no latency to hide,
+        # and keeping it sequential keeps the stand-in's logs readable.
+        return _annotate(ctx, "a", *args), _annotate(ctx, "b", *args)
+
+    from concurrent.futures import ThreadPoolExecutor
+
+    peak = ctx.cfg.llm.max_concurrency * 2
+    deps.emit(f"  annotators a and b running concurrently "
+              f"(peak {peak} in-flight requests)")
+    with ThreadPoolExecutor(max_workers=2, thread_name_prefix="annot") as pool:
+        fut = {w: pool.submit(_annotate, ctx, w, *args) for w in ("a", "b")}
+        out: dict[str, Any] = {}
+        errs: dict[str, BaseException] = {}
+        for w, f in fut.items():
+            try:
+                out[w] = f.result()
+            except BaseException as exc:  # noqa: BLE001
+                # Collect BOTH outcomes before raising. Letting the first
+                # exception escape the `with` would still block on the other
+                # thread, then discard its completed work and report only one of
+                # two possible causes.
+                errs[w] = exc
+    if errs:
+        who = ", ".join(sorted(errs))
+        raise RuntimeError(
+            f"annotator {who} failed: "
+            + "; ".join(f"{w}={type(e).__name__}: {e}" for w, e in sorted(errs.items()))
+        ) from next(iter(errs.values()))
+    return out["a"], out["b"]
 
 def _annotate(ctx: Any, which: str, queries: list[str], classes: str, rules: str, guide: str, deps: Deps) -> list[dict]:
     """Label every query, in independent batches.
@@ -2281,8 +2358,8 @@ def _active_learning_round(
         return []
 
     queries = [str(df[cfg.data.text_column].iloc[i]) for i in picks]
-    la = _annotate(ctx, "a", queries, classes_txt, rules_txt, taxonomy.labeling_guide, deps)
-    lb = _annotate(ctx, "b", queries, classes_txt, rules_txt, taxonomy.labeling_guide, deps)
+    la, lb = _annotate_both(
+        ctx, queries, classes_txt, rules_txt, taxonomy.labeling_guide, deps)
     out: list[GoldRow] = []
     for j, q in enumerate(queries):
         a2, b2 = la[j]["label"], lb[j]["label"]
