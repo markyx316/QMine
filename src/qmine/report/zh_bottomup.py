@@ -280,7 +280,7 @@ def build(state: Any, deps: Any, figs: dict[str, Any]) -> str:
                   "正中 KMeans 假设。BisectingKMeans 的早期错切不可逆; HDBSCAN 受制于 embedding "
                   "空间密度不均 — 保留为**新颖性哨兵** (Phase 12)。", ""]
         if verdict.get("density_note"):
-            L += [f"> {verdict['density_note']}", ""]
+            L += [f"> {prose(verdict['density_note'])}", ""]
 
     L += [f"### 2.2 {v['granularity']}", ""]
     tri = _t(gran, "triangulation", default={})
@@ -804,13 +804,42 @@ def _decision_chain(state: Any, phases: tuple[str, ...] | None = None) -> str:
             out += ["", f"> {prose(d.rationale)}"]
         ev = getattr(d, "evidence", None)
         if ev:
-            shown = ", ".join(f"`{k}` = {num(v) if isinstance(v, (int, float)) else v}"
+            shown = ", ".join(f"`{k}` = {_short_value(v, max_chars=60)}"
                               for k, v in list(ev.items())[:6])
             out += ["", f"证据: {shown}"]
         if getattr(d, "rejected", None):
             out += ["", f"落选 {len(d.rejected)} 个方案 (详见 §{'9'} 失败史)。"]
         out.append("")
     return "\n".join(out)
+
+
+def _short_value(v: Any, *, max_chars: int = 44) -> str:
+    """Render ONE artifact value for inline prose, never a Python repr.
+
+    `_decision_chain` interpolated the raw value, so `p2e`'s per-class audit — a
+    list of 13 dicts — reached live40's Chinese report as 1,900 characters of
+    `[{'class': 'OFFTOPIC_RISK_NOISE', 'n_in_subsample': 57, ...}]` in the middle
+    of a sentence. A container is summarised by its SIZE and left in the artifact
+    it came from; a short list of scalars is worth more spelled out than counted,
+    so it is. Nothing here is allowed to grow without bound.
+    """
+    if v is None or (isinstance(v, (list, tuple, dict, str)) and len(v) == 0):
+        return "无"
+    if isinstance(v, bool):
+        return "是" if v else "否"
+    if isinstance(v, float):
+        return f"{v:.4g}"
+    if isinstance(v, (list, tuple)):
+        # Scalars are the readable case; dicts are the case that produced the dump.
+        if all(isinstance(x, (int, float, str)) and not isinstance(x, bool) for x in v):
+            inline = ", ".join(f"{x:.4g}" if isinstance(x, float) else str(x) for x in v)
+            if len(inline) <= max_chars:
+                return f"[{inline}]"
+        return f"[{len(v)} 项, 见产物]"
+    if isinstance(v, dict):
+        return f"{{{len(v)} 项, 见产物}}"
+    sv = str(v)
+    return sv if len(sv) <= max_chars else sv[: max_chars - 1] + "…"
 
 
 def _kv_cell(d: Any, *, max_items: int = 8, max_chars: int = 320) -> str:
@@ -825,17 +854,7 @@ def _kv_cell(d: Any, *, max_items: int = 8, max_chars: int = 320) -> str:
         return "—"
     parts: list[str] = []
     for k, v in list(d.items())[:max_items]:
-        if isinstance(v, float):
-            sv = f"{v:.4g}"
-        elif isinstance(v, (list, tuple)):
-            sv = f"[{len(v)} 项]"
-        elif isinstance(v, dict):
-            sv = f"{{{len(v)} 键}}"
-        else:
-            sv = str(v)
-        if len(sv) > 44:
-            sv = sv[:41] + "…"
-        parts.append(f"`{k}`={sv}")
+        parts.append(f"`{k}`={_short_value(v, max_chars=44)}")
     cell = "; ".join(parts)
     if len(d) > max_items:
         cell += f"; …另 {len(d) - max_items} 项"

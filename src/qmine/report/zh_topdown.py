@@ -26,7 +26,7 @@ import math
 from pathlib import Path
 from typing import Any
 
-from .i18n import num, pct
+from .i18n import num, pct, prose
 from .zh_bottomup import _decision_chain, _failure_history, _gate_ledger
 
 
@@ -363,7 +363,7 @@ def build(state: Any, deps: Any) -> str:
     if adv:
         na, nv = adv.get("n_attacked"), adv.get("n_verdicts")
         cov, acc = adv.get("coverage"), adv.get("estimated_accuracy")
-        L += [f"> {adv.get('method', '')}", "",
+        L += [f"> {prose(adv.get('method', ''))}", "",
               f"- 被攻击的标签数: **{na}**"
               + (f"; 返回裁决: **{nv}** (覆盖率 **{pct(cov)}**)" if nv is not None and cov is not None else ""),
               f"- 判定为**错**: **{adv.get('n_wrong')}**; 判定为「可辩护但有争议」: **{adv.get('n_defensible')}**",
@@ -411,8 +411,8 @@ def build(state: Any, deps: Any) -> str:
             L += ["### 5.1 近邻标签扫描 (仅供人工复核)", "",
                   f"- 扫描行数: **{scan.get('n_scanned')}**; 命中可疑: **{scan.get('n_flagged')}** "
                   f"(命中率 {pct(scan.get('flag_rate'))}), k={scan.get('k')}",
-                  f"- 处置: **{scan.get('action')}**", "",
-                  f"> ⚠️ {scan.get('warning', '')}", "",
+                  f"- 处置: **{prose(str(scan.get('action') or ''))}**", "",
+                  f"> ⚠️ {prose(str(scan.get('warning') or ''))}", "",
                   "命中率高**不等于**标签错得多。在模板化语料上, 近邻多数是"
                   "**措辞孪生**而非语义同类, 因此这一扫描只能作为人工复核的候选队列, "
                   "**不得自动套用**。", ""]

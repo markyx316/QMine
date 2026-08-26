@@ -293,6 +293,21 @@ def _fill_field(
         return bool(seed % 7 == 0)
     if low in ("mix_notes", "risk_reason", "decline_reason", "proposed_rule", "evidence_query", "angle"):
         return ""
+    if low == "markdown":
+        # A section body for the agent-written final report. Deliberately carries
+        # NO NUMBERS: the stand-in cannot see the section's fact sheet, so any
+        # figure it invented would be correctly rejected by `check_numbers` and
+        # every offline section would fail closed — leaving the accept path,
+        # document assembly and the coverage check unexercised by any test that
+        # runs the graph. Long enough to clear the minimum-length rule, and in the
+        # corpus language so it clears the language rule too.
+        head = terms[0] if terms else "本组查询"
+        return (
+            f"[{tag}] 这一节讨论与「{head}」有关的部分。离线替身没有拿到本节的事实表, "
+            "因此这里不写任何具体数值 —— 真实运行时, 这段文字由 agent 依据事实表撰写, "
+            "并对其中每一个数字逐值核对。本段存在的意义只是让离线运行也能走完"
+            "「撰写 → 校验 → 组装 → 覆盖检查」这条完整链路, 从而让接线上的缺陷"
+            "在没有付费调用的情况下也能被测试发现。")
 
     # -- otherwise: a valid instance of the declared type -------------------
     opts = _enum_options(spec)

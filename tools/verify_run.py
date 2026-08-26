@@ -419,6 +419,64 @@ def _(r):
            ("FAIL", f"no pre-audit copy for {missing}")
 
 
+@check("final report was written and its coverage disclosed", "narrative")
+def _(r):
+    """The agent-written report must ship, and must confess what it left out.
+
+    Two failure shapes, and the second is the quiet one. A report that did not
+    run at all is obvious. A report that ran, skipped three of the run's warned
+    gates, and printed no disclosure looks complete — which is the omission the
+    coverage check exists to catch, one step removed from the reader.
+    """
+    meta = r.j("final_report_meta")
+    if meta is None:
+        return "SKIP", "no final_report_meta.json — run predates the narrative report"
+    if not meta.get("ran"):
+        return "FAIL", f"final report did not run: {meta.get('skipped')}"
+    md = r.md("00_最终报告.md")
+    if not md:
+        return "FAIL", "meta says it ran, but the document is not on disk"
+    n_missing = meta.get("n_musts_missing", 0)
+    disclosed = "本文没有覆盖到的必写项" in md
+    if n_missing and not disclosed:
+        return "FAIL", f"{n_missing} required points missed and NOT disclosed to the reader"
+    if not n_missing and disclosed:
+        return "FAIL", "a disclosure block was printed with nothing to disclose"
+    ok, total = meta.get("n_sections_ok", 0), meta.get("n_sections", 0)
+    covered = meta.get("n_musts", 0) - n_missing
+    src = meta.get("outline_source", "?")
+    if ok < total:
+        return "PASS", (f"{ok}/{total} sections verified ({total - ok} shipped as "
+                        f"marked holes), {covered}/{meta.get('n_musts')} points covered, "
+                        f"outline={src}")
+    return "PASS", (f"{ok}/{total} sections verified, "
+                    f"{covered}/{meta.get('n_musts')} required points covered, outline={src}")
+
+
+@check("no untranslated English prose in a Chinese deliverable", "narrative")
+def _(r):
+    """The detector that missed this asked for three consecutive >=6-letter
+    lowercase words — a pattern real English almost never contains."""
+    import sys as _sys
+    _sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
+    from qmine.report.i18n import looks_like_english_prose
+
+    known = {"p1_template_coverage", "p1_minority_language_risk",
+             "p2a_pilot_agreement", "p2b_annotator_symmetry",
+             "p6_heldout_reproduction", "p7_risk_independently_found"}
+    hits = []
+    for name in ("00_最终报告.md", "自下而上聚类最终报告.md",
+                 "自上而下类目体系最终报告.md", "统一度量面板.md"):
+        text = r.md(name)
+        if not text:
+            continue
+        for line in text.splitlines():
+            if looks_like_english_prose(line) and not any(f"`{g}`" in line for g in known):
+                hits.append(f"{name}: {line.strip()[:70]}")
+    return ("PASS", "no unexpected English prose") if not hits else \
+           ("FAIL", f"{len(hits)} English line(s): {hits[:2]}")
+
+
 def run(gen: Path, label: str):
     r = Run(gen)
     print(f"\n{'=' * 78}\n{label}: {gen}\n{'=' * 78}")

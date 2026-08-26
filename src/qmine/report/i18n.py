@@ -12,6 +12,8 @@ the report harder to check rather than easier.
 
 from __future__ import annotations
 
+import re
+
 ZH: dict[str, str] = {
     # headings
     "exec_summary": "执行摘要",
@@ -301,6 +303,34 @@ PROSE_ZH: dict[str, str] = {
     "Tree ensembles must reconstruct directional similarity":
         "树模型必须用轴对齐的切分去重建方向相似度, 并把有限的提升预算摊到很多类目上; "
         "线性头在这种几何下更契合。",
+    # These two reached live40's Chinese reports untranslated. The coverage test
+    # that exists to prevent exactly that runs on the OFFLINE fixture, which never
+    # takes the p2e audit branch or the HDBSCAN screen — so it passed while both
+    # shipped. The test now reads the mapping itself; see its docstring.
+    "Measured by k-nearest-neighbour label agreement per class":
+        "按类目逐个测量 **k 近邻标签一致度**: 取该类每条查询在表征空间中的最近邻, "
+        "看邻居是否也属于同一类。若一个类目的邻域并不共享它的标签, 那它就不是表征空间里的"
+        "一块**区域**, 而是一条只能靠规则判定的界线 —— 再多的标注数据也不会让它变成区域。"
+        "这类类目被判为「规则依赖」, 交给规则层而不是几何层去承担。",
+    # Found by turning the English detector up: these three reached live40's
+    # Chinese deliverables 13 times between them. All were already routed through
+    # prose() — they simply had no mapping, which is why the fix is a mapping.
+    "A CONFIRMED finding is an assertion that failed against the":
+        "**CONFIRMED 表示一条断言在产物上核验失败了, 不是某个 agent 的意见** —— "
+        "去读它的 check, 修对应的阶段; 断言重新成立时, 这条发现会自行关闭。"
+        "未核验的那类会给出一个 artifact key: 自己去读, 然后判断。"
+        "无论哪种, 它都已经进入本次运行的发现台账, 并会延续到下一个 generation。"
+        "**不要为了让这道门通过而去关掉 observer。**",
+    "agents were instructed to PROVE each label wrong":
+        "让 agent 逐条去**证伪**每一个标签; 估计值是「攻击之后仍然站得住」的标签所占比例。"
+        "这不是准确率的无偏估计 —— 它衡量的是标签在针对性质疑下的存活率。",
+    "Do NOT auto-apply these":
+        "**不要自动套用这些标记。** 在模板化语料里, 大多数标记是表征造成的假象 —— "
+        "措辞相近的查询会挨在一起, 与它们的含义无关。请人工复核后再作处置。",
+    "HDBSCAN is screened by":
+        "HDBSCAN 只按 (噪声率升序, 簇数降序) **筛选出来供人工查看**, 绝不由某个合成分数"
+        "自动选中。它在下游的职责是第 12 阶段的**新颖内容哨兵** —— 负责发现「这批查询谁都"
+        "不像」, 而不是充当主划分。",
 }
 
 
@@ -316,3 +346,29 @@ def prose(text: str, language: str = "zh") -> str:
         if text.startswith(prefix):
             return zh
     return text
+
+
+def looks_like_english_prose(line: str, *, min_words: int = 8) -> bool:
+    """True for a line of running English inside a Chinese document.
+
+    The canonical detector, shared by the runtime narrator and the test that
+    guards the scripted reports, so the two cannot drift apart.
+
+    An earlier version asked for three consecutive >=6-letter lowercase words.
+    Real English almost never has that — function words ("the", "of", "is",
+    "not") break every run — so it matched NEITHER of the two English paragraphs
+    that shipped in live40's Chinese deliverables, and would not have matched
+    them on a live report either. What actually identifies English prose in a
+    Chinese document is the absence of CJK, so that is what this asks. Code
+    spans, links, identifiers and table rows are excluded first, because a
+    Chinese report legitimately carries all of them.
+    """
+    raw = line.strip()
+    if not raw or raw.startswith(("|", "#", "![", "```", "---")):
+        return False
+    body = re.sub(r"`[^`]*`", " ", raw)
+    body = re.sub(r"!?\[[^\]]*\]\([^)]*\)", " ", body)
+    body = re.sub(r"^[>*\-\d.\s]+", " ", body)
+    if re.search(r"[一-鿿]", body):
+        return False
+    return len(re.findall(r"[A-Za-z][A-Za-z'-]+", body)) >= min_words

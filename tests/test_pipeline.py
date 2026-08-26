@@ -20,6 +20,7 @@ TOPDOWN_REPORT = "自上而下类目体系最终报告.md"
 PANEL_REPORT = "统一度量面板.md"
 LEAF_CATALOGUE = "叶清单.md"
 AUDIT_REPORT = "交付前审核报告.md"
+FINAL_REPORT = "00_最终报告.md"
 
 import json
 from pathlib import Path
@@ -309,13 +310,63 @@ def test_a_failed_gate_tells_the_operator_what_to_do(completed_run):
     assert any(g.get("remediation") for g in gates.values()), "every remediation is empty"
 
 
+from qmine.report.i18n import looks_like_english_prose as _is_english_prose
+
+
+def test_the_agent_written_final_report_ships_and_says_how_it_was_checked(completed_run):
+    """The one deliverable Python does not write, and its provenance.
+
+    A reader has no way to tell agent-written prose from generated prose by
+    looking, so the document must say which it is and what verified it. This also
+    pins the wiring end to end: the report reaching disk at all means the
+    catalogue built, the outline resolved, sections were written and checked, the
+    document assembled and coverage ran.
+    """
+    gen = Path(completed_run["summary"]["artifact_root"])
+    md = gen / FINAL_REPORT
+    assert md.exists(), f"the final report was not delivered; got {sorted(p.name for p in gen.glob('*.md'))}"
+    text = md.read_text()
+    assert "正文由一个 agent 撰写" in text, "the report does not disclose that an agent wrote it"
+    assert "每一个数字都必须出现在事实表中" in text, "it does not say what checked it"
+
+    meta = json.loads((gen / "final_report_meta.json").read_text())
+    assert meta.get("ran") is True, f"final report did not run: {meta.get('skipped')}"
+    assert meta.get("n_sections", 0) > 0, "a report with no sections is not a report"
+    # Whatever the section count, every section is accounted for in the record.
+    assert len(meta.get("sections", [])) == meta["n_sections"]
+
+
+def test_a_required_point_the_narrator_skipped_is_disclosed_to_the_reader(completed_run):
+    """Coverage failures must reach the page, not only the run log.
+
+    `check_numbers` is a precision check and says nothing about omission, so the
+    must-cover list is what stops a report that states clean results and never
+    mentions the gates that warned. A coverage miss that were only logged would
+    be the same omission the check exists to catch, moved one step away from the
+    person it misleads — so the document carries its own gaps.
+    """
+    gen = Path(completed_run["summary"]["artifact_root"])
+    meta = json.loads((gen / "final_report_meta.json").read_text())
+    if not meta.get("ran"):
+        pytest.skip(f"final report did not run: {meta.get('skipped')}")
+    text = (gen / FINAL_REPORT).read_text()
+    if meta.get("n_musts_missing", 0):
+        assert "本文没有覆盖到的必写项" in text, (
+            f"{meta['n_musts_missing']} required points were missed and the "
+            "document does not say so")
+        for m in meta["missing"]:
+            assert m["id"] in text, f"missing point {m['id']} was not disclosed"
+    else:
+        assert "本文没有覆盖到的必写项" not in text, (
+            "a disclosure block was printed with nothing to disclose")
+
+
 def test_every_authored_rationale_reaches_the_reader_in_the_report_language(completed_run):
     """The audit trail is the reasoning content of the deliverable, so an
     untranslated rationale defeats the reason for including it. This asserts
     coverage rather than eyeballing: any authored prose that reaches a Chinese
     report and has no translation shows up here, so edits to the English cannot
     silently drop a mapping."""
-    import re
     from pathlib import Path
 
     from qmine.report.i18n import prose
@@ -323,13 +374,38 @@ def test_every_authored_rationale_reaches_the_reader_in_the_report_language(comp
     gen = Path(completed_run["summary"]["artifact_root"])
     md = (gen / BOTTOMUP_REPORT).read_text()
 
-    # Three consecutive long lowercase words is running English prose; Chinese
-    # reports legitimately carry identifiers, metric names and code spans.
-    english = [l for l in md.splitlines()
-               if re.search(r"[a-z]{6,}\s+[a-z]{6,}\s+[a-z]{6,}", l)]
-    assert not english, (
+    # DETECTOR, v2. The original asked for three consecutive >=6-letter lowercase
+    # words. Real English almost never has that — function words ("the", "of",
+    # "is", "not") break every run — so it matched NEITHER of the two English
+    # paragraphs that shipped in live40's Chinese reports. It would have passed on
+    # the live report too; the fixture was only the second reason it was quiet.
+    # What actually identifies English prose in a Chinese document is the absence
+    # of CJK, so that is what this asks.
+    english = [l for l in md.splitlines() if _is_english_prose(l)]
+
+    # KNOWN DEBT, FROZEN. Turning the detector up revealed a second, larger class
+    # the weak one never saw: every `deps.gate(...)` message is an English f-string
+    # with numbers interpolated into it, and the ledger prints it verbatim. That is
+    # 22 call sites and a restructure, not a mapping — so it is recorded here by
+    # NAME rather than waved through by pattern. This set may shrink; a line that
+    # is not in it fails the test. Do not add to it to make a failure go away.
+    GATE_MESSAGE_DEBT = {
+        "p1_template_coverage", "p1_minority_language_risk", "p2a_pilot_agreement",
+        "p2b_annotator_symmetry", "p6_heldout_reproduction",
+        "p7_risk_independently_found",
+    }
+    def _is_known_debt(line: str) -> bool:
+        return any(f"`{g}`" in line for g in GATE_MESSAGE_DEBT)
+
+    unexpected = [l for l in english if not _is_known_debt(l)]
+    assert not unexpected, (
         "untranslated prose reached the Chinese report:\n  "
-        + "\n  ".join(l[:120] for l in english[:6])
+        + "\n  ".join(l[:120] for l in unexpected[:6])
+    )
+    # And the debt must be real, not a stale list quietly suppressing nothing.
+    assert any(_is_known_debt(l) for l in english) or not english, (
+        "GATE_MESSAGE_DEBT no longer matches anything — delete the entries that "
+        "have been fixed rather than leaving a list that suppresses future English"
     )
 
     # And the mapping must actually be doing work, not vacuously passing because
@@ -337,6 +413,58 @@ def test_every_authored_rationale_reaches_the_reader_in_the_report_language(comp
     assert prose("Low kappa means the guide is ambiguous, whatever follows") != \
         "Low kappa means the guide is ambiguous, whatever follows"
     assert prose("a string nobody has translated") == "a string nobody has translated"
+
+
+def test_every_decision_rationale_in_the_SOURCE_has_a_translation():
+    """The report-level check above is only as good as the fixture's coverage.
+
+    It runs on the offline stand-in, which never takes `p2e`'s per-class audit
+    branch nor the HDBSCAN density screen — so both of those rationales shipped
+    to live40's Chinese deliverables in English while that test passed green.
+    A run-output check cannot see a branch the run did not enter.
+
+    This reads the SOURCE instead: every `deps.decision(...)` rationale literal in
+    the tree must have a mapping, whether or not any fixture reaches its call
+    site. Static coverage is the only kind that is complete here.
+    """
+    import ast
+    from pathlib import Path
+
+    from qmine.report.i18n import prose
+
+    def literal(node):
+        """Fold a str constant, or an implicit/explicit concatenation of them."""
+        if isinstance(node, ast.Constant) and isinstance(node.value, str):
+            return node.value
+        if isinstance(node, ast.BinOp) and isinstance(node.op, ast.Add):
+            left, right = literal(node.left), literal(node.right)
+            return None if left is None or right is None else left + right
+        return None
+
+    src = Path(__file__).resolve().parents[1] / "src" / "qmine"
+    untranslated: list[str] = []
+    seen = 0
+    for py in sorted(src.rglob("*.py")):
+        tree = ast.parse(py.read_text(), filename=str(py))
+        for node in ast.walk(tree):
+            if not (isinstance(node, ast.Call)
+                    and isinstance(node.func, ast.Attribute)
+                    and node.func.attr == "decision"):
+                continue
+            arg = node.args[3] if len(node.args) > 3 else next(
+                (k.value for k in node.keywords if k.arg == "rationale"), None)
+            text = literal(arg) if arg is not None else None
+            if not text or not _is_english_prose(text):
+                continue
+            seen += 1
+            if prose(text) == text:
+                untranslated.append(f"{py.name}:{node.lineno}  {text[:90]}")
+
+    assert seen, "no decision rationales found — the AST walk stopped matching"
+    assert not untranslated, (
+        "decision rationales with no Chinese mapping (add to i18n.PROSE_ZH):\n  "
+        + "\n  ".join(untranslated)
+    )
 
 
 def test_the_delivered_leaves_gate_reaches_the_operator(completed_run):

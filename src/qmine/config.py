@@ -438,6 +438,15 @@ class QMineConfig(BaseModel):
     #: or is refused is printed in 交付前审核报告.md. Turn it off for a run whose
     #: deliverables must be byte-identical to what the phases produced.
     audit_delivery: bool = True
+    #: The agent-written final report — the one document not assembled by Python.
+    #: The scripted reports are correct and exhaustive; they are also generated
+    #: section by section, so they read in the order the code ran rather than the
+    #: order the argument makes sense in. This writes the narrative over the same
+    #: artifacts: the agent chooses the structure and every sentence, while the
+    #: numbers are checked value-by-value against a per-section fact sheet and the
+    #: run's own warnings become a must-cover list checked over the whole text.
+    #: Off means the run delivers the scripted documents alone.
+    final_report: bool = True
     #: Let an agent write the "what this means for THIS corpus" sentences in the
     #: deliverables. Every number it writes is checked against a fact sheet built
     #: from artifacts, and an unverifiable one is rejected and re-asked; after

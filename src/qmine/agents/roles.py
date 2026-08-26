@@ -575,16 +575,25 @@ class RiskSentinelAgent(Agent):
         return "## Clusters to review\n\n" + "\n\n".join(blocks)[:40000] + "\n\nReport findings."
 
 
-class ReportSection(BaseModel):
+class StorySection(BaseModel):
+    """One section of the narrator's OWN outline."""
+
+    id: str
     heading: str
-    body_markdown: str
+    intent: str = ""
+    evidence: list[str] = Field(default_factory=list)
+    figures: list[str] = Field(default_factory=list)
 
 
-class ReportDraft(BaseModel):
+class StoryOutline(BaseModel):
     title: str = ""
-    executive_summary: str = ""
-    sections: list[ReportSection] = Field(default_factory=list)
-    limitations: list[str] = Field(default_factory=list)
+    thesis: str = ""
+    sections: list[StorySection] = Field(default_factory=list)
+
+
+class SectionDraft(BaseModel):
+    markdown: str = ""
+    covered: list[str] = Field(default_factory=list)
 
 
 class GridProposal(BaseModel):
@@ -709,17 +718,57 @@ class InterpreterAgent(Agent):
         return "\n".join(parts)
 
 
-class ReporterAgent(Agent):
-    role = "reporter"
-    prompt_name = "reporter"
-    schema = ReportDraft
+class StoryPlannerAgent(Agent):
+    """Pass 1 — decides the SHAPE of the final report, in its own words.
 
-    def build_user(self, *, brief: str = "", evidence: str = "", **kw: Any) -> str:
-        return (
-            f"## What to write\n{brief}\n\n"
-            f"## Evidence available (every number must come from here)\n"
-            f"{budget_text(evidence, 60000, tail=6000)}"
-        )
+    It is given a map of the run, not the run: bundle titles, what each covers,
+    and what may not be omitted. Handing it every number would both exceed the
+    context and invite it to start drafting, and a planner that has started
+    drafting stops planning.
+    """
+
+    role = "reporter"
+    prompt_name = "reporter_plan"
+    schema = StoryOutline
+
+    def build_user(self, *, digest: str = "", language: str = "zh",
+                   rejected: str = "", **kw: Any) -> str:
+        parts = [f"## 报告语言\n{language}", "", digest]
+        if rejected:
+            parts += ["", "## 上一版大纲被退回\n" + rejected]
+        return "\n".join(parts)
+
+
+class StoryWriterAgent(Agent):
+    """Pass 2 — writes ONE section against evidence scoped to that section.
+
+    The previous section's closing text comes in so this one can continue a
+    thread rather than restart; the outline comes in so it knows where it stands
+    in an argument it wrote itself.
+    """
+
+    role = "reporter"
+    prompt_name = "reporter_write"
+    schema = SectionDraft
+
+    def build_user(self, *, outline: str = "", section: str = "", facts: str = "",
+                   figures: str = "", musts: str = "", previous: str = "",
+                   rejected: str = "", language: str = "zh", **kw: Any) -> str:
+        parts = [
+            f"## 报告语言\n{language}", "",
+            f"## 全文大纲 (你自己写的)\n{outline}", "",
+            f"## 现在要写的这一节\n{section}", "",
+            f"## 可用事实 — 文中每一个数字都必须出自这里\n{budget_text(facts, 40000, tail=4000)}",
+        ]
+        if figures:
+            parts += ["", f"## 本节可以插入的图 (只能用这些)\n{figures}"]
+        if musts:
+            parts += ["", f"## 本节需要覆盖到的必写项\n{musts}"]
+        if previous:
+            parts += ["", f"## 上一节的结尾 (承接它, 不要重新开头)\n{previous}"]
+        if rejected:
+            parts += ["", "## 你上一稿被退回\n" + rejected]
+        return "\n".join(parts)
 
 
 class DriftReport(BaseModel):
@@ -760,7 +809,7 @@ ALL_ROLES = {
     "proposer": ProposerAgent,
     "observer": ObserverAgent,
     "interpreter": InterpreterAgent,
-    "reporter": ReporterAgent,
+    "reporter": StoryWriterAgent,
     "maintainer": MaintainerAgent,
 }
 

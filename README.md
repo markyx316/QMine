@@ -23,6 +23,7 @@ Deliverables are written in the corpus's own language. On a Chinese corpus:
 
 | deliverable | what it is |
 |---|---|
+| `00_最终报告.md` | **the one document not assembled by Python** — an agent writes the outline and every sentence over the same artifacts; the numbers are checked value-by-value against a per-section fact sheet and the run's own warnings become a must-cover list checked over the whole text |
 | `自下而上聚类最终报告.md` | representation bake-off, tree, governance, deployment — including what was rejected |
 | `自上而下类目体系最终报告.md` | taxonomy, gold set, classifier, adversarial validation, and whether the guide's rules agree with the referee's own verdicts |
 | `统一度量面板.md` | every candidate re-measured by one code path, plus the open-findings ledger |
@@ -159,6 +160,7 @@ parameter.**
 | door | guardrail | on failure |
 |---|---|---|
 | **prose** | the author gets a fact sheet; every number it writes must be in it | rejected and re-asked, with the offending values quoted |
+| **narrative** | the same fact-sheet check per section, **plus** a coverage check: the run's warned gates, ties and open findings become a must-cover list verified against the agent's own prose | a section that cannot pass ships as a marked hole; an uncovered point is disclosed in the document |
 | **observation** | must cite a *resolving* artifact path; may carry a machine-evaluable assertion | an unresolvable citation is dropped before anyone reads it |
 | **grid proposal** | proposed *blind to every score*, so additions are pre-registered; capped, additions-only, graded each run | a score-shaped token in the payload aborts the call |
 | **deliverable edit** | anchored replacement: anchor unique, every number sourced from the artifact the edit **cites**, language checked, reason required | refused — and refusals are printed beside the applied edits |

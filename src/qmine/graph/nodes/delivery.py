@@ -17,6 +17,10 @@ from ...ops.panel import UniformPanel
 from ...state import PipelineState
 from ..deps import Deps
 
+#: Filename stem of the agent-written report. Named so it sorts first in the
+#: delivery directory: it is the document a reader is meant to open first.
+FINAL_REPORT_STEM = "00_最终报告"
+
 
 def p9_panel(state: PipelineState, deps: Deps) -> dict[str, Any]:
     """Recompute every comparison metric through one harness.
@@ -351,6 +355,39 @@ def p11_report(state: PipelineState, deps: Deps) -> dict[str, Any]:
     except Exception as exc:  # noqa: BLE001
         deps.emit(f"  findings re-check skipped ({type(exc).__name__}: {exc})")
     refs = build_all_reports(state, deps)
+
+    # THE DOCUMENT A READER OPENS FIRST, AND THE ONLY ONE NOT ASSEMBLED BY PYTHON.
+    #
+    # Everything above is generated section by section, which is why it is correct
+    # and why it reads like a changelog: the order is the order the code ran, and
+    # every defect ever fixed added its caveat where it happened rather than where
+    # a reader needs it. A template cannot write a through-line because it does not
+    # know what the run turned out to be about. So this one is written by an agent
+    # — outline and prose both — and checked mechanically instead: numbers against
+    # a per-section fact sheet, omissions against a must-cover list derived from
+    # the run's own warnings. It runs HERE, after the figures exist and before the
+    # auditor, so the auditor reads it like any other deliverable.
+    narrative = {"ran": False, "skipped": "disabled"}
+    if getattr(deps.cfg, "final_report", True):
+        from ...agents.narrate import narrate
+
+        deps.emit("  最终报告 — agent 撰写, 机器校验")
+        try:
+            narrative = narrate(state, deps)
+        except Exception as exc:  # noqa: BLE001
+            deps.emit(f"  final report skipped ({type(exc).__name__}: {exc})")
+            narrative = {"ran": False, "skipped": f"{type(exc).__name__}: {exc}"}
+        if narrative.get("ran") and narrative.get("markdown"):
+            refs["report_final"] = deps.store.put_markdown(
+                FINAL_REPORT_STEM, narrative["markdown"], producer="p11",
+                summary=(f"agent-written: {narrative.get('n_sections_ok')}/"
+                         f"{narrative.get('n_sections')} sections verified, "
+                         f"{narrative.get('n_musts') - narrative.get('n_musts_missing')}"
+                         f"/{narrative.get('n_musts')} required points covered"))
+        refs["final_report_meta"] = deps.store.put_json(
+            "final_report_meta", {k: v for k, v in narrative.items()
+                                  if k != "markdown"},
+            producer="p11", summary="how the agent-written report was verified")
 
     # THE LAST THING BETWEEN THE RUN AND A READER.
     #
