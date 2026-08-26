@@ -32,6 +32,7 @@ from ...ops.cards import (
     template_spread,
 )
 from ...ops.governance import assert_all_settled, execute_prescriptions, governance_ledger
+from . import observe as _observe
 from ...records import LeafNaming, NamingCard, Prescription
 from ...state import PipelineState
 from ..deps import Deps
@@ -324,7 +325,12 @@ def p7_audit(state: PipelineState, deps: Deps) -> dict[str, Any]:
     return {
         "phase": "p8",
         "artifacts": {"tree_naming": naming_ref},
-        "gates": gates,
+        # Read back the artifact that was just written, so the observer sees what
+        # p7 DELIVERED rather than a payload assembled by hand beside it.
+        "gates": {**gates, **_observe(
+            deps, "p7",
+            {"tree_naming": deps.load("tree_naming") if deps.has("tree_naming") else {}},
+            gates={k: getattr(v, "message", "") for k, v in gates.items()})},
         "prescriptions": prescriptions,
         "completed_phases": ["p7"],
         "events": [
@@ -524,7 +530,12 @@ def p8_governance(state: PipelineState, deps: Deps) -> dict[str, Any]:
     return {
         "phase": "p9",
         "artifacts": {**artifacts_out, "leaf_family_final": fam_ref, "governance": ledger_ref},
-        "gates": {gate.name: gate},
+        # p8 REWRITES the partition, and everything written before it describes a
+        # tree that no longer exists — the single richest defect family in this
+        # project's history. It is the phase most worth a second pair of eyes.
+        "gates": {gate.name: gate,
+                  **_observe(deps, "p8", {"governance": deps.load("governance")
+                                          if deps.has("governance") else detail})},
         "prescriptions": prescriptions,
         "completed_phases": ["p8"],
         "events": [

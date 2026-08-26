@@ -136,7 +136,77 @@ def build(state: Any, deps: Any, figs: dict[str, Any]) -> str:
             L += [f"**{i}.** {prose(f, 'zh')}", ""]
 
     L += ["## 6. 质量门", "", _gate_ledger(state), ""]
+    L += _open_findings(deps)
     return "\n".join(L)
+
+
+def _open_findings(deps: Any) -> list[str]:
+    """未结的观察发现 —— the ledger, printed where a reader will meet it.
+
+    Without this section the ledger is a JSON file nobody opens, which is the
+    exact failure it was built to end: a critic found the kappa defect before the
+    run that shipped it, the finding went to an artifact, and nothing read it.
+
+    Two categories, kept apart on purpose. A CONFIRMED finding is an assertion
+    that failed against the delivered artifacts — a defect, stated as a
+    measurement. An unverified one is an agent's concern that no expression could
+    settle, and it is printed as exactly that. Merging them would either lend
+    unearned weight to a hunch or bury a proven defect among opinions.
+    """
+    try:
+        from ..ops.findings import FINDINGS_FILE, FindingLedger
+
+        led = FindingLedger(Path(deps.store.root) / FINDINGS_FILE)
+    except Exception:  # noqa: BLE001
+        return []
+    conf = led.confirmed_open
+    unver = [f for f in led.open_findings if f.verdict != "confirmed"]
+    fixed = [f for f in led.entries.values() if f.status == "fixed"]
+    # A waived finding is a RECORDED DECISION, not a disappearance. It stops
+    # reopening on re-sighting — otherwise waiving means nothing — so printing it
+    # with its reason is the only thing keeping the waiver accountable.
+    waived = [f for f in led.entries.values() if f.status == "waived"]
+    if not (conf or unver or fixed or waived):
+        return []
+
+    L = ["## 7. 未结的观察发现 (findings ledger)", "",
+         "阶段观察者在**运行过程中**读了每一阶段的产物。下面是尚未消解的发现。"
+         "这份清单存放在**运行级**目录中 (与 LLM 缓存同级), 新开一个 generation 会"
+         "继承它 —— 一条发现只有在**它自己的断言重新成立**时才会自动关闭。", ""]
+    if conf:
+        L += [f"### 7.1 已被机器证实的发现 ({len(conf)} 条)", "",
+              "**这些不是观点。** 每一条都附带一个针对产物的断言, 而该断言在本次交付的"
+              "产物上**求值为假**。请把它们当作失败的断言来读。", "",
+              "| 阶段 | 严重度 | 发现 | 失败的断言 | 见过 |", "|---|---|---|---|---|"]
+        for f in conf[:12]:
+            # The whole expression, never a prefix: a reader's next move is to
+            # re-evaluate it against the artifacts, and an assertion cut off
+            # mid-token cannot be re-run.
+            L.append(f"| `{f.phase}` | {f.severity} | {f.claim[:90]} | "
+                     f"`{f.check}` | {f.times_seen} |")
+        L.append("")
+    if unver:
+        L += [f"### 7.2 无法用表达式判定的发现 ({len(unver)} 条)", "",
+              "观察者提出但**没有给出可求值断言**的疑问 —— 例如「结论是否真的由这份证据"
+              "推出」这类判断本就不可机械判定。它们**不能**让任何一道门失败, 保留在此"
+              "供人判断。", ""]
+        for f in unver[:8]:
+            L.append(f"- **`{f.phase}`** [{f.severity}] {f.claim[:150]}  ← `{f.artifact_key}`")
+        L.append("")
+    if fixed:
+        L += [f"### 7.3 已关闭 ({len(fixed)} 条)", "",
+              "断言重新成立, 因此自动关闭 —— 关闭它的是一次测量, 不是任何人的判断。", ""]
+        for f in fixed[:6]:
+            L.append(f"- ~~{f.claim[:120]}~~ (`{f.phase}`)")
+        L.append("")
+    if waived:
+        L += [f"### 7.4 已由人工判定不处理 ({len(waived)} 条)", "",
+              "**问题仍然存在**, 只是有人看过并决定这次不处理。理由一并列出 —— "
+              "一条没有理由的豁免和「忘了」无法区分。", ""]
+        for f in waived[:8]:
+            L.append(f"- **`{f.phase}`** {f.claim[:110]} —— 理由: {f.resolution[:120]}")
+        L.append("")
+    return L
 
 
 def _route_comparison(t: dict[str, Any]) -> list[str]:

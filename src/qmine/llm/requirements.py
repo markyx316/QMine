@@ -253,6 +253,19 @@ ROLE_REQUIREMENTS: dict[str, RoleRequirement] = {
                   "output: it is the run-wide defect that ships when it MISSES. A "
                   "weak observer fails silently and, worse, supplies false assurance.",
     ),
+    "delivery_auditor": RoleRequirement(
+        role="delivery_auditor", reasoning="frontier", blast_radius="run",
+        min_context_tokens=200_000, typical_calls=1, output_tokens_per_call=6000,
+        multilingual_critical=True,
+        rationale="The only role that may CHANGE a deliverable, and the last thing "
+                  "between the run and a reader. It must hold every warning the run "
+                  "raised against every document at once and decide which ones left a "
+                  "defect — the same reasoning as the observer, over a larger surface. "
+                  "Its edits are mechanically bounded (anchored, sourced, language- "
+                  "checked), so it cannot ship a wrong number; what a weak model costs "
+                  "here is the DEFECT IT FAILS TO SEE, which then ships with an audit "
+                  "report attached saying the deliverables were checked.",
+    ),
     "interpreter": RoleRequirement(
         role="interpreter", reasoning="strong", blast_radius="contained",
         min_context_tokens=64_000, typical_calls=6, output_tokens_per_call=1500,

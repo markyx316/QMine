@@ -40,6 +40,7 @@ from ...config import gold_size_for
 from ...determinism import deterministic_subsample, rng
 from ...ops.audit import stratified_sample
 from ...ops.classify import UNLABELED, RuleEngine, agreement, build_features, train_classifier
+from . import observe as _observe
 from ...records import AdjudicationRule, GoldRow, Taxonomy, TaxonomyNode
 from ...records import Prescription
 from ...state import PipelineState
@@ -485,10 +486,17 @@ def p2a_taxonomy(state: PipelineState, deps: Deps) -> dict[str, Any]:
                   f"structural (redraw), "
                   f"{sum(1 for p in prescriptions if p.kind == 'flag_risk')} guide (tie-break)")
 
+    # Read the taxonomy from the artifact that was just written rather than from
+    # local variables: the observer must see what p2a DELIVERED, and a payload
+    # assembled by hand drifts from it the moment either side changes.
+    _obs = _observe(deps, "p2a",
+                    {"taxonomy": deps.load("taxonomy") if deps.has("taxonomy") else {},
+                     "pilot": pilot, "prescriptions": [x.model_dump() for x in prescriptions]},
+                    decisions=[decision])
     return {
         "phase": "p2b",
         "artifacts": {"taxonomy": tax_ref},
-        "gates": {gate.name: gate, pilot_gate.name: pilot_gate},
+        "gates": {gate.name: gate, pilot_gate.name: pilot_gate, **_obs},
         "decisions": [decision],
         "prescriptions": prescriptions,
         "completed_phases": ["p2a"],
@@ -1037,8 +1045,9 @@ def p2b_gold(state: PipelineState, deps: Deps) -> dict[str, Any]:
     # difference is only visible by running the triggers over the corpus.
     from ...ops.rule_conflict import find_conflicts
 
+    _codes = [n.code for n in taxonomy.nodes if getattr(n, "code", None)]
     conflicts = find_conflicts(
-        taxonomy.rules, deps.df[cfg.data.text_column].astype(str).tolist())
+        taxonomy.rules, deps.df[cfg.data.text_column].astype(str).tolist(), codes=_codes)
     if conflicts.overlaps:
         deps.emit(f"  ⚠ {len(conflicts.overlaps)} rule pair(s) fire on the SAME rows and "
                   "disagree — the boundary needs a tie-break for that region:")
@@ -1052,11 +1061,82 @@ def p2b_gold(state: PipelineState, deps: Deps) -> dict[str, Any]:
             deps.emit(f"      {' x '.join(c['classes'])}: {c['n_rules']} rules "
                       f"({c['n_with_trigger']} measurable)")
 
+    # HOLD THE RULES TO THE VERDICTS THAT PRODUCED THEM.
+    #
+    # 77% of the shipped rules carry no executable trigger, and that is not an
+    # omission to prompt away: the referee's rules are semantic ("when the query
+    # is a proverb and the user wants its moral"), and a regex demanded from one
+    # would be a fabricated predicate that makes every overlap it reports
+    # meaningless. What a rule with no predicate CAN still be measured against is
+    # the gold set — every rule names a class pair, and the referee's own
+    # adjudications on that pair are already in hand.
+    #
+    # live39 is why this exists. On `OTHER x TEXT_INTERPRETATION` the referee
+    # ruled TEXT_INTERPRETATION on 15 of 21 rows, and drafted FIVE rules saying a
+    # query with no intent marker goes to OTHER — the same principle restated at
+    # five different disagreements, each one the opposite of what it had just
+    # done on the rows in front of it. The referee contradicted its own verdicts,
+    # all five rules shipped in the guide the annotators then used, and nothing
+    # could see it: `_dedupe_rules` compares wording, `find_conflicts` needs
+    # triggers, and `crowded_pairs` can only say "6 rules, two directions".
+    from ...ops.rule_conflict import rules_against_evidence
+
+    ev_report = rules_against_evidence(
+        taxonomy.rules, rows, deps.df[cfg.data.text_column].astype(str).tolist(),
+        codes=_codes)
+    deps.emit(f"  rule triggers: {ev_report.n_lexical} executable, "
+              f"{ev_report.n_semantic} semantic"
+              + (f" ({ev_report.n_rejected_triggers} rejected as unusable)"
+                 if ev_report.n_rejected_triggers else ""))
+    vac = ev_report.vacuous_grounds
+    for gr in vac:
+        deps.emit(f"  ⚠ {' x '.join(gr.classes)}: the rules name "
+                  f"{', '.join(gr.markers[:4])} as the discriminator, and "
+                  f"{gr.n_matching}/{gr.n_rows} adjudicated rows contain any of them — "
+                  f"the stated test does not separate this boundary "
+                  f"(rules: {', '.join(gr.rules_citing[:5])})")
+    ev_gate = deps.gate(
+        "p2b_rules_match_their_evidence", "p2b",
+        passed=not vac,
+        observed=ev_report.as_record(),
+        threshold={"rule": ("a boundary fails when the discriminator its own rules "
+                            "enumerate falls on ONE side for every adjudicated row — a "
+                            "test that divides nothing")},
+        message=(
+                 # ONE contiguous literal: `prose()` matches a literal prefix, and
+                 # `test_no_translation_key_is_dead` scans the source for it — a key
+                 # split across two f-string lines exists in neither place.
+                 "every boundary's stated discriminator actually divides its adjudicated rows"
+                 f" ({len(ev_report.stated_grounds)} tested; {ev_report.n_lexical} "
+                 f"lexical / {ev_report.n_semantic} semantic rules)"
+                 if not vac else
+                 "the discriminator these rules name does not divide this boundary at all"
+                 f" — {len(vac)} boundary(ies): "
+                 + "; ".join(f"{' x '.join(g.classes)} — rules name "
+                             f"{'/'.join(g.markers[:3])}, {g.n_matching}/{g.n_rows} rows "
+                             "carry any of them" for g in vac[:3])),
+        remediation=(
+            "The words these rules name as the test do not appear in the rows the "
+            "referee adjudicated, so whatever decided this boundary, it was not the "
+            "stated criterion — and an annotator applying the rule literally gets no "
+            "guidance. Give the boundary an observable test, or record that it is "
+            "decided by judgement. DO NOT delete the rules: removing guidance leaves the "
+            "boundary unaddressed, which is how a text-similarity filter once shredded "
+            "32 of 41 rules on a live run.\n\n"
+            "NOTE: this gate deliberately does NOT count which way a boundary's rules "
+            "point. That signal was tried and retired — a referee drafts a rule only "
+            "where it judges the guide to have failed, so on live39 5 of 6 minority rows "
+            "produced a rule against 1 of 15 majority rows, and 'most rules point away "
+            "from the majority' is the expected shape of a healthy exception set."),
+        warn_only=True,
+    )
+
     tax_v2_ref = deps.store.put_json(
         "taxonomy_v2",
         {"taxonomy": taxonomy.model_dump(),
          "referee_rules_added": len(new_rules),
          "rule_conflicts": conflicts.as_record(),
+         "rules_vs_evidence": ev_report.as_record(),
          "guide_repaired": bool(repair_meta),
          "provenance": "p2b: taxonomy after the referee's rules and any guide repair"},
         producer="p2b",
@@ -1071,7 +1151,15 @@ def p2b_gold(state: PipelineState, deps: Deps) -> dict[str, Any]:
         "phase": "p2c",
         "artifacts": {"gold": gold_ref, "gold_agreement": agree_ref,
                       "taxonomy_v2": tax_v2_ref},
-        "gates": {gate.name: gate},
+        # `deps.gate()` BUILDS a GateResult and registers nothing — a gate this
+        # node creates and does not return here reaches the log and no operator.
+        "gates": {gate.name: gate, ev_gate.name: ev_gate,
+                  **_observe(deps, "p2b", {
+                      "gold_agreement": agree,
+                      "kappa_trace": kappa_trace,
+                      "rules_vs_evidence": ev_report.as_record(),
+                      "rule_conflicts": conflicts.as_record(),
+                  })},
         "completed_phases": ["p2b"],
         "events": [f"P2b: kappa {agree['kappa']:.3f}, {len(new_rules)} rules drafted from disagreements"],
     }
@@ -1929,16 +2017,48 @@ def _validate_rules(taxonomy: Taxonomy, deps: Deps) -> dict[str, Any]:
     A target one small edit from exactly one real class is repaired; anything
     else is dropped, because an unfollowable rule is worse than no rule. Both
     outcomes are recorded rather than fixed silently.
+
+    **`then` must BE a class, not merely mention one.** This asked
+    `any(c in then for c in codes)`, which a whole sentence satisfies:
+    `'归 JUDGE_LANGUAGE_USAGE，不归 LOOKUP_CHAR_PRONUNCIATION。'` names a real
+    class and is still unusable as a key — and live38 shipped 18 rules like it.
+    Everything downstream keys on `then`: `_dedupe_rules` compares it with `==`
+    (two phrasings of one answer read as a CONTRADICTION and both valid rules are
+    withheld), and `rules_against_evidence` asks whether it equals the referee's
+    majority verdict, which a sentence can never do — so every prose rule would
+    count as pointing AGAINST the evidence and a sound boundary would be reported
+    contradicted. `normalise_then` resolves the single-class case to the bare code
+    and keeps the sentence in `rationale`, which the annotator prompt renders; a
+    rule naming TWO classes is left alone and reported, because `归 A，不归 B` and
+    `有裁决框架的归 A；单纯问 X 的归 B` are indistinguishable mechanically and
+    picking a side would silently rewrite the rule.
     """
     from difflib import SequenceMatcher
+
+    from ...ops.rule_conflict import normalise_then
 
     codes = [n.code for n in taxonomy.nodes]
     repaired: list[dict[str, str]] = []
     dropped: list[dict[str, str]] = []
+    rewritten: list[dict[str, str]] = []
+    ambiguous: list[dict[str, str]] = []
     kept: list[Any] = []
     for rule in taxonomy.rules:
         then = str(rule.then)
-        if any(c in then for c in codes):
+        res = normalise_then(then, codes)
+        if res.is_key:
+            if res.code != then:
+                # Preserve the instruction where the annotator still reads it —
+                # `_render_rules` prints the rationale beside every rule.
+                rule.rationale = (f"{rule.rationale} " if rule.rationale else "") + then
+                rule.then = res.code
+                rewritten.append({"id": rule.id, "was": then[:90], "now": res.code})
+            kept.append(rule)
+            continue
+        if res.found:
+            # Names several classes. Still readable guidance, so it ships — but
+            # it is not a key, and the mechanisms that key on `then` skip it.
+            ambiguous.append({"id": rule.id, "then": then[:90], "why": res.note})
             kept.append(rule)
             continue
         # Compare on the bare token: `then` reads like "选 EXAM_INFO".
@@ -1951,7 +2071,14 @@ def _validate_rules(taxonomy: Taxonomy, deps: Deps) -> dict[str, Any]:
         # the runner-up at .48). Two plausible targets means we cannot know.
         best, second = ranked[0], (ranked[1] if len(ranked) > 1 else (0.0, ""))
         if best[0] >= 0.70 and best[0] - second[0] >= 0.20:
-            rule.then = then.replace(token, best[1])
+            # The BARE code, not the repaired sentence. Writing back
+            # `then.replace(token, best[1])` produced `选 EXAM_INFO` — exactly the
+            # shape the normalisation above exists to remove, reintroduced by the
+            # repair path. The original wording goes where the annotator still
+            # reads it.
+            if then != best[1]:
+                rule.rationale = (f"{rule.rationale} " if rule.rationale else "") + then
+            rule.then = best[1]
             repaired.append({"id": rule.id, "was": token, "now": best[1],
                              "similarity": round(best[0], 3)})
             kept.append(rule)
@@ -1963,8 +2090,19 @@ def _validate_rules(taxonomy: Taxonomy, deps: Deps) -> dict[str, Any]:
         deps.emit(f"  ⚠ rule {r['id']}: target `{r['was']}` is not a class — repaired to `{r['now']}`")
     for r in dropped:
         deps.emit(f"  ⚠ rule {r['id']}: target `{r['target']}` names no class — rule dropped")
+    if rewritten:
+        deps.emit(f"  {len(rewritten)} rule(s) held a sentence in `then` — reduced to the "
+                  "class they name, sentence kept in the rationale")
+    if ambiguous:
+        deps.emit(f"  ⚠ {len(ambiguous)} rule(s) name TWO classes in `then` and cannot be "
+                  "used as a key — they still reach the annotator, but rule-conflict and "
+                  "rule-vs-evidence measurement skips them:")
+        for r in ambiguous[:4]:
+            deps.emit(f"      {r['id']}: {r['why'][:100]}")
     return {"n_repaired": len(repaired), "n_dropped": len(dropped),
-            "repaired": repaired, "dropped": dropped}
+            "n_then_reduced_to_code": len(rewritten), "n_then_ambiguous": len(ambiguous),
+            "repaired": repaired, "dropped": dropped,
+            "then_reduced": rewritten, "then_ambiguous": ambiguous}
 
 
 def _render_classes(t: Taxonomy) -> str:
@@ -2110,6 +2248,7 @@ def p2c_classifier(state: PipelineState, deps: Deps) -> dict[str, Any]:
     return {
         "phase": "p2d",
         "artifacts": {"topdown_model": model_ref, "topdown_labels": pred_ref, "topdown_metrics": metrics_ref},
+        "gates": _observe(deps, "p2c", {"topdown_metrics": result}, decisions=[decision]),
         "decisions": [decision],
         "completed_phases": ["p2c"],
         "events": [f"P2c: CV accuracy {result['cv_accuracy']:.3f}, ECE {result['ece']:.3f}"],
@@ -2218,6 +2357,7 @@ def p2d_validate(state: PipelineState, deps: Deps) -> dict[str, Any]:
     return {
         "phase": "p3",
         "artifacts": {"adversarial_validation": ref},
+        "gates": _observe(deps, "p2d", {"adversarial_validation": deps.load("adversarial_validation")}),
         "completed_phases": ["p2d"],
         "events": [f"P2d: adversarial accuracy {shown} on {n_verdicts} verdicts "
                    f"over {n_attacked} attacked labels ({coverage:.0%} coverage)"],

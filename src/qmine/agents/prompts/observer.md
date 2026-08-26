@@ -51,3 +51,32 @@ places where the numbers do not support what the phase concluded.**
 For each observation: `severity`, `claim` (one sentence, what is wrong),
 `artifact_key` (the exact path you read), `evidence` (the values you compared),
 and `would_change` (what in the deliverable is wrong if you are right).
+
+### `check` — the expression that settles your claim
+
+Whenever your claim is arithmetic over the artifacts, also write `check`: **the
+assertion that would hold if the artifacts were correct.** The pipeline evaluates
+it against the same artifacts.
+
+    claim: hierarchy_meta records n_leaves=29 but leaves_per_family sums to 32
+    check: sum(hierarchy_meta.leaves_per_family.values()) == hierarchy_meta.n_leaves
+
+Write the assertion, **not** the defect. The check for "recall is 0 for one class"
+is `min(values(report.recall)) > 0`, not `min(...) == 0`.
+
+- A check that evaluates **false** turns your claim into a measurement, and only
+  then is it allowed to stop the run. This is the only way your finding becomes
+  more than a note.
+- A check that evaluates **true** means you were wrong, and the observation is
+  dropped before anyone reads it. Write the check anyway — being refuted by your
+  own test costs nothing and is what makes the rest of your findings credible.
+- Leave `check` empty when no expression can settle the claim. A judgement about
+  whether a conclusion follows from its evidence is often genuinely unmeasurable,
+  and it is still worth reporting. **Never invent an expression to look rigorous
+  — an unverifiable finding is honest, a wrong check is worse than none.**
+
+Allowed: artifact paths (`a.b.c`, `a["b"]`, `a[0]`), comparisons, `and/or/not`,
+arithmetic, `len sum min max abs round sorted set any all int float`,
+`values(d) keys(d) items(d)` or `d.values()`, and one `for` comprehension.
+Nothing else exists — no imports, no methods, no attributes that are not keys of
+the artifact. Refer only to artifacts you were given, by their top-level name.

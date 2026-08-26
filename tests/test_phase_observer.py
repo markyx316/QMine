@@ -7,6 +7,8 @@ decision, without giving it any authority over the decision.
 """
 from __future__ import annotations
 
+import tempfile
+from pathlib import Path
 from types import SimpleNamespace
 
 from qmine.agents.observe import observe_phase, resolve_key, verified_observations
@@ -22,15 +24,17 @@ ARTIFACTS = {
 
 def _obs(sev, claim, key, **kw):
     return SimpleNamespace(severity=sev, claim=claim, artifact_key=key,
-                           evidence=kw.get("evidence", ""), would_change="")
+                           evidence=kw.get("evidence", ""), would_change="",
+                           check=kw.get("check", ""), _verdict="unverifiable")
 
 
 def _raw(*obs):
     return SimpleNamespace(observations=list(obs), checked=["granularity"])
 
 
-def _deps():
+def _deps(root=None):
     ev, gates = [], {}
+    root = root or Path(tempfile.mkdtemp())
 
     def gate(name, phase, **kw):
         # The real `deps.gate` BUILDS and RETURNS a GateResult and registers
@@ -39,7 +43,9 @@ def _deps():
         gates[name] = kw
         return SimpleNamespace(name=name, phase=phase, **kw)
 
-    return SimpleNamespace(emit=ev.append, gate=gate, agent_ctx=lambda: None), ev, gates
+    store = SimpleNamespace(root=root, gen_dir=root / "gen01")
+    return (SimpleNamespace(emit=ev.append, gate=gate, agent_ctx=lambda: None,
+                            store=store, run_id="t"), ev, gates)
 
 
 def test_an_uncited_observation_is_dropped_before_anyone_reads_it():
@@ -80,31 +86,124 @@ def test_resolve_key_survives_the_shapes_an_agent_actually_writes():
         assert not resolve_key(key, ARTIFACTS)[0], key
 
 
-def test_a_blocking_observation_fails_the_phase_gate(monkeypatch):
-    """The output must reach something that ACTS.
-
-    A critic agent once identified the kappa defect before the run that shipped
-    it; the finding went to an artifact and nothing consumed it, so it shipped
-    anyway. An observation that only lands in JSON is a note to nobody.
-    """
+def _fake(monkeypatch, *obs):
     import qmine.agents.roles as roles
 
     class FakeObserver:
         def __init__(self, ctx, suffix=""): pass
-        def run(self, **kw):
-            return _raw(_obs("blocking", "K=10 is not the stability peak; k=8 is",
-                             "granularity.k_sweep"))
+        def run(self, **kw): return _raw(*obs)
 
     monkeypatch.setattr(roles, "ObserverAgent", FakeObserver)
+
+
+def test_a_confirmed_blocking_observation_fails_the_phase_gate(monkeypatch):
+    """The output must reach something that ACTS — once it is proven.
+
+    A critic agent once identified the kappa defect before the run that shipped
+    it; the finding went to an artifact and nothing consumed it, so it shipped
+    anyway. An observation that only lands in JSON is a note to nobody.
+
+    The check is what earns the halt. `k_sweep[1].k == 10` really is not the
+    stability peak, and the assertion "the chosen k IS the max-stability k"
+    FAILS against the artifact — so this is a measurement, not an opinion.
+    """
+    _fake(monkeypatch, _obs(
+        "blocking", "K=10 is not the stability peak; k=8 is", "granularity.k_sweep",
+        check=("granularity.triangulation.chosen_family_k == "
+               "granularity.k_sweep[0].k")))
     deps, ev, gates = _deps()
 
     res = observe_phase(deps, "p5", ARTIFACTS)
 
     assert len(res.blocking) == 1
     g = gates["p5_observer"]
-    assert g["passed"] is False, "a blocking observation did not fail the gate"
+    assert g["passed"] is False, "a CONFIRMED blocking observation did not fail the gate"
     assert "stability peak" in g["message"]
+    assert "CONFIRMED" in g["message"]
+    assert g["observed"]["n_blocking_confirmed"] == 1
+    assert g["observed"]["confirmed_checks"], "the failing assertion must be recorded"
     assert g["remediation"], "a failing gate must tell the operator what to do"
+
+
+def test_an_unproven_blocking_observation_warns_but_cannot_halt(monkeypatch):
+    """Severity is the agent's confidence. Confidence is not authority.
+
+    This is the line the whole design sits on: `severity` is written by the
+    model and audited by nothing, so letting it fail a gate would hand an LLM
+    the power to stop a paid run on an unverified hunch — the one thing every
+    other guardrail here exists to prevent. An unprovable concern is still
+    reported, still filed in the ledger, and still visible to the operator; it
+    simply does not get to decide.
+    """
+    _fake(monkeypatch, _obs("blocking", "the hierarchy looks wrong to me",
+                            "granularity.triangulation"))
+    deps, ev, gates = _deps()
+
+    res = observe_phase(deps, "p5", ARTIFACTS)
+
+    assert res.blocking == [], "an unverified claim must not count as blocking"
+    assert len(res.unverified_blocking) == 1
+    g = gates["p5_observer"]
+    assert g["passed"] is True
+    assert g["observed"]["n_blocking_unverified"] == 1
+    assert "no check could settle" in g["message"], g["message"]
+    assert "nothing blocking" not in g["message"], (
+        "a worried observer that could not prove it must not be summarised as calm")
+
+
+def test_an_observation_its_own_check_refutes_is_dropped(monkeypatch):
+    """The cheapest true finding in the system is an agent falsifying itself.
+
+    The observer supplies the test along with the claim. When the test passes,
+    the artifacts are consistent and the claim was wrong — so it is dropped
+    before it costs a reader any attention, exactly like an uncited one.
+    """
+    _fake(monkeypatch,
+          _obs("blocking", "n_clusters is missing from the panel",
+               "panel.sets.leaves.metrics",
+               check="panel.sets.leaves.metrics.n_clusters > 0"),
+          _obs("warn", "the locator really is AMI",
+               "granularity.triangulation.locator",
+               check="granularity.triangulation.locator == 'intent_alignment_ami'"))
+    deps, ev, gates = _deps()
+
+    res = observe_phase(deps, "p9", ARTIFACTS)
+
+    assert res.kept == [], [o.claim for o in res.kept]
+    assert len(res.dropped) == 2
+    assert all("REFUTES" in why for _, why in res.dropped)
+    assert gates["p9_observer"]["passed"] is True
+
+
+def test_a_confirmed_finding_survives_into_the_run_level_ledger(monkeypatch):
+    """A finding that lives for one run is one the next run loses.
+
+    live39's p6 observer was right, warned, and would have been forgotten: the
+    run summary kept four words and nothing carried them forward. The ledger
+    sits at the RUN root beside the LLM cache, so a new generation inherits it.
+    """
+    from qmine.ops.findings import FINDINGS_FILE, FindingLedger
+
+    root = Path(tempfile.mkdtemp())
+    _fake(monkeypatch, _obs(
+        "blocking", "K=10 is not the stability peak", "granularity.k_sweep",
+        check="granularity.triangulation.chosen_family_k == granularity.k_sweep[0].k"))
+    deps, ev, gates = _deps(root)
+
+    observe_phase(deps, "p5", ARTIFACTS)
+
+    led = FindingLedger(root / FINDINGS_FILE)
+    assert len(led.confirmed_open) == 1
+    f = led.confirmed_open[0]
+    assert f.phase == "p5" and f.verdict == "confirmed" and f.blocking
+    assert f.check, "the ledger must keep the expression, or it cannot re-check"
+
+    # The same defect, seen again next generation, is ONE row with a history.
+    deps2, _, _ = _deps(root)
+    observe_phase(deps2, "p5", ARTIFACTS)
+    led2 = FindingLedger(root / FINDINGS_FILE)
+    assert len(led2.entries) == 1, "the same defect must not become two rows"
+    assert led2.entries[f.id].times_seen == 2
 
 
 def test_an_observer_that_cannot_run_does_not_stop_the_run(monkeypatch):

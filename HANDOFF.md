@@ -12,121 +12,116 @@
 
 ---
 
-## 1. Status — last updated 2026-08-25
+## 1. Status — last updated 2026-08-26
 
-# THE RUN COMPLETED, AND THEN READING ITS DELIVERABLES FOUND 9 DEFECTS. All fixed.
+# Agent authority reworked. 448 tests passing.
 
 | | |
 |---|---|
-| Tests | **304 passing** (was 294); `ruff --select F src/qmine/` clean |
-| `live38` gen06 | 17/17 phases, halted=False, 57.2 min, $1.10, `provider = routed` |
-| Deliverables | **all four now honour `report_language: zh`** — three used to ship English |
+| Tests | **448** passing (was 387); `ruff --select F src/qmine/` clean |
+| `live39` gen01 | still the reference live run: 17/17, 201 min, $5.52, `routed` |
+| Verification | `tools/verify_run.py` now runs **26** checks (was 19) |
+| Observers | **11 phases** (was 4) — the whole top-down route now has one |
 
-### What live38 gen06 ACTUALLY delivered
+### What changed, and why
 
-The numbers previously recorded here were the **pre-governance** ones. p8 rewrote
-the partition after p6 measured it and p7 named it:
+**1. An observation can now be PROVEN, and only then does it carry authority.**
+`p6_observer` was right on live39 and could do nothing about it: its claim was
+arithmetic over an artifact, nothing could evaluate it, so a human verified it by
+hand a day later. An observation may now carry a `check` — an expression over the
+artifacts it cites — which `ops/checks.py` evaluates.
 
-| | recorded before | actually delivered |
-|---|---|---|
-| families | 10 | **12** |
-| leaves | 29 | **36** |
-| leaves named | "29/29" | **29 of 36** — 4,931 rows (9.9%) shipped nameless |
-| gold set | 6,000 rows | **6,200** rows, 3 provenances; **5,534 (89.3%)** usable |
-| adjudications | 465 | 483 sent to the referee, **465 returned** — 18 unresolved |
+- **confirmed** (assertion fails) → a measurement; the only kind that may fail a gate
+- **refuted** (assertion holds) → dropped, the agent's own false-positive filter
+- **unverifiable** → advisory, as before
 
-Unchanged and correct: classifier CV **0.852**, macro-F1 0.771, ECE 0.023
-out-of-fold; adversary **0.953** at 100% coverage over n=150; κ **0.8221** on
-2,991/3,000 (±0.0074); blind coherence 3.59/5; 15 prescriptions executed, 2 declined.
+`severity` is the model's confidence and audited by nothing, so it can no longer
+fail a gate on its own. The evaluator is a security boundary — `a.b` is a dict
+lookup, never `getattr` — and 8 escape probes are pinned in tests.
 
-### Defects fixed this session (nine from reading, plus these from the audit)
+**2. Findings survive.** `ops/findings.py` is run-level (beside `cache/`), so a new
+generation inherits it. An entry closes automatically ONLY when its own check
+passes again; without a check it needs a recorded human waiver, and a waiver with
+no reason is refused. Printed in 统一度量面板.md §7, including waivers with reasons.
 
-From reading the deliverables: unnamed delivered leaves; a blocking gate placed
-before the operation that invalidates it; a report contradicting its own table;
-pre/post-governance mixing in report and notebook; **every family heading wrong**
-(auditor `family_id` is a different namespace — 19 of 19 mismatched); the panel
-never comparing the two routes; three of four reports in English on a `zh` run;
-`guide_repair.comparable` computed as `prev_n == n`; false model provenance.
+**3. The live39 defect is fixed.** `hierarchy_meta` mixed a post-refinement
+`n_leaves` with a pre-refinement `leaves_per_family`. Every count now comes from
+one source — the labels that ship — via `ops/cluster.leaves_per_family`.
 
-From the 74-agent audit, **independently re-verified before acting**:
+**4. The referee's rules are measured against the referee's own verdicts.** The
+diagnosis was wrong yesterday. It is not that the referee forgets a trigger: its
+rules are SEMANTIC, and only **1 of 80** trigger-less rules on live39 contained an
+extractable marker. Demanding a regex would fabricate 79 wrong predicates.
+`rules_against_evidence` holds each rule to the gold set instead.
 
-| defect | evidence |
-|---|---|
-| **A split leaves the name on the wrong half** | leaf 8 keeps 「汉字拼音查询」 with 0/122 pinyin rows; leaf 23 the same. Retained-fraction 0.34 and 0.25. Both halves now re-named. |
-| **Referee typos became one-row classes** | `LOOKUP_WORD_MEANNING`, `UNDERSPECIFIED_OR_NOICE`, … 5 rows dropped and explained to the reader as *rarity*. Now snapped or refused. |
-| **Panel footnote sign inverted** | said fragmentation falls as k rises; measured **+0.901 Pearson**. A test pinned the wrong wording. |
-| **Panel footnote overclaimed the sub-sample** | only 3 of 10 metrics used it; 6 ran on all 49,999. |
-| **fig1 credited the stability peak for K** | locator is `intent_alignment_ami`; true stability peak is k=8 and k=10 ranks 9th of 14. Key was literally named `stability_peak_k`. |
-| ADULT_OR_ABUSE_RISK | a safety class with F1 exactly 0.000 at n=9, presented as working. |
-| battery "falsification" | reference == best alternative == `kmeans_k15`, gap 0.0. |
-| 813 of 1,499 risk rows | sit in leaves the catalogue calls unflagged; `risk_screen` never reaches the report. |
-| rule count | report says 50; the guide that shipped carries 132. |
-| min leaf size | stated 150; delivered leaves of 104 and 122. |
+**The first version of that check was confounded, and an adversarial panel plus
+my own re-measurement retired it.** It flagged a boundary when the adjudicated
+majority was decisive AND most of its rules pointed the other way. Three measured
+defects:
 
-Not confirmed on re-check: "no family merge took effect" (the merge map shows six
-real remappings — what is true is that the 10→12 rise comes only from the two
-isolations, and every prescription carries an identical batch-level delta).
+- **the drafting rate confounds it.** A referee drafts a rule only where it
+  judges the guide to have failed, which concentrates on the minority side. On
+  `OTHER × TEXT_INTERPRETATION`: **5 of 6 minority rows produced a rule (83%) vs
+  1 of 15 majority rows (7%)**. "Most rules point away from the majority" is the
+  *expected* shape of a healthy exception set — the check fires on a sound guide.
+  This is CLAUDE.md's own named trap: a distribution the mechanism already
+  filtered.
+- **no resolution.** 15/21 gives a Wilson lower bound of **0.5004** against a bar
+  of 0.5. One row decided whether the boundary reported at all.
+- **the magnitude was a drafting habit.** "Five rules" is one template emitted
+  five times (five genre nouns, five near-synonyms of 寓意).
 
-### The one new methodology result
+**And my prose about it was wrong.** I wrote that the five rules were "each the
+opposite of what the referee had just done on the rows in front of it."
+Measured: **0 of 6 rules disagree with the verdict on the row each was drafted
+from.** Every one agrees.
 
-With both routes finally on one harness, **top-down L1 fragments phrasing families
-less than bottom-up does at any granularity**: 1.319 at k=22, below bottom-up's
-1.761 at k=10, on a curve that otherwise rises monotonically with k (10→12→36
-gives 1.761→1.900→2.479). Finer AND less fragmented — not a granularity trade.
-It edges ahead on NMI too (0.3246 vs 0.3218 / 0.3188). See
-`qmine-panel-never-compared-the-routes` in auto-memory.
+**What replaced it — `stated_grounds` — measures the discriminator the rules
+themselves name, against the rows the referee actually adjudicated:**
 
-### Agents now enter the pipeline in three places (new this session)
+    OTHER × TEXT_INTERPRETATION
+      the 5 OTHER rules name 什么意思 / 寓意 / 翻译 as the test
+      0 of the 21 adjudicated queries contain ANY of them
+      including all 15 the referee ruled TEXT_INTERPRETATION
 
-Measured first: on live38 the **bottom-up path used 36 of 966 agent calls (3.7%)**,
-all in P7 — every representation, algorithm, K and hierarchy decision was made
-with no agent looking, and **0 calls wrote any report**. Three doors added, each
-with a mechanical guardrail, none able to change a parameter:
+The stated test falls on one side for every row, so it divides nothing — an
+annotator applying it literally sends the whole boundary to OTHER, 15 rows
+against gold. The same run's `TEXT_INTERPRETATION × WORD_MEANING_LOOKUP` is the
+control: 33 of 39 rows carry a marker there, so the ground genuinely separates.
 
-1. **`agents/verify.py` + `interpret.py`** — authored prose in the deliverable.
-   Every number must be in a fact sheet built from artifacts; rejection re-asks
-   with the offending values quoted back; three failures ⇒ the section ships with
-   no commentary. Counts exact, percentages may round, `%` matched only to shares.
-2. **`agents/observe.py`** — a phase observer over p3/p4/p5/p6. Every claim must
-   cite an artifact key that resolves; uncited claims are dropped. Records a gate;
-   **warns, never halts** (a false positive must not kill a paid run).
-3. Prescriptions — the existing settled-or-fail ledger.
+Unconfounded, no direction counting, no threshold on a knife edge, and it reaches
+**31 of the 80 trigger-less rules** — nearly four times what triggers ever did.
+Gate `p2b_rules_match_their_evidence` (warn-only), report §3.6. The direction
+tally is still recorded as context with its confound measured beside it.
 
-Grounding: intrinsic self-correction degrades without external feedback (Huang
-et al., ICLR 2024), and LLM judges are dominated by *style* bias (~0.76–0.92, far
-above position bias) — so nothing here asks a model to rate quality; it asks
-arithmetic questions against artifacts.
+Also fixed: `<no-marker>` was compiled as a literal regex — valid, matched
+nothing, and still counted in `n_with_executable_trigger`.
 
-**Known limit, stated in the module:** the numeric check is value-level. It
-catches invented numbers and share/count confusion, not a real number attached to
-the wrong quantity. Mitigation is structural — keep fact sheets small.
+**5. A pre-delivery auditor, with real write authority.** `agents/audit_delivery.py`
+reads every gate, the findings ledger, the artifacts and the finished documents in
+one context and may EDIT the reports. Bounded to an anchored replacement:
 
-### Audit items cleared (all re-verified independently before acting)
+    anchor unique · every number sourced from the artifact the edit CITES ·
+    no number deleted without one replacing it · language checked · reason required
 
-| item | what it was |
-|---|---|
-| **fig5 argued from restart noise** | the figure fitted its own `KMeans(n_init=4)` while the pipeline uses 10, so its α=0.5 panel read **2.16** where `metrics_panel.json` says **1.20**. Now uses `kmeans_labels` — all three panels match the panel to 4 dp — and the takeaway is *derived* from the measured values, which detects that the sequence 1.34→1.41→1.20 is **not monotone** and says the figure cannot carry the α decision alone. |
-| **gate messages never reached the reader** | `p2b_kappa` rendered ✅ 通过 with 实测 0.8221 beside 门槛 0.9 and no explanation, while its own message read "PROCEEDING WITH RESIDUAL SLACK". Every gate's conclusion now prints, and a pass sitting under its own bar is flagged **带保留通过**. |
-| **risk screen reached nothing** | 1,499 screened rows; **813 (54%) sat in leaves the namer never flagged**, and `risk_screen.json` appeared in no deliverable. Now a per-leaf table — leaf 5 (342 hits, 18.1%) and leaf 3 (332, 35.1%) were entirely invisible. |
-| **a safety class that detects nothing** | `ADULT_OR_ABUSE_RISK` recall exactly 0.000 at n=9, presented as working. Now named explicitly as *not in effect*. |
-| **rule count off by ~3x** | reported 50 (the architect's draft); 132 shipped to the annotator. |
-| **battery self-comparison** | reference == best_alternative == `kmeans_k15`, gap 0.0, rendered as a passed falsification test. Now says only that no alternative was stronger. |
-| **fig3 colour collision** | 8 algorithm families, 7 colours, `* 4` wrap — `agglo_average` and `minibatch` drew in the identical colour. |
-| **two captions described other figures** | fig3's axes were stated backwards; fig4 claimed "coloured by final families" for a 3-panel figure coloured per-space. |
-| **min-leaf constraint vs reality** | text stated 150; delivered tree has leaves of 104 and 122 (p8 splits after p6 applies the floor). Now states both. |
-| **"essentially lossless" SVD** | at 0.2628 explained variance. Reworded as the trade-off it is. |
-| **97.7% vs 97.6% in one sentence** | double-rounding: 0.9764595 stored as `round(,4)`=0.9765 then rounded again. Reads the raw share now. |
-| **duplicate accuracy metric** | `population_weighted_accuracy` == `cv_accuracy` exactly; no weights existed. |
-| **non-unique leaf keys** | two leaves named 生僻字词释义查询, two coded `chinese_pinyin_lookup`. Flagged, with `bu_leaf` named as the only safe key. |
-| **fig_refinement 100% English** | on a `zh` run; also titled "converges when movement stops" for a run that did NOT converge. Now Chinese, integer ticks, and the title reports the 28↔29 limit cycle. |
+`.md` only — never an artifact, never code. Pre-edit originals kept as
+`*.pre_audit.md`. Every applied edit, every REFUSED edit and every dismissed
+warning is printed in 交付前审核报告.md. Verified end-to-end offline: the
+stand-in proposed 3 edits and all 3 were refused.
 
-Two things I got wrong and corrected mid-flight: I first estimated the selector's
-noise on the Pareto-filtered frontier (inflating se 0.0105 → 0.0220), and I added
-`PROSE_ZH` keys beginning `"han accounts for"` — a corpus-specific prefix that
-could never fire on a corpus with a different dominant script. The language
-verdict is now keyed on the stable `posture` enum instead.
+**15 mutations run across the new guardrails; all caught.** Three survived first
+and each exposed a real gap (a getattr fallback, an unverifiable re-check closing
+a finding, edits validating against each other).
 
-### Next
+### Not done, and deliberately
+
+- **No auto-remedy for a contradicted boundary.** Adding an evidence-derived
+  tie-break rule was tempting, but §2.1 already measured guide repair at
+  **Δκ = −0.002**. Generating more rules with no evidence they help is the wrong
+  move; the measurement is reported and the remedy is an open question.
+- **live40 has not been run.** Everything above is verified offline and by replay
+  against live39's artifacts. The new agents have not been exercised on a live
+  frontier model.
 
 ## 2. Open questions — EDIT THIS SECTION, DO NOT APPEND
 
@@ -160,11 +155,37 @@ verdict is now keyed on the stable `posture` enum instead.
    The clean fix is a **control arm** — annotate sample B with the *old* guide too —
    at the cost of one extra annotation pass. Not built; the code now at least refuses
    to present the two numbers as comparable (`comparable: false` in the artifact).
-3. **`_dedupe_rules` cannot see semantic contradictions.** It catches lexical
-   duplicates; two rules that mean the same thing in different words slip through.
-   The serialized referee is the mitigation, not the filter.
+3. **Rule contradictions are now MEASURED, not inferred from wording.**
+   `ops/rule_conflict.py` runs each rule's trigger over the corpus and reports
+   pairs that co-fire and disagree — on live39, R018/R019 on **301 rows** (a real
+   ambiguity zone) against R006/R007 on **4** (a legitimate discriminating pair).
+   Nothing is withheld: deleting both removes the guidance and leaves the boundary
+   unaddressed, which is how a text-similarity filter once shredded 32 of 41 rules.
+   **RESOLVED 2026-08-26, and the plan in this item was wrong.** "Make the referee
+   emit a trigger with every rule" would have made things worse. Its rules are
+   SEMANTIC — "when the query is a proverb and the user wants its moral" — and
+   only **1 of live39's 80** trigger-less rules contained an extractable marker.
+   Demanding a regex produces 79 fabricated predicates, and every overlap measured
+   through one is an artifact of the regex rather than a fact about the rules.
+   `rules_against_evidence` measures them against the referee's own adjudications
+   instead. See §1.
+
+   **Still open:** whether a contradicted boundary should get an automatic
+   evidence-derived tie-break rule. Deliberately NOT built, because §2.1 measured
+   guide repair at Δκ = −0.002 — generating more rules with no evidence they help
+   is the wrong move. The measurement is reported; the remedy is undecided.
 4. **Three domain profiles are untested on real data:** `finance_zh`, `sports_zh`,
-   `politics_zh`.
+   `politics_zh`. **This is the actual test of "works on any corpus"** — every
+   portability fix so far (measured tie bands, the grid proposer, corpus-derived
+   K ceilings, the generic-default fix) has only ever run on K12.
+   Fixed today so those runs start from a sound base: a bare `QMineConfig()` used
+   to report `key="generic"` while carrying `language=zh`, `tokenizer=jieba`,
+   Chinese-only encoders and **zero** risk categories — so omitting `--domain` on
+   an English corpus meant a Chinese tokeniser and no harm screening, silently.
+   An unknown `--domain` now lists what exists instead of raising a bare
+   `FileNotFoundError`, and `DomainScoutAgent` (defined, registered, never called
+   — the fourth such) now runs in p1 when no vertical is declared, emitting
+   HYPOTHESES ONLY.
 5f. **`AdjudicationRule.then` is declared "the class that wins" and 36% of the
    time holds a SENTENCE.** Measured on live38's taxonomy: 18 of 50 architect
    rules put whole Chinese instructions there —
@@ -1131,3 +1152,119 @@ a longer identifier, on a legitimate read, and on a budget literal I later
 changed. Test the behaviour, not the implementation text; where source inspection
 is genuinely needed, match whole statements and assert the PROPERTY (a budget
 exceeds what is measured) rather than the number.
+
+
+## Session (2026-08-25, evening) — live39, and what only reading found
+
+**The run.** `live39` gen01: 17/17 phases, 201 min, $5.52, provider=routed,
+κ 0.8341, CV 0.8586, 11 families / 39 leaves, all named. First run carrying the
+corrected reports, the phase observers, the interpreter and the grid proposer.
+
+**Verification.** Built `qm_verify_run.py` (scratch) — 19 mechanical checks, one
+per defect fixed since live38. Validated against live38 FIRST, where it scored
+2/19: a harness that passes on the broken run proves nothing. live39: **18/19**.
+The single failure is expected — p2a ran before `web_researched` existed.
+
+Building it caught three bugs in the harness itself, one serious: a check that
+called the FIXED `family_names()` against live38's artifacts and passed, on a run
+whose every family heading was wrong. **A check that verifies today's code against
+yesterday's output verifies nothing about the deliverable.**
+
+**Five defects only reading found — three of them mine.**
+
+| defect | note |
+|---|---|
+| `fig3_battery.png` MISSING | my colour fix used `matplotlib.cm.get_cmap`, removed in mpl 3.9 (env 3.11). I checked the cell PARSED and never rendered it. |
+| the lost figure reported "0 cell errors" | the cell caught the exception and printed it, so nothing counted it |
+| fig3 plots 15 of 18 configs | 3 HDBSCAN carry `stability_ari=NaN`; matplotlib drops NaN silently. The reason — **86-91% of rows came back as noise** — was invisible. Now stated on the chart. |
+| `"chosen K (stability peak)"` in `viz.py` | my earlier fix searched for the KEY NAME, not the PHRASE. `grep "stability peak"` finds all four sites at once. |
+| English `chosen_by` in the Chinese report | pre-existing; exposed when my longer text tripped the language test |
+
+**Two things I reverted or re-did.**
+
+* Replacing the α `tie_band` constant with the measured `noise_floor` — **tried and
+  reverted.** The alpha sweep is non-monotone (1.98, 2.02, 2.42, 1.98, 2.41…), so
+  its roughness is SIGNAL; the estimate widened the band from 2.08 to 2.42 and
+  flipped the winner from α=0.1 to α=0.5 on nothing. Recorded in
+  `.claude/rules/measurement.md`: `noise_floor` needs a smooth sweep, and
+  separating noise from signal on a jumpy one needs REPLICATION.
+* While fixing English-in-Chinese in the battery figure I **introduced the same
+  defect** in the α rationale. `prose()` matches a literal prefix, so a
+  translatable sentence must carry NO interpolated numbers — the shape that works
+  is a stable sentence plus the numbers as separate DATA fields.
+
+**A real defect the observer found, verified by hand.** The α decision rationale
+said "Lowest template fragmentation with highest stability" — and α=0.1 had
+NEITHER (2.0193 vs 1.9799 at α=0.0; α=0.5 more stable). The artifact's `chosen_by`
+was right all along; only the sentence a reader sees was false. Now states the real
+rule with this run's numbers.
+
+**Not started:** the p6 `leaves_per_family` inconsistency (see §1), extending
+triggers to all referee rules, and the three untested domain profiles.
+
+---
+
+## Session — 2026-08-26: agent authority, and what an agent may be trusted to do
+
+The day's question was the observer's powerlessness on live39, and it turned into
+a general one: **what is an agent allowed to do, and what makes each permission
+safe?** The answer that held up across three separate mechanisms is the same one:
+
+> An agent may supply the measurement that would settle its own claim. Only the
+> measurement carries authority.
+
+### The observer did not need permission — it needed a way to be proven right
+
+Giving it write access would have put an unaudited LLM judgement in charge of the
+run. But its live39 finding was *arithmetic over an artifact*, and nothing could
+evaluate it. So an observation may now carry a `check`, and a confirmed one is an
+assertion that failed rather than an opinion — which is what makes it safe to
+block on. `severity` no longer decides anything; it is the model's own confidence.
+
+The evaluator (`ops/checks.py`) is a security boundary: the string comes from a
+model. `a.b` is a **dict lookup**, never `getattr`, so `__class__` resolves to a
+missing key rather than to a Python object and the standard escape chain has no
+first step. A mutation swapping one `return _MISSING` for a `getattr` survived the
+whole suite at first — the hostile-expression tests only reached the dict branch.
+Now each container branch is probed separately, and a parsed (not grepped) test
+asserts `_lookup` contains no `getattr` call.
+
+### Findings that cannot be forgotten
+
+The other half of "nothing consumed the finding". `ops/findings.py` is run-level,
+so a new generation inherits it like the LLM cache. The only automatic exit is a
+measurement — the entry's own check passing again. A mutation relaxing that to
+"the check is not failing" survived, and it mattered: a phase that stopped writing
+an artifact would have silently closed every finding about it.
+
+### The referee diagnosis was wrong, and measuring first is what caught it
+
+Yesterday's plan was "make the referee emit a trigger". Reading its actual rules
+first showed they are semantic conditions with no regex, 79 of 80. Holding them to
+the referee's own verdicts found a defect nothing could see:
+
+    OTHER × TEXT_INTERPRETATION — referee ruled TEXT_INTERPRETATION 15/21,
+    and FIVE of the six rules say "no intent marker → OTHER"
+
+Five rules restating one principle, each the opposite of what the referee had just
+done on the rows in front of it. Reported per boundary, because a rule is
+conditional and one at the minority is a legitimate exception — a per-rule score
+would have flagged every honest exception as a defect.
+
+### The one agent with write authority
+
+`agents/audit_delivery.py` reads every gate, the ledger, the artifacts and the
+finished documents together and may edit the reports. What makes that safe is not
+trust, it is the shape of the operation: an anchored replacement, anchor proven
+unique, every number sourced from **the artifact the edit cites** (which keeps the
+pool small — `agents/verify.py` documents its own blind spot on large pools),
+language checked, reason required, originals kept. `.md` only. Refusals are
+printed beside the edits, because a report showing only successes is a sales
+document.
+
+### Method note
+
+15 mutations across the new guardrails; 3 survived the first pass and each one was
+a real hole in the tests rather than dead code. Two end-to-end offline runs, and
+the second existed only because the first put three empty-claim rows in the ledger
+— a defect that no test would have found and that reading the output did.

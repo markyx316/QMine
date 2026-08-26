@@ -891,11 +891,16 @@ def _gate_ledger(state: Any, phases: tuple[str, ...] | None = None) -> str:
                 "因为一道门可以在实测值低于门槛时仍然放行, 而放行的理由只写在这里。", ""]
         for n, g in with_msg:
             flag = "⚠️ **带保留通过** — " if _passed_below_threshold(g) else ""
-            out += [f"**`{n}`** — {flag}{g.message}", ""]
+            # `prose()` was applied to the remediation and NOT to the message, so
+            # every gate's own conclusion shipped in whatever language it was
+            # authored in — and this is the section the report introduces as
+            # "每一道门自己写下的结论". Unmapped strings fall through unchanged,
+            # so this can only ever improve a line, never break one.
+            out += [f"**`{n}`** — {flag}{prose(g.message)}", ""]
     if failed:
         out += ["#### 未通过/警告的门 — 处置建议", ""]
         for name, g in failed:
-            out += [f"**`{name}`** — {g.message}", "", f"> {prose(g.remediation)}", ""]
+            out += [f"**`{name}`** — {prose(g.message)}", "", f"> {prose(g.remediation)}", ""]
     missing = state.get("declared_gates_never_evaluated") or []
     if missing:
         out += [f"> ⚠️ **声明为阻断但从未实际评估的门**: {', '.join(f'`{m}`' for m in missing)} — "

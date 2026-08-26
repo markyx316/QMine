@@ -412,6 +412,12 @@ class QMineConfig(BaseModel):
     #: decides nothing; it cites artifact keys and can fail a gate. Off in
     #: `fast_mode` so the demo stays cheap.
     observe_phases: bool = True
+    #: The pre-delivery audit — the only agent allowed to CHANGE a deliverable.
+    #: On by default: its edits are mechanically bounded (anchored, sourced,
+    #: language-checked) so it cannot ship a wrong number, and everything it does
+    #: or is refused is printed in 交付前审核报告.md. Turn it off for a run whose
+    #: deliverables must be byte-identical to what the phases produced.
+    audit_delivery: bool = True
     #: Let an agent write the "what this means for THIS corpus" sentences in the
     #: deliverables. Every number it writes is checked against a fact sheet built
     #: from artifacts, and an unverifiable one is rejected and re-asked; after

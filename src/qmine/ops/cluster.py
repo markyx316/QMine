@@ -1187,3 +1187,25 @@ def partition_stability(
         "n_splits": int(arr.size),
         "values": [round(float(v), 4) for v in arr],
     }
+
+
+def leaves_per_family(labels: np.ndarray, family_lut: np.ndarray) -> dict[str, int]:
+    """Count leaves per family FROM THE LABELS, never from the lookup table.
+
+    `family_lut` keeps a row for every leaf id the tree ever had, including the
+    ones refinement merged away. Grouping over it counts leaves that no longer
+    exist: live39 shipped `n_leaves = 29` beside a breakdown summing to 32, with
+    families 2, 3 and 8 each credited a leaf that had already been merged. The
+    two numbers sat in the same artifact with nothing marking that one was taken
+    before refinement and the other after.
+
+    Counting the distinct labels that actually appear makes the breakdown and the
+    total the same measurement, so they cannot drift apart again.
+    """
+    present = sorted({int(v) for v in np.unique(labels)})
+    lut = np.asarray(family_lut)
+    out: dict[str, int] = {}
+    for lid in present:
+        f = int(lut[lid]) if lid < len(lut) else -1
+        out[str(f)] = out.get(str(f), 0) + 1
+    return out

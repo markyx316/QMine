@@ -284,6 +284,8 @@ def build(state: Any, deps: Any) -> str:
                          f"{c['n_with_trigger']} | {', '.join(c['distinct_targets'])} |")
             L.append("")
 
+    L += _rules_vs_evidence(_t(tax2, "rules_vs_evidence", default={}) or {})
+
     nr = agree.get("new_rules") or []
     if nr:
         L += [f"<details><summary>展开裁判起草的 {len(nr)} 条规则</summary>", "",
@@ -567,3 +569,63 @@ def _limitations(deps: Any, agree: dict, metrics: dict, adv: dict, tax: dict) ->
             "下游若必须二选一, 应当依据**该场景要的是意图还是措辞群**来选, "
             "而不是依据哪个数字更好看。", ""]
     return out
+
+
+def _rules_vs_evidence(ev: dict[str, Any]) -> list[str]:
+    """规则与裁判自己的裁定是否一致 —— the check that needs no trigger.
+
+    Written because live39 shipped five rules saying "no intent marker → OTHER"
+    on a boundary where the referee itself had just ruled the other way on 15 of
+    21 rows. Nothing in the pipeline could see it, and no reader of the report
+    could either: the rules were listed, the verdicts were counted, and the two
+    were never put side by side.
+    """
+    if not ev:
+        return []
+    lex, sem = ev.get("n_lexical_rules", 0), ev.get("n_semantic_rules", 0)
+    bad = ev.get("boundaries_whose_stated_ground_separates_nothing") or []
+    L = ["### 3.6 规则与「裁判实际怎么判」是否一致", "",
+         f"- 可执行触发式的规则 **{lex}** 条; 只能用自然语言描述条件的 **{sem}** 条", ""]
+    L += ["**为什么大多数规则没有触发式, 而且不应该硬要。** 裁判起草的规则说的是"
+          "**语义条件** ——「当查询是谚语且用户想知道其寓意时」—— 这种条件没有正则可写。"
+          "在 live39 的 80 条无触发式规则中, 只有 **1 条**能抽出标记词。硬要一个触发式"
+          "得到的不是 79 个判据, 而是 79 个**错的**判据: 之后报出来的每一处「重叠」都是"
+          "正则的产物, 而真正冲突的地方反而报不出来。", "",
+          "**那它们还能拿什么来检验?** 拿**裁判自己的裁定**。每条规则都写明了它管哪一对"
+          "类目, 而金标准里恰好记着裁判在这一对上实际怎么判 —— 不需要正则, 不需要多花"
+          "一次调用, 数据本来就在手里。", ""]
+    L += ["**检验的是规则自己写明的判据。** 规则里通常会把判别词逐个列出 —— 例如"
+          "「无明确意图标记（如'什么意思'、'寓意'、'翻译'等）」。把这些词拿到**裁判"
+          "实际裁决过的行**上跑一遍就能回答一个问题: **这个判据到底把这条边界分开了没有?**", ""]
+    if bad:
+        L += [f"> ⚠️ **{len(bad)} 条边界上, 规则写明的判据一行都没分开。**", "",
+              "| 类目对 | 规则列出的判别词 | 含该词的行 | 引用它的规则 |", "|---|---|---|---|"]
+        for b in bad:
+            L.append(f"| {' × '.join(b['classes'])} | {'、'.join(b['markers'][:5])} | "
+                     f"**{b['n_rows_containing_a_stated_marker']}/{b['n_adjudicated']}** | "
+                     f"`{'`, `'.join(b['rules_citing_it'][:5])}` |")
+        L += ["", "**判据落在全部行的同一侧, 就等于没有判据。** 以 live39 的 "
+              "`OTHER × TEXT_INTERPRETATION` 为例: 5 条规则都写「无明确意图标记 → OTHER」, "
+              "而这条边界上 **21 行查询没有一行**含有规则自己列举的那三个词 —— 包括裁判"
+              "判成 TEXT_INTERPRETATION 的全部 15 行。标注者照着规则做, 得到的不是指引, "
+              "而是「全部归 OTHER」, 其中 15 行与金标准相反。", "",
+              "**处置方式是给这条边界一个可观察的判据, 或者如实记下它靠人工判断, "
+              "而不是删规则。** 删掉规则等于把指引一起拿走, 边界反而更没人管。", ""]
+    else:
+        L += ["> ✅ 每条边界上, 规则写明的判别词都确实把该边界的裁决行分开了。", ""]
+
+    # The retired signal, kept as context with its confound stated.
+    if ev.get("direction_is_confounded") or (ev.get("boundaries") or []):
+        L += ["**为什么不数「规则朝向」。** 一个更直觉的做法是数有多少规则指向裁判的"
+              "少数派。这个信号是**被污染的**: 裁判只在它认为指南失效的地方起草规则, "
+              "而那恰好集中在少数派一侧 —— live39 的 `OTHER × TEXT_INTERPRETATION` 上, "
+              "**6 行少数派里有 5 行产生了规则 (83%), 15 行多数派里只有 1 行 (7%)**。"
+              "也就是说「多数规则指向少数派」正是一套**健康**例外规则应有的样子, "
+              "这个判据在没有缺陷的指南上也会照样报警。规则朝向仍然记录在 artifact 里, "
+              "但只作为背景, 不作为结论。", ""]
+    rej = ev.get("rejected_triggers") or []
+    if rej:
+        L += [f"另有 **{len(rej)}** 条规则写了触发式但没能通过校验 —— "
+              "触发式必须能编译、必须命中该规则自己的例子、且不能命中语料的一大片。"
+              "未通过的按「语义规则」处理, 不再声称自己有判据。", ""]
+    return L

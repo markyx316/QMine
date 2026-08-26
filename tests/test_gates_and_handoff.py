@@ -231,7 +231,13 @@ def test_a_rule_naming_a_class_that_does_not_exist_is_caught():
     t = _tax(AdjudicationRule(id="R12", when="考务数据", then="选 EXOD_INFO"))
     health = _validate_rules(t, _Deps)
     assert health["n_repaired"] == 1 and health["n_dropped"] == 0
-    assert t.rules[0].then == "选 EXAM_INFO"
+    # The BARE code, not the repaired sentence. `then` is documented as "the
+    # class that wins" and everything downstream keys on it — `_dedupe_rules`
+    # compares it with `==`, `rules_against_evidence` asks whether it equals the
+    # referee's verdict. `选 EXAM_INFO` satisfies neither, so the repair path was
+    # reintroducing the very shape `normalise_then` exists to remove.
+    assert t.rules[0].then == "EXAM_INFO"
+    assert "选 EXOD_INFO" in t.rules[0].rationale, "the original wording must survive"
     assert any("EXOD_INFO" in m for m in emitted), "the repair must be reported, not silent"
 
     # A target resembling nothing is dropped rather than guessed at.
@@ -239,11 +245,28 @@ def test_a_rule_naming_a_class_that_does_not_exist_is_caught():
     health2 = _validate_rules(t2, _Deps)
     assert health2["n_dropped"] == 1 and not t2.rules
 
-    # A valid rule is left exactly as it was.
+    # A rule that NAMES a real class but is not one is reduced, not repaired.
+    # "Valid" used to mean "mentions a declared class", which `选 WORD_MEANING`
+    # satisfies while remaining unusable as a key.
     t3 = _tax(AdjudicationRule(id="R01", when="x", then="选 WORD_MEANING"))
     health3 = _validate_rules(t3, _Deps)
-    assert health3 == {"n_repaired": 0, "n_dropped": 0, "repaired": [], "dropped": []}
-    assert t3.rules[0].then == "选 WORD_MEANING"
+    assert health3["n_repaired"] == 0 and health3["n_dropped"] == 0
+    assert health3["n_then_reduced_to_code"] == 1
+    assert t3.rules[0].then == "WORD_MEANING"
+    assert "选 WORD_MEANING" in t3.rules[0].rationale
+
+    # A rule already in the right shape is left byte-identical.
+    t4 = _tax(AdjudicationRule(id="R02", when="x", then="WORD_MEANING", rationale="r"))
+    health4 = _validate_rules(t4, _Deps)
+    assert health4["n_then_reduced_to_code"] == 0 and health4["n_then_ambiguous"] == 0
+    assert t4.rules[0].then == "WORD_MEANING" and t4.rules[0].rationale == "r"
+
+    # A rule naming TWO classes ships as guidance but is not treated as a key.
+    t5 = _tax(AdjudicationRule(id="R03", when="x",
+                               then="有裁决框架的归 EXAM_INFO；否则归 WORD_MEANING。"))
+    health5 = _validate_rules(t5, _Deps)
+    assert health5["n_then_ambiguous"] == 1 and len(t5.rules) == 1, (
+        "it is still readable guidance — dropping it would remove the boundary's help")
 
 
 def test_rule_dedup_separates_a_second_marker_from_a_second_opinion():

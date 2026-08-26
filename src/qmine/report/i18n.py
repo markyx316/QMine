@@ -185,6 +185,22 @@ def decision_question(text: str, language: str = "zh") -> str:
 #: so small edits to the English tail do not silently drop a translation; a test
 #: asserts that everything reaching a real report is covered.
 PROSE_ZH: dict[str, str] = {
+    # --- p2b_rules_match_their_evidence, authored in `graph/nodes/topdown.py` --
+    # The prefix must stay free of interpolated numbers: `prose()` matches a
+    # LITERAL PREFIX, so a count spliced into the front means the mapping never
+    # fires and the sentence ships in English.
+    "every boundary's stated discriminator actually divides its adjudicated rows":
+        "每条边界上, 规则写明的判别词都确实把该边界的裁决行分开了",
+    "the discriminator these rules name does not divide this boundary at all":
+        "有边界上规则写明的判别词一行都没分开 —— 判据落在全部行的同一侧, 等于没有判据",
+    "The words these rules name as the test do not appear in the rows the":
+        "这些规则写明的判别词, 在裁判实际裁决过的行里一次都没出现 —— "
+        "所以无论是什么决定了这条边界, 都不是规则声称的那个判据, "
+        "标注者照字面执行只会得到「全部归同一类」。请给这条边界一个可观察的判据, "
+        "或如实记下它靠人工判断。**不要删规则** —— 删掉指引会让边界更没人管, "
+        "曾有一次按措辞相似度过滤, 41 条规则被砍掉 32 条。"
+        "另注: 本门刻意**不**统计规则朝向。裁判只在它认为指南失效处起草规则, "
+        "该信号被起草率污染, 在没有缺陷的指南上同样会报警。",
     # --- algorithm battery verdicts, authored in `ops/battery.py` ----------
     # Interpolated straight into a Chinese figure title, so they shipped as
     # English inside an otherwise-Chinese chart.

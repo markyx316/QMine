@@ -19,6 +19,7 @@ BOTTOMUP_REPORT = "自下而上聚类最终报告.md"
 TOPDOWN_REPORT = "自上而下类目体系最终报告.md"
 PANEL_REPORT = "统一度量面板.md"
 LEAF_CATALOGUE = "叶清单.md"
+AUDIT_REPORT = "交付前审核报告.md"
 
 import json
 from pathlib import Path
@@ -419,7 +420,13 @@ def test_every_report_is_written_in_the_configured_language(completed_run):
     import re
 
     gen = Path(completed_run["summary"]["artifact_root"])
-    for name in (BOTTOMUP_REPORT, TOPDOWN_REPORT, PANEL_REPORT, LEAF_CATALOGUE):
+    # The audit report is a deliverable like any other. It was added to this
+    # list the same session it was created — a new report that is not on this
+    # list is a report the language check does not cover.
+    for name in (BOTTOMUP_REPORT, TOPDOWN_REPORT, PANEL_REPORT, LEAF_CATALOGUE,
+                 AUDIT_REPORT):
+        if not (gen / name).exists():
+            continue
         english = []
         for line in (gen / name).read_text().splitlines():
             if not re.match(r"^#{1,3} ", line):

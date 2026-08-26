@@ -3,11 +3,13 @@
 from __future__ import annotations
 
 import json
+from pathlib import Path
 from typing import Any
 
 import numpy as np
 import pandas as pd
 
+from . import observe as _observe
 from ...determinism import deterministic_subsample
 from ...ops.cards import deterministic_exemplars
 from ...ops.classify import CentroidClassifier
@@ -123,6 +125,7 @@ def p9_panel(state: PipelineState, deps: Deps) -> dict[str, Any]:
     return {
         "phase": "p10",
         "artifacts": {"metrics_panel": ref},
+        "gates": _observe(deps, "p9", {"metrics_panel": deps.load("metrics_panel")}),
         "metrics": panel.sets(),
         "completed_phases": ["p9"],
         "events": events,
@@ -336,13 +339,71 @@ def p11_report(state: PipelineState, deps: Deps) -> dict[str, Any]:
     """Write the reports and the executed notebook."""
     from ...report.builder import build_all_reports
 
+    from ...ops.findings import recheck_run
+
     deps.emit("P11 reporting — assembling deliverables")
+    # BEFORE the reports are written, so they print the current ledger. Every
+    # open finding's assertion is re-evaluated against the artifacts that are
+    # actually about to ship: one that has been fixed closes itself here, and
+    # one that has not is carried forward rather than quietly aging out.
+    try:
+        recheck_run(deps)
+    except Exception as exc:  # noqa: BLE001
+        deps.emit(f"  findings re-check skipped ({type(exc).__name__}: {exc})")
     refs = build_all_reports(state, deps)
+
+    # THE LAST THING BETWEEN THE RUN AND A READER.
+    #
+    # Every warning this pipeline raises is otherwise read by a human, later, if
+    # at all. This is the only step that holds the gate ledger, the findings
+    # ledger, the artifacts and the finished documents in one place and asks
+    # whether any of those warnings left a defect in what is about to be handed
+    # over — and it is the only agent allowed to fix one. Its authority is
+    # bounded to an anchored replacement whose numbers must come from the
+    # artifact it cites; `ops/edits.py` holds each rule and the failure behind it.
+    from ...agents.audit_delivery import audit_deliverables
+
+    try:
+        audit = audit_deliverables(state, deps)
+    except Exception as exc:  # noqa: BLE001
+        deps.emit(f"  pre-delivery audit skipped ({type(exc).__name__}: {exc})")
+        audit = {"ran": False, "skipped": f"{type(exc).__name__}: {exc}"}
+
+    # An edited file no longer matches the hash the index recorded when it was
+    # written. Re-registering keeps provenance honest: the manifest must describe
+    # the bytes that actually ship, not the draft the auditor corrected.
+    for name in (audit.get("files_changed") or []):
+        stem = Path(name).stem
+        refs[f"report_{stem}"] = deps.store.put_markdown(
+            stem, (Path(deps.store.gen_dir) / name).read_text(encoding="utf-8"),
+            producer="p11", summary="re-registered after the pre-delivery audit")
+
+    # Stored as an artifact rather than pushed into state: `PipelineState` is a
+    # TypedDict and an undeclared key is an update error, and the audit record is
+    # something a later generation and `verify_run.py` both want on disk anyway.
+    refs["delivery_audit"] = deps.store.put_json(
+        "delivery_audit", audit, producer="p11",
+        summary=(f"{audit.get('n_applied', 0)} edits applied, "
+                 f"{audit.get('n_refused', 0)} refused" if audit.get("ran")
+                 else f"not run: {audit.get('skipped', 'disabled')}"))
+
+    try:
+        from ...report.zh_audit import build as build_audit
+
+        refs["report_audit"] = deps.store.put_markdown(
+            "交付前审核报告", build_audit(audit, state, deps),
+            producer="p11", summary="pre-delivery audit: every edit, refusal and dismissal")
+    except Exception as exc:  # noqa: BLE001
+        deps.emit(f"  audit report not written ({type(exc).__name__}: {exc})")
+
     return {
         "phase": "p12",
         "artifacts": refs,
         "completed_phases": ["p11"],
-        "events": [f"P11: {len(refs)} deliverables written to {deps.store.gen_dir}"],
+        "events": [f"P11: {len(refs)} deliverables written to {deps.store.gen_dir}"
+                   + (f"; audit applied {audit.get('n_applied', 0)} edit(s), "
+                      f"refused {audit.get('n_refused', 0)}" if audit.get("ran") else
+                      "; deliverables NOT audited")],
     }
 
 

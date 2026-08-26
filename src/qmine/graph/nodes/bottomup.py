@@ -472,6 +472,23 @@ def p6_hierarchy(state: PipelineState, deps: Deps) -> dict[str, Any]:
     hr["statistical_verdict"] = verdict
 
 
+    # Counted from the labels that SHIP, not from the pre-refinement tree. A leaf
+    # that refinement merged away is absent from `leaf_labels` and must be absent
+    # here; `leaf_family` still carries a row for it, so grouping over the lookup
+    # table instead of over the labels would reproduce the defect exactly.
+    from ...ops.cluster import leaves_per_family
+
+    _lpf = leaves_per_family(ref_out["leaf_labels"], ref_out["leaf_family"])
+    # Every count in this artifact now comes from ONE source — the labels that
+    # ship — so they cannot disagree. That is the fix; an assert would only have
+    # detected a disagreement this construction makes impossible, and would have
+    # crashed a paid run at p6 if `_compact` ever left a gap in the label space.
+    # `n_leaves` is the number of leaves a reader can actually find in the table.
+    _n_leaves = sum(_lpf.values())
+    if _n_leaves != int(ref_out["n_leaves"]):
+        deps.emit(f"  ⚠ refinement reports {ref_out['n_leaves']} leaves but "
+                  f"{_n_leaves} appear in the labels — reporting the labels")
+
     artifacts = {
         "leaf_labels": deps.store.put_matrix("leaf_labels", ref_out["leaf_labels"], producer="p6",
                                              summary=f"{ref_out['n_leaves']} leaves"),
@@ -483,8 +500,18 @@ def p6_hierarchy(state: PipelineState, deps: Deps) -> dict[str, Any]:
                                                summary="pre-refinement family assignment"),
         "hierarchy_meta": deps.store.put_json(
             "hierarchy_meta",
-            {"n_families": tree["n_families"], "n_leaves": ref_out["n_leaves"],
-             "leaves_per_family": tree["leaves_per_family"],
+            {"n_families": len(_lpf), "n_leaves": _n_leaves,
+             "n_leaves_reported_by_refinement": int(ref_out["n_leaves"]),
+             "leaves_per_family": _lpf,
+             # THE SAME ARTIFACT MUST NOT MIX PRE- AND POST-REFINEMENT COUNTS.
+             # `n_leaves` came from `ref_out` and `leaves_per_family` from `tree`,
+             # with nothing marking the difference, so live39 shipped
+             # `n_leaves = 29` beside a breakdown summing to 32 — families 2, 3
+             # and 8 were each shown leaves that refinement had already merged
+             # away. Found live by `p6_observer`, which was right and could not
+             # prove it; `p6_leaf_counts_agree` below is now the proof.
+             "leaves_per_family_before_refinement": tree["leaves_per_family"],
+             "n_families_before_refinement": tree["n_families"],
              "min_leaf_size_applied": tree["min_leaf_size_applied"],
              "refinement_history": ref_out["history"], "converged": ref_out["converged"],
              # How each family decided its own leaf count, what silhouette alone

@@ -18,7 +18,7 @@ from __future__ import annotations
 import json
 from typing import Any, Literal, Sequence
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, PrivateAttr
 
 from ..memory.context import budget_text, render_card
 from ..records import (
@@ -624,6 +624,18 @@ class Observation(BaseModel):
     artifact_key: str = ""
     evidence: str = ""
     would_change: str = ""
+    #: The assertion that SHOULD hold if the claim is wrong, over the same
+    #: artifacts. `ops.checks` evaluates it: False confirms the claim as a
+    #: measurement (and only then may it block), True refutes the observer's own
+    #: claim and drops it. Optional — a claim no expression can settle stays
+    #: advisory rather than being demanded in a form that would fabricate it.
+    check: str = ""
+    #: The PIPELINE's verdict on this observation, written by
+    #: `agents.observe.verified_observations` — never by the agent. Declared
+    #: rather than assigned ad hoc so that a pydantic version which rejects
+    #: undeclared private attributes cannot silently leave every observation
+    #: unverified, which would disable the blocking path with nothing failing.
+    _verdict: str = PrivateAttr(default="unverifiable")
 
 
 class ObservationList(BaseModel):
@@ -810,3 +822,59 @@ class DomainScoutAgent(Agent):
 
 
 ALL_ROLES["domain_scout"] = DomainScoutAgent
+
+
+# ==========================================================================
+# Phase 11 — the pre-delivery audit
+# ==========================================================================
+class DeliveryEdit(BaseModel):
+    file: str = Field(description="Deliverable filename, exactly as listed.")
+    anchor: str = Field(description="The EXACT text to replace. Must appear once.")
+    replacement: str = Field(description="What it becomes.")
+    reason: str = Field(description="What is wrong and why this fixes it.")
+    artifact_key: str = Field(description="The artifact path the correction comes from. "
+                                          "Every number in `replacement` must be in it.")
+    severity: str = "warn"
+    check: str = ""
+
+
+class DeliveryAudit(BaseModel):
+    edits: list[DeliveryEdit] = Field(default_factory=list)
+    #: Defects the auditor found but could not express as an anchored edit. These
+    #: are NOT failures — a structural problem often has no one-line fix, and
+    #: reporting it beats forcing it into an edit that would be refused anyway.
+    unfixable: list[Observation] = Field(default_factory=list)
+    #: Warnings it read and deliberately dismissed, with why. Recorded so the
+    #: audit is a record of what was considered, not only of what was changed.
+    dismissed: list[str] = Field(default_factory=list)
+    summary: str = ""
+
+
+class DeliveryAuditorAgent(Agent):
+    """Reads every deliverable and every warning the run produced, and may EDIT.
+
+    The only agent here with write authority, and it is bounded to one operation:
+    replace an anchor it can prove appears exactly once, with text whose every
+    number comes from the artifact it cites. `ops/edits.py` holds the contract and
+    the reasoning behind each guardrail — read it before changing this.
+    """
+
+    role = "delivery_auditor"
+    prompt_name = "delivery_auditor"
+    schema = DeliveryAudit
+
+    def build_user(self, *, deliverables: str = "", gates: str = "", findings: str = "",
+                   artifacts: str = "", language: str = "zh", **kw: Any) -> str:
+        return "\n".join([
+            f"## Report language\nEvery `replacement` you write must be in: {language}\n",
+            "## The warnings this run accumulated\n"
+            "Each of these was raised BY the pipeline while it ran. Read every one and "
+            "decide whether it left a defect in the documents below.\n"
+            f"{budget_text(gates, 24000, tail=4000, label='gates')}\n",
+            "## Findings still open in the ledger\n"
+            f"{budget_text(findings, 12000, tail=2000, label='findings')}\n",
+            "## The artifacts — THE ONLY SOURCE OF TRUTH FOR ANY NUMBER\n"
+            f"{budget_text(artifacts, 60000, tail=8000, label='artifacts')}\n",
+            "## The deliverables, as they will ship\n"
+            f"{budget_text(deliverables, 90000, tail=12000, label='deliverables')}\n",
+        ])
