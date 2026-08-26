@@ -609,3 +609,31 @@ def test_the_remedy_resume_recommends_is_actually_reachable():
 
     names = {c.name or c.callback.__name__ for c in cli.app.registered_commands}
     assert "new-generation" in names, f"no way to do what resume advises; have {sorted(names)}"
+
+
+def test_the_governance_section_does_not_claim_every_prescription_ran():
+    """live40 executed 8 of 17 and declined 9, under a heading reading
+    "**审计处方已全部执行**" — false, and false in the flattering direction,
+    with the table contradicting it one line below.
+
+    What the gate actually guarantees is `assert_all_settled`: nothing is left
+    `proposed`. That claim stays true whatever the executed/declined split is.
+    """
+    from qmine.report.i18n import ZH
+
+    txt = ZH["governance_executed"]
+    assert "全部执行" not in txt
+    assert "要么执行, 要么写明拒绝理由" in txt
+
+
+def test_the_adversarial_direction_is_derived_not_hardcoded():
+    """`高于` was a literal, so live40 shipped "对抗验证 (0.82) 高于交叉验证
+    (0.8625)" — false — followed by a causal story that only holds when
+    adversarial IS higher."""
+    import inspect
+
+    from qmine.report import zh_topdown
+
+    src = inspect.getsource(zh_topdown)
+    assert "if acc > cvacc:" in src, "the direction must be derived from the numbers"
+    assert "**低于**交叉验证" in src, "the lower case needs its own honest reading"

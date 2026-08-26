@@ -216,3 +216,71 @@ def test_a_leaf_that_only_lost_a_few_rows_keeps_its_name(stub_namer):
 
     assert stub_namer == [], f"re-named on a 5% membership change: {stub_namer}"
     assert saved == {}, "tree_naming rewritten when no name had gone stale"
+
+
+def test_a_merge_targeting_families_that_do_not_exist_is_declined_not_executed():
+    """live40's P011, reproduced exactly.
+
+    It targeted `[10, 11, 15]` carrying LEAF names — 拼音查询 / 汉字读音查询 /
+    词语拼音查询 — while `merge_families` runs in the FAMILY namespace, where
+    only 0..6 existed. The map entries for 11 and 15 were no-ops, the
+    prescription was still stamped `executed`, the report's §6 table said so,
+    and the three duplicate `pinyin_query` leaves it was meant to collapse were
+    all still in the delivered partition.
+
+    Principle 6: a recommendation must have a matching executed change OR an
+    explicit declined reason. An unresolvable target had neither.
+    """
+    import numpy as np
+
+    from qmine.ops.governance import execute_prescriptions
+    from qmine.records import Prescription
+
+    leaf_family = np.array([0, 1, 2, 3, 4, 5, 6] * 3 + [0, 1, 2, 3])
+    p = Prescription(id="P011", kind="merge_families", targets=[10, 11, 15],
+                     target_names=["拼音查询", "汉字读音查询", "词语拼音查询"],
+                     proposed_by="tree_auditor", rationale="三个叶子应合并")
+
+    fam, handled, detail = execute_prescriptions([p], leaf_family)
+
+    assert p.status == "declined", "a merge that can change nothing must not read as executed"
+    assert "do not name two existing families" in p.decline_reason
+    assert "LEAF ids" in p.decline_reason, "the reason must name the likely cause"
+    assert detail.get("merges", {}).get("merge_map_raw", {}) == {}
+    assert len(set(fam.tolist())) == 7, "the partition must be untouched"
+
+
+def test_a_partially_resolvable_merge_executes_and_records_what_it_could_not_apply():
+    """Dropping the unresolvable half silently would make the metric delta read
+    as though the whole prescription had landed."""
+    import numpy as np
+
+    from qmine.ops.governance import execute_prescriptions
+    from qmine.records import Prescription
+
+    leaf_family = np.array([0, 1, 2, 3, 4, 5, 6] * 3 + [0, 1, 2, 3])
+    p = Prescription(id="P012", kind="merge_families", targets=[2, 4, 99],
+                     proposed_by="tree_auditor", rationale="r")
+
+    fam, handled, detail = execute_prescriptions([p], leaf_family)
+
+    assert p.status != "declined", "two real families were merged; that is a real change"
+    assert detail["merges"]["merge_map_raw"] == {"4": 2}
+    assert detail["merges"]["targets_that_named_no_family"] == {"P012": [99]}
+    assert len(set(fam.tolist())) == 6
+
+
+def test_a_merge_naming_only_real_families_is_unaffected():
+    """The guard must not cost a legitimate merge."""
+    import numpy as np
+
+    from qmine.ops.governance import execute_prescriptions
+    from qmine.records import Prescription
+
+    leaf_family = np.array([0, 1, 2, 3, 4] * 4)
+    p = Prescription(id="P001", kind="merge_families", targets=[1, 3],
+                     proposed_by="tree_auditor", rationale="r")
+    fam, handled, detail = execute_prescriptions([p], leaf_family)
+    assert p.status != "declined" and p.decline_reason == ""
+    assert detail["merges"]["merge_map_raw"] == {"3": 1}
+    assert len(set(fam.tolist())) == 4

@@ -366,3 +366,331 @@ def test_the_generation_cap_and_the_cost_estimate_are_separate_questions():
         "the estimate must be the expected cost, not the worst case"
     assert a.output_tokens_per_call == b.output_tokens_per_call, \
         "and symmetric, since routing has not happened when it is computed"
+
+
+def test_a_pinned_role_still_counts_toward_the_estimated_total(catalog):
+    """The `prefer` branch `continue`d past the accumulator.
+
+    Pins land on the highest-VOLUME roles precisely because those are worth
+    choosing deliberately — so excluding them understated the total by most of
+    the bill. With both annotators pinned the header read "$0.79 per full run"
+    against a table showing $36 of annotators on the same screen. An estimate
+    that omits its largest line items is worse than none: it is what somebody
+    reads to decide whether a model upgrade is affordable.
+    """
+    labs = ["anthropic", "openai", "deepseek"]
+    free = route(catalog, labs)
+    pinned = route(catalog, labs, prefer={"annotator_a": "mid-a"})
+
+    a = pinned.assignments["annotator_a"]
+    assert a.model == "mid-a" and a.estimated_cost_usd > 0
+
+    # THE invariant, stated so it cannot pass by accident: the headline total is
+    # the sum of the per-role estimates printed beside it. Asserting merely that
+    # the total exceeds the pinned role's own cost is not decisive — the other
+    # roles alone can clear that bar, which is how this survived mutation.
+    for plan, label in ((free, "unpinned"), (pinned, "pinned")):
+        parts = sum(x.estimated_cost_usd for x in plan.assignments.values())
+        assert plan.total_cost_usd == pytest.approx(parts, rel=1e-6), (
+            f"{label}: header total {plan.total_cost_usd} != sum of rows {parts}")
+
+    # And the total must actually move when a pin changes the price.
+    assert pinned.total_cost_usd != free.total_cost_usd
+
+
+def test_the_router_says_when_price_could_not_rank_the_candidates(catalog):
+    """`cap` is capped at the requirement, so every candidate at or above the
+    required tier ties on capability and price decides.
+
+    That is sound only while price tracks capability. Across Chinese labs it does
+    not — tier is a PRICE PERCENTILE over the reachable set, and after excluding
+    the Western labs not one Chinese model rates `frontier`: `deepseek-v4-pro`,
+    `glm-5.2`, `qwen3.8-max` and `kimi-k3` all land in one `strong` band. The
+    referee was handed `glm-4.5-airx` over `glm-5.2` on a $0.30/M input
+    difference, and measured on the same annotators the cheap one adjudicated at
+    near chance (55.1% vs 78.3%).
+
+    The router cannot fix this — it has no capability signal — so it must not
+    pretend it made a capability judgement.
+    """
+    plan = route(catalog, ["anthropic", "openai", "deepseek"])
+    noted = [r for r, a in plan.assignments.items()
+             if any("cannot rank" in w for w in a.warnings)]
+    assert noted, "no role reported a cost-decided choice among same-tier rivals"
+    for role in noted:
+        a = plan.assignments[role]
+        w = next(x for x in a.warnings if "cannot rank" in x)
+        assert "Pin this role" in w, "the warning must say what to do about it"
+        assert requirement_for(role).blast_radius in ("run", "phase"), (
+            "only roles whose errors are expensive are worth this note")
+
+
+def test_the_referee_is_a_run_blast_radius_role():
+    """Its verdicts BECOME the gold set — they train the classifier, define
+    kappa, and the rules it drafts ship in the guide the annotators read.
+
+    At `phase` its `cost_sensitivity` is 0.25, and on a candidate set where price
+    cannot rank capability that is enough to pick the cheapest model clearing the
+    bar. `run` puts it at 0.05.
+    """
+    req = requirement_for("referee")
+    assert req.blast_radius == "run"
+    assert req.cost_sensitivity <= 0.05
+
+
+def test_the_capable_models_list_gates_expensive_roles_and_price_only_breaks_ties(catalog):
+    """Capability is STATED, not inferred from price.
+
+    `TIER_PERCENTILES` derives tier from a price percentile and `_score` caps
+    capability credit at the requirement, so among candidates at or above the
+    bar the cheapest wins. Across the labs this project allows, price does not
+    rank capability — not one Chinese model rates `frontier`, and the referee was
+    handed an "air" lightweight over `glm-5.2` on $0.30/M of input.
+
+    Removing price was tried and made things worse (it is the only thing keeping
+    a 260-call role off an expensive model), so price stays and capability is
+    supplied explicitly.
+    """
+    labs = ["anthropic", "openai", "deepseek"]
+    free = route(catalog, labs)
+    gated = route(catalog, labs, capable_models=["mid-a"])
+
+    # A run/phase role must come from the list even though it is dearer.
+    r = gated.assignments["referee"]
+    assert requirement_for("referee").blast_radius == "run"
+    assert r.model == "mid-a", f"capability gate ignored; got {r.model}"
+    assert any("capable_models" in w for w in r.warnings)
+    assert free.assignments["referee"].model != "mid-a", (
+        "the fixture must actually differ, or this proves nothing")
+
+
+def test_a_contained_high_volume_role_is_left_to_price(catalog):
+    """The gate is not a blanket upgrade. `l2_interpreter` makes 20 calls and a
+    wrong answer costs one cluster's sub-label — cheap-and-adequate is genuinely
+    right there, and that is what the cost weighting is for."""
+    gated = route(catalog, ["anthropic", "openai", "deepseek"], capable_models=["mid-a"])
+    assert requirement_for("l2_interpreter").blast_radius == "contained"
+    assert not any("capable_models" in w
+                   for w in gated.assignments["l2_interpreter"].warnings)
+
+
+def test_the_gate_falls_back_loudly_rather_than_leaving_a_role_unserved(catalog):
+    """A capable_models list naming nothing reachable must not strand a role."""
+    gated = route(catalog, ["anthropic", "openai", "deepseek"],
+                  capable_models=["a-model-that-does-not-exist"])
+    r = gated.assignments["referee"]
+    assert r.model, "the role was left unserved"
+    assert any("NO configured `capable_model`" in w for w in r.warnings)
+
+
+def test_the_adversary_is_a_run_blast_radius_role():
+    """Its output is the accuracy estimate the deliverable quotes for the WHOLE
+    taxonomy, so an adversary that misses ships false assurance about every
+    label. The field said `contained`, contradicting its own rationale, and that
+    also kept it outside the capability gate."""
+    assert requirement_for("adversary").blast_radius == "run"
+
+
+def test_annotator_balance_reproduces_both_live_runs():
+    """The measurement that would have caught this two runs earlier.
+
+    Same annotator models in both runs; only the referee changed. The first is a
+    real capability gap between the annotators, the second is an adjudicator
+    deciding at near chance — which LOOKS like parity and is not.
+    """
+    from types import SimpleNamespace
+
+    from qmine.ops.annotator_balance import annotator_balance
+
+    def rows(a_wins, b_wins):
+        out = []
+        for i in range(a_wins):
+            out.append(SimpleNamespace(adjudicated=True, label_a="A", label_b="B", final="A"))
+        for i in range(b_wins):
+            out.append(SimpleNamespace(adjudicated=True, label_a="A", label_b="B", final="B"))
+        return out
+
+    live38 = annotator_balance(rows(360, 100), "zhipu:glm-5.2")
+    assert live38.n_decided == 460
+    assert round(live38.a_share, 3) == 0.783
+    assert live38.z > 10 and live38.lopsided
+
+    live39 = annotator_balance(rows(253, 206), "zhipu:glm-4.5-airx")
+    assert round(live39.a_share, 3) == 0.551
+    assert not live39.lopsided, "z=+2.2 on 459 rows is not a systematic gap"
+    assert live39.as_record()["referee_model"] == "zhipu:glm-4.5-airx", (
+        "the referee id is what separates 'matched' from 'adjudicated at chance'")
+
+
+def test_annotator_balance_uses_z_not_a_fixed_share():
+    """The same 60/40 split is noise on 40 rows and decisive on 400."""
+    from types import SimpleNamespace
+
+    from qmine.ops.annotator_balance import annotator_balance
+
+    def rows(a, b):
+        return ([SimpleNamespace(adjudicated=True, label_a="A", label_b="B", final="A")] * a
+                + [SimpleNamespace(adjudicated=True, label_a="A", label_b="B", final="B")] * b)
+
+    assert not annotator_balance(rows(24, 16)).lopsided        # 60% of 40
+    assert annotator_balance(rows(240, 160)).lopsided          # 60% of 400
+
+
+def test_an_agreed_row_is_not_counted_as_a_win():
+    """Rows the annotators agreed on never reached the referee; counting them
+    would swamp the contested signal with unanimity."""
+    from types import SimpleNamespace
+
+    from qmine.ops.annotator_balance import annotator_balance
+
+    bal = annotator_balance([
+        SimpleNamespace(adjudicated=True, label_a="A", label_b="A", final="A"),
+        SimpleNamespace(adjudicated=True, label_a="A", label_b="B", final="A"),
+        SimpleNamespace(adjudicated=False, label_a="A", label_b="B", final="A"),
+        SimpleNamespace(adjudicated=True, label_a="A", label_b="B", final="C"),
+    ])
+    assert bal.n_contested == 2 and bal.a_won == 1 and bal.neither == 1
+    assert bal.b_won == 0
+
+
+def test_a_model_with_no_published_price_is_flagged_not_costed_at_zero():
+    """`blended_cost` returns None for a card with no rate, and `or 0` turns that
+    into a confident $0.00 — on `annotator_b` that is ~256 calls reading as free,
+    and the spend ledger prices from the same card so the run under-reports too.
+
+    Real: `qwen3.7-plus` resolves to a DIRECT qwen card that publishes no price.
+    Same family as pinned roles being excluded from the total — the largest line
+    item is the one that goes missing.
+    """
+    from qmine.llm.catalog import Catalog, ModelCard
+
+    priced = ModelCard(id="has-price", provider="deepseek", input_per_mtok=1.0,
+                       output_per_mtok=2.0, context_tokens=200_000,
+                       supports_structured_output=True)
+    free = ModelCard(id="no-price", provider="deepseek", input_per_mtok=None,
+                     output_per_mtok=None, context_tokens=200_000,
+                     supports_structured_output=True)
+    cat = Catalog(models={f"{c.provider}/{c.id}": c for c in (priced, free)},
+                  fetched_at=1.0, sources=["test"])
+
+    plan = route(cat, ["deepseek"], prefer={"annotator_b": "no-price"})
+    a = plan.assignments["annotator_b"]
+    assert a.model == "no-price"
+    assert a.estimated_cost_usd == 0.0
+    assert any("NO PRICE" in w for w in a.warnings), (
+        "a $0.00 estimate must say the cost is unknown, not free")
+
+    ok = route(cat, ["deepseek"], prefer={"annotator_b": "has-price"})
+    assert not any("NO PRICE" in w for w in ok.assignments["annotator_b"].warnings)
+
+    # The RANKED path cannot select one at all: `_eligible` refuses an unpriced
+    # card as a likely free tier, preview or meta-endpoint. Only a pin can bring
+    # one in, because a pin bypasses eligibility — which is exactly what makes
+    # the pin-path warning necessary and a ranked-path one unreachable.
+    picked = route(cat, ["deepseek"])
+    assert picked.assignments["annotator_b"].model == "has-price", (
+        "the ranked path must never select an unpriced card")
+
+
+def test_the_balance_gate_says_it_is_diagnostic_only():
+    """Kept, but demoted — it cannot separate a capability gap from a referee
+    deciding at chance, so it must never read as a way to choose a model."""
+    import inspect
+
+    from qmine.ops import annotator_balance as mod
+
+    doc = inspect.getdoc(mod) or ""
+    assert "diagnostic, not a way to choose models" in doc
+
+
+def test_the_run_prints_which_model_does_which_job_before_it_starts(catalog):
+    """A run used to log one summary line, so the only way to learn that the
+    referee was on a lightweight model — or that the observer was the SAME model
+    as the architect whose work it reviews — was to read the manifest afterwards.
+
+    Both were discovered here the hard way. The plan is known before the first
+    call; printing it is the last cheap moment to stop a misrouted run.
+    """
+    from qmine.llm.registry import _plan_lines
+
+    plan = route(catalog, ["anthropic", "openai", "deepseek"])
+    lines = _plan_lines(plan)
+    body = "\n".join(lines)
+
+    assert "role assignments for this run" in lines[0]
+    for role in ("referee", "observer", "adversary", "annotator_a", "annotator_b"):
+        assert any(line.strip().startswith(role) for line in lines), role
+    # The independence property must be stated in the terms the RULE is written
+    # in — by lab — because two labs reach you through one gateway and look
+    # identical in the model column.
+    assert "annotator/referee labs:" in body
+    assert "lab=" in body
+    # And every router warning has to travel with it, or the table reads as a
+    # clean bill of health it did not earn.
+    warned = [r for r, a in plan.assignments.items() if a.warnings]
+    for role in warned:
+        assert f"! {role}:" in body, f"{role}'s warning was dropped from the plan output"
+
+
+def test_the_plan_output_names_an_unserved_role_rather_than_omitting_it(catalog):
+    """A role with no model must not simply be absent from the list — an absence
+    reads as 'nothing to say about it'."""
+    from qmine.llm.registry import _plan_lines
+    from qmine.llm.router import Assignment, RoutingPlan
+
+    plan = RoutingPlan(assignments={
+        "referee": Assignment(role="referee", model="", provider="", tier="")})
+    assert any("UNSERVED" in line for line in _plan_lines(plan))
+
+
+def test_a_labs_own_endpoint_beats_a_gateway_reselling_the_same_model():
+    """This rule already existed, and I duplicated it before checking.
+
+    `route` runs a "same model, fewer hops" promotion AFTER ranking, scoped to
+    the same bare model, with measured evidence behind it: the gateway path
+    showed a 6.3x spread between its median and worst call (67.8s to 429.9s)
+    against 1.4x direct. It is exercised in `test_lab_independence`.
+
+    A scoring BONUS on top of it is not the same rule — it biases toward models
+    whose lab happens to be their own provider, which silently swapped
+    `l2_interpreter` from a deepseek model to a qwen one. This test pins the
+    promotion's actual shape so the difference stays visible.
+    """
+    from qmine.llm.catalog import Catalog, ModelCard
+
+    direct = ModelCard(id="acme-1", provider="deepseek", input_per_mtok=1.0,
+                       output_per_mtok=2.0, context_tokens=200_000,
+                       supports_structured_output=True)
+    resold = ModelCard(id="deepseek/acme-1", provider="openrouter", input_per_mtok=0.5,
+                       output_per_mtok=1.0, context_tokens=200_000,
+                       supports_structured_output=True)
+    cat = Catalog(models={f"{c.provider}/{c.id}": c for c in (direct, resold)},
+                  fetched_at=1.0, sources=["test"])
+
+    plan = route(cat, ["deepseek", "openrouter"])
+    a = plan.assignments["namer"]
+    assert a.provider == "deepseek", (
+        "the direct route to the SAME bare model must win, even though the "
+        "gateway is half the price and therefore scores higher")
+
+
+
+def test_the_direct_promotion_does_not_override_a_capability_gate():
+    """A direct endpoint for a model nobody judged capable must not beat a
+    gateway-served one that IS on the list. The fewer-hops promotion is scoped to
+    the SAME bare model, so it cannot substitute a different one."""
+    from qmine.llm.catalog import Catalog, ModelCard
+
+    direct_weak = ModelCard(id="weak-1", provider="deepseek", input_per_mtok=0.5,
+                            output_per_mtok=1.0, context_tokens=200_000,
+                            supports_structured_output=True)
+    resold_good = ModelCard(id="zhipu/good-1", provider="openrouter", input_per_mtok=2.0,
+                            output_per_mtok=4.0, context_tokens=200_000,
+                            supports_structured_output=True)
+    cat = Catalog(models={f"{c.provider}/{c.id}": c for c in (direct_weak, resold_good)},
+                  fetched_at=1.0, sources=["test"])
+
+    plan = route(cat, ["deepseek", "openrouter"], capable_models=["good-1"])
+    a = plan.assignments["referee"]          # blast_radius=run, so gated
+    assert a.model == "zhipu/good-1", (
+        "the capability gate must bind before the direct-provider preference")

@@ -188,7 +188,19 @@ ROLE_REQUIREMENTS: dict[str, RoleRequirement] = {
                   "agreement a stronger signal than shared-architecture agreement.",
     ),
     "referee": RoleRequirement(
-        role="referee", reasoning="strong", blast_radius="phase",
+        # `run`, not `phase`. The referee's verdicts BECOME the gold set: they
+        # train the classifier in p2c, define kappa and every metric quoted from
+        # it, and the rules it drafts ship in the guide the annotators read. A
+        # phase-scoped blast radius set `cost_sensitivity` to 0.25, and on a
+        # candidate set where price cannot rank capability that is enough to pick
+        # the cheapest model clearing the bar.
+        #
+        # MEASURED, and this is the whole argument: on the SAME annotators, a
+        # referee on `glm-5.2` chose annotator_a's label on 78.3% of contested
+        # rows (z=+12.1) while one on `glm-4.5-airx` chose it on 55.1% (z=+2.2).
+        # Near-chance adjudication is the signature of an adjudicator that cannot
+        # discriminate — and live39's entire gold set rests on the second one.
+        role="referee", reasoning="strong", blast_radius="run",
         # Measured at 8,179 adjudicating a 25-row batch with cited rules — on a
         # model long since replaced. On `live36`/`glm-5.2` the SUCCESSFUL calls
         # emitted 19,279-19,597 for the same 25-row batch, and 10 of 15 calls
@@ -202,7 +214,13 @@ ROLE_REQUIREMENTS: dict[str, RoleRequirement] = {
                   "prevent the next disagreement.",
     ),
     "adversary": RoleRequirement(
-        role="adversary", reasoning="strong", blast_radius="contained",
+        # `run`, not `contained` — the field contradicted the rationale below.
+        # The adversary's output is the accuracy estimate the deliverable quotes
+        # for the whole taxonomy, so an adversary that MISSES ships false
+        # assurance about every label, not about one row. `contained` also kept
+        # it outside the `capable_models` gate, which is the one place capability
+        # is now stated rather than inferred from price.
+        role="adversary", reasoning="strong", blast_radius="run",
         min_context_tokens=32_000, typical_calls=10, output_tokens_per_call=2500,
         multilingual_critical=True,
         rationale="Its job is to find errors a weaker model would agree with. Capability "
@@ -244,7 +262,11 @@ ROLE_REQUIREMENTS: dict[str, RoleRequirement] = {
     ),
     "observer": RoleRequirement(
         role="observer", reasoning="frontier", blast_radius="run",
-        min_context_tokens=200_000, typical_calls=4, output_tokens_per_call=4000,
+        # 11, not 4: observers were extended from the four bottom-up phases to
+        # every phase that decides, including the whole top-down route. This
+        # number drives the router's COST WEIGHTING, so leaving it stale makes
+        # the role look cheaper than it is and can win it a pricier model.
+        min_context_tokens=200_000, typical_calls=11, output_tokens_per_call=4000,
         multilingual_critical=True,
         rationale="Reads a whole phase's artifacts looking for a conclusion its own "
                   "numbers do not support — the hardest reasoning task here, and the "

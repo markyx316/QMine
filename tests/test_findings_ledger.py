@@ -273,3 +273,98 @@ def test_no_container_type_leaks_a_python_attribute(container):
     """
     for expr in ("x.__class__ == 1", "x.__dict__ == 1", "x.__len__ == 1"):
         assert evaluate(expr, container).verdict == "unverifiable", (expr, container)
+
+
+def test_concurrent_filings_do_not_erase_each_other(tmp_path):
+    """Observers now run in CONCURRENT graph branches, and this file is
+    load→modify→save.
+
+    Without the merge, the later save writes a snapshot taken before the earlier
+    one's finding existed — measured here, the naive path loses 6 of 8. That is
+    the exact "nothing consumed the finding" failure this module exists to end,
+    reintroduced by the scheduler rather than by a missing consumer.
+
+    The claims must differ in NON-DIGIT characters: `fingerprint` normalises
+    digits away on purpose, so "claim 1".."claim 8" are one finding, and a test
+    written that way passes while proving nothing.
+    """
+    import threading
+
+    names = ["alpha", "bravo", "charlie", "delta", "echo", "foxtrot", "golf", "hotel"]
+    path = tmp_path / "findings.json"
+    barrier = threading.Barrier(len(names))
+
+    def file_one(nm):
+        barrier.wait()                       # maximise the overlap
+        led = FindingLedger(path)
+        led.record(phase="p", severity="warn", claim=f"finding {nm}",
+                   artifact_key="a", seen_at="g")
+        led.save()
+
+    threads = [threading.Thread(target=file_one, args=(n,)) for n in names]
+    for t in threads:
+        t.start()
+    for t in threads:
+        t.join()
+
+    assert len(FindingLedger(path).entries) == len(names)
+
+
+def test_the_open_context_manager_holds_the_lock_across_the_whole_cycle(tmp_path):
+    """`open()` is the shape a caller should reach for when it reads, decides,
+    and writes — the re-check pass does exactly that."""
+    import threading
+
+    path = tmp_path / "findings.json"
+    barrier = threading.Barrier(6)
+
+    def file_one(nm):
+        barrier.wait()
+        with FindingLedger.open(path) as led:
+            led.record(phase="p", severity="warn", claim=f"finding {nm}",
+                       artifact_key="a", seen_at="g")
+
+    names = ["india", "juliet", "kilo", "lima", "mike", "november"]
+    threads = [threading.Thread(target=file_one, args=(n,)) for n in names]
+    for t in threads:
+        t.start()
+    for t in threads:
+        t.join()
+
+    assert len(FindingLedger(path).entries) == len(names)
+
+
+def test_the_report_does_not_present_a_confirmed_check_as_a_proven_defect():
+    """A confirmed check proves an ASSERTION FAILED, not that a defect exists.
+
+    Measured on live40 by independent re-verification of all 13 machine-confirmed
+    findings: only 2 were real defects. Eight were arithmetically correct and
+    wrong anyway, almost all because the two fields being compared measured
+    different populations — different samples, different id spaces, different
+    stages of the same pipeline.
+
+    The section used to open "**这些不是观点**" (these are not opinions), which is
+    true of the arithmetic and false of the conclusion, and a reader counting
+    twelve "confirmed blocking findings" would have been wrong about ten of them.
+    """
+    import inspect
+
+    from qmine.report import zh_panel
+
+    src = inspect.getsource(zh_panel._open_findings)
+    assert "这些不是观点" not in src, (
+        "the section must not claim a confirmed check proves the conclusion")
+    assert "求值为假的是断言, 不等于结论成立" in src
+    assert "不同的总体" in src, "the dominant false-positive mode must be named"
+
+
+def test_the_observer_is_warned_about_comparing_different_populations():
+    """The mechanism's dominant failure mode, stated where it can act on it."""
+    import pathlib
+
+    prompt = pathlib.Path(
+        inspect_path := __import__("qmine.agents.roles", fromlist=["x"]).__file__
+    ).parent / "prompts" / "observer.md"
+    text = prompt.read_text(encoding="utf-8")
+    assert "SAME\n   POPULATION" in text or "SAME POPULATION" in text
+    assert "8 of 13" in text, "the warning should carry the measurement behind it"

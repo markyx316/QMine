@@ -241,7 +241,11 @@ def build(state: Any, deps: Any) -> str:
             L += [f"> **Δκ = {d:+.4f} ({'下降' if d < 0 else '上升'}), se(差) = {num(sd, 4)}, "
                   f"即 {abs(d) / sd:.2f} 个标准误。**"
                   f"{'差异显著 (>1.96 se)' if abs(d) / sd > 1.96 else '落在噪声内, 不可解读'}。", ""]
-        L += ["**加了 112 条裁定规则, 两位标注者反而更不一致了。** 这个方向是反直觉的, "
+        # INTERPOLATED, not a literal. `112` was hardcoded from an earlier run and
+        # shipped beside the artifact's own 123 twice in the same document.
+        _n_added = (gr.get("n_rules_added") if isinstance(gr, dict) else None)
+        L += [f"**加了 {_n_added if _n_added is not None else '若干'} 条裁定规则, "
+              "两位标注者反而更不一致了。** 这个方向是反直觉的, "
               "但可以解释: 分歧集中在**本身不携带信号**的 query 上 —— 光秃秃的词、"
               "没有上下文的引文、裁判自己都标记为「两种读法都站得住」的那些。"
               "对这类行, 更多的规则不是消歧, 而是**给了两位读者更多互相引用不同条款的理由**。", "",
@@ -256,8 +260,12 @@ def build(state: Any, deps: Any) -> str:
     ov, crowded = rc.get("measured_overlaps") or [], rc.get("crowded_class_pairs") or []
     if rc:
         L += ["### 3.5 规则之间的冲突 (在本语料上实测)", "",
+              # `可执行` is reserved for the VALIDATED count in §3.6. This line
+              # counts rules that merely WROTE a trigger — on live40, 13 here
+              # against 0 validated, and using the same phrase for both put two
+              # different numbers under one label in a single document.
               f"- 规则总数 **{rc.get('n_rules', '?')}**, 其中 **{rc.get('n_with_executable_trigger', 0)}** "
-              "条带有可执行的触发式, 因而可以真正拿到语料上跑一遍", "",
+              "条写了触发式 (能否真正拿到语料上跑, 见 §3.6 的校验结果)", "",
               "**为什么要实测而不是比对措辞。** 两条规则可以用完全不同的说法描述**重叠的**"
               "条件, 却指向不同的类目 —— 标注者遇到落在重叠区的 query 时会同时收到两条"
               "互相矛盾的指令。比措辞看不出这一点; 把触发式跑到语料上就能看出来。", ""]
@@ -375,9 +383,29 @@ def build(state: Any, deps: Any) -> str:
               "两者算在**不同的总体**上: 金标准被刻意富集了需要裁判裁定的争议行, "
               "而对抗验证是从语料中随机抽样, 因此抽到的多数是容易的行。", ""]
         if cvacc is not None and acc is not None:
-            L += [f"本次对抗验证 ({num(acc)}) **高于**交叉验证 ({num(cvacc)}), "
-                  "正是这个原因造成的 —— 不能读作「模型比交叉验证显示的更好」。"
-                  "正确的读法是: **在典型流量上, 预测大多是可辩护的**。", ""]
+            # THE DIRECTION WAS HARDCODED, AND THE EXPLANATION WITH IT.
+            #
+            # `高于` was a literal, so live40 shipped "对抗验证 (0.82) 高于交叉验证
+            # (0.8625)" — false — followed by a causal story that only holds when
+            # adversarial IS higher. The two readings are not symmetric and the
+            # lower one is the concerning one, so it needs its own sentence
+            # rather than the same paragraph with a word swapped.
+            if acc > cvacc:
+                L += [f"本次对抗验证 ({num(acc)}) **高于**交叉验证 ({num(cvacc)}), "
+                      "正是这个原因造成的 —— 不能读作「模型比交叉验证显示的更好」。"
+                      "正确的读法是: **在典型流量上, 预测大多是可辩护的**。", ""]
+            elif acc < cvacc:
+                L += [f"本次对抗验证 ({num(acc)}) **低于**交叉验证 ({num(cvacc)})。", "",
+                      "> ⚠️ **这是两者中更值得注意的方向。** 上面那条「金标准更难、"
+                      "对抗抽样更容易」的解释只能说明对抗验证**高于**交叉验证的情形; "
+                      "这里方向相反, 所以它解释不了。可能的读法有两种, 本流程无法区分: "
+                      "**(a)** 交叉验证是在被裁定过的金标准上做的折外评估, 那批行的标签"
+                      "本身经过裁判统一, 因此比典型流量更「自洽」, 折外准确率偏乐观; "
+                      "**(b)** 对抗 agent 在随机流量上确实找到了折外评估看不到的错误。", "",
+                      "无论哪一种, **不要把交叉验证准确率当作上线后的预期准确率** —— "
+                      f"在随机抽样的典型流量上, 可辩护率是 {num(acc)}。", ""]
+            else:
+                L += [f"本次对抗验证与交叉验证同为 {num(acc)}。", ""]
         scan = adv.get("knn_label_scan") or {}
         if scan:
             L += ["### 5.1 近邻标签扫描 (仅供人工复核)", "",

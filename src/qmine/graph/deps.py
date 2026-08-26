@@ -13,6 +13,7 @@ mean re-reading 150 MB from disk a dozen times per run.
 from __future__ import annotations
 
 import logging
+import threading
 import time
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -45,20 +46,35 @@ class Deps:
     _cache: dict[str, Any] = field(default_factory=dict, repr=False)
     _decision_seq: int = 0
     _prescription_seq: int = 0
+    #: `Deps` is shared by every node, and the graph runs the top-down and
+    #: bottom-up branches CONCURRENTLY. Three things here are read-modify-write
+    #: and were safe only while the graph was a strict chain:
+    #:
+    #: * the id counters — `+= 1` is not atomic, and p2a and p7_audit both raise
+    #:   prescriptions, so two branches could be handed the same id;
+    #: * `_cache` — `if key in cache: ... else: rebuild()` lets two branches both
+    #:   miss and both rebuild, which for `recover()` means paying twice for the
+    #:   same artifact;
+    #: * `firewall` — armed in p7 from the taxonomy.
+    #:
+    #: Re-entrant because `recover()` calls `emit()` and `has()` while holding it.
+    _lock: Any = field(default_factory=threading.RLock, repr=False)
     #: Progress lines surfaced to the CLI as the run proceeds.
     on_event: Any = None
 
     # -- artifact access ----------------------------------------------------
     def load(self, name: str) -> Any:
         """Load an artifact by logical name, memoised for the process lifetime."""
-        if name in self._cache:
-            return self._cache[name]
-        value = self.store.load(name)
-        self._cache[name] = value
-        return value
+        with self._lock:
+            if name in self._cache:
+                return self._cache[name]
+        value = self.store.load(name)          # I/O outside the lock
+        with self._lock:
+            return self._cache.setdefault(name, value)
 
     def cache_put(self, name: str, value: Any) -> None:
-        self._cache[name] = value
+        with self._lock:
+            self._cache[name] = value
 
     def recover(self, key: str, artifact: str, rebuild: Any = None, default: Any = None) -> Any:
         """Get a value from process memory, or rebuild it from the artifact store.
@@ -75,14 +91,15 @@ class Deps:
         it needs from disk. Anything read through this helper can; anything read
         through a bare ``_cache.get`` cannot.
         """
-        if key in self._cache:
-            return self._cache[key]
-        if self.store.has(artifact):
-            raw = self.store.load(artifact)
-            value = rebuild(raw) if rebuild else raw
-            self._cache[key] = value
-            self.emit(f"  recovered {key!r} from artifact {artifact!r} (resumed run)")
-            return value
+        with self._lock:
+            if key in self._cache:
+                return self._cache[key]
+            if self.store.has(artifact):
+                raw = self.store.load(artifact)
+                value = rebuild(raw) if rebuild else raw
+                self._cache[key] = value
+                self.emit(f"  recovered {key!r} from artifact {artifact!r} (resumed run)")
+                return value
         return default
 
     def has(self, name: str) -> bool:
@@ -191,9 +208,14 @@ class Deps:
         is a projection of these records, and a report that cannot show what
         lost is asking to be trusted rather than showing its work.
         """
-        self._decision_seq += 1
+        # The id must be READ inside the lock too: incrementing atomically and
+        # then reading the field is still a race — a sibling branch can bump it
+        # between the two, and both decisions ship with the same id.
+        with self._lock:
+            self._decision_seq += 1
+            _seq = self._decision_seq
         rec = DecisionRecord(
-            id=f"D{self._decision_seq:03d}",
+            id=f"D{_seq:03d}",
             phase=phase,
             question=question,
             choice=choice,
@@ -229,8 +251,13 @@ class Deps:
         return rec
 
     def next_prescription_id(self) -> str:
-        self._prescription_seq += 1
-        return f"P{self._prescription_seq:03d}"
+        # p2a and p7_audit both raise prescriptions and now sit in CONCURRENT
+        # branches. `+= 1` is a read-modify-write, so without this two of them
+        # can carry the same id — and a prescription is matched to its executed
+        # change by id, so a collision silently merges two different remedies.
+        with self._lock:
+            self._prescription_seq += 1
+            return f"P{self._prescription_seq:03d}"
 
     # -- gates ---------------------------------------------------------------
     def gate(

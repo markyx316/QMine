@@ -578,3 +578,51 @@ def _centroids_for(X, labels):
         if m.any():
             cents[c] = X[m].mean(0)
     return normalize(cents)
+
+
+def p456_tree(state: PipelineState, deps: Deps) -> dict[str, Any]:
+    """p4 → p5 → p6 as ONE graph node, so the two branches are the same length.
+
+    Nothing moves into here: the three phases are called unchanged and their
+    returns are merged. The reason this exists is scheduling, and it is worth
+    stating precisely because it looks like a cosmetic wrapper.
+
+    LangGraph 1.2.11 advances parallel branches in SUPERSTEPS — measured, not
+    assumed: a branch waits for the slowest node of each step before starting its
+    next one, and a fan-in node fires once per incoming edge unless all of them
+    arrive in the same step. So the cost of a fork is decided by how the phases
+    are grouped, not by their total work.
+
+    Against live39's real timings — p2a 38 min, p2b 69 min, p3 10, p4 7, p5 14,
+    p6 8 — the groupings compare like this::
+
+        p3 | p4 | p5 | p6   vs  p2a | p2b | noop | noop   ->  38+69+14+8 = 129
+        p3 | p4+p5 | p6     vs  p2a | p2b | noop          ->  38+69+8    = 115
+        p3 | p4+p5+p6       vs  p2a | p2b                 ->  38+69      = 107
+
+    Two nodes against two is the only grouping where the ENTIRE bottom-up branch
+    disappears into the shadow of p2b, and it is also the only one where the join
+    at `p2c` receives both edges in the same superstep. `_wrap`'s idempotence
+    guard covers the join in any case; this makes the fast path the correct one.
+
+    The three phases keep their own gates, decisions, observers and artifacts —
+    a node may return as many as it likes, and dropping any of them is the
+    documented way an observer's verdict reaches the log and no operator.
+    """
+    merged: dict[str, Any] = {}
+    for fn in (p4_battery, p5_granularity, p6_hierarchy):
+        if state.get("halted"):
+            break
+        out = fn({**state, **merged}, deps) or {}
+        for key, value in out.items():
+            if key in ("artifacts", "gates", "metrics", "phase_status"):
+                merged.setdefault(key, {}).update(value)
+            elif key in ("events", "decisions", "prescriptions", "completed_phases",
+                         "errors", "warnings"):
+                merged.setdefault(key, []).extend(value)
+            else:
+                merged[key] = value
+    # `phase` is whatever the last one asked for; the graph's edges decide the
+    # route, and leaving three conflicting values in the merge would be noise.
+    merged["phase"] = "p2c"
+    return merged

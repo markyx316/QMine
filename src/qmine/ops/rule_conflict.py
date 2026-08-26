@@ -137,7 +137,11 @@ class ConflictReport:
             "measured_overlaps": [o.as_record() for o in self.overlaps],
             "crowded_class_pairs": self.crowded_pairs,
             "unparseable_triggers": self.bad_regex,
-            "rules_whose_then_is_not_a_class": sorted(set(self.unkeyed_then)),
+            # Scoped in the name: only the rules encountered while comparing
+            # candidate pairs, which is a strict subset of the rules on a
+            # measured boundary. See `rules_against_evidence.as_record`.
+            "rules_in_compared_pairs_whose_then_is_not_a_class":
+                sorted(set(self.unkeyed_then)),
             "note": ("Overlaps are MEASURED on the corpus, not inferred from wording. "
                      "Nothing is withheld: a large overlap means the boundary needs a "
                      "tie-break for that region, not that both rules are wrong."),
@@ -462,8 +466,18 @@ class RuleEvidenceReport:
             "n_lexical_rules": self.n_lexical,
             "n_semantic_rules": self.n_semantic,
             "n_triggers_rejected": self.n_rejected_triggers,
-            "rules_whose_then_is_not_a_class": sorted(set(self.unkeyed_then)),
+            # NAMED for the population it actually covers. `find_conflicts`
+            # records only the rules it met while comparing PAIRS; this one
+            # records every rule on a measured boundary. Two different
+            # populations under one field name read as a contradiction — the
+            # p2b observer confirmed exactly that on live40.
+            "rules_on_measured_boundaries_whose_then_is_not_a_class":
+                sorted(set(self.unkeyed_then)),
+            # A count beside a truncated list is a self-contradicting artifact:
+            # live40 shipped `n_triggers_rejected: 13` next to 12 entries, and
+            # the observer proved it. Say what was cut.
             "rejected_triggers": self.rejected[:12],
+            "rejected_triggers_truncated": max(0, len(self.rejected) - 12),
             "boundaries": [b.as_record() for b in self.boundaries],
             "stated_grounds": [g.as_record() for g in self.stated_grounds],
             "boundaries_whose_stated_ground_separates_nothing":

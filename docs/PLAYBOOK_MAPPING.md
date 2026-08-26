@@ -11,17 +11,20 @@ merely intended.
 | 1 | Two routes, one axis each | [`nodes/topdown.py`](../src/qmine/graph/nodes/topdown.py), [`nodes/bottomup.py`](../src/qmine/graph/nodes/bottomup.py) | `labels_full.csv` carries `td_l1` and `bu_family_final` as separate columns; neither node writes the other's |
 | 2 | The data — and the reviewer — hold a veto | [`build.py::_make_review_node`](../src/qmine/graph/build.py) | `interrupt()` at review points; a rejection writes to the `rejections` namespace and routes to a **new generation**, never a patch |
 | 3 | Metrics must not betray the objective | [`records.py::METRIC_AUTHORITY`](../src/qmine/records.py), [`panel.py`](../src/qmine/ops/panel.py), [`cluster.py::choose_local_k`](../src/qmine/ops/cluster.py) | `decisive_ranking()` **raises** on an advisory metric, so silhouette can select nothing *through the panel*. It does rank at one place — k inside a single fixed representation, where its phrasing bias is a constant offset — and there `choose_local_k` requires the split to beat a structureless reference first, and overrules silhouette when a lead inside its noise costs real reproducibility |
-| 4 | Stability over any single internal metric | [`cluster.py::replay_stability`](../src/qmine/ops/cluster.py), [`cluster.py::choose_local_k`](../src/qmine/ops/cluster.py) | Across representations (encoder, α) the selection key is `stability_ari` and fragmentation; silhouette has no vote, because its bias tracks the very quantity being varied. Within one representation (local k) silhouette ranks and stability holds a veto over bad trades. Note the citation limit: von Luxburg 2010 positions stability as a *screen*, and its guarantees are argued for K on the order of 10, not 100 |
+| 4 | Stability is a **veto**, not a ranker | [`cluster.py::replay_stability`](../src/qmine/ops/cluster.py), [`cluster.py::choose_local_k`](../src/qmine/ops/cluster.py) | **Measured: stability's seed-to-seed sd (~0.10 ARI) is twice the gap between adjacent K (~0.05), so ranking by it reads noise — and the noise leans coarse.** It therefore only *vetoes* a K that cannot be reproduced at all; K itself is located by intent alignment (AMI against phrasing groups), the one metric here with a two-sided penalty and thus an interior optimum. Silhouette has no vote across representations, because its bias tracks the very quantity being varied; within one representation (local k) it ranks and stability vetoes bad trades. von Luxburg 2010 positions stability as a *screen* — this is now consistent with that, and the old "stability peak" wording was the overreach |
 | 5 | Blind review defeats anchoring | [`memory/context.py`](../src/qmine/memory/context.py), [`nodes/naming.py`](../src/qmine/graph/nodes/naming.py) | `Send` payload isolation (structural) **+** `BlindnessFirewall.assert_blind()` (lexical); both tested |
 | 6 | Governance executed, not recorded | [`ops/governance.py`](../src/qmine/ops/governance.py) | `assert_all_settled()` raises on any `proposed` prescription, and runs before reports are written |
 | 7 | Uniform panel, deterministic display | [`panel.py::UniformPanel`](../src/qmine/ops/panel.py), [`determinism.py::median_index_exemplar`](../src/qmine/determinism.py) | `comparison_table()` refuses to mix `panel_id`s; exemplars are a pure function of the hit set |
 | 8 | Everything reproducible | [`determinism.py`](../src/qmine/determinism.py), [`artifacts.py`](../src/qmine/artifacts.py) | seed policy in the manifest; append-only generations; content-addressed memo cache |
-| 9 | Granularity by triangulation | [`cluster.py::triangulate_k`](../src/qmine/ops/cluster.py) | three independent estimators; on disagreement it takes the stability peak **and records the dissent** |
+| 9 | Granularity by triangulation | [`cluster.py::triangulate_k`](../src/qmine/ops/cluster.py) | three independent estimators; **on disagreement it takes the intent-alignment optimum and records the dissent** — not the stability peak, which has no resolving power here. Ties are decided against a measured noise floor and the whole tie set is reported |
 | 10 | Risk isolated, always | [`ops/audit.py::screen_risk`](../src/qmine/ops/audit.py), `risk_sentinel` role | pre-screen + independent sentinel + `isolate_leaves()` executed as a lookup remap |
-| 11 | Every category is a `user_need` sentence | [`records.py::TaxonomyNode`](../src/qmine/records.py), [`LeafNaming`](../src/qmine/records.py) | required field on both label systems; `Leaf_Catalogue.md` lists all of them |
+| 11 | Every category is a `user_need` sentence | [`records.py::TaxonomyNode`](../src/qmine/records.py), [`LeafNaming`](../src/qmine/records.py) | required field on both label systems; `叶清单.md` lists all of them, and flags any delivered leaf that has none |
 | 12 | Report the model's limits | [`report/builder.py`](../src/qmine/report/builder.py) | mandatory "what these numbers do not mean" section; asserted by a test |
+| 13 | Agents describe; measured quantities decide | [`ops/checks.py`](../src/qmine/ops/checks.py), [`ops/findings.py`](../src/qmine/ops/findings.py), [`ops/edits.py`](../src/qmine/ops/edits.py), [`ops/propose.py`](../src/qmine/ops/propose.py), [`agents/verify.py`](../src/qmine/agents/verify.py) | Four doors, each with a mechanical guardrail, none able to change a parameter: prose checked value-by-value against a fact sheet; an observation must cite a *resolving* artifact path and may carry a machine-evaluable assertion (confirmed = the assertion failed, and only then may it block); grid proposals made blind to every score, so pre-registered; deliverable edits anchored, sourced from the cited artifact, language-checked — and refusals printed beside the applied edits. Findings live at the **run** root and close only when their own assertion holds again |
 
 ## The twelve phases
+
+> The two routes now run **concurrently** — `build_graph` forks at p1 and joins at p2c. See `.claude/rules/graph-and-state.md` for the superstep constraints that decide how much that saves.
 
 | phase | node | core module | key artifacts |
 |---|---|---|---|
@@ -69,7 +72,7 @@ merely intended.
 |---|---|
 | phrasing seeds, risk categories, tokenizer, n-grams, encoder candidates, expected sizes | `configs/domains/*.yaml` |
 | **α** | re-run the sweep; `configs` deliberately has no `alpha` field to inherit |
-| family K | re-scan the stability peak |
+| family K | re-run the K-sweep and re-locate (AMI optimum; stability vetoes only) |
 
 Five profiles ship: `k12_zh`, `finance_zh`, `sports_zh`, `politics_zh`,
 `ecommerce_en`. See the [`qmine-new-domain`](../skills/qmine-new-domain/SKILL.md)
@@ -104,7 +107,7 @@ steps, and an audit that only checks "Phase 2: done" hides the ones that are not
 | P3b char TF-IDF + SVD | `p3_represent` | [`ops/represent.py`](../src/qmine/ops/represent.py) |
 | P3c hybrid + α-sweep | `p3_represent` | α² algebra documented; silhouette explicitly vote-less |
 | P4 algorithm battery | `p4_battery` | [`ops/cluster.py`](../src/qmine/ops/cluster.py) — density methods screened separately |
-| P5 K triangulation | `p5_granularity` | stability peak + DeepAligned survival + domain prior, judged separately |
+| P5 K triangulation | `p5_granularity` | intent-alignment optimum + DeepAligned survival + domain prior, judged separately; stability vetoes, never ranks |
 | P6 two-level tree + refinement + held-out | `p6_hierarchy` | gate uses a confidence interval, not a point estimate |
 | P7 blind naming + tree audit | `p7_prepare` → `p7_name_shard` (Send) → `p7_audit` | [`nodes/naming.py`](../src/qmine/graph/nodes/naming.py) + firewall |
 | P8 governance executed | `p8_governance` | [`ops/governance.py`](../src/qmine/ops/governance.py) — run fails on any unexecuted prescription |

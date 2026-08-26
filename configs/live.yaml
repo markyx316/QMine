@@ -22,6 +22,33 @@ llm:
     - google
     - mistral
     - sakana
+  # THE CAPABILITY SIGNAL THE ROUTER OTHERWISE LACKS.
+  #
+  # `TIER_PERCENTILES` derives capability from PRICE PERCENTILE, and `_score`
+  # caps capability credit at what the role requires — so among candidates at or
+  # above the bar the CHEAPEST always wins. Across the labs this file allows,
+  # price does not rank capability: not one Chinese model rates `frontier`
+  # (every frontier slot is a Western model excluded below), and
+  # `deepseek-v4-pro`, `glm-5.2`, `qwen3.8-max` and `kimi-k3` all land in a
+  # single `strong` band. Asking for a higher tier therefore buys nothing.
+  #
+  # Measured cost of leaving it to price: the referee got `glm-4.5-airx` over
+  # `glm-5.2` on $0.30/M of input, and chose annotator_a on 55.1% of contested
+  # rows where glm-5.2 chose it on 78.3% — near chance, which is what an
+  # adjudicator that cannot discriminate looks like.
+  #
+  # This list gates the candidate set for run/phase blast-radius roles; price
+  # still breaks ties INSIDE it, and still governs the high-volume contained
+  # roles where cheap-and-adequate is genuinely right. It is cheaper to maintain
+  # than pinning every role, and it degrades: if none is eligible for a role the
+  # router says so and falls back rather than leaving the role unserved.
+  #
+  # Add a model here only after a run has actually exercised it.
+  capable_models:
+    - kimi-k3
+    - deepseek-v4-pro
+    - qwen3.8-max
+    - glm-5.2
   # Pin by the BARE model id. `deepseek/deepseek-v4-pro` exists as a card id for
   # BOTH the direct provider and the aggregator, and `by_id` is a dict — last one
   # wins, which silently routed these through OpenRouter.
@@ -43,7 +70,50 @@ llm:
     # "explicit" with api_model=None, and died in `init_chat_model`. Verified:
     # bare -> provider `qwen` (DIRECT, what this pin is for);
     # `qwen/...` -> provider `openrouter` (the gateway this pin exists to avoid).
-    annotator_b: qwen3-next-80b-a3b-instruct
+    # `qwen3.7-plus`, chosen by a human from an independent evaluation — which is
+    # the only real capability signal available. Nothing in this repo can produce
+    # one: the catalogue carries prices and context windows, and inferring
+    # capability from price is the failure `capable_models` above exists to
+    # correct. An earlier revision of this line held `qwen-plus`, picked by
+    # sorting qwen-lab models by price and taking the one nearest annotator_a's.
+    # That was not a judgement and it was reverted.
+    #
+    # Verified before pinning: bare `qwen3.7-plus` -> provider `qwen` (DIRECT,
+    # not the OpenRouter gateway this file avoids), lab `qwen` (so independence
+    # from annotator_a=deepseek and referee=zhipu holds), 991,808 context,
+    # structured output supported, 65,536 max output.
+    #
+    # KNOWN GAP: the direct card publishes NO PRICE. The estimate and the spend
+    # ledger both price from the routed model's own card, so this role — the
+    # highest-volume in the pipeline at ~256 calls — reads as $0 until the
+    # catalogue carries a rate for it. `p1`/`models` now warn about that rather
+    # than showing a confident zero. The OpenRouter card has a price ($0.32/$1.28)
+    # if an accurate estimate matters more than avoiding the gateway.
+    annotator_b: qwen3.7-plus
+    # `deepseek-v4-flash`, deliberately, not the lab's flagship. It is already the
+    # p2b bottleneck at 83.4s per call over ~264 calls, and `pro` is a reasoning
+    # model — the schedule cost is real and the quality case for it was never
+    # measured. What the evidence supports is that the two annotators must MATCH,
+    # not that both must be maximal, so annotator_b is matched to this instead.
+    annotator_a: deepseek-v4-flash
+    # PINNED, and it was the most consequential unpinned role in the file.
+    #
+    # The comment below says the referee stays on Zhipu for independence, and it
+    # does — but independence only constrains the LAB, not which model within it.
+    # The router then picked the cheapest Zhipu model clearing `strong`:
+    # `glm-4.5-airx`, an "air" lightweight, over `glm-5.2` on a $0.30/M input
+    # difference (airx is actually DEARER on output). That is not a capability
+    # judgement; `TIER_PERCENTILES` infers tier from PRICE PERCENTILE, and across
+    # Chinese labs price does not rank capability at all — not one Chinese model
+    # in the catalogue rates `frontier`, because every frontier slot is taken by
+    # a Western model this file excludes.
+    #
+    # Measured consequence, same annotators both runs: glm-5.2 chose annotator_a
+    # on 78.3% of contested rows (z=+12.1); glm-4.5-airx on 55.1% (z=+2.2).
+    # `glm-5.2` resolves bare to provider `qwen` (Alibaba's gateway) but LAB
+    # zhipu, so independence from annotator_a (deepseek) and annotator_b (qwen)
+    # holds — and it is the exact model live38 adjudicated well with.
+    referee: glm-5.2
     # The router picked `glm-5-code` for both of these on price, and this account
     # gets 403 "您无权访问glm-5-code" — the model is listed in the catalogue but
     # not entitled. Both roles fail safe (the interpreter ships a section with no
@@ -61,5 +131,31 @@ llm:
     # live39 hit a 400 at step 0 (tools never used) and both logged "2 tool loop
     # failures". glm-5.2 is what live38 actually searched the web with.
     researcher: glm-5.2
+    # THE CRITIC ROLES, ON A LAB USED NOWHERE ELSE.
+    #
+    # These three exist to find what the rest of the pipeline got wrong, and all
+    # three were landing on `deepseek-v4-pro` — the SAME MODEL as the architect,
+    # critic and tree_auditor whose output the observer reviews. `agents/verify`
+    # already records why that is a problem: LLM judges show self-preference
+    # worth roughly 10-25%, so a reviewer marking its own lab's homework is
+    # systematically kinder to it. The adversary had the same overlap with
+    # annotator_a's lab.
+    #
+    # `moonshot` is used by no other role here, so these three are independent of
+    # deepseek (architect, annotator_a, interpreter, proposer), qwen
+    # (annotator_b) and zhipu (referee, researcher).
+    #
+    # PINNED TO THE OPENROUTER CARD ID ON PURPOSE. Bare `kimi-k3` resolves to
+    # provider `moonshot`, for which this project has no key — it would fail the
+    # way the old `dashscope/...` pin did. `moonshotai/kimi-k3` is the id of the
+    # only reachable card. OpenRouter is slower, which is why the annotators
+    # avoid it; these three make ~22 calls between them, so the latency is noise.
+    #
+    # Costs more per token ($3.0/$15.0) than anything else here. That is the
+    # right trade for roles whose failure mode is SILENT: a weak observer finds
+    # nothing and reports that as reassurance.
+    observer: moonshotai/kimi-k3
+    delivery_auditor: moonshotai/kimi-k3
+    adversary: moonshotai/kimi-k3
     interpreter: deepseek-v4-pro
     proposer: deepseek-v4-pro

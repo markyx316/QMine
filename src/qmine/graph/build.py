@@ -37,24 +37,46 @@ log = logging.getLogger("qmine.graph")
 
 #: Phase order, and the node that implements each.
 #:
-#: Note the placement of ``p3_represent`` *between* the gold set and the
-#: classifier. The playbook draws the two routes as parallel branches, and they
-#: are conceptually independent — but Phase 2c's feature recipe concatenates the
-#: dense embedding chosen by Phase 3a, so the top-down classifier genuinely
-#: cannot be built before the bottom-up route has picked an encoder. Taxonomy
-#: design and gold annotation (2a, 2b) need no embedding and stay first.
+#: THE TWO ROUTES RUN CONCURRENTLY, AND THE BRANCH SHAPES ARE LOad-BEARING.
+#:
+#: The playbook draws top-down and bottom-up as parallel branches; the graph used
+#: to run them as one chain, so the whole bottom-up route waited for the gold set.
+#: Measured on live39: p2a 38 min + p2b 69 min = 107 min of provider latency in
+#: front of 39 min of bottom-up CPU work that depends on none of it.
+#:
+#: The real dependency, derived from what the nodes actually read: `p3_represent`
+#: consumes only `template_groups`, from p1. `p2c_classifier` is the genuine join
+#: — its feature recipe concatenates the dense embedding p3 selects, and it needs
+#: the gold set from p2b.
+#:
+#: `BRANCHES` must stay the same LENGTH. langgraph 1.2.11 advances parallel
+#: branches in supersteps and a fan-in node fires once per incoming edge unless
+#: they all arrive in the same step; equal lengths make `p2c` receive both at
+#: once. `_wrap` also guards on `phase_status`, so an imbalance costs wall clock
+#: rather than a double-trained classifier — but the balance is what makes the
+#: schedule good, and `test_the_two_branches_stay_the_same_length` pins it.
+TOPDOWN_BRANCH: list[tuple[str, Callable]] = [
+    ("p2a_taxonomy", topdown.p2a_taxonomy),
+    ("p2b_gold", topdown.p2b_gold),
+]
+BOTTOMUP_BRANCH: list[tuple[str, Callable]] = [
+    ("p3_represent", bottomup.p3_represent),
+    # p4 + p5 + p6 in one node: see `bottomup.p456_tree` for why this grouping
+    # and not another. Two-against-two is the only one that hides the whole
+    # bottom-up branch inside p2b.
+    ("p456_tree", bottomup.p456_tree),
+]
+#: Where the branches join, and everything after it.
+JOIN_NODE = "p2c_classifier"
+
 PHASE_NODES: list[tuple[str, Callable]] = [
     ("p0_foundation", foundation.p0_foundation),
     ("p1_audit", foundation.p1_audit),
-    ("p2a_taxonomy", topdown.p2a_taxonomy),
-    ("p2b_gold", topdown.p2b_gold),
-    ("p3_represent", bottomup.p3_represent),
+    *TOPDOWN_BRANCH,
+    *BOTTOMUP_BRANCH,
     ("p2c_classifier", topdown.p2c_classifier),
     ("p2d_validate", topdown.p2d_validate),
     ("p2e_subintents", topdown.p2e_subintents),
-    ("p4_battery", bottomup.p4_battery),
-    ("p5_granularity", bottomup.p5_granularity),
-    ("p6_hierarchy", bottomup.p6_hierarchy),
     ("p7_prepare", naming.p7_prepare),
     # p7_name_shard is reached only by Send
     ("p7_audit", naming.p7_audit),
@@ -63,6 +85,14 @@ PHASE_NODES: list[tuple[str, Callable]] = [
     ("p10_deploy", delivery.p10_deploy),
     ("p11_report", delivery.p11_report),
     ("p12_maintain", delivery.p12_maintain),
+]
+
+#: The strictly sequential tail: everything from the join onwards.
+SEQUENTIAL_TAIL: list[str] = [
+    n for n, _ in PHASE_NODES
+    if n not in {"p0_foundation", "p1_audit"}
+    and n not in {x for x, _ in TOPDOWN_BRANCH}
+    and n not in {x for x, _ in BOTTOMUP_BRANCH}
 ]
 
 #: Where a human is asked to look before the run continues (Principle 2).
@@ -84,6 +114,21 @@ def _wrap(fn: Callable, deps: Deps, name: str) -> Callable:
     @functools.wraps(fn)
     def node(state: PipelineState) -> dict[str, Any]:
         if state.get("halted"):
+            return {}
+        # A FAN-IN NODE CAN BE INVOKED ONCE PER INCOMING EDGE.
+        #
+        # Measured on langgraph 1.2.11: a node with two incoming edges runs once
+        # if both edges arrive in the same superstep, and once PER EDGE if they
+        # do not. `p2c_classifier` is the join of the top-down and bottom-up
+        # branches, so the moment those branches differ in length — which any
+        # future phase addition would do — it would train the classifier twice
+        # and register every artifact twice.
+        #
+        # Guarding on the phase's own recorded status makes that structural
+        # rather than a property of how the branches happen to be balanced. It is
+        # safe on resume: `thread_id` is per GENERATION, so a new generation
+        # starts with an empty `phase_status` and re-runs everything it should.
+        if (state.get("phase_status") or {}).get(name) == "ok":
             return {}
         try:
             out = fn(state, deps) or {}
@@ -260,6 +305,22 @@ def _review_payload(state: PipelineState, deps: Deps, gate_name: str) -> dict[st
     return base
 
 
+def _wire_tail(g: Any, deps: Deps, _route: Callable) -> None:
+    """Everything from the join onwards — a strict chain, both topologies."""
+    for idx, name in enumerate(SEQUENTIAL_TAIL):
+        nxt = SEQUENTIAL_TAIL[idx + 1] if idx + 1 < len(SEQUENTIAL_TAIL) else END
+        # Phase 7 fans out to the naming shards before the audit.
+        if name == "p7_prepare":
+            g.add_conditional_edges(
+                "p7_prepare",
+                lambda s: naming.fan_out_namers(s, deps) if not s.get("halted") else "p7_audit",
+                ["p7_name_shard", "p7_audit"],
+            )
+            g.add_edge("p7_name_shard", "p7_audit")
+            continue
+        _route(name, nxt)
+
+
 def build_graph(
     cfg: QMineConfig,
     deps: Deps,
@@ -286,39 +347,48 @@ def build_graph(
         if gate_name in review_points:
             g.add_node(f"review_{gate_name}", _make_review_node(deps, gate_name, node_name))
 
-    def _next_after(current: str) -> str:
-        order = [n for n, _ in PHASE_NODES]
-        i = order.index(current)
-        return order[i + 1] if i + 1 < len(order) else END
-
     g.add_edge(START, "p0_foundation")
-    order = [n for n, _ in PHASE_NODES]
-    for idx, name in enumerate(order):
-        nxt = order[idx + 1] if idx + 1 < len(order) else END
 
-        # Phase 7 fans out to the naming shards before the audit.
-        if name == "p7_prepare":
-            g.add_conditional_edges(
-                "p7_prepare",
-                lambda s: naming.fan_out_namers(s, deps) if not s.get("halted") else "p7_audit",
-                ["p7_name_shard", "p7_audit"],
-            )
-            g.add_edge("p7_name_shard", "p7_audit")
-            continue
-
+    def _route(name: str, nxt: str) -> None:
+        """Wire one node onward through the gate router, via review if configured."""
         gate = HUMAN_REVIEW_AFTER.get(name)
         target = f"review_{gate}" if gate and gate in review_points else nxt
-        g.add_conditional_edges(
-            name,
-            _gate_router,
-            {"continue": target, "halt": "halt"},
-        )
+        g.add_conditional_edges(name, _gate_router, {"continue": target, "halt": "halt"})
         if gate and gate in review_points:
-            g.add_conditional_edges(
-                f"review_{gate}",
-                _gate_router,
-                {"continue": nxt, "halt": "halt"},
-            )
+            g.add_conditional_edges(f"review_{gate}", _gate_router,
+                                    {"continue": nxt, "halt": "halt"})
 
+    # p0 -> p1, then p1 FORKS.
+    _route("p0_foundation", "p1_audit")
+
+    td = [n for n, _ in TOPDOWN_BRANCH]
+    bu = [n for n, _ in BOTTOMUP_BRANCH]
+    if not getattr(cfg, "concurrent_branches", True) or not bu:
+        # The strict chain, as it was before the fork: the bottom-up branch runs
+        # after the top-down one instead of beside it. Same phases, same order
+        # within each branch, no overlap — so a comparison between the two
+        # schedules changes only the scheduling.
+        chain = td + bu
+        for i, name in enumerate(chain):
+            _route(name, chain[i + 1] if i + 1 < len(chain) else JOIN_NODE)
+        _route("p1_audit", chain[0])
+        _wire_tail(g, deps, _route)
+        g.add_edge("halt", END)
+        return g.compile(checkpointer=checkpointer, store=store, name="qmine-pipeline")
+    # Both heads are reached from p1. To start several branches from one node the
+    # ROUTER returns a list of node names — a path map whose *value* is a list is
+    # rejected at compile time ("unhashable type: 'list'"). The router still gets
+    # to halt the run before either branch begins.
+    g.add_conditional_edges(
+        "p1_audit",
+        lambda st: "halt" if _gate_router(st) == "halt" else [td[0], bu[0]],
+        [td[0], bu[0], "halt"],
+    )
+    # Inside each branch, node i -> node i+1; the last one joins.
+    for branch in (td, bu):
+        for i, name in enumerate(branch):
+            _route(name, branch[i + 1] if i + 1 < len(branch) else JOIN_NODE)
+
+    _wire_tail(g, deps, _route)
     g.add_edge("halt", END)
     return g.compile(checkpointer=checkpointer, store=store, name="qmine-pipeline")

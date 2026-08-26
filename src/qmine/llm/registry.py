@@ -124,6 +124,42 @@ def summarize_return(value: Any) -> str:
     return (counts + (f" · {sample}" if sample else ""))[:140]
 
 
+def _plan_lines(plan: Any) -> list[str]:
+    """One line per role, plus every warning the router attached.
+
+    Kept in the LLM layer rather than the CLI so it reaches the run log, the
+    dashboard and a headless run alike — the places an operator actually looks
+    when a run is already going.
+    """
+    from .router import lab_of
+
+    rows = sorted(plan.assignments.items(), key=lambda kv: -kv[1].estimated_cost_usd)
+    width = max((len(r) for r, _ in rows), default=8)
+    out = ["  role assignments for this run (model · lab · est. calls · est. $):"]
+    for role, a in rows:
+        if not a.model:
+            out.append(f"    {role:<{width}}  [UNSERVED]")
+            continue
+        out.append(f"    {role:<{width}}  {a.provider}:{a.model}  "
+                   f"lab={lab_of(a.model)}  {a.estimated_calls} calls  "
+                   f"${a.estimated_cost_usd:.3f}")
+    # The independence property double-blind annotation depends on, stated in the
+    # terms the rule is written in — by LAB, not by gateway, because two labs can
+    # reach you through one gateway and look identical in the column above.
+    trio = {r: lab_of(plan.assignments[r].model)
+            for r in ("annotator_a", "annotator_b", "referee")
+            if r in plan.assignments and plan.assignments[r].model}
+    if len(trio) == 3:
+        ok = len(set(trio.values())) == 3
+        out.append("    annotator/referee labs: "
+                   + ", ".join(f"{r.split('_')[-1]}={lab}" for r, lab in trio.items())
+                   + (" — independent" if ok else " — NOT INDEPENDENT"))
+    for role, a in rows:
+        for w in a.warnings:
+            out.append(f"    ! {role}: {w}")
+    return out
+
+
 class ModelRegistry:
     """Hands out models by role, accounts for usage, and caches responses."""
 
@@ -426,6 +462,7 @@ class ModelRegistry:
             self.plan = route(
                 cat, av.usable, requirements=scaled,
                 prefer=self.cfg.model_overrides or None,
+            capable_models=self.cfg.capable_models or (),
                 budget_usd=self.cfg.budget_usd,
                 prefer_chinese_native=self.cfg.prefer_chinese_native,
                 excluded_labs=self.cfg.excluded_labs,
@@ -458,6 +495,17 @@ class ModelRegistry:
             self.provider = "routed"
             log.info("routing plan: %d roles, estimated $%.2f, catalogue %s",
                      len(self._routed), self.plan.total_cost_usd, cat.sources)
+            # SHOW WHICH MODEL IS DOING WHICH JOB, BEFORE ANY OF IT HAPPENS.
+            #
+            # A run used to print one summary line, so the only way to learn that
+            # the referee was on a lightweight model — or that the observer was
+            # the same model as the architect it reviews — was to read
+            # `run_manifest.json` afterwards, or to run `qmine models` separately
+            # and hope the config matched. Both of those were discovered here the
+            # hard way. The plan is known before the first call; printing it costs
+            # nothing and is the last cheap moment to stop a misrouted run.
+            for line in _plan_lines(self.plan):
+                log.info("%s", line)
             self._probe_structured_output()
         except Exception as exc:  # noqa: BLE001
             log.warning("routing unavailable (%s); falling back to the static tiers", exc)

@@ -132,11 +132,25 @@ def test_a_bare_number_replacement_is_allowed_in_a_table_cell():
     assert ok, why
 
 
-def test_an_edit_its_own_check_refutes_is_refused():
-    """The auditor's own test says the artifacts already agree."""
-    ok, why = validate_edit(
-        _edit(check="hierarchy_meta.n_leaves == 39"), TEXTS, ARTIFACTS)
-    assert not ok and "already agree" in why
+def test_a_check_that_is_false_against_the_artifacts_refuses_the_edit():
+    """This test previously PINNED THE BUG.
+
+    It asserted that a check evaluating TRUE should refuse the edit — the
+    observation semantics, applied to an edit, where they are inverted. So the
+    suite was actively protecting the defect that rejected four correct
+    corrections on live40.
+
+    An edit's check states what the artifacts DO say. True means sourced;
+    false means the correction has no basis in the artifact it cites.
+    """
+    # `n_leaves` really is 39, so a correction to 39 IS sourced.
+    ok, why = validate_edit(_edit(check="hierarchy_meta.n_leaves == 39"), TEXTS, ARTIFACTS)
+    assert ok, f"a true, sourced check must permit the edit: {why}"
+
+    # A check the artifacts contradict means the edit is inventing its number.
+    bad, why2 = validate_edit(_edit(check="hierarchy_meta.n_leaves == 999"), TEXTS, ARTIFACTS)
+    assert not bad and "not sourced" in why2
+
 
 
 def test_an_edit_with_no_reason_is_refused():
@@ -335,3 +349,117 @@ def test_an_unfixable_finding_goes_through_the_same_verification_as_an_observati
     res = verified_observations(raw, ARTIFACTS)
     assert len(res.kept) == 1 and res.kept[0].artifact_key == "hierarchy_meta.n_leaves"
     assert len(res.dropped) == 2
+
+
+def test_an_edits_check_must_be_TRUE_because_it_states_what_the_artifacts_say():
+    """The semantics are the OPPOSITE of an observation's, and this was backwards.
+
+    An observation asserts what *should* hold, and the assertion FAILING confirms
+    a defect. An edit asserts what the artifacts *do* say — the ground truth the
+    document is being aligned to — so the assertion HOLDING is what makes the
+    correction well-founded.
+
+    Measured on live40: the auditor wrote
+    `adversarial_validation.estimated_accuracy == 0.82` (true) to fix a report
+    claiming adversarial accuracy was HIGHER than cross-validation when
+    0.82 < 0.8625. The edit was refused for being right, and the wrong claim
+    shipped. Three more correct fixes died the same way.
+    """
+    arts = {"metrics": {"accuracy": 0.82}}
+    texts = {"报告.md": "对抗验证准确率 0.90, 高于交叉验证。\n"}
+
+    sourced = ProposedEdit(
+        file="报告.md", anchor="对抗验证准确率 0.90, 高于交叉验证。",
+        replacement="对抗验证准确率 0.82, 低于交叉验证。",
+        reason="artifact 记录 0.82, 原文方向写反",
+        artifact_key="metrics", check="metrics.accuracy == 0.82")
+    ok, why = validate_edit(sourced, texts, arts)
+    assert ok, f"a correctly-sourced edit was refused: {why}"
+
+    unsourced = ProposedEdit(
+        file="报告.md", anchor="对抗验证准确率 0.90, 高于交叉验证。",
+        replacement="对抗验证准确率 0.82, 低于交叉验证。",
+        reason="x", artifact_key="metrics", check="metrics.accuracy == 0.99")
+    bad, why2 = validate_edit(unsourced, texts, arts)
+    assert not bad and "not sourced" in why2
+
+
+def test_the_auditor_can_cite_a_gate_and_a_finding_not_only_an_artifact():
+    """It is HANDED the gate ledger and the findings ledger and told to cite its
+    source — so refusing a gate citation as "unsourced" punished exactly the
+    behaviour the prompt asks for.
+
+    Gates live inside `run_summary.json`, not as a top-level artifact key. On
+    live40 that rejected 3 of the auditor's 4 correct corrections.
+    """
+    arts = {
+        "hierarchy_meta": {"n_leaves": 39},
+        "gates": {"p2b_kappa": {"status": "passed", "observed": {"n": 2982}}},
+        "findings": {"abc123": {"phase": "p8", "claim": "x", "evidence": "17"}},
+    }
+    texts = {"报告.md": "κ 在 2983 行上计算。\n另有 12 条处方。\n"}
+
+    from_gate = ProposedEdit(
+        file="报告.md", anchor="κ 在 2983 行上计算。", replacement="κ 在 2982 行上计算。",
+        reason="门记录的 n 是 2982", artifact_key="gates.p2b_kappa.observed",
+        check="gates.p2b_kappa.observed.n == 2982")
+    ok, why = validate_edit(from_gate, texts, arts)
+    assert ok, f"a gate citation was refused: {why}"
+
+    from_finding = ProposedEdit(
+        file="报告.md", anchor="另有 12 条处方。", replacement="另有 17 条处方。",
+        reason="findings 记录 17", artifact_key="findings.abc123")
+    ok2, why2 = validate_edit(from_finding, texts, arts)
+    assert ok2, f"a finding citation was refused: {why2}"
+
+    # The citation still has to SCOPE the numbers — a gate citation cannot
+    # licence a number that lives in a different gate.
+    stray = ProposedEdit(
+        file="报告.md", anchor="κ 在 2983 行上计算。", replacement="κ 在 39 行上计算。",
+        reason="x", artifact_key="gates.p2b_kappa.observed")
+    ok3, why3 = validate_edit(stray, texts, arts)
+    assert not ok3 and "39" in why3
+
+
+def test_the_driver_puts_gates_and_findings_into_the_citable_namespace(tmp_path, monkeypatch):
+    """Exercised through `audit_deliverables`, not by hand-building the dict.
+
+    Found by mutation: testing `validate_edit` with a namespace I assembled
+    myself proved nothing about whether the DRIVER assembles it — and the driver
+    is where the bug was. On live40 it handed the auditor the gate ledger, told
+    it to cite its source, and then refused every gate citation as unsourced.
+    """
+    from types import SimpleNamespace
+
+    import qmine.agents.roles as roles
+    from qmine.agents.audit_delivery import audit_deliverables
+
+    gen = tmp_path / "gen01"
+    gen.mkdir(parents=True)
+    (gen / "报告.md").write_text("κ 在 2983 行上计算。\n", encoding="utf-8")
+
+    class FakeAuditor:
+        def __init__(self, ctx): pass
+        def run(self, **kw):
+            return SimpleNamespace(
+                edits=[SimpleNamespace(
+                    file="报告.md", anchor="κ 在 2983 行上计算。",
+                    replacement="κ 在 2982 行上计算。",
+                    reason="门 p2b_kappa 记录的 n 是 2982",
+                    artifact_key="gates.p2b_kappa.observed",
+                    severity="warn", check="gates.p2b_kappa.observed.n == 2982")],
+                unfixable=[], dismissed=[], summary="")
+
+    monkeypatch.setattr(roles, "DeliveryAuditorAgent", FakeAuditor)
+
+    deps = SimpleNamespace(
+        cfg=SimpleNamespace(audit_delivery=True, fast_mode=False, report_language="zh"),
+        store=SimpleNamespace(root=tmp_path, gen_dir=gen),
+        run_id="t", emit=lambda m: None, agent_ctx=lambda: None)
+    state = {"gates": {"p2b_kappa": {"status": "passed", "observed": {"n": 2982}}}}
+
+    out = audit_deliverables(state, deps)
+
+    assert out["n_applied"] == 1, (
+        f"a gate-cited edit was refused: {[r['why'] for r in out.get('refused', [])]}")
+    assert "2982" in (gen / "报告.md").read_text(encoding="utf-8")

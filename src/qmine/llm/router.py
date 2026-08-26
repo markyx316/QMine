@@ -268,6 +268,38 @@ def _eligible(card: ModelCard, req: RoleRequirement, tier: str) -> tuple[bool, s
     return True, ""
 
 
+def _pin_warnings(role: str, chosen_id: str, card: Any, req: Any,
+                  fallbacks: list[str]) -> list[str]:
+    """What an operator must know about an explicitly pinned model.
+
+    A pin is an escape hatch that bypasses `_eligible` entirely, so the checks
+    that protect a routed choice do not run. Two of them matter enough to say out
+    loud, and both were found on real pins:
+
+    * **No published price.** `_eligible` refuses an unpriced card outright, as a
+      likely free tier, preview or meta-endpoint. A pin overrides that, and the
+      cost then reads $0.00 for however many calls the role makes while the spend
+      ledger — which prices from the same card — under-reports. `qwen3.7-plus` is
+      a genuine 991k-context direct model the catalogue simply carries no rate
+      for, so the override is reasonable; it still must not read as free.
+    * **No fallback.** A pin says which model to prefer, not that the run should
+      end when that provider has an outage. `observer` and `delivery_auditor`
+      need 200k of context and nothing reachable in another lab provides it, so
+      both would vanish on a single gateway outage — quietly, because each wraps
+      its own agent call and degrades rather than failing.
+    """
+    out: list[str] = []
+    if not card or card.input_per_mtok is None:
+        out.append(f"{chosen_id} publishes NO PRICE in the catalogue — the pin overrides "
+                   "`_eligible`'s exclusion of unpriced models. Its estimate reads $0.00 "
+                   "and the spend ledger will under-report: the cost is UNKNOWN, not free.")
+    if not fallbacks:
+        out.append(f"pinned with NO FALLBACK — nothing reachable meets this role's "
+                   f"{req.min_context_tokens:,}-token context need in another lab, so a "
+                   "single provider outage silently removes this role from the run")
+    return out
+
+
 def _pin_fallbacks(
     role: str, chosen_id: str, cards: Any, tiers: Any, req: Any,
     by_id: Any, assignments: Any,
@@ -312,7 +344,35 @@ def route(
     prefer: dict[str, str] | None = None,
     budget_usd: float | None = None,
     prefer_chinese_native: bool = False,
+    #: Accepted and ignored: a "same model, fewer hops" promotion already runs
+    #: after ranking, scoped to the SAME BARE MODEL. A scoring bonus on top of it
+    #: is not the same rule — it biases toward models whose lab happens to be
+    #: their own provider, which silently swapped `l2_interpreter` from a
+    #: deepseek model to a qwen one. Kept as a parameter so callers that pass it
+    #: do not break.
+    prefer_direct: bool = True,
     excluded_labs: Sequence[str] = (),
+    #: Bare model ids a human has judged capable. THE MISSING SIGNAL.
+    #:
+    #: `TIER_PERCENTILES` derives capability from PRICE PERCENTILE, and `_score`
+    #: caps capability credit at what the role requires — so among candidates at
+    #: or above the bar the cheapest always wins. That is sound only while price
+    #: tracks capability, and across Chinese labs it does not: after excluding
+    #: the Western labs not one Chinese model rates `frontier`, and
+    #: `deepseek-v4-pro`, `glm-5.2`, `qwen3.8-max` and `kimi-k3` all land in one
+    #: `strong` band. The referee was handed `glm-4.5-airx` over `glm-5.2` on
+    #: $0.30/M of input, and adjudicated at near chance as a result.
+    #:
+    #: Removing price from the formula was tried and made things worse — price is
+    #: the only thing keeping a 260-call role off an expensive model. So price
+    #: stays, and capability is supplied EXPLICITLY instead of inferred. This
+    #: list gates the candidate set for roles whose errors are expensive; price
+    #: then only breaks ties INSIDE it.
+    #:
+    #: Cheaper to maintain than pinning every role, and it degrades: if none of
+    #: these is reachable for a role, the old behaviour returns with a warning
+    #: rather than leaving the role unserved.
+    capable_models: Sequence[str] = (),
     avg_input_tokens: int = 6000,
     #: Config-scaled call volumes. Without it the estimate is a constant and reads
     #: the same whether the gold set is 600 rows or 3,000 — a number consulted
@@ -368,6 +428,8 @@ def route(
         if prefer and role in prefer:
             chosen_id = prefer[role]
             card = by_id.get(chosen_id)
+            _pin_fb = _pin_fallbacks(role, chosen_id, cards, tiers, req,
+                                     by_id, plan.assignments)
             plan.assignments[role] = Assignment(
                 role=role, model=chosen_id,
                 # Carry the API id. Without it an explicitly-preferred model is
@@ -391,15 +453,63 @@ def route(
                 # single 402. Pinning expresses which model to prefer, not a
                 # willingness to have no alternative. Same lab-diversity rule as
                 # the ranked path: a chain within one lab is one outage.
-                fallbacks=_pin_fallbacks(role, chosen_id, cards, tiers, req,
-                                         by_id, plan.assignments),
+                fallbacks=_pin_fb,
                 why="explicitly preferred by the user; the router did not second-guess it",
+                # A MODEL WITH NO PUBLISHED PRICE ESTIMATES AS FREE.
+                #
+                # `blended_cost` returns None when the card carries no rate, and
+                # `or 0` turns that into a confident zero — on `annotator_b`, the
+                # highest-volume role in the pipeline, that is ~256 calls reading
+                # as $0.00. The spend ledger prices from the same card, so the
+                # run under-reports too. Same family as the pinned-roles bug
+                # above: the largest line item is the one that goes missing.
+                # A PIN BYPASSES `_eligible`, INCLUDING ITS PRICE EXCLUSION.
+                #
+                # `_eligible` refuses an unpriced card outright — "free tier,
+                # preview, or a meta-endpoint" — so the ranked path cannot pick
+                # one. Pinning overrides that deliberate exclusion, and the cost
+                # then reads $0.00 for however many calls the role makes while
+                # the spend ledger, which prices from the same card, silently
+                # under-reports. Real case: `qwen3.7-plus` is a genuine direct
+                # model with 991k context that the catalogue simply carries no
+                # rate for — a catalogue gap, not a meta-endpoint, so the
+                # override is reasonable. It still must not read as free.
+                warnings=_pin_warnings(role, chosen_id, card, req, _pin_fb),
             )
+            # A PINNED ROLE STILL COSTS MONEY.
+            #
+            # This branch `continue`d straight past the accumulator below, so
+            # every pinned role was excluded from the estimated total — and the
+            # pins are on the highest-VOLUME roles precisely because those are
+            # the ones worth choosing deliberately. With both annotators pinned
+            # the header read "$0.79 per full run" against a table showing $36 of
+            # annotators on the same screen. An estimate that omits the largest
+            # line items is worse than no estimate: it is used to decide whether
+            # a model upgrade is affordable.
+            plan.total_cost_usd += plan.assignments[role].estimated_cost_usd
             continue
+
+        # THE CAPABILITY GATE. Applied only where a wrong choice is expensive —
+        # a 260-call `contained` role is exactly where cost weighting belongs.
+        pool, capability_gated = cards, False
+        if capable_models and req.blast_radius in ("run", "phase"):
+            allow = {str(m).strip().lower() for m in capable_models if str(m).strip()}
+            keep = [c for c in cards
+                    if c.id.lower() in allow or c.id.lower().split("/")[-1] in allow]
+            # HARD constraints only — context, structured output, deprecation.
+            # Checking the derived TIER here would defeat the purpose: a role
+            # asking for `frontier` finds no Chinese model rated that (they are
+            # all `strong` on price), the gate would find nothing eligible, and
+            # the role would fall back to exactly the price-decided choice this
+            # list exists to replace. The capability list OVERRIDES the price
+            # tier; it must not be gated by it. Tier relaxation is still
+            # reported below, now against a capable candidate set.
+            if any(_eligible(c, req, "frontier")[0] for c in keep):
+                pool, capability_gated = keep, True
 
         scored: list[tuple[float, ModelCard, str]] = []
         relaxed: list[tuple[float, ModelCard, str]] = []
-        for c in cards:
+        for c in pool:
             tier = tiers.get(c.id, "light")
             ok, _why = _eligible(c, req, tier)
             cost = c.blended_cost(avg_input_tokens, req.output_tokens_per_call) or 0.0
@@ -441,7 +551,7 @@ def route(
             cheap = 1.0 - (cost / max_cost)
             bonus = 0.0
             if prefer_chinese_native and card.provider in CHINESE_NATIVE and req.multilingual_critical:
-                bonus = 0.08
+                bonus += 0.08
             return (1 - w_cost) * cap + w_cost * cheap + bonus
 
         def _tiebreak(item: tuple[float, ModelCard, str]) -> tuple[float, float, float]:
@@ -558,6 +668,53 @@ def route(
             if len(fallbacks) >= 2:
                 break
 
+        # WHEN PRICE CANNOT RANK THE CANDIDATES, SAY SO.
+        #
+        # `cap` is capped at what the role requires, so every candidate at or
+        # above the required tier scores identically on capability and `cheap`
+        # decides. That is sound when price tracks capability. Across Chinese
+        # labs it does not: `TIER_PERCENTILES` infers tier from PRICE PERCENTILE
+        # over the reachable set, and after excluding the Western labs not one
+        # Chinese model rates `frontier` — `deepseek-v4-pro`, `glm-5.2`,
+        # `qwen3.8-max` and `kimi-k3` all land in the same `strong` band.
+        #
+        # So the router picked `glm-4.5-airx` for the referee over `glm-5.2` on a
+        # $0.30/M input difference (airx is DEARER on output). Measured on the
+        # same annotators: glm-5.2 chose annotator_a on 78.3% of contested rows,
+        # glm-4.5-airx on 55.1% — near chance, which is what an adjudicator that
+        # cannot discriminate looks like.
+        #
+        # The router has no capability signal to fix this with, so it must not
+        # pretend otherwise: it names the rivals it could not separate and says
+        # to pin deliberately. Advisory only — nothing is re-ranked here.
+        rivals = [cand for _c, cand, t in scored[1:]
+                  if TIER_ORDER.get(t, 0) >= TIER_ORDER.get(req.reasoning, 1)
+                  and lab_of(cand) != lab_of(best)]
+        close = [c for c in rivals
+                 if (c.input_per_mtok or 0) + (c.output_per_mtok or 0)
+                 <= 2.0 * ((best.input_per_mtok or 0) + (best.output_per_mtok or 0))]
+        price_note: list[str] = []
+        # No unpriced branch here: `_eligible` already refuses a card with no
+        # published price, so the ranked path can never select one. A guard for
+        # it would be unreachable — and it was, which is how mutation testing
+        # found it. Only a PIN can bring an unpriced model in, because a pin
+        # bypasses eligibility; that path warns.
+        if capability_gated:
+            price_note = [
+                "chosen from the configured `capable_models` list; price only broke "
+                "ties inside it, never against it"]
+        elif capable_models and req.blast_radius in ("run", "phase"):
+            price_note = [
+                "NO configured `capable_model` was eligible for this role — fell back "
+                "to price-derived tiers. Add one that meets the role's context and "
+                "structured-output needs, or accept that price is choosing."]
+        elif close and req.blast_radius in ("run", "phase"):
+            price_note = [
+                f"price chose among {len(close) + 1} candidates it cannot rank — "
+                f"{best.id} won on cost over {', '.join(c.id for c in close[:3])} at the "
+                f"same tier. Tier here is a PRICE PERCENTILE, not a capability score. "
+                f"Pin this role in the config if the choice matters."]
+
         total = cost * req.typical_calls
         plan.assignments[role] = Assignment(
             role=role, model=best.id, api_model=best.api_id or best.id,
@@ -571,7 +728,8 @@ def route(
             warnings=(["shares a LAB with its partner annotator"]
                       if "WARNING" in independence_note else [])
                      + ([f"price tier relaxed: nothing reachable rated {req.reasoning}"]
-                        if tier_relaxed else []),
+                        if tier_relaxed else [])
+                     + price_note,
         )
         plan.total_cost_usd += total
 

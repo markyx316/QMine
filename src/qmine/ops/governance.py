@@ -143,10 +143,45 @@ def execute_prescriptions(
     handled: list[Prescription] = []
     can_split = X is not None and leaf_labels is not None
 
+    #: The family ids that actually exist. A `merge_families` target outside this
+    #: set is not a merge that happens to do nothing — it is a target in the
+    #: WRONG NAMESPACE, and executing it silently is how a prescription gets
+    #: recorded as done while changing nothing.
+    existing_families = {int(f) for f in np.asarray(leaf_family).tolist()}
+    unresolvable: dict[str, list[int]] = {}
+
     for p in prescriptions:
         if p.kind == "merge_families" and len(p.targets) >= 2:
-            keep = int(min(p.targets))
-            for t in p.targets:
+            # A PRESCRIPTION THAT CHANGED NOTHING MUST NOT READ AS EXECUTED.
+            #
+            # live40's P011 targeted [10, 11, 15] with LEAF names ("拼音查询",
+            # "汉字读音查询", "词语拼音查询") while `merge_families` runs in the
+            # FAMILY namespace, where only 0..6 existed. Families 10, 11 and 15
+            # were never there, so those map entries were no-ops — and the
+            # prescription was still stamped `executed`, the report's §6 table
+            # said so, and the three duplicate `pinyin_query` leaves it was meant
+            # to collapse are all still in the delivered partition.
+            #
+            # Same leaf-id-vs-family-id confusion that once made every family
+            # heading in the report wrong. Principle 6 wants a matching executed
+            # change or an explicit declined reason; an unresolvable target has
+            # neither.
+            resolvable = [int(t) for t in p.targets if int(t) in existing_families]
+            missing = [int(t) for t in p.targets if int(t) not in existing_families]
+            if len(resolvable) < 2:
+                p.status = "declined"
+                p.decline_reason = (
+                    f"targets {sorted(int(t) for t in p.targets)} do not name two existing "
+                    f"families (present: {sorted(existing_families)}). These look like LEAF "
+                    "ids — `merge_families` operates on the family namespace, and merging a "
+                    "family that does not exist changes nothing while reading as executed."
+                )
+                handled.append(p)
+                continue
+            if missing:
+                unresolvable[p.id] = missing
+            keep = int(min(resolvable))
+            for t in resolvable:
                 if int(t) != keep:
                     merge_map[int(t)] = keep
             handled.append(p)
@@ -204,6 +239,10 @@ def execute_prescriptions(
         )
     if merge_map:
         new_family, detail["merges"] = apply_merges(new_family, merge_map)
+        # Named per prescription, so a PARTIALLY applied merge is visible rather
+        # than averaging into a delta that reads as complete.
+        detail["merges"]["targets_that_named_no_family"] = {
+            k: v for k, v in unresolvable.items()}
     if isolate:
         new_family, detail["isolations"] = isolate_leaves(new_family, isolate)
 

@@ -19,32 +19,39 @@ qmine demo                     # bundled 50k K12 corpus, end to end
 
 One command over a CSV of queries yields, in `runs/<run-id>/gen01/`:
 
+Deliverables are written in the corpus's own language. On a Chinese corpus:
+
 | deliverable | what it is |
 |---|---|
-| `Report_BottomUp_Approach.md` | representation bake-off, tree, governance, deployment |
-| `Report_TopDown_Approach.md` | taxonomy, gold set, classifier, adversarial validation |
-| `Report_Uniform_Panel.md` | every candidate compared under one measurement harness |
-| `Report_Naming_Panel_Comparison.md` | when an external panel names the tree: what changed and why |
-| `Leaf_Catalogue.md` | every cluster with a checkable `user_need` sentence |
+| `自下而上聚类最终报告.md` | representation bake-off, tree, governance, deployment — including what was rejected |
+| `自上而下类目体系最终报告.md` | taxonomy, gold set, classifier, adversarial validation, and whether the guide's rules agree with the referee's own verdicts |
+| `统一度量面板.md` | every candidate re-measured by one code path, plus the open-findings ledger |
+| `叶清单.md` | every delivered cluster with a checkable `user_need` sentence; unnamed leaves listed as defects |
+| `交付前审核报告.md` | what the pre-delivery auditor changed, **what it was refused**, and what it read and dismissed |
 | `labels_full.csv` | both label systems side by side (`td_l1`, `td_l2`, `bu_family_final`, `bu_leaf`) plus confidence margins |
-| `Walkthrough.ipynb` | executed — every number computed in-cell, nothing pasted |
+| `自下而上聚类全流程.ipynb` | executed — every number computed in-cell, nothing pasted |
 | `centroid_classifier.joblib` | the deployable model, a few hundred KB |
-| 6 figures | K-sweep, α decision, template spread, panel, refinement, UMAP |
+| figures | K-sweep, α decision, template spread, panel, refinement, gates, decision chain |
 
-Plus the evidence: `run_manifest.json` (seeds, versions, prompt hashes),
-`governance.json` (every audit finding and what it changed), `battery.json`,
-`granularity.json`, `metrics_panel.json`.
+Plus the evidence: `run_manifest.json` (seeds, versions, per-role model and
+spend), `governance.json` (every audit finding and what it changed),
+`battery.json`, `granularity.json`, `metrics_panel.json`,
+`delivery_audit.json` — and, one level up at the **run** root,
+`findings.json`: the open-findings ledger, which a new generation inherits and
+which only closes an entry when that entry's own assertion holds again.
 
 ---
 
 ## Verified on two domains
 
-| | K12 Chinese (50k real queries) | E-commerce English (7.2k, synthetic) |
+| | K12 Chinese (50k real queries, `live40`) | E-commerce English (7.2k, synthetic) |
 |---|---|---|
-| phases completed | 18/18 nodes | 17/17 nodes |
-| held-out reproduction | 0.991 (95% CI 0.989-0.992) | 0.991 (95% CI 0.985-0.995) |
-| blind coherence | 4.27/5 | 4.02/5 |
-| governance | 4 executed, 1 declined | 15 executed |
+| phases completed | 17/17 | 17/17 |
+| wall clock | 241.8 min, 696 agent calls, `provider=routed` | offline |
+| held-out reproduction | 0.989 (95% CI 0.987-0.991, n=10,000) | 0.991 (95% CI 0.985-0.995) |
+| classifier | CV 0.863, macro-F1 0.797, ECE 0.037 | — |
+| gates | 24 recorded — 20 passed, 4 warned, 0 failed | — |
+| mechanical verification | **25/26 checks pass** (`tools/verify_run.py`) | — |
 | notebook | executed, 0 errors | executed, 0 errors |
 
 The English corpus is synthetic and labelled as such — it exists to exercise the
@@ -54,28 +61,41 @@ of portability that code can get wrong. The K12 corpus is real.
 
 ## The twelve phases
 
+The two routes run **concurrently**. P3 consumes only P1's output, so nothing in
+the bottom-up branch waits on the taxonomy or the gold set; they rejoin at P2c,
+which needs the gold set *and* the encoder the α sweep picked.
+
 ```
 P0  foundation ── seeds, manifest, environment pinned
 P1  audit ─────── corpus profile, phrasing families, risk pre-screen
      │
-     ├── P2a taxonomy ── 5 researchers (disjoint angles) → architect → critic
-     ├── P2b gold ────── 2 blind annotators → κ → referee drafts missing rules
-     │
-P3  representation ── encoder bake-off · char TF-IDF+SVD · α sweep
-     │
-     ├── P2c classifier ── rules + linear head on dense ⊕ sparse ⊕ flags
-     ├── P2d validation ── agents instructed to *disprove* the labels
-     │
-P4  battery ────── 6 algorithms, one identical harness
-P5  granularity ── stability peak × over-clustering survival × domain prior
-P6  hierarchy ──── stable families, locally chosen leaves, refine to convergence
-P7  naming ─────── 5 blind agents in parallel + auditor + independent risk sweep
+     ├─────────────── FORK ───────────────┐
+     ▼                                    ▼
+ P2a taxonomy                         P3  representation
+   5 researchers → architect → critic    encoder bake-off · char TF-IDF+SVD · α sweep
+   → pilot → redraw-until-stable            │
+     ▼                                    ▼
+ P2b gold                             P4  battery ─ is the structure an artefact
+   2 blind annotators (different labs)     of KMeans? a falsification probe
+   → κ → referee (a third lab)          P5  granularity ─ K located by intent
+   → rules → guide repair                   alignment; stability only VETOES
+     │                                  P6  hierarchy ─ refine to convergence
+     └─────────────── JOIN ───────────────┘
+                      ▼
+P2c classifier ── rules + linear head on dense ⊕ sparse ⊕ flags
+P2d validation ── agents instructed to *disprove* the labels
+P2e sub-intents ─ L2 where the embedding can see it
+P7  naming ─────── 5 blind agents via Send + auditor + independent risk sweep
 P8  governance ─── every prescription executed against the data, or declined
 P9  panel ──────── everything re-measured by one code path
 P10 deployment ─── centroid classifier, margin routing, delivered table
-P11 reports ────── markdown + executed notebook + deterministic exemplars
+P11 reports ────── markdown + executed notebook + pre-delivery audit
 P12 maintenance ── drift baseline, novelty sentinel, rerun contract
 ```
+
+Measured on `live40`: 39 minutes of bottom-up compute disappear entirely into the
+107 minutes of taxonomy design and gold annotation in front of it. `qmine run
+--config` with `concurrent_branches: false` restores the strict chain.
 
 ---
 
@@ -123,6 +143,51 @@ the reports' failure-history sections are projections of those records rather
 than recollections. Generations are append-only, so a rejected tree stays on
 disk — in the source project, a discarded 107-leaf tree later became the
 phrasing-pattern library.
+
+---
+
+## Agents describe; measured quantities decide
+
+Agents now touch nearly every phase, which forces the question: *on what basis
+may anything an agent says reach the deliverable?* The answer is not "trust it"
+but **give it a way to prove itself** — an agent may supply the measurement that
+settles its own claim, and only the measurement carries authority.
+
+Four doors, each with a mechanical guardrail. **None of them can change a
+parameter.**
+
+| door | guardrail | on failure |
+|---|---|---|
+| **prose** | the author gets a fact sheet; every number it writes must be in it | rejected and re-asked, with the offending values quoted |
+| **observation** | must cite a *resolving* artifact path; may carry a machine-evaluable assertion | an unresolvable citation is dropped before anyone reads it |
+| **grid proposal** | proposed *blind to every score*, so additions are pre-registered; capped, additions-only, graded each run | a score-shaped token in the payload aborts the call |
+| **deliverable edit** | anchored replacement: anchor unique, every number sourced from the artifact the edit **cites**, language checked, reason required | refused — and refusals are printed beside the applied edits |
+
+An observation's assertion is three-valued, and the asymmetry is the point:
+
+- **confirmed** (the assertion fails) — now a *measurement*, and the only kind
+  that may fail a gate
+- **refuted** (it holds) — dropped; the agent's own false-positive filter
+- **unverifiable** — advisory, as before
+
+> **Confirmed is not the same as defective, and the report says so.** Measured on
+> `live40`: of 13 machine-confirmed findings, independent re-verification found
+> **2 real defects**. Eight were arithmetically correct and wrong anyway — almost
+> all because the two compared fields measured *different populations*. A check
+> proves an assertion failed; which fields to compare and what a difference means
+> are still unguarded judgement.
+
+**A finding nobody acts on must at least be unable to disappear.** The ledger
+lives at the run root beside the LLM cache, so a new generation inherits it, and
+an entry closes only when its own assertion holds again. This exists because the
+opposite already happened: a critic agent identified a κ defect *before* the run
+that shipped it, wrote the finding to an artifact, and nothing read it.
+
+**One agent may write.** The pre-delivery auditor reads every gate, the ledger,
+the artifacts and the finished documents together, and edits the reports. It is
+bounded to `.md` files — a report *describes* a measurement; an artifact *is*
+one — and every edit it makes, and every one it is refused, appears in
+`交付前审核报告.md`.
 
 ---
 
@@ -192,10 +257,29 @@ qmine models --prefer-chinese-native --budget 5    # inspect before spending
 qmine run -i queries.csv -d k12_zh --provider router
 ```
 
-High-volume roles get cheap-but-capable models, run-critical roles get frontier
-ones, fallbacks span providers, and the two gold annotators are routed to
-*different* providers so their κ measures the labelling guide rather than shared
-architecture. Full design and its known limits: [docs/MODEL_ROUTING.md](docs/MODEL_ROUTING.md).
+High-volume roles get cheap-but-capable models, fallbacks span **labs**, and the
+two gold annotators and the referee are routed to three *different labs* — not
+merely different providers, since two labs reach you through one gateway and look
+identical in a provider column. κ is supposed to measure the labelling guide; if
+the annotators share an architecture it measures a shared prior instead, and if
+the referee shares one with an annotator it sides with that annotator in a
+direction nobody would think to check.
+
+**The router cannot judge capability, and says so.** Tier is derived from a
+**price percentile**, which works only while price tracks capability. It does not
+across the Chinese labs: after excluding the Western ones, *not one* model rates
+`frontier`, so asking for that tier silently relaxes and buys nothing — and
+within a tier the cheapest always wins. That handed the referee a lightweight
+model whose adjudication was measurably near chance.
+
+So capability is **stated, not inferred**. `capable_models` in the config is a
+human judgement — a curated list of ids — and it gates the candidate pool for
+roles whose errors are expensive; price only breaks ties *inside* it, and still
+governs the high-volume contained roles where cheap-and-adequate is right. The
+plan is printed **before the first call**, with each role's model, its lab, its
+estimated calls and spend, and every warning the router attached.
+
+Full design and its known limits: [docs/MODEL_ROUTING.md](docs/MODEL_ROUTING.md).
 
 ### Mixed languages and unknown domains
 
@@ -223,9 +307,12 @@ Details: [docs/LANGUAGE_AND_DOMAIN.md](docs/LANGUAGE_AND_DOMAIN.md).
 | `qmine export-cards <run>` / `qmine import-namings <run> f.json` | run blind naming with an external panel |
 | `qmine promote --old A.csv --new B.csv` | referee protocol: let a challenger label set earn its place |
 | `qmine diff <run-a> <run-b>` | drift vs method change between two quarters |
-| `qmine models` | reachable providers, per-role model choice, estimated run cost |
+| `qmine models` | reachable providers, per-role model choice, estimated run cost — spends nothing |
+| `qmine new-generation <run> --reason '…'` | re-run an id and reuse its paid work; the old generation stays as evidence |
+| `qmine watch <run>` | attach the dashboard to a run, live or finished |
 | `qmine run … --plain` | disable the live dashboard (CI, pipes) |
 | `qmine doctor` | environment, credentials, models, fonts |
+| `python tools/verify_run.py runs/ID/genNN [runs/OLD/genNN]` | 26 mechanical checks over a finished run; pass an older run as a **control** — a harness that passes on a known-broken run proves nothing |
 
 ### Handing Phase 7 to a stronger reviewer
 
@@ -314,14 +401,18 @@ src/qmine/
   llm/               two-tier routing, response cache, offline stand-in, budget
   memory/            three-tier memory; the blindness firewall
   ops/               the science — audit, templates, represent, cluster, panel,
-                     governance, classify, cards, promotion, viz
-  agents/            11 roles + versioned prompt files
+                     governance, classify, cards, promotion, viz, and the
+                     agent-authority mechanics: checks, findings, edits,
+                     propose, select, rule_conflict, annotator_balance
+  agents/            18 roles + versioned prompt files; observe/verify/interpret/
+                     propose_grid/audit_delivery carry the authority contracts
   graph/             nodes per phase, gates, human review, assembly
   report/            markdown builders + programmatic notebook
 configs/domains/     5 vertical profiles
 skills/              5 Claude Code Agent Skills
 docs/                architecture, playbook mapping, 9 research dossiers
-tests/               64 tests — principles, ops, durability, end-to-end
+tests/               508 tests — principles, ops, durability, concurrency,
+                     agent authority, routing, end-to-end
 ```
 
 ## Documentation
@@ -335,7 +426,7 @@ tests/               64 tests — principles, ops, durability, end-to-end
 ## Tests
 
 ```bash
-pytest tests/ -q          # 64 tests, fully offline, ~5 minutes
+pytest tests/ -q          # 508 tests, fully offline, ~3.5 minutes
 ```
 
 `tests/test_principles.py` is the set worth reading first: each test names the

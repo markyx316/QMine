@@ -34,9 +34,11 @@ from __future__ import annotations
 import hashlib
 import json
 import re
+import threading
+from contextlib import contextmanager
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
-from typing import Any
+from typing import Any, Iterator
 
 FINDINGS_FILE = "findings.json"
 
@@ -81,13 +83,55 @@ class Finding:
         return asdict(self)
 
 
+#: One lock per ledger PATH, shared by every `FindingLedger` opened on it.
+#:
+#: This module is load→modify→save on a single JSON file, and phase observers now
+#: run in CONCURRENT branches — a p3 observer and a p2b observer can be filing at
+#: the same moment. Without this, the later save writes a snapshot taken before
+#: the earlier one's finding existed, and the finding is gone: the exact "nothing
+#: consumed the finding" failure this module was written to end, reintroduced by
+#: the scheduler rather than by a missing consumer.
+#:
+#: Keyed by resolved path, not per instance, because each caller constructs its
+#: own `FindingLedger` over the same file.
+_LEDGER_LOCKS: dict[str, threading.RLock] = {}
+_LOCKS_GUARD = threading.Lock()
+
+
+def _lock_for(path: Path) -> threading.RLock:
+    key = str(path.resolve() if path.parent.exists() else path)
+    with _LOCKS_GUARD:
+        lock = _LEDGER_LOCKS.get(key)
+        if lock is None:
+            lock = _LEDGER_LOCKS[key] = threading.RLock()
+        return lock
+
+
 class FindingLedger:
-    """Load, merge, re-check, and persist. Never deletes an entry."""
+    """Load, merge, re-check, and persist. Never deletes an entry.
+
+    **Use `open()` for a read-modify-write.** Constructing the object reads the
+    file and `save()` writes it; between those two a sibling branch can file a
+    finding of its own, and the save would erase it. `open()` holds the lock
+    across the whole cycle and re-reads inside it, so concurrent filings merge
+    instead of racing.
+    """
 
     def __init__(self, path: Path | str) -> None:
         self.path = Path(path)
         self.entries: dict[str, Finding] = {}
+        self._lock = _lock_for(self.path)
         self._load()
+
+    @classmethod
+    @contextmanager
+    def open(cls, path: Path | str) -> "Iterator[FindingLedger]":
+        """Read-modify-write the ledger atomically against sibling branches."""
+        lock = _lock_for(Path(path))
+        with lock:
+            led = cls(path)
+            yield led
+            led._save_locked()
 
     def _load(self) -> None:
         if not self.path.exists():
@@ -181,6 +225,22 @@ class FindingLedger:
         return [f for f in self.open_findings if f.verdict == "confirmed"]
 
     def save(self, *, run_id: str = "", generation: str = "") -> Path:
+        """Merge anything filed since this object was loaded, then write.
+
+        A plain overwrite loses a sibling branch's finding. Re-reading under the
+        lock and folding in what is new makes the write additive, which is the
+        only shape consistent with a ledger that "never deletes an entry".
+        """
+        with self._lock:
+            fresh = FindingLedger.__new__(FindingLedger)
+            fresh.path, fresh.entries, fresh._lock = self.path, {}, self._lock
+            fresh._load()
+            for fid, other in fresh.entries.items():
+                if fid not in self.entries:
+                    self.entries[fid] = other
+            return self._save_locked(run_id=run_id, generation=generation)
+
+    def _save_locked(self, *, run_id: str = "", generation: str = "") -> Path:
         self.path.parent.mkdir(parents=True, exist_ok=True)
         payload = {
             "run_id": run_id, "generation": generation,

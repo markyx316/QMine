@@ -24,6 +24,7 @@ from __future__ import annotations
 
 import json
 import os
+import threading
 import shutil
 import time
 from pathlib import Path
@@ -112,6 +113,14 @@ class ArtifactStore:
         self.gen_dir.mkdir(parents=True, exist_ok=True)
         self.cache_dir.mkdir(parents=True, exist_ok=True)
         self._refs: dict[str, ArtifactRef] = {}
+        # The graph runs the top-down and bottom-up branches concurrently, and
+        # both write artifacts. `_register` mutates `_refs` AND appends a line to
+        # `index.jsonl`; two threads doing that at once can interleave inside one
+        # index line, and a corrupt line makes `_load_index` skip a real artifact
+        # on the next resume — a lost artifact that looks like a phase that never
+        # ran. One lock covers both halves so the dict and the file cannot
+        # disagree about what exists.
+        self._lock = threading.RLock()
         self._load_index()
 
     # -- paths --------------------------------------------------------------
@@ -207,15 +216,17 @@ class ArtifactStore:
             generation=self.generation,
             **{k: v for k, v in meta.items() if k in ArtifactRef.model_fields},
         )
-        self._refs[name] = ref
-        with open(self.index_path, "a", encoding="utf-8") as fh:
-            fh.write(ref.model_dump_json() + "\n")
+        with self._lock:
+            self._refs[name] = ref
+            with open(self.index_path, "a", encoding="utf-8") as fh:
+                fh.write(ref.model_dump_json() + "\n")
         return ref
 
     # -- reading ------------------------------------------------------------
     def get(self, name: str) -> ArtifactRef:
-        if name not in self._refs:
-            raise KeyError(f"no artifact named {name!r}; have {sorted(self._refs)}")
+        with self._lock:
+            if name not in self._refs:
+                raise KeyError(f"no artifact named {name!r}; have {sorted(self._refs)}")
         return self._refs[name]
 
     def has(self, name: str) -> bool:

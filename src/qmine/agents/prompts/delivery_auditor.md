@@ -37,9 +37,18 @@ cannot talk it into landing, so there is no value in trying.
     file            one of the deliverables listed, by exact filename
     anchor          the EXACT text you are replacing — it must appear EXACTLY ONCE
     replacement     what it becomes
-    artifact_key    the artifact path your correction comes from
+    artifact_key    where your correction comes from. Any of:
+                      an artifact          `hierarchy_meta.n_leaves`
+                      a gate's evidence    `gates.p2b_kappa.observed`
+                      an open finding      `findings.<id>`
+                    Every number in `replacement` must appear under THAT key.
     reason          what is wrong, and why this fixes it
-    check           optional: the assertion that holds once the edit lands
+    check           optional: an assertion about what the ARTIFACTS SAY, which
+                    must be TRUE — it is the ground truth you are aligning the
+                    document to. To correct a report that claims X when the
+                    artifact says 0.82, write `some.path.value == 0.82`. A check
+                    that evaluates FALSE means your correction is not sourced,
+                    and the edit is refused.
 
 - **The anchor is matched literally.** Copy it out of the document character for
   character, including punctuation and spacing. Keep it long enough to be unique

@@ -12,116 +12,85 @@
 
 ---
 
-## 1. Status — last updated 2026-08-26
+## 1. Status — last updated 2026-08-26 (night)
 
-# Agent authority reworked. 448 tests passing.
+# live40 COMPLETE. 508 tests passing. 25/26 mechanical checks.
 
 | | |
 |---|---|
-| Tests | **448** passing (was 387); `ruff --select F src/qmine/` clean |
-| `live39` gen01 | still the reference live run: 17/17, 201 min, $5.52, `routed` |
-| Verification | `tools/verify_run.py` now runs **26** checks (was 19) |
-| Observers | **11 phases** (was 4) — the whole top-down route now has one |
+| Tests | **508** passing; `ruff --select F src/qmine/` clean |
+| `live40` gen01 | 17/17 phases, halted=False, **241.8 min**, `provider=routed` |
+| Verification | **25/26 PASS, 0 FAIL** (live39 control: 19 PASS, **6 FAIL**) |
+| Gates | 24 recorded — 20 passed, 4 warned, 0 failed |
+| Findings ledger | **30 findings, 13 machine-confirmed** |
 
-### What changed, and why
+Every one of the 6 checks that fails on live39 is a mechanism built since it.
 
-**1. An observation can now be PROVEN, and only then does it carry authority.**
-`p6_observer` was right on live39 and could do nothing about it: its claim was
-arithmetic over an artifact, nothing could evaluate it, so a human verified it by
-hand a day later. An observation may now carry a `check` — an expression over the
-artifacts it cites — which `ops/checks.py` evaluates.
+### The fork delivered exactly what the simulation predicted
 
-- **confirmed** (assertion fails) → a measurement; the only kind that may fail a gate
-- **refuted** (assertion holds) → dropped, the agent's own false-positive filter
-- **unverifiable** → advisory, as before
+    SS1   p2a 68 min  ∥  p3        12 min (then waits)
+    SS2   p2b 79 min  ∥  p4+p5+p6  27 min (then waits)
 
-`severity` is the model's confidence and audited by nothing, so it can no longer
-fail a gate on its own. The evaluator is a security boundary — `a.b` is a dict
-lookup, never `getattr` — and 8 escape probes are pinned in tests.
+All **39 min** of bottom-up work hidden — the simulation said 39.5. Without the
+fork this run would have taken ~281 min instead of 241.8. It ran longer than
+live39 only because it did two taxonomy redraws live39 never did, one of which
+LOWERED kappa and was correctly reverted.
 
-**2. Findings survive.** `ops/findings.py` is run-level (beside `cache/`), so a new
-generation inherits it. An entry closes automatically ONLY when its own check
-passes again; without a check it needs a recorded human waiver, and a waiver with
-no reason is refused. Printed in 统一度量面板.md §7, including waivers with reasons.
+### The most important result: confirmed ≠ defective
 
-**3. The live39 defect is fixed.** `hierarchy_meta` mixed a post-refinement
-`n_leaves` with a pre-refinement `leaves_per_family`. Every count now comes from
-one source — the labels that ship — via `ops/cluster.leaves_per_family`.
+13 findings were machine-confirmed. Independent re-verification (16 agents, each
+reading the artifacts, then adversarial refutation) found **only 2 real
+defects**. Eight were arithmetically correct and wrong anyway — almost all
+because the two compared fields measured **different populations**: different
+samples, different id spaces, different pipeline stages.
 
-**4. The referee's rules are measured against the referee's own verdicts.** The
-diagnosis was wrong yesterday. It is not that the referee forgets a trigger: its
-rules are SEMANTIC, and only **1 of 80** trigger-less rules on live39 contained an
-extractable marker. Demanding a regex would fabricate 79 wrong predicates.
-`rules_against_evidence` holds each rule to the gold set instead.
+That is a property of the mechanism, not of this run. A `check` proves an
+**assertion failed**; it says nothing about whether the observer's *conclusion*
+holds. The panel section was headed "**这些不是观点**" — true of the arithmetic,
+false of the conclusion — and a reader counting 12 confirmed blocking findings
+would have been wrong about ten. Both the report framing and the observer prompt
+now carry the measured rate.
 
-**The first version of that check was confounded, and an adversarial panel plus
-my own re-measurement retired it.** It flagged a boundary when the adjudicated
-majority was decisive AND most of its rules pointed the other way. Three measured
-defects:
+### Defects found and fixed
 
-- **the drafting rate confounds it.** A referee drafts a rule only where it
-  judges the guide to have failed, which concentrates on the minority side. On
-  `OTHER × TEXT_INTERPRETATION`: **5 of 6 minority rows produced a rule (83%) vs
-  1 of 15 majority rows (7%)**. "Most rules point away from the majority" is the
-  *expected* shape of a healthy exception set — the check fires on a sound guide.
-  This is CLAUDE.md's own named trap: a distribution the mechanism already
-  filtered.
-- **no resolution.** 15/21 gives a Wilson lower bound of **0.5004** against a bar
-  of 0.5. One row decided whether the boundary reported at all.
-- **the magnitude was a drafting habit.** "Five rules" is one template emitted
-  five times (five genre nouns, five near-synonyms of 寓意).
+**In what was built this week:**
 
-**And my prose about it was wrong.** I wrote that the five rules were "each the
-opposite of what the referee had just done on the rows in front of it."
-Measured: **0 of 6 rules disagree with the verdict on the row each was drafted
-from.** Every one agrees.
+- **The pre-delivery auditor found 4 real defects and I refused all 4.**
+  - `check` semantics were **inverted for edits**. An observation asserts what
+    *should* hold (failing = defect); an edit asserts what the artifacts *do*
+    say (holding = sourced). The code refused every correctly-sourced edit. A
+    test was *pinning* this bug.
+  - The auditor is handed the gate ledger and told to cite its source, but
+    citations resolved only against artifacts — gates live in `run_summary.json`.
+    3 of 4 refusals were this.
+- **`governance.py`: a merge that changed nothing was recorded as executed.**
+  P011 targeted `[10, 11, 15]` carrying LEAF names while `merge_families` runs in
+  the FAMILY namespace, where only 0..6 existed. Its map entries were no-ops, the
+  §6 table said `executed`, and the three duplicate `pinyin_query` leaves it was
+  meant to collapse are still in the delivered partition. Same leaf-id/family-id
+  confusion that once made every family heading wrong.
 
-**What replaced it — `stated_grounds` — measures the discriminator the rules
-themselves name, against the rows the referee actually adjudicated:**
+**In older code:**
 
-    OTHER × TEXT_INTERPRETATION
-      the 5 OTHER rules name 什么意思 / 寓意 / 翻译 as the test
-      0 of the 21 adjudicated queries contain ANY of them
-      including all 15 the referee ruled TEXT_INTERPRETATION
+- **`cluster.py`: the falsification probe compared KMeans with itself.**
+  `best_other = ranked[0]` is the best OVERALL, which is the reference whenever
+  KMeans wins. `alternative_beats_reference_by = 0.0` by construction. Now the
+  best *structurally different* arm: −0.0776 against `agglo_average_k15`.
+- **`zh_topdown.py`: 高于 was hardcoded.** live40 shipped "对抗验证 (0.82)
+  高于交叉验证 (0.8625)" — false — plus a causal story that only holds in the
+  other direction. Both readings now written honestly.
+- **`i18n.py`: "审计处方已全部执行"** with 8 of 17 executed. Replaced with what
+  the gate actually guarantees: every prescription settled, executed or declined.
+- 「可执行的触发式」 used for two different counts in one document; a hardcoded
+  `112` beside the artifact's 123; the offline stand-in echoing a **schema field
+  name** into a family heading.
 
-The stated test falls on one side for every row, so it divides nothing — an
-annotator applying it literally sends the whole boundary to OTHER, 15 rows
-against gold. The same run's `TEXT_INTERPRETATION × WORD_MEANING_LOOKUP` is the
-control: 33 of 39 rows carry a marker there, so the ground genuinely separates.
+### Not done
 
-Unconfounded, no direction counting, no threshold on a knife edge, and it reaches
-**31 of the 80 trigger-less rules** — nearly four times what triggers ever did.
-Gate `p2b_rules_match_their_evidence` (warn-only), report §3.6. The direction
-tally is still recorded as context with its confound measured beside it.
-
-Also fixed: `<no-marker>` was compiled as a literal regex — valid, matched
-nothing, and still counted in `n_with_executable_trigger`.
-
-**5. A pre-delivery auditor, with real write authority.** `agents/audit_delivery.py`
-reads every gate, the findings ledger, the artifacts and the finished documents in
-one context and may EDIT the reports. Bounded to an anchored replacement:
-
-    anchor unique · every number sourced from the artifact the edit CITES ·
-    no number deleted without one replacing it · language checked · reason required
-
-`.md` only — never an artifact, never code. Pre-edit originals kept as
-`*.pre_audit.md`. Every applied edit, every REFUSED edit and every dismissed
-warning is printed in 交付前审核报告.md. Verified end-to-end offline: the
-stand-in proposed 3 edits and all 3 were refused.
-
-**15 mutations run across the new guardrails; all caught.** Three survived first
-and each exposed a real gap (a getattr fallback, an unverifiable re-check closing
-a finding, edits validating against each other).
-
-### Not done, and deliberately
-
-- **No auto-remedy for a contradicted boundary.** Adding an evidence-derived
-  tie-break rule was tempting, but §2.1 already measured guide repair at
-  **Δκ = −0.002**. Generating more rules with no evidence they help is the wrong
-  move; the measurement is reported and the remedy is an open question.
-- **live40 has not been run.** Everything above is verified offline and by replay
-  against live39's artifacts. The new agents have not been exercised on a live
-  frontier model.
+- **The two real confirmed findings and the fixes above have not been re-run
+  live.** All verified offline plus by replay against live40's artifacts.
+- The 8 false-positive findings remain in live40's shipped ledger. They are
+  correctly *described* there now, but the run itself is not regenerated.
 
 ## 2. Open questions — EDIT THIS SECTION, DO NOT APPEND
 
@@ -1268,3 +1237,63 @@ document.
 a real hole in the tests rather than dead code. Two end-to-end offline runs, and
 the second existed only because the first put three empty-claim rows in the ledger
 — a defect that no test would have found and that reading the output did.
+
+---
+
+## Session — 2026-08-26 (late): the graph forks
+
+The question was whether the bottom-up route really has to wait hours for p2b.
+It does not: `p3_represent` reads only `template_groups`, from p1.
+
+**What made this a design problem rather than an edge rewrite** was that
+langgraph's scheduling is not what it looks like. Three behaviours, each measured
+with a throwaway graph before any production code changed:
+
+1. parallel branches lock-step per superstep — so the node GROUPING sets the
+   cost, and 2-against-2 beats 1-against-3 by 22 simulated minutes;
+2. a fan-in node fires once per incoming edge unless the edges arrive together;
+3. a state field written by two branches in one superstep is a runtime error.
+
+Guessing any of these wrong produces a pipeline that is slower, or that trains
+its classifier twice, or that dies 107 minutes in. Measuring all three first cost
+about ten minutes.
+
+**The most valuable finding was not about scheduling.** Concurrency does not
+create races; it reveals the ones a serial graph was hiding. Four shared
+read-modify-writes were live, and the worst was `ops/findings.py` — added earlier
+the same day, and measured here losing **6 of 8** concurrent filings. That is the
+"nothing consumed the finding" failure the module exists to prevent,
+reintroduced by the scheduler instead of by a missing consumer.
+
+**Race tests lie.** Three of the four passed against a deliberately unlocked
+implementation. A `RecordingLock` asserting the critical section is held is
+deterministic and is what the invariant actually means; the stress test stays
+beside it, because the structural check cannot see a section that is held but too
+narrow — which is exactly what mutation testing then found in `deps.decision`.
+
+---
+
+## Session — 2026-08-26 (night): live40, and what a confirmed check is worth
+
+**The mechanism found real defects and produced more false ones than true.**
+13 machine-confirmed findings; 2 real. The dominant error was not bad arithmetic
+but a bad inference from good arithmetic: two fields differ, and they were never
+supposed to agree because they count different populations.
+
+That is worth stating as a design property. `ops/checks.py` converts a claim into
+a measurement, and the measurement it makes is narrow: *this assertion is false*.
+Everything the observer wraps around that — which fields to compare, whether
+they are comparable, what it means if they differ — is still an LLM judgement
+with no guardrail on it. The confirmation makes the arithmetic trustworthy and
+the conclusion no more trustworthy than before.
+
+**The fleet found more outside the confirmed list than inside it.** Four false
+statements reaching readers of shipped documents, and one executor no-op
+touching the delivered partition — none of which any check had flagged, because
+no observer thought to assert on them.
+
+**And the auditor was right four times and refused four times.** Both causes were
+mine: inverted check semantics for edits, and a citation namespace that excluded
+the very evidence the auditor is handed. One of my own tests was pinning the
+first bug — the suite was protecting the defect. That is the second time this
+week a test encoded a wrong invariant rather than a right one.

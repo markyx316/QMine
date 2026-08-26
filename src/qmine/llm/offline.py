@@ -260,8 +260,15 @@ def _fill_field(
             return {}
 
     # -- semantically meaningful fields get a real, if simple, computation ---
-    if low in ("name_zh", "name", "display_name", "title") and terms:
-        return f"{terms[0]}相关查询" if _CJK.search(terms[0]) else f"{terms[0]} lookup"
+    if low in ("name_zh", "name", "display_name", "title"):
+        if terms:
+            return f"{terms[0]}相关查询" if _CJK.search(terms[0]) else f"{terms[0]} lookup"
+        # With no terms this used to fall through to the generic branch and echo
+        # the SCHEMA FIELD NAME — `[offline-heuristic] name_zh` — which then
+        # shipped as a family heading and failed the report-language check on
+        # every offline run. A harness that fails for a reason nobody will fix
+        # gets ignored, and this one guards a real defect.
+        return f"[{tag}] 未命名分组"
     if low == "code" and terms:
         return "grp_" + hashlib.sha1(terms[0].encode()).hexdigest()[:6]
     if low in ("user_need", "definition", "rationale", "summary", "lesson", "defect", "fix",

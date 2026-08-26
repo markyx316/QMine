@@ -73,8 +73,15 @@ ZH: dict[str, str] = {
         "只看成员样本卡片。锚定效应是真实的 — 见过既有体系的命名者会把簇「认领」到旧类目下, "
         "掩盖数据的真实形状。"
     ),
+    # WAS "**审计处方已全部执行**" — false, and false in the direction that
+    # flatters: live40 executed 8 of 17 and declined 9, with the table listing
+    # them one line below. The guaranteed property is not that everything ran, it
+    # is that nothing was left hanging — `assert_all_settled` fails the run on
+    # anything still `proposed`. State THAT, because it is what the gate checks
+    # and it stays true whatever the split turns out to be.
     "governance_executed": (
-        "**审计处方已全部执行**, 而非仅写入建议章节。家族合并 = 改写「叶→家族」查找表 "
+        "**每一条审计处方都已了结 —— 要么执行, 要么写明拒绝理由**, 而不是仅写入"
+        "建议章节。逐条的处置与理由见下表。家族合并 = 改写「叶→家族」查找表 "
         "(叶分配与质心完全不动), 原家族列保留可追溯。"
     ),
     "no_data": "_(本次运行未产出该项)_",

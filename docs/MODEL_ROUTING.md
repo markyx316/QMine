@@ -101,6 +101,51 @@ everywhere else**, letting a cheap capable model win on the roles that dominate
 the bill. Capability credit is also capped at what the role needs, so nobody
 pays frontier prices for headroom the task cannot use.
 
+### Where this breaks, and the fix: price is not capability
+
+The tier is a **price percentile over the reachable set**. That is a proxy, and
+it fails exactly where this project runs. After excluding the Western labs,
+**not one Chinese model rates `frontier`** — `deepseek-v4-pro`, `glm-5.2`,
+`qwen3.8-max` and `kimi-k3` all land in a single `strong` band. Two consequences,
+both observed:
+
+- **Asking for a higher tier does nothing.** `frontier` finds nothing reachable
+  and silently relaxes back to `strong`.
+- **Within a tier the cheapest always wins**, because capability credit is capped
+  at the requirement so every candidate at or above the bar ties on capability.
+  The referee — whose verdicts *become* the gold set — was handed an "air"
+  lightweight over `glm-5.2` on **$0.30/M of input**. Measured on the same
+  annotator pair: the strong referee chose the stronger annotator on 78.3% of
+  contested rows (z=+12.1); the lightweight one on 55.1% (z=+2.2), which is near
+  chance and is what an adjudicator that cannot discriminate looks like.
+
+Removing price from the ranking was tried and reverted **three times** — price is
+also what keeps free tiers, previews and meta-endpoints out of the roles that
+matter. So price stays, and **capability is supplied explicitly**:
+
+`capable_models` in the config is a curated list of bare model ids, each entry a
+human judgement from an independent evaluation or from a run that exercised it.
+It gates the candidate pool for `run`/`phase` blast-radius roles; price breaks
+ties *inside* it and still governs the high-volume `contained` roles. It is
+gated on **hard** constraints only — checking the derived tier would let a
+`frontier` role find nothing and fall back to the price-decided choice the list
+exists to replace — and it falls back **loudly** when nothing on it is eligible.
+
+Pin a role on top of that only for something the list cannot express: a verified
+quirk (`researcher` needs tools, and `deepseek-v4-pro` rejects the `tool_choice`
+LangChain sets when a response format is bound) or a lab-independence constraint
+(`referee`). A pin **bypasses `_eligible` entirely**, including its exclusion of
+unpriced models — so a pinned model with no published rate estimates as $0.00 and
+under-reports spend, and the router now says so rather than showing a confident
+zero.
+
+`blast_radius` is the switch that decides whether a role is capability-gated, so
+it must describe **what a wrong answer costs**, not how many calls the role
+makes. Two were wrong: `referee` (its verdicts *are* the gold set) and
+`adversary` (its output is the accuracy estimate quoted for the whole taxonomy,
+and its own rationale already said "a cheap adversary produces a flattering
+number").
+
 ### Hard filters, all learned from failures observed while building this
 
 - **no structured output** → excluded (every role in this pipeline needs it)

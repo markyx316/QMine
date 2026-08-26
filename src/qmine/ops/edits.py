@@ -198,10 +198,24 @@ def validate_edit(
                            "`zh` — this is how English got into half the deliverables")
 
     if edit.check:
+        # AN EDIT'S CHECK IS THE OPPOSITE OF AN OBSERVATION'S, AND THIS WAS BACKWARDS.
+        #
+        # An OBSERVATION asserts what *should* hold; the assertion FAILING is what
+        # confirms a defect. An EDIT asserts what the artifacts *do* say — the
+        # ground truth the document is being aligned to — so the assertion HOLDING
+        # is what makes the correction well-founded.
+        #
+        # This refused an edit whose check evaluated true, i.e. it rejected every
+        # correctly-sourced correction. Measured on live40: the auditor wrote
+        # `adversarial_validation.estimated_accuracy == 0.82` — true — to fix a
+        # report claiming adversarial accuracy was HIGHER than cross-validation
+        # when 0.82 < 0.8625. The fix was refused for being right, and the wrong
+        # claim shipped.
         res = evaluate(edit.check, artifacts)
-        if res.verdict == "refuted":
-            return False, (f"its own check `{edit.check}` says the artifacts already "
-                           "agree — there is nothing here to correct")
+        if res.verdict == "confirmed":
+            return False, (f"its own check `{edit.check}` is FALSE against the artifacts — "
+                           "an edit's check must state what the artifacts DO say, so a "
+                           "failing one means the correction is not sourced")
     if not edit.reason.strip():
         return False, "no reason given; an undocumented edit cannot be reviewed"
     return True, ""

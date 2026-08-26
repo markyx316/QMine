@@ -88,6 +88,31 @@ def audit_deliverables(state: Any, deps: Any) -> dict[str, Any]:
 
     artifacts = all_json_artifacts(gen)
     led = FindingLedger(Path(deps.store.root) / FINDINGS_FILE)
+
+    # THE AUDITOR IS GIVEN GATES AND FINDINGS, SO IT MUST BE ABLE TO CITE THEM.
+    #
+    # `apply_edits` resolves a citation against this dict and requires every
+    # number in the replacement to come from the cited subtree. Gates live in
+    # `run_summary.json` under `gates`, not as top-level artifact keys — so an
+    # auditor doing exactly what it was asked (read the warnings, correct what
+    # they left wrong, cite the source) had its edits refused as "unsourced".
+    #
+    # Measured on live40: 3 of 4 correct corrections were rejected this way,
+    # including a report claiming adversarial accuracy was higher than
+    # cross-validation when it was lower. Adding them keeps the pool small — a
+    # single gate's `observed` is exactly the right scope for a claim about that
+    # gate — while removing a refusal that punished the intended behaviour.
+    gate_ns = {name: {"status": getattr(g, "status", None) or (
+                          g.get("status") if isinstance(g, dict) else None),
+                      "passed": getattr(g, "passed", None) if not isinstance(g, dict)
+                                else g.get("passed"),
+                      "message": (getattr(g, "message", "") if not isinstance(g, dict)
+                                  else g.get("message", "")),
+                      "observed": (getattr(g, "observed", None) if not isinstance(g, dict)
+                                   else g.get("observed"))}
+                for name, g in (state.get("gates") or {}).items()}
+    artifacts = {**artifacts, "gates": gate_ns,
+                 "findings": {f.id: f.as_record() for f in led.open_findings}}
     lang = getattr(deps.cfg, "report_language", "zh")
 
     deliverables = "\n\n".join(

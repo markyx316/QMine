@@ -367,6 +367,17 @@ class LLMConfig(BaseModel):
     excluded_labs: list[str] = Field(default_factory=list)
     #: Explicit role -> model overrides. These win outright over the router.
     model_overrides: dict[str, str] = Field(default_factory=dict)
+    #: Bare model ids a human has judged capable — the capability signal the
+    #: router otherwise lacks. See `llm/router.route`'s `capable_models`: tier is
+    #: a PRICE percentile, so without this the cheapest model clearing the bar
+    #: wins, and across Chinese labs price does not rank capability at all.
+    #: Gates the candidate set for run/phase blast-radius roles only.
+    capable_models: list[str] = Field(default_factory=list)
+    #: NOTE: there is deliberately no "prefer direct provider" flag. The router
+    #: already promotes a lab's own endpoint over a gateway reselling the SAME
+    #: bare model, unconditionally and with measured evidence (a 6.3x median-to-
+    #: worst latency spread on the gateway path against 1.4x direct). A config
+    #: knob would imply the preference is optional; it is not.
     #: Abort before starting if the estimated run cost exceeds this.
     budget_usd: float | None = None
     #: Nudge multilingual-critical roles toward Chinese-native labs when the
@@ -411,6 +422,15 @@ class QMineConfig(BaseModel):
     #: and hierarchy decision was made with no agent looking at it. The observer
     #: decides nothing; it cites artifact keys and can fail a gate. Off in
     #: `fast_mode` so the demo stays cheap.
+    #: Run the top-down and bottom-up routes as CONCURRENT graph branches.
+    #: On by default: measured on live39, 38 min of taxonomy design plus 69 min
+    #: of gold annotation sit in front of 39 min of bottom-up CPU work that
+    #: depends on none of it, and the fork hides the whole of it.
+    #:
+    #: Turning it off restores the strict chain — the escape hatch if a provider,
+    #: a filesystem or a future phase turns out not to tolerate two branches. It
+    #: is also how the two schedules are compared on identical inputs.
+    concurrent_branches: bool = True
     observe_phases: bool = True
     #: The pre-delivery audit — the only agent allowed to CHANGE a deliverable.
     #: On by default: its edits are mechanically bounded (anchored, sourced,

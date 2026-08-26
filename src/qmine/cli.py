@@ -750,6 +750,7 @@ def models_cmd(
     plan = route(
         cat, av.usable, requirements=scaled_requirements(cfg),
         prefer=cfg.llm.model_overrides or None,
+            capable_models=cfg.llm.capable_models or (),
         budget_usd=budget if budget is not None else cfg.llm.budget_usd,
         prefer_chinese_native=chinese or cfg.llm.prefer_chinese_native,
         excluded_labs=cfg.llm.excluded_labs,

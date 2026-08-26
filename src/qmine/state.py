@@ -7,7 +7,14 @@ what lets this pipeline checkpoint after *every* node, resume from any failure,
 and time-travel to a prior decision without a storage problem.
 
 The reducers below are all commutative-ish merges, which matters because Phase 7
-fans five naming agents out in parallel and they all write to the same channels.
+fans five naming agents out in parallel and they all write to the same channels —
+and, since the graph forks, because the top-down and bottom-up branches run
+concurrently and write to the same channels for the whole of p2a/p2b.
+
+**Every field a forked branch writes needs a reducer.** langgraph rejects a plain
+field that receives two values in one superstep, and it does so at RUNTIME, on
+the first step where both branches happen to write it. `phase` was the one that
+had none.
 """
 
 from __future__ import annotations
@@ -28,6 +35,45 @@ from .records import (
 # --------------------------------------------------------------------------
 # Reducers
 # --------------------------------------------------------------------------
+
+#: Canonical phase order, used only to decide which of two concurrent `phase`
+#: values is the furthest along. Kept here rather than imported from
+#: `graph.build` because state must not depend on the graph.
+_PHASE_ORDER = (
+    "p0", "p1", "p2a", "p2b", "p3", "p4", "p5", "p6",
+    "p2c", "p2d", "p2e", "p7", "p8", "p9", "p10", "p11", "p12",
+)
+
+
+def furthest_phase(left: str | None, right: str | None) -> str:
+    """Which of two concurrently-written phases is further along.
+
+    `phase` is DISPLAY ONLY — the graph's edges decide routing, and the only
+    reader is the dashboard's progress line. It still needs a reducer, because
+    the top-down and bottom-up branches both write it in the same superstep and
+    langgraph refuses a plain field that receives two values in one step
+    (`INVALID_CONCURRENT_GRAPH_UPDATE`).
+
+    "Furthest along" rather than last-writer-wins so the answer does not depend
+    on which branch happened to finish first — a progress line that jumps
+    backwards between refreshes reads as a stall, which is the one thing the
+    dashboard exists to rule out. Unknown values lose to known ones, and two
+    unknowns keep the right-hand side, so the reducer stays total.
+    """
+    if not left:
+        return right or ""
+    if not right:
+        return left
+    try:
+        li = _PHASE_ORDER.index(left)
+    except ValueError:
+        return right
+    try:
+        ri = _PHASE_ORDER.index(right)
+    except ValueError:
+        return left
+    return left if li >= ri else right
+
 
 def merge_dict(left: dict | None, right: dict | None) -> dict:
     """Shallow last-writer-wins merge.  Safe under parallel fan-in on disjoint keys."""
@@ -117,7 +163,7 @@ class PipelineState(TypedDict, total=False):
     started_at: float
 
     # --- what phase we are in ----------------------------------------
-    phase: str
+    phase: Annotated[str, furthest_phase]
     phase_status: Annotated[dict[str, str], merge_dict]
     completed_phases: Annotated[list[str], operator.add]
 

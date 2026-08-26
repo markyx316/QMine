@@ -448,3 +448,49 @@ def test_a_boundary_with_no_usable_marker_gets_no_verdict():
     rules = [_rule("R1", "A", pair, when="当查询满足'X的意思'时，归入A。")]
     rows = [_row(i, *pair, "A", query=f"q{i}") for i in range(20)]
     assert stated_grounds(rules, rows) == []
+
+
+def test_a_count_and_the_list_beside_it_describe_the_same_thing():
+    """Found live on live40 by the p2b observer, and CONFIRMED by its own check.
+
+    `n_triggers_rejected` was the full count while `rejected_triggers` was
+    truncated to 12, so the artifact said 13 next to a list of 12. A reader
+    comparing them sees a contradiction and cannot tell whether the count or the
+    list is wrong.
+    """
+    qs = [f"q{chr(97 + i % 26)}{i}" for i in range(400)]
+    # 15 rules whose triggers all fire on the whole corpus -> all rejected.
+    rules = [_rule(f"R{i}", "A", ["A", "B"], trigger="q") for i in range(15)]
+    rows = [_row(i, "A", "B", "A") for i in range(20)]
+
+    rec = rules_against_evidence(rules, rows, qs, codes=["A", "B"]).as_record()
+    assert rec["n_triggers_rejected"] == 15
+    assert len(rec["rejected_triggers"]) == 12
+    assert rec["rejected_triggers_truncated"] == 3, (
+        "the artifact must say how many entries were cut")
+    assert (len(rec["rejected_triggers"]) + rec["rejected_triggers_truncated"]
+            == rec["n_triggers_rejected"])
+
+
+def test_the_two_unkeyed_then_lists_are_named_for_different_populations():
+    """Also found live by the p2b observer.
+
+    `find_conflicts` records the unkeyed rules it met while comparing candidate
+    PAIRS; `rules_against_evidence` records every unkeyed rule on a measured
+    boundary. Both were called `rules_whose_then_is_not_a_class`, so the two
+    artifacts appeared to contradict each other about the same fact.
+    """
+    qs = ["什么意思啊"] * 60 + ["读音"] * 60
+    rules = [_rule("R1", "归 A 类。", ["A", "B"], trigger="什么意思"),
+             _rule("R2", "应归入 A。", ["A", "B"], trigger="意思"),
+             _rule("R3", "归 A 或 B。", ["A", "B"])]
+    rows = [_row(i, "A", "B", "A") for i in range(20)]
+
+    conf = find_conflicts(rules, qs, min_rows=25, codes=["A", "B"]).as_record()
+    ev = rules_against_evidence(rules, rows, qs, codes=["A", "B"]).as_record()
+
+    assert "rules_in_compared_pairs_whose_then_is_not_a_class" in conf
+    assert "rules_on_measured_boundaries_whose_then_is_not_a_class" in ev
+    assert "rules_whose_then_is_not_a_class" not in conf
+    assert "rules_whose_then_is_not_a_class" not in ev, (
+        "one name over two populations is what made this read as a contradiction")

@@ -24,6 +24,14 @@ places where the numbers do not support what the phase concluded.**
    names one metric and the artifact shows another; a "peak" that is not the
    maximum; a comparison whose two sides were measured differently.
 3. **A number that contradicts another number in the same artifact set.**
+   **Before you claim this, satisfy yourself the two numbers measure the SAME
+   POPULATION.** This is the single most common way an observation is wrong
+   here: measured on live40, 8 of 13 findings whose checks evaluated false were
+   arithmetically correct and wrong anyway, almost all because the two fields
+   counted different samples, different id spaces, or different stages of the
+   same pipeline. Two counts differing is not evidence until you have shown they
+   were supposed to be equal. If you cannot show it, write the observation with
+   no `check` and say what you could not rule out.
 4. **A degenerate result that still looks like success.** A class with recall
    exactly 0. A "best alternative" that is the reference itself. A split where
    one side is empty. A gate that passed because its threshold was never applied.

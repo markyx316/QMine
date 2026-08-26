@@ -326,14 +326,30 @@ def _battery_verdict(rows: list[dict[str, Any]]) -> dict[str, Any]:
     # warning worth printing, not a reason to silently switch algorithms mid-flight.
     km = [r for r in partitional if r["algorithm"].startswith("kmeans")]
     reference = max(km, key=lambda r: r["stability_ari"]) if km else (ranked[0] if ranked else None)
-    best_other = ranked[0] if ranked else None
+    # THE ALTERNATIVE MUST BE STRUCTURALLY DIFFERENT, OR THE PROBE COMPARES
+    # KMEANS WITH ITSELF.
+    #
+    # This was `ranked[0]` — the best OVERALL, which is the reference whenever
+    # KMeans wins, which is most of the time. The field is named `best_other` and
+    # never excluded the reference, so `alternative_beats_reference_by` came out
+    # 0.0 by construction and the probe's conclusion ("no structurally different
+    # algorithm is materially more reproducible") rested on no comparison at all.
+    # live38 and live40 both shipped it; the report learned to DETECT the
+    # self-comparison and print a warning, which is a good fallback and not a fix.
+    #
+    # The probe asks whether a different cluster-shape assumption finds the same
+    # structure, so the candidate must be non-KMeans. On live40 that is
+    # `agglo_average_k15` at 0.7529 against the reference's 0.8305 — a margin of
+    # -0.0776, which is the reassuring answer stated as a real measurement
+    # instead of a tautological zero.
+    alternatives = [r for r in ranked if not r["algorithm"].startswith("kmeans")]
+    best_other = alternatives[0] if alternatives else None
     margin = (round(best_other["stability_ari"] - reference["stability_ari"], 4)
               if reference and best_other else None)
-    contradicted = bool(
-        best_other and reference
-        and not best_other["algorithm"].startswith("kmeans")
-        and (margin or 0) > 0.10
-    )
+    # `not startswith("kmeans")` is no longer needed here: `alternatives` already
+    # guarantees it, and leaving the test in would hide a future regression that
+    # let a KMeans variant back into the candidate list.
+    contradicted = bool(best_other and reference and (margin or 0) > 0.10)
     return {
         "role": "falsification probe - the delivered tree is always KMeans (build_hierarchy)",
         "reference_algorithm": reference["algorithm"] if reference else None,

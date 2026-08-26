@@ -1088,6 +1088,68 @@ def p2b_gold(state: PipelineState, deps: Deps) -> dict[str, Any]:
               f"{ev_report.n_semantic} semantic"
               + (f" ({ev_report.n_rejected_triggers} rejected as unusable)"
                  if ev_report.n_rejected_triggers else ""))
+    # ARE THE TWO ANNOTATORS COMPARABLE? Kappa cannot answer that, and it is the
+    # question kappa's meaning depends on: a capability gap between the two shows
+    # up as disagreement no guide fix can close, and p2a's pilot then reads it as
+    # a structural confusion and redraws boundaries that were never the problem.
+    #
+    # Discovered by hand two runs late, by grepping gold sets. Measured now.
+    from ...ops.annotator_balance import annotator_balance
+
+    # `route_for`, not a guessed accessor. The referee's model id is the one
+    # field that makes a BALANCED result interpretable — a win-rate near 50%
+    # means the annotators are matched OR the adjudicator is deciding at chance,
+    # and only the referee separates those. Leaving it blank on an exception
+    # would quietly remove the distinction.
+    _ref_model = ""
+    try:
+        _routed = deps.registry.route_for("referee")
+        _ref_model = f"{_routed[0]}:{_routed[1]}" if _routed else "offline-stand-in"
+    except Exception as _exc:  # noqa: BLE001
+        deps.emit(f"  ⚠ could not record the referee's model ({type(_exc).__name__}) — "
+                  "a balanced annotator result cannot be told from a chance adjudicator")
+    bal = annotator_balance(rows, _ref_model)
+    if bal.undecidable:
+        deps.emit(f"  annotator balance: UNDECIDABLE — only {bal.n_decided} contested "
+                  f"row(s) adjudicated, {bal.MIN_DECIDED} needed to say anything")
+    else:
+        deps.emit(f"  annotator balance: a won {bal.a_won}/{bal.n_decided} "
+                  f"({bal.a_share:.1%}, z={bal.z:+.1f}) of contested rows"
+                  + (" — LOPSIDED" if bal.lopsided else ""))
+    bal_gate = deps.gate(
+        "p2b_annotator_symmetry", "p2b",
+        passed=not bal.lopsided,
+        observed=bal.as_record(),
+        threshold={"rule": "|z| <= 3 for annotator_a's win-rate against an even split",
+                   "why_z_not_a_share": "the same 60/40 split is noise on 40 rows and "
+                                        "decisive on 400"},
+        message=(f"UNDECIDABLE — only {bal.n_decided} contested row(s) were adjudicated, "
+                 f"{bal.MIN_DECIDED} needed. This is NOT a finding that the annotators "
+                 "are comparable; it is an absence of evidence either way"
+                 if bal.undecidable else
+                 f"the two annotators are comparable — a won {bal.a_share:.1%} of "
+                 f"{bal.n_decided} contested rows (z={bal.z:+.1f})"
+                 if not bal.lopsided else
+                 f"the annotators are NOT comparable — a won {bal.a_share:.1%} of "
+                 f"{bal.n_decided} contested rows (z={bal.z:+.1f}), so kappa is measuring "
+                 "the gap between them rather than the clarity of the guide"),
+        remediation=(
+            "DIAGNOSTIC ONLY — do not choose a model from this number. It cannot "
+            "separate a genuine capability gap from a referee deciding at chance, "
+            "which is why the referee's own model id is recorded beside it. Model "
+            "choice needs an independent capability evaluation, which this pipeline "
+            "cannot produce; `capable_models` in the config is where that human "
+            "judgement is recorded.\n\n"
+            "Match the two annotators. A gap between them is measured as guide "
+            "ambiguity by construction, and the p2a pilot will spend redraws on "
+            "boundaries that were never the problem. Also check the REFEREE before "
+            "trusting a balanced result: a win-rate near 50% means the annotators are "
+            "matched OR that the adjudicator is deciding at chance, and only the "
+            "referee's own capability separates those. Measured on this project: the "
+            "same annotator pair read 78.3% under glm-5.2 and 55.1% under glm-4.5-airx."),
+        warn_only=True,
+    )
+
     vac = ev_report.vacuous_grounds
     for gr in vac:
         deps.emit(f"  ⚠ {' x '.join(gr.classes)}: the rules name "
@@ -1137,6 +1199,7 @@ def p2b_gold(state: PipelineState, deps: Deps) -> dict[str, Any]:
          "referee_rules_added": len(new_rules),
          "rule_conflicts": conflicts.as_record(),
          "rules_vs_evidence": ev_report.as_record(),
+         "annotator_balance": bal.as_record(),
          "guide_repaired": bool(repair_meta),
          "provenance": "p2b: taxonomy after the referee's rules and any guide repair"},
         producer="p2b",
@@ -1153,11 +1216,12 @@ def p2b_gold(state: PipelineState, deps: Deps) -> dict[str, Any]:
                       "taxonomy_v2": tax_v2_ref},
         # `deps.gate()` BUILDS a GateResult and registers nothing — a gate this
         # node creates and does not return here reaches the log and no operator.
-        "gates": {gate.name: gate, ev_gate.name: ev_gate,
+        "gates": {gate.name: gate, ev_gate.name: ev_gate, bal_gate.name: bal_gate,
                   **_observe(deps, "p2b", {
                       "gold_agreement": agree,
                       "kappa_trace": kappa_trace,
                       "rules_vs_evidence": ev_report.as_record(),
+         "annotator_balance": bal.as_record(),
                       "rule_conflicts": conflicts.as_record(),
                   })},
         "completed_phases": ["p2b"],

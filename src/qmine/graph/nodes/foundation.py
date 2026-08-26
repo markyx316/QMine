@@ -84,7 +84,9 @@ def p1_audit(state: PipelineState, deps: Deps) -> dict[str, Any]:
     deps.emit("P1 audit — profiling corpus")
 
     raw = _load_input(cfg)
-    ref_labels = {c: raw[c].astype(str).tolist() for c in cfg.data.reference_label_columns if c in raw.columns}
+    declared = [c for c in cfg.data.reference_label_columns if c in raw.columns]
+    unused = _label_like_columns(raw, cfg) if not declared else []
+    ref_labels = {c: raw[c].astype(str).tolist() for c in declared}
     weights = raw[cfg.data.weight_column].tolist() if cfg.data.weight_column in raw.columns else None
     df = build_frame(raw[cfg.data.text_column].astype(str).tolist(), reference_labels=ref_labels, weights=weights)
 
@@ -96,6 +98,39 @@ def p1_audit(state: PipelineState, deps: Deps) -> dict[str, Any]:
 
     corpus_ref = deps.store.put_table("corpus", df, producer="p1", summary=f"{len(df)} queries with surface features")
     deps.cache_put("corpus", df)
+
+    # A CORPUS THAT CARRIES LEGACY LABELS AND A RUN THAT DECLARES NONE LOOK THE
+    # SAME IN EVERY LOG LINE, AND THEY ARE NOT THE SAME RUN.
+    #
+    # `--reference-columns` is a launch flag with an empty default. Omitting it on
+    # a corpus that has them changes EIGHT things quietly: the gold set and the
+    # pilot stop being stratified by legacy label (so kappa and everything
+    # downstream shift), the blindness firewall is armed with fewer forbidden
+    # terms, the legacy-audit researcher returns nothing, the corpus audit loses
+    # its legacy distribution, and the delivered table loses its crosswalk. Only
+    # the researcher says anything, and it says "this angle contributed nothing",
+    # which reads like a finding about the corpus rather than about the command.
+    if unused:
+        deps.emit(f"  ⚠ this corpus carries {len(unused)} label-like column(s) that no "
+                  f"`--reference-columns` flag declared: {', '.join(unused[:4])}")
+    ref_gate = deps.gate(
+        "p1_reference_columns_declared", "p1",
+        passed=not unused,
+        observed={"declared": declared, "undeclared_label_like": unused,
+                  "all_columns": [str(c) for c in raw.columns][:20]},
+        threshold={"rule": "a label-like column present in the input must be declared or "
+                           "knowingly ignored"},
+        message=(f"reference labels: {', '.join(declared)}" if declared else
+                 ("no reference label columns, and the corpus offers none"
+                  if not unused else
+                  f"the corpus carries {', '.join(unused[:4])} and the run declared NONE — "
+                  "the gold set and pilot are UNSTRATIFIED by legacy label and the "
+                  "blindness firewall is armed without those values")),
+        remediation=("Relaunch with `--reference-columns " + ",".join(unused[:3]) + "`, or "
+                     "record that these columns are deliberately ignored. Runs that differ "
+                     "in this are not comparable: the gold set is sampled differently."),
+        warn_only=True,
+    )
 
     report = audit_corpus(df, text_col=cfg.data.text_column, reference_cols=cfg.data.reference_label_columns)
     report["input_hash"] = hash_texts(df[cfg.data.text_column].astype(str).tolist())
@@ -284,7 +319,9 @@ def p1_audit(state: PipelineState, deps: Deps) -> dict[str, Any]:
     return {
         "phase": "p2",
         "artifacts": arts,
-        "gates": {gate.name: gate, lang_gate.name: lang_gate},
+        # `deps.gate()` returns a GateResult and registers nothing — a gate this
+        # node creates and does not return here reaches the log and no operator.
+        "gates": {gate.name: gate, lang_gate.name: lang_gate, ref_gate.name: ref_gate},
         "completed_phases": ["p1"],
         "events": events,
     }
@@ -344,3 +381,31 @@ def _load_input(cfg: Any) -> pd.DataFrame:
     if str(path).endswith((".jsonl", ".json")):
         return pd.read_json(path, lines=str(path).endswith(".jsonl"))
     return pd.read_csv(path)
+
+
+def _label_like_columns(raw: Any, cfg: Any) -> list[str]:
+    """Columns that look like pre-existing labels nobody declared.
+
+    Deliberately conservative: a low-cardinality text column that is not the
+    text, weight or id column. The point is to notice a corpus that HAS legacy
+    labels while the run declares none — a free-text column has cardinality near
+    the row count and never trips this.
+    """
+    skip = {cfg.data.text_column, cfg.data.weight_column, "row_id", "id", "query_id"}
+    out = []
+    for col in raw.columns:
+        if str(col) in skip:
+            continue
+        try:
+            series = raw[col]
+            # NOT `dtype != object`: pandas 3 reads text columns as `str`, so an
+            # object check silently matched nothing and the guard passed on the
+            # very corpus it was written for. Ask what the column is NOT instead.
+            if pd.api.types.is_numeric_dtype(series) or pd.api.types.is_bool_dtype(series):
+                continue
+            n_unique = series.nunique(dropna=True)
+        except Exception:  # noqa: BLE001
+            continue
+        if 2 <= n_unique <= max(2, int(0.05 * len(raw))):
+            out.append(str(col))
+    return out
