@@ -267,7 +267,115 @@ def p10_deploy(state: PipelineState, deps: Deps) -> dict[str, Any]:
     # the same intent, and a family that splays across five is a real
     # disagreement worth a human's attention — in either direction, since the
     # top-down class may be the one that is too coarse.
+    # AND IT MUST BE RUN AT MATCHED GRANULARITY, OR THE VERDICT IS ARITHMETIC.
+    #
+    # This compared 7 families against 25 top-down classes and reported "routes
+    # disagree" on every row — which a 7-vs-25 comparison forces regardless of
+    # what either route found. Measured on live40 at the LEAF layer instead, where
+    # the cardinalities match (25 vs 25): AMI rises 0.5395 -> 0.6175, median
+    # single-intent concentration 39.5% -> 80.3%, and 19 of 25 leaves are majority
+    # one top-down intent against 1 of 7 families. The two routes agree, at the
+    # layer that carries the intents.
+    #
+    # This also resolves the run's loudest open question. live40 concluded its
+    # domain prior of 15-25 families was wrong because K came out 7. The prior was
+    # right about how many intent classes the corpus has and wrong about which
+    # LAYER carries them: the delivered leaf layer has 25, inside [15,25], and the
+    # top-down taxonomy independently produced 25 L1 intents.
+    from sklearn.metrics import adjusted_mutual_info_score
+
     if "td_l1" in out.columns:
+        _levels = [("bu_family_final", "family"), ("bu_leaf", "leaf")]
+        _by_level = {}
+        for col, level in _levels:
+            if col not in out.columns:
+                continue
+            sub = out.dropna(subset=["td_l1", col])
+            if sub.empty:
+                continue
+            td_codes = pd.factorize(sub["td_l1"].astype(str))[0]
+            conc = sub.groupby(col)["td_l1"].apply(
+                lambda g: float(g.astype(str).value_counts().iloc[0] / len(g)))
+            _by_level[level] = {
+                "n_clusters": int(sub[col].nunique()),
+                "n_td_classes": int(sub["td_l1"].nunique()),
+                "ami": round(float(adjusted_mutual_info_score(td_codes, sub[col].to_numpy())), 4),
+                "median_dominant_share": round(float(conc.median()), 4),
+                "n_majority_one_intent": int((conc >= 0.5).sum()),
+            }
+        # AND WHILE BOTH LABEL SETS ARE IN HAND, VALIDATE THE K LOCATOR'S REFERENCE.
+        #
+        # K is located by AMI against the trusted phrasing groups, and the only
+        # test those groups ever face is `validate_group_cohesion` — mean pairwise
+        # cosine vs random, computed in the same embedding they later judge. That
+        # gate measures TOPICAL tightness, and an intent group spans topics by
+        # construction, so it ranks groups almost backwards from what matters:
+        # on live40, Spearman(lift, purity) = -0.60 across the six seeded groups.
+        #
+        # The top-down taxonomy is an independent yardstick built by a different
+        # methodology on the same corpus. If a phrasing group is one intent, its
+        # members concentrate on one L1 class. That is the validation, and it can
+        # only be run here, after p2 has produced labels.
+        try:
+            from ...ops.templates import group_masks
+            from ...records import TemplateGroup
+
+            _tg = deps.load("template_groups") if deps.has("template_groups") else {}
+            _groups = [TemplateGroup.model_validate(g) for g in (_tg.get("groups") or [])]
+            if _groups and "td_l1" in out.columns:
+                _trusted = set(group_masks(_groups, deps.df,
+                                           text_col=cfg.data.text_column,
+                                           trusted_only=True))
+                _all = group_masks(_groups, deps.df, text_col=cfg.data.text_column)
+                _td = out["td_l1"].astype(str).to_numpy()
+                _chance = float(pd.Series(_td).value_counts().iloc[0] / len(_td))
+                _rows = []
+                for _name, _m in _all.items():
+                    _m = np.asarray(_m)
+                    if _m.sum() < 10 or _m.shape[0] != len(_td):
+                        continue
+                    _vc = pd.Series(_td[_m]).value_counts()
+                    _share = float(_vc.iloc[0] / _m.sum())
+                    _rows.append({
+                        "group": _name, "n": int(_m.sum()),
+                        "votes_in_k_locator": _name in _trusted,
+                        "dominant_intent": str(_vc.index[0]),
+                        "single_intent_share": round(_share, 4),
+                        "lift_over_chance": round(_share / _chance, 2) if _chance else None,
+                        "n_intents_to_cover_90pct": int(
+                            ((_vc / _m.sum()).cumsum() < 0.9).sum() + 1),
+                    })
+                if _rows:
+                    _v = [r["single_intent_share"] for r in _rows if r["votes_in_k_locator"]]
+                    deps.store.put_json("locator_reference_validation", {
+                        "chance_baseline": round(_chance, 4),
+                        "median_purity_of_voting_groups": round(float(np.median(_v)), 4) if _v else None,
+                        "groups": sorted(_rows, key=lambda r: -r["single_intent_share"]),
+                        "what_this_tests": (
+                            "whether the phrasing groups the K locator scores AMI "
+                            "against are really same-intent groups, judged against a "
+                            "taxonomy built by a different methodology. This is the "
+                            "check `validate_group_cohesion` cannot make: it measures "
+                            "topical tightness, and an intent group spans topics."),
+                    }, producer="p10", summary="are the K locator's reference groups one intent?")
+                    if _v:
+                        deps.emit(f"  K 定位参照校验: 参与投票的措辞群单一意图占比中位数 "
+                                  f"{np.median(_v):.1%} (随机基线 {_chance:.1%})")
+        except Exception as exc:                                  # noqa: BLE001
+            deps.emit(f"  locator reference validation skipped ({type(exc).__name__}: {exc})")
+
+        if _by_level:
+            deps.store.put_json("route_concordance", {
+                "by_level": _by_level,
+                "note": ("compare at MATCHED cardinality. A 7-family vs 25-class "
+                         "comparison forces disagreement arithmetically; the leaf "
+                         "layer is where the two routes are commensurable."),
+            }, producer="p10", summary="both routes, compared at each bottom-up level")
+            for level, m in _by_level.items():
+                deps.emit(f"  路线一致性 ({level}, {m['n_clusters']} 簇 vs "
+                          f"{m['n_td_classes']} 类): AMI={m['ami']}, "
+                          f"{m['n_majority_one_intent']}/{m['n_clusters']} 单一意图占多数")
+
         rows = []
         for fam, grp in out.groupby("bu_family_final"):
             comp = grp["td_l1"].astype(str).value_counts()
@@ -517,10 +625,13 @@ def p12_maintain(state: PipelineState, deps: Deps) -> dict[str, Any]:
                 "n_flagged": int(len(novel_idx)),
                 "samples": novel,
                 "why_this_method": (
-                    "the density method that lost the Phase 4 bake-off is kept for exactly "
-                    "this job: it is poor at partitioning a corpus and good at noticing "
-                    "something that belongs to no partition"
+                    "distance to the nearest delivered leaf centroid, bottom 1% by cosine. "
+                    "NOT a density method: HDBSCAN is instantiated only inside the Phase 4 "
+                    "probe and nothing downstream consumes it. This said 'the density method "
+                    "that lost the Phase 4 bake-off is kept for exactly this job', which named "
+                    "a bake-off the spec has retracted, for a method that is not the one running"
                 ),
+                "method": "max-centroid cosine, 1st percentile",
             },
             "drift": drift,
             "rerun_contract": {

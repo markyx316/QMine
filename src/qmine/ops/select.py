@@ -24,6 +24,19 @@ the sample grows or the true gap widens. So a proposer that widens the grid must
 pay for it — a challenger has to beat the incumbent by more than noise, not merely
 score higher. `challenger_beats_incumbent` is that toll.
 
+**NOT WIRED. `challenger_beats_incumbent` has no production call site.** The
+only symbol any `src/` module imports from `ops/select.py` is `noise_floor`. The
+protection described below is real code with real tests and nothing calls it, so
+a proposed value that wins by luck is currently stopped by nothing.
+
+Two reasons it is documented rather than quietly wired. Applying the toll as
+written flips live40 from K=7 to K=10, which is *worse* on both of the metrics
+the run reports — stability 0.695 vs 0.9966, fragmentation 1.622 vs 1.42 — so a
+call site added without redesign would degrade the answer. And `propose_grid`
+returns a flat widened list, so selection never learns which values were
+proposed; expressing the toll at all needs a signature change. See
+`QMine/HANDOFF.md` §2.
+
 Nothing in this module is an agent, and that is deliberate: every function here is
 reproducible, auditable, and identical on every re-run.
 """
@@ -43,9 +56,26 @@ def noise_floor(values: Sequence[float]) -> float:
     differences isolates the jitter, is robust to the trend, and costs nothing
     extra — no refitting, no extra seeds.
 
-    Validated against a figure measured a different way: on live38's 14-point K
-    sweep this returns **0.0105** for `intent_alignment_ami`, where the sweep's
-    own documentation records a seed-to-seed sd of "~0.01".
+    **It UNDERSTATES the real noise by about 2x, and that validation was thin.**
+    The docstring used to rest on live38 returning 0.0105 against documentation
+    recording "~0.01" — one number agreeing with a rounded note. Measured properly
+    on live40 by refitting KMeans with 5 independent seeds at each of k=7,8,10,12,15
+    on the full corpus, `intent_alignment_ami`'s pooled seed-to-seed sd is
+    **0.0255**, where this function returned 0.0129.
+
+    Two consequences, and the first is lucky rather than sound. The band built from
+    it is `2 * se` = 0.0258, which lands within 2% of the real 1-sd figure — so
+    live40's tie set {7, 10, 12} is correct, by an accident of doubling an estimate
+    that was half the true value. Do not "fix" the factor without re-measuring the
+    band, or the tie set will collapse and the sweep will start ranking noise: the
+    spread across that entire podium is 0.0039, about 15% of one sd.
+
+    Second, the real noise is strongly **heteroscedastic across k** and this returns
+    a single pooled number that hides it. live40's per-k sd: k=7 **0.0009**, k=8
+    0.0182, k=10 **0.0441**, k=12 0.0225, k=15 0.0218. k=10 -- the single-seed
+    argmax that shipped -- ranges 0.6728 to 0.7757 across seeds, while k=7 is stable
+    to the fourth decimal. That is a far better argument for the delivered K than
+    the "simplest tree" tie-break actually used, and nothing currently measures it.
 
     Returns NaN when there are too few points to estimate anything.
     """

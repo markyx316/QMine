@@ -257,8 +257,10 @@ ROLE_REQUIREMENTS: dict[str, RoleRequirement] = {
         multilingual_critical=True,
         rationale="Proposes grid values from corpus characteristics. NOT frontier: a "
                   "bad proposal simply loses in scoring, so it fails visibly and "
-                  "cheaply — what it cannot do is win by luck, and that is enforced "
-                  "by the challenger margin in ops/select.py, not by model quality.",
+                  "cheaply. NOTE: the 'cannot win by luck' guarantee this budget once "
+                  "cited is NOT currently in force — ops/select.py's challenger margin "
+                  "has no production call site. The remaining protection is blindness "
+                  "to scores (pre-registration), which is real and enforced.",
     ),
     "observer": RoleRequirement(
         role="observer", reasoning="frontier", blast_radius="run",

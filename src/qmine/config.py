@@ -155,6 +155,32 @@ class ClusteringConfig(BaseModel):
     refine_move_tolerance: float = 0.005
     heldout_fraction: float = 0.2
     deep_aligned_multiplier: int = 3
+    #: Replay-ARI below this rejects a partition as irreproducible rather than
+    #: ranking it. It was a bare default inside `ops/cluster.py` with no config
+    #: entry and no test, i.e. an imported constant of exactly the kind
+    #: `test_gates_do_not_import_thresholds_that_only_fit_one_corpus` exists to
+    #: catch — it simply was not reachable to be caught. Read it with its own
+    #: instrument's spread: `replay_stability`'s seed-to-seed sd is ~0.14 on these
+    #: corpora, so a hard cut at 0.55 against observed minima near 0.63 is inside
+    #: one sd, and on live40 it filtered exactly one candidate all run. Raise it
+    #: only with a measured spread to justify the new value.
+    stability_floor: float = 0.55
+    #: Which reference partition locates the family K.
+    #:
+    #: ``"auto"`` picks the one that REACHES the most of the partition (see
+    #: `ops.cluster.locator_reach`), which is the property that decides whether a
+    #: reference can speak for the corpus at all. Measured on live40 at k=18: the
+    #: six trusted phrasing groups hold a real share of 38.9% of clusters and
+    #: locate K=7; `ref_legacy_l1` holds a share of 100% and locates K=18. Scoring
+    #: the same reference on the rows the templates match gives 7, on a random
+    #: sample of the same size gives 18, and on the rows they miss gives 18 — the
+    #: templates select a structurally atypical third and locate K for it.
+    #:
+    #: ``"phrasing"`` forces the old behaviour; any other string names a column.
+    #: There is no label-free repair for a low-reach reference: background-class
+    #: and downsampled-background variants both still returned K=7, because the
+    #: templates carry no information about the rows they do not match.
+    k_locator: str = "auto"
 
 
 class TaxonomyConfig(BaseModel):
@@ -457,11 +483,16 @@ class QMineConfig(BaseModel):
     #: never from scores, which `ops.propose.assert_blind` enforces on the payload.
     #: The grids are K12 artefacts (`alpha_grid`, `k_sweep`, `expected_family_range`)
     #: applied unchanged to every corpus, and this is how a grid can come from the
-    #: corpus instead. ON by default: the guardrails make widening safe rather
-    #: than merely cheap — additions are capped (the cap IS the multiple-
-    #: comparisons budget), a challenger must clear the incumbent by >2x the
-    #: metric's measured noise, and every run grades whether a proposal actually
-    #: won. Off in `fast_mode` regardless.
+    #: corpus instead. ON by default: additions are capped (the cap IS the
+    #: multiple-comparisons budget), the proposer never sees a score, and every
+    #: run grades whether a proposal actually won.
+    #: **The "challenger must clear the incumbent by >2x the metric's measured
+    #: noise" clause that stood here is NOT in force** — `challenger_beats_incumbent`
+    #: has no production call site, and `propose_grid` returns a flat widened list
+    #: so selection cannot tell a proposed value from a configured one. live40's
+    #: K=7 was a proposed value that won; it is also the best value in its tie set
+    #: on both reported metrics, so nothing was harmed — but it paid no toll.
+    #: Off in `fast_mode` regardless.
     propose_grids: bool = True
     offline: bool = Field(
         default=False, description="No network: hashing encoder + mock LLM."

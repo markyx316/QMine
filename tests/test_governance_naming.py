@@ -284,3 +284,52 @@ def test_a_merge_naming_only_real_families_is_unaffected():
     assert p.status != "declined" and p.decline_reason == ""
     assert detail["merges"]["merge_map_raw"] == {"3": 1}
     assert len(set(fam.tolist())) == 4
+
+
+def test_an_agent_prescribed_split_is_measured_even_though_it_is_not_vetoed():
+    """36% of live40's delivered leaf layer came through this door unmeasured.
+
+    `choose_local_k` applies a null test and a stability floor to every leaf the
+    measured rule creates. `split_leaves` applies a `min_size` guard and nothing
+    else, and it made 9 of live40's 25 delivered leaves. The asymmetry was
+    invisible because the two facts lived in different artifacts.
+
+    The measurement is advisory ON PURPOSE and the direction is the reason: when
+    live40's 9 splits were replayed through those tests, all 9 passed — the audit
+    was compensating for an under-split caused by ranking local k on raw
+    silhouette. A veto built on the same biased geometry would have rejected the
+    corrections to its own bias. What must not happen is shipping the split with
+    no number beside it.
+    """
+    import numpy as np
+
+    from qmine.ops.governance import split_leaves
+
+    rs = np.random.RandomState(0)
+    # One leaf holding two genuinely separate things, which is the case the audit
+    # prescribes a split for.
+    a = np.array([1.0, 0, 0]) + rs.normal(0, 0.05, (400, 3))
+    b = np.array([0, 1.0, 0]) + rs.normal(0, 0.05, (400, 3))
+    X = np.vstack([a, b])
+    X /= np.linalg.norm(X, axis=1, keepdims=True)
+    labels = np.zeros(len(X), dtype=np.int64)
+
+    _lab, _fam, done = split_leaves(X, labels, np.array([0]), [0], min_size=60)
+    rec = done["0"]
+    assert rec["split"] is True
+    for field in ("silhouette", "silhouette_null", "lift_over_null", "stability_ari"):
+        assert field in rec, f"an agent's split shipped without {field}: {rec}"
+    assert rec["geometry_supports_the_split"] is True, rec
+    assert rec["lift_over_null"] > 0.02
+
+    # And a split of structureless data is DISCLOSED, not blocked — the leaf still
+    # exists, and the record says the geometry does not back it.
+    noise = rs.normal(0, 1, (800, 16))
+    noise /= np.linalg.norm(noise, axis=1, keepdims=True)
+    flat = np.zeros(len(noise), dtype=np.int64)
+    lab2, _f2, done2 = split_leaves(noise, flat, np.array([0]), [0], min_size=60)
+    rec2 = done2["0"]
+    assert rec2["split"] is True, "the measurement must not veto"
+    assert len(set(lab2.tolist())) == 2, "the split was silently dropped"
+    assert rec2["geometry_supports_the_split"] is False, (
+        f"a structureless split was reported as geometrically supported: {rec2}")

@@ -608,3 +608,104 @@ def test_the_domain_scout_only_runs_when_no_vertical_was_declared():
     scout = inspect.getsource(foundation._scout_unknown_domain)
     assert "HYPOTHESES ONLY" in scout, "the scout's output must be marked as hypotheses"
     assert "return None" in scout, "a scout that cannot run must not stop the run"
+
+
+def test_local_k_never_ships_a_pareto_dominated_split():
+    """A candidate another admissible candidate beats on BOTH axes cannot win.
+
+    `choose_local_k`'s overrule loop compared `d_sil` against `top` but `d_stab`
+    against the RUNNING `pick`, so it depended on iteration order and could settle
+    on a candidate that was strictly worse than one it had already seen. live40's
+    family 3 shipped k=2 (lift 0.0884, replay ARI 0.9993) while k=3 (0.0994,
+    1.0000) dominated it on both — those are the real published numbers below.
+
+    The rule now also ranks on `lift_over_null` rather than raw silhouette.
+    Silhouette falls with k on this geometry (Spearman -0.888 on live40's family
+    sweep), so ranking k=2 against k=8 on it is the biased comparison; the null is
+    computed at the SAME k, which is what removes the k-dependence. The symptom
+    was that 5 of 7 families took the minimum admissible k and none took 4-8.
+    """
+    from qmine.ops.cluster import _rank_local_candidates
+
+    family3 = [
+        {"k": 2, "silhouette": 0.0916, "lift_over_null": 0.0884, "stability_ari": 0.9993},
+        {"k": 3, "silhouette": 0.0998, "lift_over_null": 0.0994, "stability_ari": 1.0000},
+        {"k": 4, "silhouette": 0.0699, "lift_over_null": 0.0709, "stability_ari": 0.9962},
+        {"k": 5, "silhouette": 0.0850, "lift_over_null": 0.0862, "stability_ari": 0.9995},
+        {"k": 6, "silhouette": 0.0964, "lift_over_null": 0.0969, "stability_ari": 0.9935},
+        {"k": 7, "silhouette": 0.1044, "lift_over_null": 0.1058, "stability_ari": 0.8284},
+        {"k": 8, "silhouette": 0.1102, "lift_over_null": 0.1099, "stability_ari": 0.7435},
+    ]
+    pick, _raw = _rank_local_candidates(family3, sil_noise=0.02, stability_gain=0.15)
+    assert pick["k"] == 3, f"expected k=3, got k={pick['k']}"
+
+    # And the guarantee itself, stated directly: nothing admissible beats the pick
+    # on both axes at once.
+    dominated_by = [c for c in family3
+                    if c["lift_over_null"] > pick["lift_over_null"]
+                    and c["stability_ari"] > pick["stability_ari"]]
+    assert not dominated_by, f"shipped a candidate dominated by {dominated_by}"
+
+
+def test_local_k_ranking_does_not_depend_on_candidate_order():
+    """The defect was order-dependence, so the test has to reorder.
+
+    Ranking on a running reference makes the answer a function of how the
+    candidate list happens to be sorted — which nothing guarantees.
+    """
+    import random
+
+    from qmine.ops.cluster import _rank_local_candidates
+
+    cands = [
+        {"k": 2, "silhouette": 0.0916, "lift_over_null": 0.0884, "stability_ari": 0.9993},
+        {"k": 3, "silhouette": 0.0998, "lift_over_null": 0.0994, "stability_ari": 1.0000},
+        {"k": 6, "silhouette": 0.0964, "lift_over_null": 0.0969, "stability_ari": 0.9935},
+        {"k": 8, "silhouette": 0.1102, "lift_over_null": 0.1099, "stability_ari": 0.7435},
+    ]
+    picks = set()
+    for seed in range(12):
+        shuffled = cands[:]
+        random.Random(seed).shuffle(shuffled)
+        picks.add(_rank_local_candidates(shuffled, sil_noise=0.02, stability_gain=0.15)[0]["k"])
+    assert len(picks) == 1, f"the pick moved with candidate order: {picks}"
+
+
+def test_local_k_is_ranked_on_lift_over_the_null_not_raw_silhouette():
+    """Calibration against a same-k null is what makes the comparison legitimate.
+
+    live40's family 2, real published numbers. Raw silhouette is MAXIMAL at k=2
+    (0.0644) and falls monotonically — the small-k attractor in its purest form.
+    Lift over a column-shuffled reference computed at the same k peaks at k=3
+    (0.0616), because the null scores higher at small k too and subtracting it
+    removes precisely that bias.
+
+    Ranking on the raw value gave k=2 for 5 of live40's 7 families — the minimum
+    admissible value — and the Phase 7 audit then prescribed splitting 9 of the
+    resulting 16 leaves. All 9 pass this function's own null and stability tests on
+    replay, so the under-split was real and an agent was compensating for it
+    through the one door with no guardrails.
+
+    This case is NOT caught by the Pareto guard: k=2 has the higher stability, so
+    neither candidate dominates the other. Only the ranking metric separates them.
+    """
+    from qmine.ops.cluster import _rank_local_candidates
+
+    family2 = [
+        {"k": 2, "silhouette": 0.0644, "lift_over_null": 0.0596, "stability_ari": 1.0},
+        {"k": 3, "silhouette": 0.0588, "lift_over_null": 0.0616, "stability_ari": 0.9962},
+        {"k": 4, "silhouette": 0.0566, "lift_over_null": 0.0603, "stability_ari": 0.9657},
+        {"k": 5, "silhouette": 0.0562, "lift_over_null": 0.0602, "stability_ari": 0.7964},
+        {"k": 6, "silhouette": 0.0533, "lift_over_null": 0.0583, "stability_ari": 0.8811},
+        {"k": 7, "silhouette": 0.0533, "lift_over_null": 0.0587, "stability_ari": 0.9168},
+        {"k": 8, "silhouette": 0.0552, "lift_over_null": 0.0604, "stability_ari": 0.638},
+    ]
+    pick, raw_top = _rank_local_candidates(family2, sil_noise=0.02, stability_gain=0.15)
+    assert raw_top["k"] == 2, "sanity: raw silhouette does peak at the smallest k here"
+    assert pick["k"] == 3, (
+        f"ranked on the uncalibrated value — got k={pick['k']}, and the "
+        "small-k attractor is back")
+
+    # Neither dominates, so the Pareto guard cannot be what saves this.
+    assert family2[0]["stability_ari"] > family2[1]["stability_ari"]
+    assert family2[1]["lift_over_null"] > family2[0]["lift_over_null"]

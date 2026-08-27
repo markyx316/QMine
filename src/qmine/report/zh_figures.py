@@ -142,7 +142,7 @@ if sw.get('rows'):
     def _alpha(p):  r = np.asarray(p, float)/100; return np.sqrt(r/np.maximum(1e-9, 1-r))
     tw = axes[0].secondary_xaxis('top', functions=(_share, _alpha))
     tw.set_xlabel('措辞话语权 α²/(1+α²)  (%)', fontsize=8.5)
-    fig.suptitle(f'α 决策: 当选 α={A} — 依据「{sw["chosen_by"]}」', fontsize=11)
+    fig.suptitle(f'α 决策: 当选 α={A} — 碎裂度并列带内取稳定性最高者', fontsize=11)
     plt.tight_layout(); SAVE(fig, 'fig2_alpha'); plt.show()
 
     share = A**2/(1+A**2)
@@ -170,7 +170,7 @@ def fig_battery() -> str:
     discards 43% of the corpus as noise is not on the same axis as one that
     keeps everything.
     """
-    return """# %% 图 3 — 算法 battery: 淘汰赛全景 (右上更好)
+    return """# %% 图 3 — 算法证伪检验: 假设不同的算法是否找到同样的结构 (右上更好)
 try:
     battery = J('battery')
     rows = pd.DataFrame(battery['rows'])

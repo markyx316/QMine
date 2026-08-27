@@ -189,6 +189,63 @@ def _agglo_predict(X_fit: np.ndarray, X_query: np.ndarray, k: int) -> np.ndarray
 # Phase 4 — the battery
 # ==========================================================================
 
+#: Algorithms that share KMeans's isotropic cluster-shape assumption. A probe
+#: asking "is this structure an artefact of that assumption?" learns nothing by
+#: comparing against another member of this family — MiniBatchKMeans is KMeans
+#: with stochastic updates, BisectingKMeans is recursive 2-means.
+KMEANS_FAMILY: tuple[str, ...] = ("kmeans", "minibatch", "bisecting")
+
+
+def _is_kmeans_family(algorithm: str) -> bool:
+    return str(algorithm).startswith(KMEANS_FAMILY)
+
+
+def _best_structural_alternative(
+    ranked: list[dict[str, Any]], reference: dict[str, Any] | None,
+) -> dict[str, Any] | None:
+    """The most reproducible candidate that does NOT share KMeans's assumption."""
+    alts = [r for r in ranked
+            if not _is_kmeans_family(r["algorithm"])
+            and (reference is None or r["algorithm"] != reference["algorithm"])]
+    return alts[0] if alts else None
+
+
+def _paired_margins(ranked: list[dict[str, Any]]) -> dict[str, dict[str, Any]]:
+    """Best non-KMeans-family minus best KMeans-family, computed WITHIN each k.
+
+    An unpaired comparison of two maxima confounds the cluster-shape assumption
+    with granularity, and on this corpus granularity is the larger effect.
+    """
+    def _k_of(r: dict[str, Any]) -> int:
+        """Battery rows carry `n_clusters`; some callers and tests carry `k`.
+
+        Reading only one of them made the pairing silently empty, which made the
+        verdict unconditionally False — a probe that cannot fire. The existing
+        "the gate must be able to fail" test caught it.
+        """
+        for field in ("n_clusters", "k"):
+            v = r.get(field)
+            if isinstance(v, (int, float)) and v > 0:
+                return int(v)
+        return -1
+
+    out: dict[str, dict[str, Any]] = {}
+    ks = sorted({_k_of(r) for r in ranked if _k_of(r) > 0})
+    for k in ks:
+        at_k = [r for r in ranked if _k_of(r) == k]
+        fam = [r for r in at_k if _is_kmeans_family(r["algorithm"])]
+        oth = [r for r in at_k if not _is_kmeans_family(r["algorithm"])]
+        if not fam or not oth:
+            continue
+        ref = max(fam, key=lambda r: r["stability_ari"])
+        alt = max(oth, key=lambda r: r["stability_ari"])
+        out[str(k)] = {
+            "reference": ref["algorithm"], "alternative": alt["algorithm"],
+            "margin": round(alt["stability_ari"] - ref["stability_ari"], 4),
+        }
+    return out
+
+
 def algorithm_battery(
     X: np.ndarray,
     *,
@@ -342,18 +399,41 @@ def _battery_verdict(rows: list[dict[str, Any]]) -> dict[str, Any]:
     # `agglo_average_k15` at 0.7529 against the reference's 0.8305 — a margin of
     # -0.0776, which is the reassuring answer stated as a real measurement
     # instead of a tautological zero.
-    alternatives = [r for r in ranked if not r["algorithm"].startswith("kmeans")]
-    best_other = alternatives[0] if alternatives else None
+    # "STRUCTURALLY DIFFERENT" IS ABOUT THE CLUSTER-SHAPE ASSUMPTION, NOT THE NAME.
+    #
+    # The first fix filtered on `not startswith("kmeans")`, which still admitted
+    # `minibatch_*` and `bisecting_*`. MiniBatchKMeans is KMeans with stochastic
+    # updates and BisectingKMeans is recursive 2-means: both assume the same
+    # isotropic, roughly spherical clusters the probe exists to question. Had
+    # either ranked first among "alternatives", the probe would have compared
+    # KMeans against KMeans with a different optimiser and called that a
+    # falsification test — the same tautology, one name away. On live40
+    # `agglo_average_k15` outranked `minibatch_k15`, so the answer was right by
+    # luck rather than by construction.
+    best_other = _best_structural_alternative(ranked, reference)
+
+    # AND THE MARGIN MUST BE PAIRED WITHIN k.
+    #
+    # The old margin compared two unpaired maxima whose k need not match, while
+    # the k-effect is larger than the threshold it feeds: KMeans replay ARI runs
+    # 0.8305 at k=15 and 0.6649 at k=20 on live40, so an alternative at one k
+    # "beating" a reference at another measures the granularity, not the
+    # assumption. Paired within k on live40 the sign even flips - k=15 -0.078,
+    # k=20 +0.060 (gmm_diag ahead), k=30 -0.157.
+    per_k = _paired_margins(ranked)
     margin = (round(best_other["stability_ari"] - reference["stability_ari"], 4)
               if reference and best_other else None)
-    # `not startswith("kmeans")` is no longer needed here: `alternatives` already
-    # guarantees it, and leaving the test in would hide a future regression that
-    # let a KMeans variant back into the candidate list.
-    contradicted = bool(best_other and reference and (margin or 0) > 0.10)
+    worst_paired = max((m["margin"] for m in per_k.values()), default=None)
+    # The verdict is now taken from the paired comparison, which is the weaker and
+    # the only valid statement. A single unpaired maximum could clear 0.10 purely
+    # because the two rows sit at different k.
+    contradicted = bool(worst_paired is not None and worst_paired > 0.10)
     return {
         "role": "falsification probe - the delivered tree is always KMeans (build_hierarchy)",
         "reference_algorithm": reference["algorithm"] if reference else None,
         "best_alternative": best_other["algorithm"] if best_other else None,
+        "paired_margins_within_k": per_k,
+        "largest_paired_margin": worst_paired,
         "alternative_beats_reference_by": margin,
         "kmeans_assumption_contradicted": contradicted,
         "probe_note": (
@@ -374,8 +454,9 @@ def _battery_verdict(rows: list[dict[str, Any]]) -> dict[str, Any]:
         ],
         "density_note": (
             "HDBSCAN is screened by (noise_rate asc, n_clusters desc) for human review, "
-            "never auto-selected by a composite score. Its role downstream is the "
-            "Phase 12 novelty sentinel, not the main partition."
+            "never auto-selected by a composite score. It is diagnostic only: nothing "
+            "downstream consumes it. The Phase 12 novelty sentinel is a max-centroid "
+            "cosine percentile and does not use HDBSCAN."
         ),
     }
 
@@ -411,6 +492,47 @@ def _intent_alignment(labels: np.ndarray, masks: dict[str, np.ndarray] | None) -
     return round(float(adjusted_mutual_info_score(y[known], np.asarray(labels)[known])), 4)
 
 
+def reference_profile(masks: dict[str, np.ndarray] | None, n_rows: int) -> dict[str, Any]:
+    """What the AMI locator was actually scored against — cardinality and coverage.
+
+    K is located by maximising AMI against this reference, so the reference is a
+    decision, and it was never registered as one. Two things a reader needs and
+    could not get from any artifact:
+
+    **Coverage.** `_intent_alignment` scores only rows a phrasing group covers —
+    33.4% of the corpus on live40. Over-splitting the other two thirds is free.
+
+    **Cardinality.** The located K tracks it. Measured on live40's own hybrid
+    matrix, holding everything else fixed and swapping only the reference: 6
+    trusted groups -> peak k=12, all 12 groups -> peak k=12, the 25-class
+    top-down L1 -> **peak k=25**. So "K is located by intent alignment" means
+    "located relative to this reference", and the run concluded its domain prior
+    of 15-25 was wrong on the strength of a number that would have agreed with
+    that prior under a different, equally available reference.
+    """
+    if not masks:
+        return {"n_classes": 0, "coverage": 0.0, "reference": "none"}
+    y = np.full(n_rows, -1, dtype=np.int64)
+    for i, m in enumerate(masks.values()):
+        m = np.asarray(m)
+        if m.shape[0] != n_rows:
+            return {"n_classes": len(masks), "coverage": None, "reference": "phrasing groups"}
+        y[m & (y == -1)] = i
+    known = y >= 0
+    return {
+        "reference": "phrasing (template) groups",
+        "n_classes": int(len(np.unique(y[known]))) if known.any() else 0,
+        "coverage": round(float(known.mean()), 4),
+        "n_rows_scored": int(known.sum()),
+        "caveat": (
+            "K is located by maximising AMI against THIS partition. The located K "
+            "tracks its cardinality, and rows outside it are unscored — so this is "
+            "a granularity anchor relative to a chosen reference, not a corpus "
+            "constant. Swapping the reference moves the answer."
+        ),
+    }
+
+
 def k_sweep(
     X: np.ndarray,
     ks: Sequence[int],
@@ -418,6 +540,7 @@ def k_sweep(
     seeds: tuple[int, int] = (0, 1),
     silhouette_sample: int = 8000,
     template_masks: dict[str, np.ndarray] | None = None,
+    reference_partitions: dict[str, np.ndarray] | None = None,
     fast: bool = False,
     fit_sample: int = 25000,
 ) -> list[dict[str, Any]]:
@@ -468,8 +591,35 @@ def k_sweep(
         }
         if template_masks:
             row["template_fragmentation"] = template_fragmentation(labels, template_masks)["mean_fragmentation"]
+        # THE LOCATED K TRACKS THE REFERENCE, SO SCORE EVERY REFERENCE AVAILABLE.
+        #
+        # Measured on live40's full corpus: the phrasing groups (6 classes, our own
+        # seed regexes) locate K=7, while `ref_legacy_l1` — the corpus's own
+        # pre-existing labelling, 9 classes, complete, and independent of BOTH
+        # routes — locates K=18. The reference that decides is the outlier, and
+        # nothing reported that.
+        for _name, _part in (reference_partitions or {}).items():
+            row[f"ami_vs_{_name}"] = _ami_vs_partition(labels, _part)
         out.append(row)
     return out
+
+
+def _ami_vs_partition(labels: np.ndarray, reference: np.ndarray) -> float:
+    """AMI against a dense external partition, scored on rows it actually labels.
+
+    Unlike `_intent_alignment` this takes a per-row array rather than masks, so a
+    declared reference column can be used directly. Rows the reference does not
+    label (-1) are excluded, exactly as unmatched rows are there.
+    """
+    from sklearn.metrics import adjusted_mutual_info_score
+
+    y = np.asarray(reference)
+    if y.shape[0] != len(labels):
+        return float("nan")
+    known = y >= 0
+    if known.sum() < 50 or len(np.unique(y[known])) < 2:
+        return float("nan")
+    return round(float(adjusted_mutual_info_score(y[known], np.asarray(labels)[known])), 4)
 
 
 def deep_aligned_estimate(X: np.ndarray, k_expected: int, *, multiplier: int = 3, seed: int = SEED_METRIC) -> dict[str, Any]:
@@ -508,6 +658,10 @@ def triangulate_k(
     #: the seed-to-seed sd of AMI on these corpora is 0.005-0.023.
     ami_tie_band: float = 0.02,   # fallback only; the band is measured when it can be
     ami_tie_z: float = 2.0,
+    #: Which alignment column locates K. Defaults to the phrasing groups, but a
+    #: reference that REACHES more of the partition should be preferred — see
+    #: `locator_reach`. p5 chooses this; the default keeps the function usable alone.
+    locator_key: str = "intent_alignment_ami",
 ) -> dict[str, Any]:
     """Locate the family scale, and name every K the measurement cannot rule out.
 
@@ -541,7 +695,9 @@ def triangulate_k(
     # penalised for merging known-same-intent rows AND for splitting them — so it
     # has an interior optimum, and it is ~10x more precise (sd ~0.01).
     stable = [r for r in valid if r["stability_ari"] >= stability_floor] or valid
-    located = [r for r in stable if not np.isnan(r.get("intent_alignment_ami", float("nan")))]
+    located = [r for r in stable
+               if isinstance(r.get(locator_key), (int, float))
+               and not np.isnan(r.get(locator_key, float("nan")))]
 
     if located:
         # THE TIE BAND IS MEASURED, NOT ASSUMED. It used to be the constant 0.02,
@@ -554,16 +710,16 @@ def triangulate_k(
         # Estimated on the FULL sweep, never on a filtered subset.
         from .select import noise_floor
 
-        best = max(located, key=lambda r: r["intent_alignment_ami"])
-        se = noise_floor([r["intent_alignment_ami"] for r in sweep])
+        best = max(located, key=lambda r: r[locator_key])
+        se = noise_floor([r.get(locator_key) for r in sweep])
         if np.isnan(se):
             band, band_source = ami_tie_band, f"configured {ami_tie_band} (sweep too short to measure)"
         else:
             band, band_source = ami_tie_z * se, f"{ami_tie_z:g}x measured noise (se={se:.4f})"
         tie_set = [r for r in located
-                   if best["intent_alignment_ami"] - r["intent_alignment_ami"] <= band]
+                   if best[locator_key] - r[locator_key] <= band]
         peak = min(tie_set, key=lambda r: r["k"])   # inside a tie, prefer the simpler tree
-        locator = "intent_alignment_ami"
+        locator = locator_key
     else:
         # No phrasing groups mined, so there is nothing to align against. Fall back
         # to the old rule and say so — this is the one case where stability ranks,
@@ -631,6 +787,7 @@ def triangulate_k(
         # more than one entry the honest deliverable is the set, not the winner.
         "tie_set": [{"k": r["k"],
                      "intent_alignment_ami": r.get("intent_alignment_ami"),
+                     locator_key: r.get(locator_key),
                      "stability_ari": r["stability_ari"],
                      "template_fragmentation": r.get("template_fragmentation")}
                     for r in sorted(tie_set, key=lambda r: r["k"])],
@@ -644,7 +801,141 @@ def triangulate_k(
         "prior_agrees": bool(prior_agrees),
         "divergence_note": note,
         "silhouette_disagrees": sil_peak["k"] != peak["k"],
+        "reference_sensitivity": reference_sensitivity(sweep, peak["k"]),
     }
+
+
+def locator_reach(labels: np.ndarray, reference: np.ndarray, *,
+                  min_share: float = 0.10) -> dict[str, Any]:
+    """Can this reference speak for the whole corpus, or only part of it?
+
+    **Label-free and corpus-agnostic** — it needs only the partition being scored
+    and the reference's own row coverage, so it works wherever a reference exists,
+    including a corpus with no external labels at all.
+
+    K is located by maximising agreement with a reference partition, and a
+    reference that occupies only part of the partition cannot express a preference
+    about the rest. Measured on live40 at k=18, the six trusted phrasing groups
+    hold a real share of **38.9%** of clusters while `ref_legacy_l1` holds a share
+    of **100%** — and that is the whole explanation for why they locate different
+    K. Controlled directly: scoring the SAME reference on the rows the templates
+    match gives K=7, on a random sample of identical size gives K=18, and on the
+    rows they miss gives K=18. The templates select a structurally atypical third
+    of the corpus and locate K for it.
+
+    Note what this is NOT: raw row coverage. A reference could cover 33% of rows
+    spread evenly across every cluster and still speak for the corpus. What matters
+    is whether it reaches the clusters, which is why `min_share` requires a real
+    presence rather than a single stray row.
+    """
+    y = np.asarray(reference)
+    L = np.asarray(labels)
+    if y.shape[0] != L.shape[0]:
+        return {"reach": None, "mass": None, "why": "reference length mismatch"}
+    known = y >= 0
+    if not known.any():
+        return {"reach": 0.0, "mass": 0.0, "n_clusters_reached": 0}
+    clusters = np.unique(L)
+    solid = [c for c in clusters
+             if (known & (L == c)).sum() >= min_share * max((L == c).sum(), 1)]
+    return {
+        "reach": round(len(solid) / max(len(clusters), 1), 4),
+        "mass": round(float(np.isin(L, solid).mean()), 4),
+        "n_clusters_reached": len(solid),
+        "n_clusters": int(len(clusters)),
+        "row_coverage": round(float(known.mean()), 4),
+        "min_share": min_share,
+    }
+
+
+def choose_locator(reach: dict[str, dict[str, Any]], want: str = "auto") -> tuple[str, str]:
+    """Pick which reference locates K. Returns ``(column, reference_name)``.
+
+    Extracted from p5 so the RULE is testable rather than only its inputs: a
+    mutation swapping `reach` for `row_coverage` here changes the delivered K and
+    was invisible to any test while this lived inline.
+
+    ``auto`` takes the highest reach, breaking ties on row coverage. Reach is the
+    right key and coverage is not: on live40 the phrasing groups cover 33.4% of
+    rows and reach 38.9% of clusters, while a reference covering the same rows
+    spread evenly would reach all of them and could speak for the corpus.
+    """
+    if not reach:
+        return "intent_alignment_ami", "phrasing_groups"
+    if want == "phrasing":
+        return "intent_alignment_ami", "phrasing_groups"
+    if want != "auto":
+        for name, rec in reach.items():
+            if name == want:
+                return rec["column"], name
+        return "intent_alignment_ami", "phrasing_groups"
+    name, rec = max(reach.items(),
+                    key=lambda kv: (kv[1].get("reach") or 0.0,
+                                    kv[1].get("row_coverage") or 0.0))
+    return rec["column"], name
+
+
+def reference_sensitivity(sweep: list[dict[str, Any]], chosen_k: int) -> dict[str, Any]:
+    """Where each available reference would have located K, and whether they agree.
+
+    **This is disclosure, not a decision.** Nothing here can change the chosen K.
+
+    K is located by maximising agreement with a reference partition, so the answer
+    is relative to that reference — and the references available are not
+    interchangeable. Measured on live40's full corpus:
+
+    | reference | classes | independent of both routes | locates K |
+    |---|---|---|---|
+    | trusted phrasing groups | 6 | no — our own seed regexes | **7** |
+    | `ref_legacy_l1` | 9 | **yes** | **18** |
+    | top-down `td_l1` | 25 | no — same run | 18 |
+
+    The reference that decides is the outlier. That is exactly the kind of fact a
+    reader needs and no artifact carried, and it is why this is computed even when
+    only one reference exists: a run with a single anchor should say so plainly
+    rather than imply a triangulation it did not perform.
+
+    Deliberately excluded from the decision: using the top-down labels to locate K
+    would make the bottom-up tree a function of the top-down taxonomy, and the
+    route-concordance result — the headline claim that two independent methods
+    found the same structure — would stop being a measurement and become the
+    objective that was fitted. `BlindnessFirewall.add_taxonomy` forbids it
+    architecturally for the same reason.
+    """
+    keys = sorted({k for r in sweep for k in r if k.startswith("ami_vs_")}
+                  | ({"intent_alignment_ami"} if any("intent_alignment_ami" in r for r in sweep) else set()))
+    # Raw argmax per reference, BEFORE the stability veto and the tie band. It can
+    # therefore differ from `chosen_family_k` even for the deciding reference, and
+    # that difference is exactly what the veto did.
+    out: dict[str, Any] = {"by_reference": {}, "chosen_k": int(chosen_k),
+                           "note_scope": "raw argmax per reference, before the "
+                                         "stability veto and the tie band"}
+    located: dict[str, int] = {}
+    for key in keys:
+        rows = [r for r in sweep
+                if isinstance(r.get(key), (int, float)) and not np.isnan(r[key])]
+        if not rows:
+            continue
+        best = max(rows, key=lambda r: r[key])
+        name = "phrasing_groups" if key == "intent_alignment_ami" else key[len("ami_vs_"):]
+        at_chosen = next((r[key] for r in rows if int(r["k"]) == int(chosen_k)), None)
+        located[name] = int(best["k"])
+        out["by_reference"][name] = {
+            "locates_k": int(best["k"]),
+            "peak_value": round(float(best[key]), 4),
+            "value_at_chosen_k": round(float(at_chosen), 4) if at_chosen is not None else None,
+            "decides": key == "intent_alignment_ami",
+        }
+    out["located_k_values"] = located
+    out["references_agree"] = len(set(located.values())) <= 1 if located else None
+    if located and len(set(located.values())) > 1:
+        deciding = [n for n, v in out["by_reference"].items() if v["decides"]]
+        out["note"] = (
+            "参照系之间不一致: " + ", ".join(f"{n}→K={v}" for n, v in sorted(located.items()))
+            + "。定下来的 K 只是**相对于当选参照系**的粒度锚点, 不是语料常数。"
+            + (f"决定权在 `{deciding[0]}`。" if deciding else "")
+        )
+    return out
 
 
 # ==========================================================================
@@ -661,6 +952,7 @@ def build_hierarchy(
     max_leaves: int = 8,
     family_min_size_for_split: int = 300,
     silhouette_sample: int = 6000,
+    stability_floor: float = 0.55,
 ) -> dict[str, Any]:
     """Two levels: one stable global partition, then a locally chosen split per family.
 
@@ -700,7 +992,8 @@ def build_hierarchy(
             continue
 
         verdict = choose_local_k(Xf, max_k=max_leaves, min_size=min_leaf, seed=seed,
-                                 silhouette_sample=silhouette_sample)
+                                 silhouette_sample=silhouette_sample,
+                                 stability_floor=stability_floor)
         best_k = verdict["k"]
         local_k_detail[f] = verdict
 
@@ -913,6 +1206,55 @@ def _shuffled_reference(X: np.ndarray, rs: Any) -> np.ndarray:
     return normalize(Z)
 
 
+def _rank_local_candidates(
+    stable: list[dict[str, Any]], *, sil_noise: float, stability_gain: float,
+) -> tuple[dict[str, Any], dict[str, Any]]:
+    """Pick a local k from admissible candidates. Returns ``(pick, raw_sil_top)``.
+
+    Split out of `choose_local_k` so the rule can be tested on a candidate TABLE —
+    including the real published one from live40's family 3 — rather than only
+    through synthetic embeddings that have to be reverse-engineered to reproduce a
+    trade-off. The defect this encodes was invisible in end-to-end tests.
+
+    **Lift over the null ranks, not raw silhouette.** Silhouette falls with k on
+    this geometry (Spearman(k, silhouette) = -0.888 on live40's family sweep), so
+    ranking k=2 against k=8 on it is the biased comparison the module docstring
+    warns about, not the fixed-k comparison it licenses. The symptom reached the
+    delivered tree: 5 of live40's 7 families took k=2 — the minimum admissible
+    value — 2 took k=3, none took 4-8. The Phase 7 audit then prescribed splitting
+    9 of the 16 leaves that produced, and all 9 pass this function's own null and
+    stability tests on replay. The rule was under-splitting and an agent was
+    silently compensating for it through a door with no guardrails.
+
+    `lift_over_null` subtracts a column-shuffled reference computed AT THE SAME k,
+    which is exactly what removes the k-dependence. The code already computed it
+    and used it only as an admission threshold.
+    """
+    top = max(stable, key=lambda c: c["lift_over_null"])
+
+    # Overruled only on an explicitly bad trade: a negligible lift concession
+    # bought back with a large gain in reproducibility. BOTH deltas are measured
+    # against the SAME reference. They were not — `d_sil` compared to `top` while
+    # `d_stab` compared to the running `pick` — which made the loop depend on
+    # iteration order and let it settle on a candidate another admissible one beat
+    # on both axes. live40 family 3 shipped k=2 (lift 0.0884, ARI 0.9993) while
+    # k=3 (0.0994, 1.0000) dominated it outright.
+    trades = [c for c in stable
+              if top["lift_over_null"] - c["lift_over_null"] <= sil_noise
+              and c["stability_ari"] - top["stability_ari"] >= stability_gain]
+    pick = max(trades, key=lambda c: (c["stability_ari"], c["lift_over_null"])) if trades else top
+
+    # And whatever the trade rule concluded, a candidate that another admissible
+    # candidate beats on BOTH axes must never ship. A guarantee, not a preference:
+    # no ordering of the comparison above can produce one now.
+    dominators = [c for c in stable
+                  if c["lift_over_null"] > pick["lift_over_null"]
+                  and c["stability_ari"] > pick["stability_ari"]]
+    if dominators:
+        pick = max(dominators, key=lambda c: (c["lift_over_null"], c["stability_ari"]))
+    return pick, max(stable, key=lambda c: c["silhouette"])
+
+
 def choose_local_k(
     X: np.ndarray,
     *,
@@ -1008,26 +1350,21 @@ def choose_local_k(
     # 2. Reproducible splits only; fall back if the floor excludes everything.
     stable = [c for c in real if c["stability_ari"] >= stability_floor] or real
 
-    # 3. Silhouette ranks. It is overruled only on an explicitly bad trade: a
-    #    negligible silhouette lead bought with a large collapse in
-    #    reproducibility. The thresholds name the case this exists to prevent —
-    #    k=6 at silhouette 0.0749 / ARI 0.533 beating k=2 at 0.0696 / 0.973.
-    top = max(stable, key=lambda c: c["silhouette"])
-    pick = top
-    for c in stable:
-        d_sil = top["silhouette"] - c["silhouette"]
-        d_stab = c["stability_ari"] - pick["stability_ari"]
-        if d_sil <= sil_noise and d_stab >= stability_gain:
-            pick = c
+    # 3. Lift over the null ranks, the trade rule may overrule it, and nothing
+    #    Pareto-dominated may ship. See `_rank_local_candidates`.
+    pick, raw_top = _rank_local_candidates(
+        stable, sil_noise=sil_noise, stability_gain=stability_gain)
 
     out["k"] = pick["k"]
     out["chosen"] = pick
-    out["silhouette_would_have_chosen"] = top["k"]
-    out["silhouette_disagrees"] = top["k"] != pick["k"]
+    out["ranked_by"] = "lift_over_null"
+    out["silhouette_would_have_chosen"] = raw_top["k"]
+    out["silhouette_disagrees"] = raw_top["k"] != pick["k"]
     out["chosen_by"] = (
         f"beats a structureless reference by > {null_margin}; stability >= {stability_floor}; "
-        f"then highest silhouette, overruled only when a lead <= {sil_noise} costs "
-        f">= {stability_gain} of replay stability"
+        f"then highest LIFT OVER THE NULL at the same k (raw silhouette falls with k "
+        f"and cannot rank across it), overruled only when a lead <= {sil_noise} costs "
+        f">= {stability_gain} of replay stability; never Pareto-dominated"
     )
     return out
 

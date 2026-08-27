@@ -319,7 +319,6 @@ def test_stratified_sample_returns_positions_even_for_a_sliced_frame():
     labels. They agree on a default RangeIndex — which every caller happened to
     pass — so a slice like `df.iloc[unseen]` silently produced out-of-range
     indices, and the guide-repair round crashed with IndexError on a live run."""
-    import numpy as np
     import pandas as pd
 
     from qmine.ops.audit import stratified_sample
@@ -341,3 +340,89 @@ def test_stratified_sample_returns_positions_even_for_a_sliced_frame():
     # Stratification must still be doing its job, not merely staying in range.
     strat = stratified_sample(sliced, 50, strata_cols=["stratum"], seed=7)
     assert sliced.iloc[strat]["stratum"].nunique() == 7, "a stratum was dropped"
+
+
+def test_a_run_with_no_seeded_phrasing_group_says_so_instead_of_falling_back_silently():
+    """The reference K is located against must be visible when it is unvalidated.
+
+    `deps.template_masks(trusted=True)` falls back to ALL mined groups when no
+    seeded group survives, under a comment reading "fall back loudly" — and it
+    logged nothing, gated nothing, and wrote nothing to any artifact. That is the
+    portability path, not an edge case: `configs/domains/generic.yaml` ships **0**
+    template seeds, so any corpus without a hand-written domain profile takes it.
+
+    It matters because mined groups are measurably worse references. On live40
+    `suffix:是什么` spans 7 top-down intents at 42% single-intent purity, against
+    87.8% median for the seeded groups — and K is located by maximising agreement
+    with whatever this returns.
+    """
+    import pandas as pd
+
+    from qmine.ops.templates import build_groups, group_masks
+
+    df = pd.DataFrame({"query": [f"词{i}的意思是什么" for i in range(300)]
+                                + [f"无关查询{i}" for i in range(300)]})
+
+    # Mined only — exactly what a corpus with no domain profile produces.
+    groups = build_groups(df, seeds=(), discovered=[{"affix": "的意思是什么", "side": "suffix"}])
+    assert groups, "the mined group did not survive its own share floor"
+    assert all(g.discovered for g in groups)
+
+    trusted = group_masks(groups, df, text_col="query", trusted_only=True)
+    assert not trusted, (
+        "a mined group was trusted without earning it — `trusted=not is_discovered` "
+        "is the only thing standing between a human's assertion and a substring match")
+
+    # The fallback returns something, and that something is unvalidated. The point
+    # of the fix is that this condition is now detectable rather than silent.
+    everything = group_masks(groups, df, text_col="query")
+    assert everything, "the fallback returned nothing at all"
+    assert set(everything) - set(trusted), (
+        "the fallback must be distinguishable from the trusted set, or no gate can fire")
+
+
+def test_cohesion_lift_is_not_a_measure_of_intent_purity():
+    """The gate that vets the K locator's reference measures the wrong quantity.
+
+    `validate_group_cohesion` scores mean pairwise cosine against random rows. In
+    a SEMANTIC embedding, same-intent-different-topic queries sit far apart — "X的
+    意思" for thousands of different X — so a broad intent group scores low while a
+    topically narrow one scores high, regardless of intent purity.
+
+    Measured on live40 against the top-down taxonomy as an independent yardstick,
+    the gate ranked the six seeded groups almost backwards (Spearman -0.60, n=6):
+    it PASSED `word_formation` (lift 1.670, purity 81.2% — the worst of the six)
+    and REJECTED `meaning` (lift 1.269, purity 88.6% — third best). This constructs
+    that situation directly: two groups, the tighter one less pure.
+    """
+    import numpy as np
+
+    from qmine.ops.templates import validate_group_cohesion
+
+    rs = np.random.RandomState(0)
+    n = 600
+    # Group A: topically narrow — every member near one point. High cohesion.
+    a = np.array([1.0, 0, 0, 0]) + rs.normal(0, 0.05, (120, 4))
+    # Group B: one intent spread over three topics. Low cohesion by construction.
+    b = np.vstack([np.array(c) + rs.normal(0, 0.05, (40, 4))
+                   for c in ([0, 1.0, 0, 0], [0, 0, 1.0, 0], [0, 0, 0, 1.0])])
+    rest = rs.normal(0, 1, (n - len(a) - len(b), 4))
+    X = np.vstack([a, b, rest])
+    X /= np.linalg.norm(X, axis=1, keepdims=True)
+
+    masks = {
+        "narrow": np.r_[np.ones(len(a), bool), np.zeros(n - len(a), bool)],
+        "broad": np.r_[np.zeros(len(a), bool), np.ones(len(b), bool),
+                       np.zeros(n - len(a) - len(b), bool)],
+    }
+    out = validate_group_cohesion(masks, X, min_lift=1.35)
+    lift = {r["group"]: r["lift_over_random"] for r in out["groups"]}
+    assert lift["narrow"] > lift["broad"], (
+        f"sanity: the topically narrow group should score higher, got {lift}")
+
+    # Both are single-intent by construction, and the gate splits them anyway:
+    # the broad one falls below the bar the narrow one clears. That is the whole
+    # point — a low lift is NOT evidence that a group is a bad reference.
+    assert lift["narrow"] >= 1.35, "sanity: the narrow group should pass the gate"
+    assert lift["broad"] < lift["narrow"], (
+        "the gate failed to separate them, so this test proves nothing")

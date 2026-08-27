@@ -182,8 +182,9 @@ def build(state: Any, deps: Any, figs: dict[str, Any]) -> str:
         if sweep.get("contenders"):
             L.append(
                 f"碎裂度差异在 {sweep.get('tie_band', 0.05):.0%} 带内视为打平 "
-                f"(候选 `{sweep['contenders']}`), 再由稳定性裁决 — "
-                "两个百分点的碎裂度差在重跑噪声范围内, 不足以推翻一个真实的稳定性差距。"
+                f"(候选 `{sweep['contenders']}`), 再由稳定性裁决。"
+                "**这条带宽是预设值, 不是本语料实测的噪声底** —— 每个 alpha 只拟合一次, "
+                "因此这一步无法判断当选者与并列者之间的差距是否真的超出重跑噪声。"
             )
         L.append("")
         if sweep.get("silhouette_disagrees"):
@@ -241,7 +242,9 @@ def build(state: Any, deps: Any, figs: dict[str, Any]) -> str:
           "两个决定树形状的旋钮 — 用什么算法, 切成多粗 — 各自有独立的证据链。", "",
           f"### 2.1 {v['algorithm_battery']}", ""]
     if battery.get("rows"):
-        L += ["用**统一 harness** 做淘汰赛决定聚类算法, 而不是默认 KMeans。", "",
+        L += ["**本阶段不选择算法** —— 交付的树始终由 KMeans 构建。这里跑的是一次"
+              "**证伪检验**: 把假设不同的算法送进同一套度量 harness, 问「这套结构是语料的"
+              "性质, 还是 KMeans『簇近似球形』这一假设的产物」。", "",
               "| 算法 | 簇数 | 稳定性 ARI | silhouette | 噪声率 |", "|---|---|---|---|---|"]
         for r in battery["rows"]:
             L.append(f"| `{r['algorithm']}` | {r['n_clusters']} | {num(r['stability_ari'])} | "
@@ -337,7 +340,8 @@ def build(state: Any, deps: Any, figs: dict[str, Any]) -> str:
           "**定义先行**: 一个家族/叶子在数学上就是一个**质心**; 「属于 g」= 「离质心 g 最近」。"
           "名字与定义是 Phase 7 事后由盲评补写的 — **先有结构, 后有语言**。", "",
           "构造分两步:", "",
-          f"1. **家族层**: 全量 KMeans, K = 稳定性峰 ({tri.get('chosen_family_k','?')});",
+          f"1. **家族层**: 全量 KMeans, K = **与措辞群的对齐度 (AMI) 定位** "
+          f"({tri.get('chosen_family_k','?')}); 稳定性在这一步只负责否决, 不排序;",
           f"2. **家族内局部选 k**: 每个家族单独试 k=2..{deps.cfg.clustering.max_leaves_per_family}, "
           f"以 cosine silhouette 择优 — **每个家族根据自身结构自主决定形成几个叶子**。"
           f"约束: 最小叶 {_t(meta,'min_leaf_size_applied',default='?')} 条"

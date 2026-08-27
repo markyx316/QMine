@@ -12,9 +12,9 @@
 
 ---
 
-## 1. Status — last updated 2026-08-26 (late)
+## 1. Status — last updated 2026-08-27
 
-# live40 COMPLETE. 525 tests passing. Final report agent built, never run live.
+# 534 tests passing. Bottom-up selection audited end to end; 15 verified defects fixed.
 
 **The one thing to know:** the final report (`00_最终报告.md`) is now written by an
 agent rather than assembled by Python, guarded by a fact-sheet check per section
@@ -26,7 +26,7 @@ artifacts (~15 calls) before committing to a full run.
 
 | | |
 |---|---|
-| Tests | **525** passing; `ruff --select F src/qmine/` clean |
+| Tests | **534** passing; `ruff --select F src/qmine/` clean |
 | `live40` gen01 | 17/17 phases, halted=False, **241.8 min**, `provider=routed` |
 | Verification | **25/26 PASS, 0 FAIL** (live39 control: 19 PASS, **6 FAIL**) |
 | Gates | 24 recorded — 20 passed, 4 warned, 0 failed |
@@ -101,6 +101,12 @@ now carry the measured rate.
   correctly *described* there now, but the run itself is not regenerated.
 
 ## 2. Open questions — EDIT THIS SECTION, DO NOT APPEND
+
+0a. **The bottom-up selection changes have never met a real model either.** The
+   local-k rule now yields 18 leaves instead of 16 on live40's own candidate
+   tables, which cascades into naming, into which leaves Phase 8 then prescribes
+   splitting, and into every downstream count. Nothing is known about how the new
+   rule behaves on a fresh live run.
 
 0. **The agent-written final report has never met a real model.** Built and green
    offline, but the offline stand-in cannot produce a valid outline, so the
@@ -1423,3 +1429,257 @@ The stand-in was also taught to emit a number-free Chinese paragraph for
 - **Never run with a real model.** No agent-planned outline has ever executed.
 - The 22 English gate messages (`GATE_MESSAGE_DEBT`).
 - `verify_run.py` has no check for the final report.
+
+---
+
+## Session — 2026-08-27: how the bottom-up path actually decides, and what was wrong
+
+The user asked how alpha, the algorithm, K and the leaf counts are really chosen,
+why Phase 4 stopped sweeping algorithms, whether "7 families vs best kmeans k=15"
+is a discrepancy, and whether silhouette is under-weighted. A 27-agent audit
+raised 44 claims; 15 survived adversarial refutation. Several of the most
+important findings came from measurements run here, not from reading.
+
+### The three headline measurements
+
+**1. Silhouette is precise and measures the wrong thing.** Subsample sd is 0.0007
+(families) / 0.0040 (leaves) over 15 replicates — it is *not* noisy, and saying so
+would be contradicted by anyone who measures. What it cannot do is rank across k:
+**Spearman(k, silhouette) = -0.888**, peaking at the sweep's lower bound, so it has
+no interior optimum. It also rises monotonically with alpha at every k (would elect
+maximum surface weight, the template-twin failure) and, at fixed k, favours exactly
+the geometry KMeans optimises (k=15: kmeans 0.070, agglo 0.009 — while agglo has
+the second-best stability). **Prediction strength was tested as an alternative and
+degenerates the same way** (Spearman -0.895, preferring k=2 at 0.98). All three
+intrinsic criteria collapse toward small k; the external reference is a necessity,
+not a shortcut. The fix is calibration (`lift_over_null`), not weighting.
+
+**2. The K locator's reference is a decision nobody registered.** Holding
+everything fixed and swapping only the reference partition: 6 trusted phrasing
+groups -> peak k=12, all 12 groups -> k=12, the 25-class top-down L1 -> **k=25**.
+AMI is also scored on only 33.4% of rows. live40 declared its 15-25 domain prior
+wrong (`该修的是先验`) on a number that would have **agreed** with that prior under
+a reference it already had.
+
+**3. The two routes agree — at the layer nobody compared.** `route_crosswalk`
+compared 7 families against 25 top-down classes and printed "routes disagree" on
+every row, which 7-vs-25 forces arithmetically. At the leaf layer (25 vs 25):
+AMI 0.5395 -> **0.6175**, median single-intent share 39.5% -> **80.3%**, 19/25
+leaves majority-one-intent against 1/7 families. leaf 19 生僻字查询 is **100%**
+BARE_TERM_LOOKUP. The prior was right about how many intent classes exist and wrong
+only about which layer carries them.
+
+### The largest defect: 36% of the delivered leaf layer was unmeasured
+
+`choose_local_k` applies a null test and a stability floor to every leaf the
+measured rule creates. `ops/governance.py:split_leaves` applied a `min_size` guard
+and nothing else — and it made **9 of the 25 delivered leaves**. The two facts sat
+in different artifacts and had never been read together.
+
+Cause, found by measurement: ranking local k on **raw silhouette** hit the small-k
+attractor — 5 of 7 families took k=2, the minimum, and none took 4-8. The Phase 7
+audit noticed and prescribed 9 splits. **Replayed through `choose_local_k`'s own
+tests, all 9 pass** (parent 6: lift 0.876 — a textbook-clean split the rule missed
+entirely, and the very leaf that is 100% one top-down intent). The agent was
+correctly compensating for a measurable defect in the geometry rule.
+
+So splits are now **measured and not vetoed**, deliberately: a veto built on the
+same biased geometry would reject the corrections to its own bias, and a split can
+be semantically right and geometrically unsupported. The number ships beside the
+split; a failing one is disclosed, not blocked.
+
+### The "15 vs 7" verdict
+
+Not a discrepancy — three different things wear the number 15. `battery_k` is a
+diagnostic grid for a falsification probe that never selects K. But it *is* a real
+gap that the probe runs at k in {15,20,30} and **never at the delivered k=7**,
+below its own grid floor, so "this structure is a property of the corpus" is an
+extrapolation across a >2x granularity gap stated as a measurement.
+
+### Fixed this session
+
+- `_rank_local_candidates` extracted and corrected: ranks on `lift_over_null`;
+  both deltas measured against the same reference (they were not — `d_sil` vs
+  `top`, `d_stab` vs the running `pick`, so the loop was order-dependent); a
+  Pareto-dominated candidate can no longer ship (live40 family 3 shipped k=2 while
+  k=3 dominated it on both axes). Replay: 16 -> 18 leaves, and **both halves of the
+  fix do independent work** (ablated: metric alone fixes families 2 and 3, loop
+  alone fixes only 3).
+- Battery: `KMEANS_FAMILY` replaces a name-prefix filter that let `minibatch_*`
+  and `bisecting_*` count as "structurally different" from KMeans; the margin is
+  now **paired within k**, which flips live40's own sign at k=20 (`gmm_diag` ahead
+  by 0.060) — invisible under the old unpaired comparison.
+- `reference_profile()` records the locator's cardinality and coverage; p5 emits it.
+- `route_concordance` artifact compares the routes at **every** bottom-up level.
+- `stability_floor` is configurable and threaded (was a bare default in two places
+  with no config entry and no test).
+- HDBSCAN's claimed Phase-12 role removed from four places — the sentinel is a
+  max-centroid cosine percentile and never touches HDBSCAN.
+- Report fixes: the "K = 稳定性峰" mislabel (contradicted twice by the same
+  report), the retracted "淘汰赛" sentence 23 lines above its own correction, a
+  hardcoded noise claim that consulted no number, an English rule string in a
+  Chinese figure title, and the English report path's "won a six-algorithm battery".
+- The four docstrings claiming `challenger_beats_incumbent` protects the widened
+  grid now say it is **not wired**. Deliberately documentation-first: applying the
+  toll as written flips live40 to K=10, worse on both reported metrics.
+
+### AMI's own noise, measured for the first time
+
+K is located by argmax of `intent_alignment_ami`, and nobody had ever measured that
+metric's noise — `noise_floor()` estimates it from the ROUGHNESS of a single-seed
+curve, which is not a standard error over anything. Refitting KMeans with 5
+independent seeds at k=7,8,10,12,15 on live40's full corpus:
+
+| k | mean AMI | sd |
+|---|---|---|
+| 7 | 0.7508 | **0.0009** |
+| 8 | 0.7114 | 0.0182 |
+| 10 | 0.7495 | **0.0441** |
+| 12 | 0.7562 | 0.0225 |
+| 15 | 0.7248 | 0.0218 |
+
+Pooled sd **0.0255**, against `noise_floor`'s 0.0129 — understated ~2x. The whole
+live40 podium (k7 0.7495 / k10 0.7534 / k12 0.7507) spans **0.0039**, about 15% of
+one sd, so **the argmax across k is noise**. Per-seed argmax was [7,10,10,10,10] and
+the 5-seed mean argmax is k=12, not the k=10 that shipped as "best".
+
+Two things follow. The tie band is `2 * se` = 0.0258, which lands within 2% of the
+real 1-sd figure — so the tie set {7,10,12} is **correct, by an accident of doubling
+an estimate that was half the true value**. Do not "fix" the factor without
+re-measuring the band. And the noise is strongly heteroscedastic: k=7 is stable to
+the fourth decimal while k=10 ranges 0.6728-0.7757 across seeds. **That is a far
+better argument for the delivered K=7 than the "simplest tree" tie-break actually
+used** — and nothing currently measures it. `noise_floor`'s docstring now carries
+these numbers; its previous "validation" was one live38 figure agreeing with a
+rounded note.
+
+### Are the "trusted phrasing groups" a real reference, or our own priors?
+
+The K locator scores AMI against them, so this is the question the whole selection
+rests on. Findings, all measured on live40:
+
+**They are hand-written.** `trusted = not is_discovered` (`templates.py:169`). All
+6 trusted groups are seed regexes from `configs/domains/k12_zh.yaml`; **zero** mined
+groups earned trust.
+
+**But they are accurate.** Judged against the top-down taxonomy — an independent
+methodology on the same corpus — median single-intent purity is **87.8%** against a
+**14.2%** chance baseline, a ~6x lift. verse_continuation 95.8%, pronunciation
+90.6%, meaning 88.6%, lexical_relation 86.9%, stroke_order 82.5%, word_formation
+81.2%. So AMI is **not** measuring our priors back at us; the groups really are
+same-intent. Mined groups are worse but not worthless (median 71.7%) with real
+outliers both ways: `suffix:00字` 99.0%, `suffix:是什么` **42.0% across 7 intents**.
+
+**The gate that vets them is anti-correlated with what matters.**
+`validate_group_cohesion` scores mean pairwise cosine vs random — TOPICAL
+tightness. An intent group spans topics by construction ("X的意思" for thousands of
+X), so the gate penalises exactly the broad intent groups that make the best
+references. Spearman(lift, purity) = **-0.60** (n=6, p=0.21): it PASSED
+`word_formation` (lift 1.670, purity 81.2%, worst of the six) and REJECTED
+`meaning` (lift 1.269, purity 88.6%, third best). `kept_because_seeded` — which
+read like a courtesy to the human — was on this corpus **the more accurate call**.
+
+**The portability path was silent.** `deps.template_masks(trusted=True)` falls back
+to unvalidated mined groups under a comment reading "fall back loudly", with no
+log, no gate, no artifact. `generic.yaml` ships **0 seeds**, so that is the default
+for any corpus without a hand-written profile. Now emits and raises
+`p3_locator_reference_validated`.
+
+**Added:** `locator_reference_validation.json` at p10 measures each group's purity
+against the top-down labels. **Limitation to keep in mind: it is retrospective.**
+p5 runs concurrently with p2 under the fork, so no top-down labels exist when K is
+chosen. It tells you whether the K you got rested on a good reference; it does not
+improve the choice.
+
+### The user asked to move p5 after p2 so K could use the top-down labels. Do not.
+
+The instinct was right — the deciding reference is our own hand-written templates —
+but the proposed fix is the one thing that breaks the project's headline result.
+Measured on live40's full corpus before deciding:
+
+1. **It makes the route-concordance result circular.** "Two independent routes found
+   the same structure" (leaf-layer AMI 0.6175, 19/25 leaves majority-one-intent) is
+   evidence ONLY because the tree was built without seeing the taxonomy. Locate K
+   against `td_l1` and family-layer AMI moves 0.5748 -> 0.6308; that +0.056 is the
+   fit, not agreement.
+2. **The two-layer design collapses.** `td_l1` locates **K=18** while the delivered
+   leaf layer is 25 — families and leaves at the same scale.
+3. **`BlindnessFirewall.add_taxonomy` already forbids it.**
+4. **It is unnecessary.** `ref_legacy_l1` — the corpus's own labelling, 9 classes,
+   complete, external to BOTH routes, available at **p1** — locates **K=18 too**.
+   The signal is obtainable free, with no serialisation and no circularity.
+
+The premise also does not survive checking: `td_l1` on all 50k rows is a
+**classifier's prediction** (cv_accuracy 0.8625, macro_f1 0.797) from a taxonomy
+with κ=0.8427 and adversarial accuracy 0.82. A phrasing group is a deterministic
+regex match. And the 87.8% purity figure for the phrasing groups was measured
+AGAINST `td_l1`, so part of that 12.2% "impurity" is td_l1's own error — the groups
+are plausibly better than the number says.
+
+**Built instead:** `k_sweep` scores AMI against every declared reference column;
+`reference_sensitivity()` reports where each one would locate K; `p5_k_references_agree`
+fires when they disagree. Decision authority is unchanged — this is disclosure.
+
+**The finding that matters for the next run:** on live40, phrasing groups locate
+K=7 while BOTH non-template references locate K=18. The reference that decides is
+the outlier. That is now visible in `granularity.json` and gated, but **the delivered
+K did not change** — changing it is a methodology call for the user, not a silent fix.
+
+### (3) Why the templates say K=7 — diagnosed, and it is COVERAGE not cardinality
+
+**This corrects an earlier claim in this file and in two rule files.** I had said
+the located K tracks the reference's *cardinality* (measured on a 15k subsample).
+A full-corpus experiment with a coverage control refutes it.
+
+Fixing the row set at the 33.4% the templates match and varying only class count:
+6, 9 and 25 classes **all locate K=7**. Fixing the reference (`td_l1`) and varying
+only the rows, all three sets identically sized:
+
+| rows scored | locates K |
+|---|---|
+| rows our templates match | **7** |
+| a random sample of the same size | **18** |
+| rows our templates miss | **18** |
+
+Not a subsample-size effect, not cardinality. **The six seed regexes select a
+structurally atypical third of the corpus** — narrow lexical-lookup queries — and
+K is located for that third, then applied to all of it.
+
+**No label-free repair exists.** Background-as-one-class and downsampled-background
+both still return K=7: the templates carry no information about rows they never
+match, and reweighting cannot invent it.
+
+### (2) Implemented — and the rule is portable, which was the user's real concern
+
+Their objection to a hardcoded "prefer legacy" was correct: not every corpus has
+legacy labels, and not every corpus admits accurate templates. So the rule names no
+column. `locator_reach()` measures, **with no external labels**, what fraction of
+clusters a reference holds a real share of — usable on any corpus:
+
+- live40 @ k=18: phrasing groups **38.9%**, `ref_legacy_l1` **100%**
+- reach is NOT row coverage: 33% of rows spread evenly reaches everything; 100% of
+  rows concentrated in two clusters reaches almost nothing
+
+`clustering.k_locator: auto` (default) gives the highest-reach reference the
+locator role; `p5_locator_reaches_the_corpus` fires below 0.80 reach, saying the K
+is scoped to the part of the corpus its reference could see.
+
+**Consequence to expect on the next live run: K will change.** On live40 this hands
+the locator to `ref_legacy_l1`, which locates K≈18 rather than 7 — a materially
+different tree, cascading into leaves, naming and every downstream count. Nothing
+was re-run, so this is untested against a real model. `k_locator: phrasing`
+restores the old behaviour exactly.
+
+### Not done — and one is now the top open question
+
+- **`challenger_beats_incumbent` still has no call site.** Needs a signature change
+  (`propose_grid` returns a flat list, so selection cannot tell a proposed value
+  from a configured one) and a redesign, not a call.
+- **The alpha sweep decides inside its own noise.** Winners across 5 seed
+  replicates: 0.1, 0.5, 0.1, 0.0, 0.1. `tie_band=0.05` is an unreachable default
+  ~4.5x narrower than the metric's own spread. **Do not simply widen it** — at a
+  measured 2-sd band live40 elects alpha=0.5, which its own k=7 panel shows
+  fragments worse. The fix is replication, not a wider band.
+- The probe still does not run at the delivered K.
+- Phase-8 metric deltas are one aggregate stamped on every prescription and
+  computed on pre-split labels (+0.061 recorded vs +0.250 delivered).

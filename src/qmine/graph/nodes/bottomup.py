@@ -5,6 +5,7 @@ from __future__ import annotations
 from typing import Any
 
 import numpy as np
+import pandas as pd
 
 
 from ...config import alpha_sweep_k_for
@@ -116,6 +117,43 @@ def p3_represent(state: PipelineState, deps: Deps) -> dict[str, Any]:
         deps.cache_put("template_masks", masks)
         cohesion["dropped"] = dropped
         cohesion["kept_because_seeded"] = sorted(seeded - set(cohesion["trusted"]))
+
+        # WHAT THE COHESION GATE CAN AND CANNOT SEE.
+        #
+        # It measures TOPICAL tightness in a semantic embedding, and an intent
+        # group spans topics by construction — "X的意思是什么" for thousands of
+        # different X. So it systematically penalises exactly the broad intent
+        # groups that make the best references. Measured on live40 against the
+        # top-down taxonomy as an independent yardstick, cohesion lift ranks the
+        # six seeded groups almost backwards from their actual single-intent
+        # purity (Spearman -0.60, n=6): it PASSED `word_formation` (lift 1.670,
+        # purity 81.2%, the worst of the six) and REJECTED `meaning` (lift 1.269,
+        # purity 88.6%, third best). Keeping seeds despite a failed lift is
+        # therefore not a courtesy to the human — on this corpus it is the more
+        # accurate call, and the gate is the thing that was wrong.
+        cohesion["gate_scope"] = (
+            "lift_over_random measures topical tightness, NOT intent purity. A "
+            "group can be one intent and topically vast. Do not read a low lift "
+            "as evidence the group is a bad reference; p10 measures purity "
+            "against the top-down taxonomy, which is the yardstick that matters."
+        )
+
+    # NO SEEDED GROUP AT ALL IS A DIFFERENT SITUATION, AND IT WAS SILENT.
+    # `deps.template_masks` falls back to unvalidated mined groups, and K is then
+    # located by AMI against them. `generic.yaml` ships 0 seeds, so this is the
+    # default path for a corpus with no domain profile.
+    fb = getattr(deps, "_trusted_fallback", None)
+    if fb and fb.get("fell_back"):
+        _obs_gates["p3_locator_reference_validated"] = deps.gate(
+            "p3_locator_reference_validated", phase="p3",
+            passed=False,
+            observed={"n_seeded_groups": 0, "n_mined_groups_used": fb.get("n_groups_used")},
+            threshold={"rule": "at least one seeded phrasing group must survive"},
+            message=("K 的定位参照没有任何**种子**措辞群 — 改用未经验证的挖掘群。"
+                     "定下来的 K 会随这个参照的粒度走, 请人工复核参照本身。"),
+            remediation=("为这个语料写一份 domain profile 的 template_seeds, "
+                         "或者接受 K 只是相对于挖掘群的粒度锚点并在报告中如实说明。"),
+        )
 
     # --- 3c: alpha sweep ---------------------------------------------------
     # The grid is a K12 artefact under a comment saying not to inherit the K12
@@ -309,20 +347,139 @@ def p5_granularity(state: PipelineState, deps: Deps) -> dict[str, Any]:
     # Full-effort unless this is an explicit smoke run: the cheap estimator was
     # measured at only 0.43 rank correlation with the full sweep on this corpus,
     # and K is inherited by every phase after this one.
+    # SCORE EVERY REFERENCE THE RUN ALREADY HAS, NOT ONLY OUR OWN SEED REGEXES.
+    #
+    # The located K tracks whichever partition AMI is scored against, and the one
+    # that currently decides is the one WE wrote. Measured on live40's full corpus:
+    # trusted phrasing groups (6 classes, our seeds) locate K=7, while
+    # `ref_legacy_l1` — the corpus's own pre-existing labelling, 9 classes, complete
+    # on all 49,999 rows, independent of BOTH routes — locates K=18. The deciding
+    # reference is the outlier and no artifact said so.
+    #
+    # These columns are already read by p3 for `nmi_reference`, so scoring them here
+    # adds no visibility the bottom-up path did not already have. The top-down
+    # labels are deliberately NOT used: they do not exist yet under the p1 fork, and
+    # locating K against them would make the bottom-up tree a function of the
+    # top-down taxonomy — turning the route-concordance result from a measurement
+    # into the objective that was fitted. `BlindnessFirewall.add_taxonomy` forbids
+    # it architecturally for exactly that reason.
+    reference_partitions: dict[str, np.ndarray] = {}
+    for _c in cfg.data.reference_label_columns:
+        if _c in deps.df.columns:
+            reference_partitions[_c] = pd.factorize(deps.df[_c].astype(str))[0]
+
     sweep = k_sweep(H, ks, seeds=tuple(cfg.seed_replay),
                     silhouette_sample=cfg.clustering.silhouette_sample, template_masks=masks,
+                    reference_partitions=reference_partitions or None,
                     fast=cfg.fast_mode)
+    # WHICH REFERENCE MAY LOCATE K IS DECIDED BY REACH, NOT BY PREFERENCE.
+    #
+    # A reference that occupies only part of the partition cannot express a
+    # preference about the rest, however good its rows are. Measured at a
+    # representative k so the choice does not depend on the K it is choosing.
+    from ...ops.cluster import choose_locator, kmeans_fit, locator_reach
+
+    _probe_k = sorted(ks)[len(ks) // 2]
+    _probe_labels = kmeans_fit(H, _probe_k, seed=cfg.seed_metric,
+                               fast=cfg.fast_mode).labels_
+    _cands: dict[str, Any] = {}
+    _tr_y = np.full(len(deps.df), -1, dtype=np.int64)
+    for _i, _m in enumerate(masks.values()):
+        _tr_y[np.asarray(_m) & (_tr_y == -1)] = _i
+    if masks:
+        _cands["intent_alignment_ami"] = ("phrasing_groups", _tr_y)
+    for _name, _part in reference_partitions.items():
+        _cands[f"ami_vs_{_name}"] = (_name, _part)
+
+    reach = {}
+    for _key, (_label, _part) in _cands.items():
+        reach[_label] = {**locator_reach(_probe_labels, _part), "column": _key}
+    for _label, _r in sorted(reach.items()):
+        deps.emit(f"  参照系 `{_label}`: 触及 {_r['reach']:.0%} 的簇 "
+                  f"(行覆盖 {_r['row_coverage']:.0%}) @ k={_probe_k}")
+
+    locator_key, _deciding = choose_locator(
+        reach, getattr(cfg.clustering, "k_locator", "auto"))
+    deps.emit(f"  K 由 `{_deciding}` 定位 (触及率最高)")
+
     expected_mid = int(sum(cfg.domain.expected_family_range) / 2)
     da = deep_aligned_estimate(H, expected_mid, multiplier=cfg.clustering.deep_aligned_multiplier,
                                seed=cfg.seed_metric)
-    tri = triangulate_k(sweep, da, tuple(cfg.domain.expected_family_range))
+    tri = triangulate_k(sweep, da, tuple(cfg.domain.expected_family_range),
+                        stability_floor=cfg.clustering.stability_floor,
+                        locator_key=locator_key)
+    tri["locator_reach"] = reach
+    tri["deciding_reference"] = _deciding
     k = tri["chosen_family_k"]
     deps.emit(f"  located K={k} (by {tri.get('locator', '?')}); "
               f"DeepAligned leaf estimate {da['k_estimate']}; "
               f"converged={tri['converged']}")
 
+    # WHAT THE LOCATOR WAS SCORED AGAINST IS ITSELF A DECISION, AND IT WAS NEVER
+    # RECORDED. The located K tracks the reference's cardinality — measured on
+    # live40 by holding everything else fixed and swapping only the reference: 6
+    # trusted groups -> k=12, all 12 groups -> k=12, the 25-class top-down L1 ->
+    # k=25. live40 then concluded its 15-25 domain prior was wrong, on a number
+    # that would have agreed with that prior under a reference it already had.
+    from ...ops.cluster import reference_profile
+
+    profile = reference_profile(masks, len(deps.df))
+    deps.emit(f"  locator scored against {profile.get('n_classes')} phrasing classes "
+              f"covering {profile.get('coverage')} of rows")
+
+    # A DISAGREEMENT BETWEEN REFERENCES IS A FINDING, NOT A FOOTNOTE.
+    # It says the delivered K is a property of the anchor we picked rather than of
+    # the corpus, which is the single most important caveat on the whole tree.
+    # THE CASE THIS EXISTS FOR: no reference reaches enough of the partition.
+    #
+    # That is the portable failure, not an edge case — a corpus with no external
+    # labelling has only the phrasing groups, and on live40 those reach 38.9% of
+    # clusters at k=18. K is then located for the third of the corpus they occupy
+    # and applied to all of it. There is no label-free repair: background-as-a-class
+    # and downsampled-background both still returned K=7, because the templates
+    # carry no information about the rows they never match. So the honest move is
+    # to say so, loudly, rather than to pretend the number is corpus-wide.
+    _best_reach = max((r.get("reach") or 0.0) for r in reach.values()) if reach else 0.0
+    if _best_reach < 0.80:
+        _obs_gates["p5_locator_reaches_the_corpus"] = deps.gate(
+            "p5_locator_reaches_the_corpus", phase="p5",
+            passed=False,
+            observed={"best_reach": round(_best_reach, 4),
+                      "deciding_reference": _deciding,
+                      "reach_by_reference": {n: r.get("reach") for n, r in reach.items()},
+                      "probe_k": _probe_k},
+            threshold={"min_reach": 0.80,
+                       "rule": "the deciding reference must hold a real share of "
+                               "at least 80% of the clusters it is scoring"},
+            message=(f"定位 K 用的参照系只触及 {_best_reach:.0%} 的簇 —— "
+                     f"**这个 K 是为它覆盖到的那部分语料定的**, 然后被用到了全量上。"),
+            remediation=("提供一列覆盖全量的既有标注 (data.reference_label_columns), "
+                         "或补充模板种子扩大覆盖。注意: 给未匹配行加一个「背景类」"
+                         "并不能修复这件事 —— 实测仍然定位到同一个 K, 因为模板对"
+                         "它没匹配到的行不携带任何信息。"),
+        )
+
+    sens = tri.get("reference_sensitivity") or {}
+    located = sens.get("located_k_values") or {}
+    if len(set(located.values())) > 1:
+        deps.emit("  ⚠ 参照系之间对 K 不一致: "
+                  + ", ".join(f"{n}→K={v}" for n, v in sorted(located.items())))
+        _obs_gates["p5_k_references_agree"] = deps.gate(
+            "p5_k_references_agree", phase="p5",
+            passed=False,
+            observed={"located_k_by_reference": located, "chosen_k": k,
+                      "deciding_reference": "phrasing_groups"},
+            threshold={"rule": "every available reference partition should locate the same K"},
+            message=("不同参照系定位到不同的 K —— 交付的 K 是**相对于当选参照系**的"
+                     "粒度锚点, 不是语料常数。请连同参照系一起阅读这个 K。"),
+            remediation=("在报告中同时给出各参照系各自定位到的 K, 并说明当选参照系"
+                         "的类目数与覆盖率; 若外部参照 (如既有标注列) 与自建模板"
+                         "分歧较大, 优先复核**模板**而不是直接改 K。"),
+        )
+
     ref = deps.store.put_json(
         "granularity", {"k_sweep": sweep, "deep_aligned": da, "triangulation": tri,
+                        "locator_reference": profile,
                         "grid_proposal": grade_proposal(k_proposal, tri.get("chosen_family_k"))},
         producer="p5", summary=f"family K={k}",
     )
@@ -388,6 +545,7 @@ def p6_hierarchy(state: PipelineState, deps: Deps) -> dict[str, Any]:
         min_leaf_fraction=cfg.clustering.min_leaf_fraction,
         max_leaves=cfg.clustering.max_leaves_per_family,
         family_min_size_for_split=cfg.clustering.family_min_size_for_split,
+        stability_floor=cfg.clustering.stability_floor,
     )
     lk = tree.get("local_k", {})
     deps.emit(f"  built {tree['n_families']} families / {tree['n_leaves']} leaves"

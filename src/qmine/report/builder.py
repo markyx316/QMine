@@ -328,8 +328,9 @@ def bottomup_report(state: PipelineState, deps: Any, figs: dict[str, ArtifactRef
         f"- **Alpha**: `{alpha}`, which gives the phrasing block **{surface * 100:.1f}%** of the "
         "cosine. The algebra is `cos(H,H') = (cos_semantic + α²·cos_surface)/(1+α²)`, so phrasing "
         "votes with weight **α², not α** — a tie-breaker, not a co-equal signal.",
-        f"- **Algorithm**: `{state.get('chosen_algorithm')}` — won a six-algorithm battery run "
-        "through one identical measurement harness.",
+        f"- **Algorithm**: `{state.get('chosen_algorithm')}` — fixed, not selected. The tree is "
+        "always built with KMeans; the battery is a falsification probe asking whether a "
+        "different cluster-shape assumption finds the same structure.",
         f"- **Shape**: {_shape(panel, meta)[0]} families → **{_shape(panel, meta)[1]} leaves**, "
         f"held-out structure reproduction **{meta.get('heldout_reproduction', {}).get('agreement', '?')}**.",
         "",

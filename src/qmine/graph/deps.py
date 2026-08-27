@@ -59,6 +59,9 @@ class Deps:
     #:
     #: Re-entrant because `recover()` calls `emit()` and `has()` while holding it.
     _lock: Any = field(default_factory=threading.RLock, repr=False)
+    #: Set when `template_masks(trusted=True)` had to fall back to unvalidated
+    #: mined groups. Read by p1 so the run carries a gate rather than a log line.
+    _trusted_fallback: dict[str, Any] = field(default_factory=dict, repr=False)
     #: Progress lines surfaced to the CLI as the run proceeds.
     on_event: Any = None
 
@@ -142,8 +145,24 @@ class Deps:
         groups = [TemplateGroup.model_validate(g) for g in payload.get("groups", [])]
         masks = group_masks(groups, self.df, text_col=self.cfg.data.text_column,
                             trusted_only=trusted)
-        if trusted and not masks:            # no seeds survived — fall back loudly
+        if trusted and not masks:
+            # "FALL BACK LOUDLY" — IT WAS SILENT. No log, no gate, no artifact.
+            #
+            # This is the portability case, and it is the one that matters: with no
+            # domain profile there are no seeds, so nothing is trusted, and K is
+            # then located by AMI against UNVALIDATED mined groups. `generic.yaml`
+            # ships 0 seeds, so that is the default path for any new corpus. Mined
+            # groups are measurably worse references — on live40, `suffix:是什么`
+            # spans 7 top-down intents at 42% purity, against 87.8% median for the
+            # seeded ones — and nothing said so.
             masks = group_masks(groups, self.df, text_col=self.cfg.data.text_column)
+            self._trusted_fallback = {
+                "fell_back": True, "n_groups_used": len(masks),
+                "why": ("no seeded phrasing group survived, so the K locator's "
+                        "reference is mined groups that passed no cohesion test"),
+            }
+            self.emit("  ⚠ 没有任何**种子**措辞群存活 — K 的定位参照改用"
+                      f"{len(masks)} 个**未经验证的**挖掘群。这会直接影响定下来的 K。")
         self._cache[key] = masks
         return masks
 

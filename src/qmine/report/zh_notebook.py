@@ -38,7 +38,7 @@ def cells(state: Any, deps: Any) -> list[tuple[str, str]]:
 ## 端到端方法论
 
 ```
-① 表征构建 → ② 调优(算法 battery + K 扫描) → ③ 两层层级(稳定性峰 K 定家族, 家族内 silhouette 选 k 定叶)
+① 表征构建 → ② 调优(算法证伪检验 + K 扫描) → ③ 两层层级(AMI 对齐度定家族 K, 家族内「相对随机基线的提升」选 k 定叶)
 → ④ 迭代精化(merge/split/reassign 至收敛) → ⑤ 盲评命名 + 树审计 → ⑥ 治理合并(执行) → ⑦ 部署验证
 ```
 
@@ -189,7 +189,7 @@ if sw.get('rows'):
 
     out.append(("md", """## 四、算法选型 battery 与 K 值三角验证
 
-用**统一 harness** 做淘汰赛, 而不是默认 KMeans。K 值则由三条**独立**路线交叉验证 —
+算法阶段跑的是**证伪检验**而不是淘汰赛 —— 交付的树始终是 KMeans。K 值则由三条**独立**路线交叉验证 —
 一条路线得出的 K 可疑, 三条收敛到同一尺度才是强证据。"""))
 
     out.append(("code", """# %% [5] battery + K 三角验证

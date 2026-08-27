@@ -97,6 +97,24 @@ def split_leaves(
     described as a lookup remap, because claiming otherwise in a report would be
     false in a way that matters — the centroid matrix shipped to production is
     different afterwards.
+
+    **Every split is measured, and the measurement does not veto.** On live40 this
+    door made 9 of the 25 delivered leaves — 36% of the layer a reader sees —
+    while `choose_local_k` applied a null test and a stability floor to every other
+    leaf in the tree and this applied a `min_size` guard and nothing else. That
+    asymmetry was invisible: the two facts lived in different artifacts.
+
+    Measuring but not vetoing is deliberate, and the direction matters. When the 9
+    live40 splits were replayed through `choose_local_k`'s own tests, **all 9
+    passed** — the audit was correctly compensating for an under-split caused by
+    ranking local k on raw silhouette (see `_rank_local_candidates`). Had the
+    measurement been a veto built on the same biased geometry, it would have
+    rejected the corrections to its own bias. A split can also be semantically
+    right and geometrically unsupported — two intents that share phrasing — which
+    is exactly the case the audit exists to catch and the geometry cannot see.
+
+    So the number is recorded beside the split and a reader can weigh it. A leaf
+    whose split fails the null is not blocked; it is *disclosed*.
     """
     from sklearn.cluster import KMeans
 
@@ -115,8 +133,46 @@ def split_leaves(
         done[str(lid)] = {
             "split": True, "new_leaf": new_id,
             "sizes": [int((sub == 0).sum()), int((sub == 1).sum())],
+            **_measure_split(X[idx], sub, seed=seed),
         }
     return labels, np.array(fam, dtype=np.int64), done
+
+
+def _measure_split(Xs: np.ndarray, sub: np.ndarray, *, seed: int = 0) -> dict[str, Any]:
+    """The same two tests `choose_local_k` applies, run on an agent's split.
+
+    Advisory by construction — see `split_leaves`. Failure to measure is recorded
+    as `null` rather than as a pass, because a missing measurement that reads as
+    approval is the failure mode this whole record exists to prevent.
+    """
+    from sklearn.cluster import KMeans
+    from sklearn.metrics import adjusted_rand_score
+
+    from .cluster import cosine_silhouette
+
+    out: dict[str, Any] = {"measured_by": "choose_local_k's null + stability tests (advisory)"}
+    try:
+        real = float(cosine_silhouette(Xs, sub, sample=min(8000, len(Xs))))
+        rng = np.random.default_rng(seed)
+        Z = Xs.copy()
+        for j in range(Z.shape[1]):
+            Z[:, j] = Z[rng.permutation(len(Z)), j]
+        null_lab = KMeans(n_clusters=2, random_state=seed, n_init=4).fit_predict(Z)
+        null = float(cosine_silhouette(Z, null_lab, sample=min(8000, len(Z))))
+        a = KMeans(n_clusters=2, random_state=seed, n_init=4).fit_predict(Xs)
+        b = KMeans(n_clusters=2, random_state=seed + 1, n_init=4).fit_predict(Xs)
+        out.update({
+            "silhouette": round(real, 4),
+            "silhouette_null": round(null, 4),
+            "lift_over_null": round(real - null, 4),
+            "stability_ari": round(float(adjusted_rand_score(a, b)), 4),
+        })
+        out["geometry_supports_the_split"] = bool(
+            out["lift_over_null"] > 0.02 and out["stability_ari"] >= 0.55)
+    except Exception as exc:                                     # noqa: BLE001
+        out["measurement_failed"] = f"{type(exc).__name__}: {exc}"
+        out["geometry_supports_the_split"] = None
+    return out
 
 
 def execute_prescriptions(

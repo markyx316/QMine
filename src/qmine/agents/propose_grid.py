@@ -17,6 +17,19 @@ The sequence is fixed, and every step is a guardrail:
 5. `grade_proposal` records whether any addition actually won, so the mechanism
    can be evaluated over runs instead of believed.
 
+**NOT WIRED. `challenger_beats_incumbent` has no production call site.** The
+only symbol any `src/` module imports from `ops/select.py` is `noise_floor`. The
+protection described below is real code with real tests and nothing calls it, so
+a proposed value that wins by luck is currently stopped by nothing.
+
+Two reasons it is documented rather than quietly wired. Applying the toll as
+written flips live40 from K=7 to K=10, which is *worse* on both of the metrics
+the run reports — stability 0.695 vs 0.9966, fragmentation 1.622 vs 1.42 — so a
+call site added without redesign would degrade the answer. And `propose_grid`
+returns a flat widened list, so selection never learns which values were
+proposed; expressing the toll at all needs a signature change. See
+`QMine/HANDOFF.md` §2.
+
 If any step fails, the incumbent grid is used unchanged. Nothing here can make the
 pipeline worse than not running it — the failure mode is "no additions", never
 "bad additions".
