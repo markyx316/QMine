@@ -228,10 +228,19 @@ ROLE_REQUIREMENTS: dict[str, RoleRequirement] = {
     ),
     "namer": RoleRequirement(
         role="namer", reasoning="standard", blast_radius="phase",
-        min_context_tokens=32_000, typical_calls=60, output_tokens_per_call=1200,
+        min_context_tokens=32_000, typical_calls=60, output_tokens_per_call=3000,
         multilingual_critical=True,
         rationale="One call per cluster, reading 30 member queries. Moderate volume; the "
-                  "names reach the catalogue and the report, so not the cheapest tier.",
+                  "names reach the catalogue and the report, so not the cheapest tier. "
+                  "The budget is 3,000 for ~200 tokens of name and rationale because "
+                  "this role REASONS: it was in `NO_REASONING_ROLES` and was taken out, "
+                  "and a reasoning trace is billed output that shares this cap. Measured "
+                  "on this project's providers, the trace runs 8-10x the content — the "
+                  "reporter spent 9,937 of 10,930 completion tokens thinking. At the old "
+                  "1,200 the cap was 3,600, which is inside one trace: the JSON would be "
+                  "truncated after the budget was spent, which is exactly how the referee "
+                  "reached an 88% failure rate on live41. The estimate must move with it "
+                  "or the ledger under-reports the tokens the trace really costs.",
     ),
     "tree_auditor": RoleRequirement(
         role="tree_auditor", reasoning="frontier", blast_radius="run",

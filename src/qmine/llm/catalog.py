@@ -376,3 +376,42 @@ def _floor() -> Catalog:
     *something* explainable while announcing that it is flying blind.
     """
     return Catalog(models={}, fetched_at=0.0, sources=["floor"])
+
+
+def resolve_pin(pin: str, models: dict[str, ModelCard]) -> ModelCard | None:
+    """Resolve a user's pinned model id to a card, or ``None`` if unroutable.
+
+    A pin is the one path into the router that does not go through the fetched
+    catalogue's own ids, and the catalogue is fetched precisely so that prices
+    and ids are not hardcoded. The consequence is structural: **a model released
+    after the last price-feed update cannot have a card**, however real it is.
+    `glm-5.3-flash` and `qwen3.8-flash` both answer on their providers' direct
+    endpoints while appearing nowhere in a 1,930-model catalogue.
+
+    Before this, such a pin fell to ``provider="explicit"`` — a sentinel nothing
+    downstream handled. `BY_KEY` has no `explicit` entry, so no base URL was
+    resolved, and `init_chat_model` was handed a bare `glm-5.3-flash` it could
+    not attribute to any provider. The run died on the role's FIRST REAL CALL
+    with `Unable to infer model provider`, i.e. after `qmine models` had printed
+    a clean plan and after the phases above it had been paid for.
+
+    So a pin may name its provider explicitly, `zhipu:glm-5.3-flash`, and gets a
+    card synthesised with that provider and the bare id as `api_id`. It carries
+    no price — deliberately. `_pin_warnings` already reports an unpriced pin as
+    "UNKNOWN, not free", and inventing a rate here would convert a known gap into
+    a confident wrong number in the spend ledger.
+
+    Note the qualified form uses a COLON. `qwen/qwen3.8-flash` is a catalogue id
+    meaning the OpenRouter gateway, which is the hop these pins exist to avoid.
+    """
+    from .providers import BY_KEY
+
+    card = models.get(pin)
+    if card is not None:
+        return card
+
+    provider, sep, native = pin.partition(":")
+    if not sep or not native or provider not in BY_KEY:
+        return None
+    return ModelCard(id=pin, provider=provider, api_id=native,
+                     sources=["pin"], raw_name=native)

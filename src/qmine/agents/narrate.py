@@ -56,6 +56,7 @@ from ..report.narrative_brief import (
     build_catalogue,
     digest,
     must_cover,
+    numbers_in,
     sheet,
 )
 from .verify import check_numbers
@@ -77,7 +78,7 @@ class SectionResult:
 
 
 def _reject(section_md: str, bundles: list[Bundle], allowed_figs: set[str],
-            language: str) -> list[str]:
+            language: str, shown: str = "") -> list[str]:
     """Every reason this draft may not ship. Empty means it may."""
     problems: list[str] = []
 
@@ -87,7 +88,24 @@ def _reject(section_md: str, bundles: list[Bundle], allowed_figs: set[str],
     # value-only pool rejects — live42 refused `32, 40, 42, 43, 44, 45`, the leaf
     # ids the section had just been shown, three times, and the section shipped
     # as a hole. See `citable_numbers`.
-    res = check_numbers(section_md, {**facts, "_sheet": citable_numbers(facts)})
+    # EVERYTHING THE WRITER WAS SHOWN IS CITABLE; anything else is entrapment.
+    #
+    # `shown` carries the channels that are not the fact sheet: the must-cover
+    # items, the figure captions, and the previous section. A must-cover arrives
+    # under "必须原样包含这句话", so a number inside one ORDERS the writer to
+    # state something this check would then refuse — a hole no retry can close,
+    # the same shape as the negative-number defect in `verify._NUMBER`.
+    #
+    # The OUTLINE is deliberately excluded. `_plan` verifies evidence ids and
+    # section count and nothing numeric, so pooling the thesis would let one
+    # unchecked planning call launder a number into every section below it.
+    # The rejection notice is excluded for the same reason: it PRINTS the
+    # offending numbers, and pooling it would make any rejected number citable
+    # on the retry — the check would pass on its second attempt, always.
+    pool = {**facts, "_sheet": citable_numbers(facts)}
+    if shown:
+        pool["_shown"] = numbers_in(shown)
+    res = check_numbers(section_md, pool)
     if not res.ok:
         bad = ", ".join(c.raw for c in res.unsupported[:8])
         problems.append(
@@ -128,7 +146,10 @@ def _write_section(deps: Any, sec: Any, bundles: list[Bundle],
         f"### {b.id} — {b.title}\n{sheet(b.facts)}" for b in bundles)
     figs_text = "\n".join(
         f"- `{f}` — {cap}" for b in bundles for f, cap in b.figures)
-    musts_text = "\n".join(f"- `{m.id}` — {m.what}" for m in musts)
+    musts_text = "\n".join(
+        (f"- `{m.id}` — {m.what}\n  **必须原样包含这句话** (不要改写, 不要改标点):\n"
+         f"  {m.verbatim}") if m.verbatim else f"- `{m.id}` — {m.what}"
+        for m in musts)
     sec_text = (f"{out.heading}\n\n本节要论证: "
                 f"{getattr(sec, 'intent', '') or out.heading}")
 
@@ -143,12 +164,36 @@ def _write_section(deps: Any, sec: Any, bundles: list[Bundle],
                               rejected=rejected, language=language)
         except Exception as exc:                              # noqa: BLE001
             out.rejections.append(f"{type(exc).__name__}: {exc}")
+            rejected = (f"上一次调用直接失败了 ({type(exc).__name__})。"
+                        "请只返回一个 JSON 对象, 字段为 markdown 与 covered。")
             continue
         md = (getattr(draft, "markdown", "") or "").strip()
         if not md:
-            out.rejections.append("空白正文")
+            # AN EMPTY RETURN MUST CARRY FEEDBACK LIKE ANY OTHER REJECTION.
+            #
+            # This appended a rejection and `continue`d WITHOUT setting
+            # `rejected`, so the retry re-sent a byte-identical prompt and got a
+            # byte-identical answer. live42's three empty sections each burned all
+            # three attempts that way — one call's outcome, paid for three times.
+            # `interpret.py` states the rule this broke: a retry must carry
+            # EXTERNAL feedback, because re-asking unchanged is intrinsic
+            # self-correction, which is the configuration shown not to help.
+            #
+            # `reporter` runs on a model in plain-JSON mode, so a whole section of
+            # Chinese prose has to survive as an escaped JSON string; the field
+            # arriving empty or missing is a parse-shaped failure, and saying so
+            # is the only thing that gives the retry a chance.
+            out.rejections.append("空白正文 (markdown 字段为空或缺失)")
+            rejected = (
+                "你上一稿返回的 JSON 里 `markdown` 字段是空的或者根本不存在, "
+                "因此这一节没有任何正文。请重新返回一个 JSON 对象, 其中 "
+                "`markdown` 必须是这一节完整的正文字符串 —— 不要把正文写在 JSON "
+                "之外, 不要只返回 `covered`。正文里的换行请正常转义, 若担心过长, "
+                "宁可写得紧凑一些, 也不要返回空字段。")
+            deps.emit(f"    ⚠ §{out.id} 第 {attempt} 次返回空正文 — 已告知模型重试")
             continue
-        problems = _reject(md, bundles, allowed_figs, language)
+        problems = _reject(md, bundles, allowed_figs, language,
+                           shown="\n".join((musts_text, figs_text, previous)))
         if not problems:
             out.markdown = md
             out.covered = [str(c) for c in (getattr(draft, "covered", []) or [])]
@@ -302,8 +347,20 @@ def _coverage(authored: str, musts: list[MustCover]) -> list[MustCover]:
     only the sections the agent actually wrote and that actually passed are
     searched here.
     """
-    return [m for m in musts
-            if not all(str(a) in authored for a in (m.anchors or []))]
+    missing: list[MustCover] = []
+    for m in musts:
+        # A SUPPLIED SENTENCE IS CHECKED EXACTLY, and that is the whole point of
+        # it: `check_numbers` guarantees numbers, so an attribution — a noun —
+        # slips through with every figure correctly sourced. live42 wrote the
+        # wrong reference into a sentence whose numbers were all valid. Requiring
+        # the pipeline's own wording verbatim is the only mechanical guarantee
+        # available for a claim that is not a number.
+        if m.verbatim and m.verbatim not in authored:
+            missing.append(m)
+            continue
+        if not all(str(a) in authored for a in (m.anchors or [])):
+            missing.append(m)
+    return missing
 
 
 def narrate(state: Any, deps: Any) -> dict[str, Any]:
@@ -408,12 +465,35 @@ def _assemble(outline: Any, results: list[SectionResult], state: Any, deps: Any,
         if r.ok:
             L += [r.markdown, ""]
         else:
+            # SAY WHICH OF THE TWO THINGS WENT WRONG, AND SAY EACH ONE ONCE.
+            #
+            # One notice covered both outcomes and read "未通过校验" — did not
+            # pass validation. For a blank return nothing was ever validated:
+            # the writer produced no text at all, which is a different fact
+            # about the run and points at a different remedy. live42 shipped
+            # three sections whose whole explanation was "空白正文" repeated
+            # three times, which tells a reader neither what happened nor that
+            # it was the SAME failure three times rather than three findings.
+            blank_only = all("空白正文" in p for p in r.rejections) and r.rejections
             L += [
-                "> ⚠️ **本节未通过校验, 因此没有正文。** 这是刻意保留的空缺: "
-                "与其交付一段没有核对过的文字, 不如让读者看见这里缺了什么。",
+                ("> ⚠️ **本节没有正文: 撰写这一节的 agent 三次都没有返回任何文字。** "
+                 "这不是校验退回 —— 没有产出可供校验。这里刻意留空, 而不是补一段没有"
+                 "来源的文字。")
+                if blank_only else
+                ("> ⚠️ **本节未通过校验, 因此没有正文。** 这是刻意保留的空缺: "
+                 "与其交付一段没有核对过的文字, 不如让读者看见这里缺了什么。"),
                 "",
-                "> 被退回的原因:",
-                *[f"> - {p}" for p in r.rejections[:4]],
+            ]
+            # De-duplicated in order: three identical rejections are one fact
+            # about the run, not three.
+            reasons: list[str] = []
+            for p in r.rejections:
+                if p not in reasons:
+                    reasons.append(p)
+            if not blank_only:
+                L += ["> 被退回的原因:", *[f"> - {p}" for p in reasons[:4]], ""]
+            L += [
+                f"> 尝试次数: {r.attempts}。",
                 "",
                 "> 本节要讲的内容在脚本生成的报告里是完整的, 请查阅上面列出的那三份文档。",
                 "",

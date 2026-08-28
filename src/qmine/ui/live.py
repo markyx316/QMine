@@ -173,7 +173,7 @@ _GATE_ICON = {"PASSED": "[green]✓[/green]", "WARNED": "[yellow]![/yellow]",
 
 
 #: ``run.log`` lines are "HH:MM:SS LEVEL   logger.name: <the emitted message>".
-_LOG_LINE_RE = re.compile(r"^\d\d:\d\d:\d\d \s*\w+\s+[\w.]+: (.*)$")
+_LOG_LINE_RE = re.compile(r"^\d\d:\d\d:\d\d \s*(\w+)\s+[\w.]+: (.*)$")
 _LOG_TS_RE = re.compile(r"^(\d\d):(\d\d):(\d\d) ")
 #: `_wrap` in graph/build.py emits this when a node returns. Measured completion
 #: beats inferring it from "the next phase started", which cannot be right for a
@@ -210,8 +210,45 @@ def parse_log_line(line: str) -> str | None:
     m = _LOG_LINE_RE.match(line.rstrip("\n"))
     if not m:
         return None
-    msg = m.group(1)
+    msg = m.group(2)
     return msg if msg.strip() else None
+
+
+def parse_log_level(line: str) -> str:
+    """The LEVEL a replayed line was logged at, or "" if this is not a log line.
+
+    The glyph convention covers everything the pipeline emits deliberately, and
+    covers nothing that the machinery underneath it reports. live42's two most
+    consequential lines — "SQLite checkpointer unavailable" and "SQLite store
+    unavailable (generator didn't stop after throw())", the teardown failure that
+    cost the run its `run_summary.json` — carry no glyph and sat in the feed
+    looking exactly like progress. `logging` had already classified them; the
+    formatter writes the level into every line and the parser was dropping it.
+    """
+    m = _LOG_LINE_RE.match(line.rstrip("\n"))
+    if not m:
+        return ""
+    return {"WARNING": "warn", "ERROR": "error", "CRITICAL": "error"}.get(
+        m.group(1).upper(), "")
+
+
+#: The leading glyph IS this project's severity convention — `⚠` for a warning,
+#: `✎` for an edit applied to a deliverable, `✗`/`✘` for a failure. It was being
+#: rendered as one more character in a flat list, so a reader scanning four hours
+#: of events had nothing to scan BY. Reading it back is not string-sniffing for
+#: meaning: the emitters put it there deliberately, and this is the one place that
+#: decodes it.
+_LEVEL_GLYPHS: tuple[tuple[str, str], ...] = (
+    ("⚠", "warn"), ("✗", "error"), ("✘", "error"), ("✎", "edit"), ("✓", "ok"),
+)
+
+
+def event_level(msg: str) -> str:
+    """One of: error, warn, edit, ok, info."""
+    for glyph, level in _LEVEL_GLYPHS:
+        if glyph in msg:
+            return level
+    return "info"
 
 
 @dataclass
@@ -247,7 +284,12 @@ class LiveDashboard:
     # everything for the HTML view; they are plain lists of small tuples, and a
     # four-hour run costs a couple of MB.
     all_agents: list[dict[str, Any]] = field(default_factory=list)
-    all_activity: list[tuple[float, str]] = field(default_factory=list)
+    #: (timestamp, message, level, phase). The level and the phase are captured
+    #: HERE, at the moment the line is emitted, because that is the only moment
+    #: they are known: afterwards the feed is 1,000 undifferentiated strings and
+    #: the phase that produced each one is unrecoverable. A flat feed is what an
+    #: operator was left to read across a four-hour run.
+    all_activity: list[tuple[float, str, str, str]] = field(default_factory=list)
     all_metrics: list[tuple[float, str, str]] = field(default_factory=list)
     all_gates: list[dict[str, Any]] = field(default_factory=list)
     #: Artifacts as they are produced, newest last. Fed by `artifacts_fn`.
@@ -329,9 +371,13 @@ class LiveDashboard:
         self.running.clear()
 
     # -- event intake -------------------------------------------------------
-    def handle(self, msg: str, at: float | None = None) -> None:
-        """Parse one emitted line and update the model behind the view."""
-        self._ingest(msg, at=at)
+    def handle(self, msg: str, at: float | None = None, level: str = "") -> None:
+        """Parse one emitted line and update the model behind the view.
+
+        `level` is what `logging` already decided, for a line read back off disk.
+        A live emit has no level and falls back to the glyph convention.
+        """
+        self._ingest(msg, at=at, level=level)
         if self.html_writer is not None:
             if self.artifacts_fn is not None:
                 try:
@@ -347,7 +393,7 @@ class LiveDashboard:
         elif self.enabled is False and msg.strip():
             print(f"  {msg}")
 
-    def _ingest(self, msg: str, at: float | None = None) -> None:
+    def _ingest(self, msg: str, at: float | None = None, level: str = "") -> None:
         # `at` lets a REPLAY supply the log's own clock instead of wall time, so a
         # finished run shows the durations it actually had. Monotonic-ised here so
         # a run crossing midnight cannot produce negative phase times.
@@ -478,7 +524,8 @@ class LiveDashboard:
             else:
                 self.activity.append(line)
             self.activity = self.activity[-6:]
-            self.all_activity.append((now, msg.strip()))
+            self.all_activity.append(
+                (now, msg.strip(), level or event_level(msg), self.current or ""))
 
     # -- rendering ----------------------------------------------------------
     def _render(self) -> Any:

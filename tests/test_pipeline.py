@@ -383,12 +383,18 @@ def test_every_authored_rationale_reaches_the_reader_in_the_report_language(comp
     # of CJK, so that is what this asks.
     english = [l for l in md.splitlines() if _is_english_prose(l)]
 
-    # KNOWN DEBT, FROZEN. Turning the detector up revealed a second, larger class
-    # the weak one never saw: every `deps.gate(...)` message is an English f-string
-    # with numbers interpolated into it, and the ledger prints it verbatim. That is
-    # 22 call sites and a restructure, not a mapping — so it is recorded here by
-    # NAME rather than waved through by pattern. This set may shrink; a line that
-    # is not in it fails the test. Do not add to it to make a failure go away.
+    # KNOWN DEBT — now OFFLINE-ONLY. Every `deps.gate(...)` message is an English
+    # f-string with numbers interpolated, so no fixed `PROSE_ZH` prefix can ever
+    # match one: 22 call sites permanently unreachable by the mapping.
+    #
+    # `report/translate.py` closes that class on a LIVE run — `prose()` now falls
+    # through to a guarded machine translation, verified to preserve every number
+    # and identifier, and a gate message with five interpolated values translates
+    # cleanly. This fixture is offline, so no translator is installed and the
+    # English still reaches it; the debt below is what an OFFLINE render leaves.
+    #
+    # The set may shrink; a line that is not in it fails the test. Do not add to
+    # it to make a failure go away.
     GATE_MESSAGE_DEBT = {
         "p1_template_coverage", "p1_minority_language_risk", "p2a_pilot_agreement",
         "p2b_annotator_symmetry", "p6_heldout_reproduction",

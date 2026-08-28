@@ -76,8 +76,10 @@ tr:last-child td{border-bottom:0}
 .s-WARNED{background:color-mix(in srgb,var(--warn) 18%,transparent);color:var(--warn)}
 .bar{height:5px;border-radius:3px;background:var(--line);overflow:hidden;margin-top:8px}
 .bar>i{display:block;height:100%;background:var(--accent)}
-.branch{border-left:3px solid var(--line);padding-left:10px;margin:8px 0}
-.b-topdown{border-color:#e0803c}.b-bottomup{border-color:#3c9ae0}
+/* The branch marker lives on the ROW. A wrapper div between </tr> and <tr> is
+   foster-parented out of the table by the HTML5 parser and renders as nothing. */
+tr.br-topdown td:first-child{box-shadow:inset 3px 0 #e0803c}
+tr.br-bottomup td:first-child{box-shadow:inset 3px 0 #3c9ae0}
 details{border-bottom:1px solid var(--line)}
 details:last-child{border-bottom:0}
 summary{cursor:pointer;padding:7px 4px;list-style:none;display:flex;gap:10px;align-items:baseline}
@@ -88,9 +90,47 @@ border-radius:6px;padding:10px;margin:6px 0 12px;font-size:12px;max-height:460px
 .feed{max-height:320px;overflow:auto;font-size:12px}
 .feed div{padding:2px 0;border-bottom:1px dotted var(--line)}
 .t{color:var(--dim);font-size:11px}
+/* An agent return is prose, a list, or a few scalars — not a Python repr. */
+.ret{white-space:pre-wrap;word-break:break-word;background:var(--bg);
+border:1px solid var(--line);border-radius:6px;padding:8px 10px;margin:4px 0;
+font-size:13px;line-height:1.7;max-height:26em;overflow:auto}
+ul.ret{padding:8px 10px 8px 26px;white-space:normal}
+ul.ret li{margin:2px 0}
+.fld{margin:8px 0}
+.fldk{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:11px;
+color:var(--dim);text-transform:none;letter-spacing:.02em;margin-bottom:2px}
+.kv{display:flex;flex-wrap:wrap;gap:4px 14px;margin:4px 0 2px;font-size:12px}
+.kv b{font-weight:600;color:var(--dim);font-weight:500}
+details.ask{margin:2px 0 6px}
+details.ask summary{cursor:pointer}
 input[type=search]{width:100%;padding:7px 10px;border:1px solid var(--line);
 border-radius:7px;background:var(--card);color:var(--fg);font-size:13px;margin-bottom:8px}
 .right{float:right;color:var(--dim);font-weight:400}
+/* The event feed. A four-hour run emits ~1,000 lines; a flat list of them is
+   not something a person reads, it is something they scroll past. */
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 8px}
+.chip{border:1px solid var(--line);background:var(--card);color:var(--dim);
+border-radius:999px;padding:3px 11px;font-size:12px;cursor:pointer;
+font-family:inherit;line-height:1.5}
+.chip:hover{border-color:var(--accent)}
+.chip[aria-pressed=true]{background:var(--accent);border-color:var(--accent);
+color:#fff;font-weight:500}
+.chip .n{opacity:.72;margin-left:5px;font-variant-numeric:tabular-nums}
+.ev{display:grid;grid-template-columns:58px 74px 1fr;gap:8px;align-items:baseline;
+padding:3px 0;border-bottom:1px dotted var(--line)}
+.ev .ph{font-size:10px;color:var(--dim);font-family:ui-monospace,Menlo,monospace;
+overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+/* Severity is carried by a WORD, not by colour alone: WCAG 1.4.1 — colour must
+   never be the only means of conveying information. Colour is the fast scan;
+   the label is what makes it readable to anyone the colour fails for. */
+.ev .lv{font-size:10px;font-weight:600;letter-spacing:.04em}
+.ev.warn .lv{color:var(--warn)} .ev.error .lv{color:var(--bad)}
+.ev.edit .lv{color:var(--accent)} .ev.ok .lv{color:var(--ok)}
+.ev.info .lv{color:var(--pend)}
+.ev.warn{background:color-mix(in srgb,var(--warn) 7%,transparent)}
+.ev.error{background:color-mix(in srgb,var(--bad) 8%,transparent)}
+.howto{font-size:12px;color:var(--dim);background:var(--bg);border:1px solid var(--line);
+border-left:3px solid var(--accent);border-radius:0 6px 6px 0;padding:7px 10px;margin:0 0 9px}
 """
 
 _JS = """
@@ -99,6 +139,23 @@ function qmFilter(inputId, tableId){
   document.querySelectorAll('#'+tableId+' [data-row]').forEach(r=>{
     r.style.display = !q || r.getAttribute('data-row').toLowerCase().includes(q) ? '' : 'none';
   });
+}
+var qmEv={lv:'all',ph:'all'};
+function qmChip(kind,val,el){
+  qmEv[kind]=val;
+  document.querySelectorAll('.chip[data-kind='+kind+']').forEach(c=>
+    c.setAttribute('aria-pressed', c===el ? 'true':'false'));
+  qmEvApply();
+}
+function qmEvApply(){
+  var q=(document.getElementById('evq').value||'').toLowerCase(), n=0;
+  document.querySelectorAll('#events .ev').forEach(function(r){
+    var ok = (qmEv.lv==='all' || r.dataset.lv===qmEv.lv)
+          && (qmEv.ph==='all' || r.dataset.ph===qmEv.ph)
+          && (!q || r.getAttribute('data-row').toLowerCase().includes(q));
+    r.style.display = ok ? '' : 'none'; if(ok) n++;
+  });
+  var c=document.getElementById('evcount'); if(c) c.textContent=n+' 条可见';
 }
 """
 
@@ -141,6 +198,63 @@ def _clock(ts: float | None) -> str:
     return time.strftime("%H:%M:%S", time.localtime(ts))
 
 
+def _return_html(payload: Any, budget: int = MAX_OUTPUT_CHARS) -> str:
+    """Render what an agent RETURNED so a person can read it.
+
+    The detail pane used to be `<pre>{str(payload)}</pre>`, and an agent return is
+    a dict, so a reader got a Python repr: `{'markdown': '...', 'covered': [...]}`
+    — one unwrapped line with escaped newlines, quotes and brackets in the way of
+    the prose it was meant to show. The longest and most valuable returns (the
+    report sections) were the least readable.
+
+    An agent return is a schema object, so it has FIELDS, and the fields are what
+    a reader wants: long text as text with its line breaks, lists as lists,
+    scalars as a compact header. Chinese narrative prose is the common case here,
+    so long text is rendered wrapped rather than in a horizontally scrolling
+    `<pre>`.
+    """
+    def _clip(t: str) -> str:
+        return (t if len(t) <= budget
+                else t[:budget] + f"\n… [{len(t) - budget:,} more chars]")
+
+    if payload is None or payload == "" or payload == {}:
+        return "<pre class=t>this call recorded no return value</pre>"
+    if isinstance(payload, str):
+        return f"<div class=ret>{_e(_clip(payload))}</div>"
+    if isinstance(payload, list):
+        return ("<ul class=ret>"
+                + "".join(f"<li>{_e(_clip(str(v)))}</li>" for v in payload[:60])
+                + ("<li class=t>…</li>" if len(payload) > 60 else "") + "</ul>")
+    if not isinstance(payload, dict):
+        return f"<div class=ret>{_e(_clip(str(payload)))}</div>"
+
+    scalars, blocks = [], []
+    for k, v in payload.items():
+        if isinstance(v, str) and ("\n" in v or len(v) > 120):
+            blocks.append(f"<div class=fld><div class=fldk>{_e(k)}</div>"
+                          f"<div class=ret>{_e(_clip(v))}</div></div>")
+        elif isinstance(v, (list, tuple)):
+            if not v:
+                scalars.append((k, "[]"))
+            else:
+                inner = "".join(f"<li>{_e(str(x)[:300])}</li>" for x in list(v)[:40])
+                more = "<li class=t>…</li>" if len(v) > 40 else ""
+                blocks.append(f"<div class=fld><div class=fldk>{_e(k)} "
+                              f"<span class=t>({len(v)})</span></div>"
+                              f"<ul class=ret>{inner}{more}</ul></div>")
+        elif isinstance(v, dict):
+            blocks.append(f"<div class=fld><div class=fldk>{_e(k)}</div>"
+                          f"<pre class=ret>{_e(_clip(json.dumps(v, ensure_ascii=False, indent=1)))}</pre></div>")
+        else:
+            scalars.append((k, v))
+    head = ""
+    if scalars:
+        head = ("<div class=kv>"
+                + "".join(f"<span><b>{_e(k)}</b> {_e(v)}</span>" for k, v in scalars)
+                + "</div>")
+    return head + "".join(blocks)
+
+
 def _card(title: str, body: str, sub: str = "") -> str:
     head = f"<h2>{_e(title)}{f'<span class=right>{_e(sub)}</span>' if sub else ''}</h2>"
     return head + f"<div class=card>{body}</div>"
@@ -162,19 +276,37 @@ def _pipeline(dash: Any, phases: list[Any]) -> str:
             secs = time.time() - dash._phase_start[sp.key]
         label = sp.label(getattr(dash, "language", "zh"))
         why = sp.why(getattr(dash, "language", "zh"))
+        # A BRANCH IS A PROPERTY OF THE ROW, NOT A WRAPPER AROUND IT.
+        #
+        # This opened `<div class='branch …'>` before a row and closed it with
+        # `close_br`, which was initialised to "" and never once reassigned — two
+        # unclosed divs, emitted between `</tr>` and `<tr>`. The HTML5 parser
+        # foster-parents non-table content out of the table, so the grouping
+        # rendered as NOTHING and the two concurrent branches read as sequential:
+        # p2a (50m30s), p2b (48m24s) and p3 (14m03s) stack in a column that sums
+        # past the 4h30m elapsed KPI with nothing on the page explaining why.
+        #
+        # A wrapper could not express this shape in any case — `PHASES`
+        # interleaves branch phases with spine phases, so the branch members are
+        # not contiguous. A per-row class and a column state it directly, and
+        # survive the parser.
         br = getattr(sp, "branch", "")
-        open_br = close_br = ""
-        if br and br not in seen_branch:
-            seen_branch.add(br)
-            open_br = f"<div class='branch b-{_e(br)}'>"
-        row = (f"<tr data-row='{_e(sp.key + ' ' + label)}'>"
+        seen_branch.add(br) if br else None
+        row = (f"<tr class='{('br-' + _e(br)) if br else ''}' "
+               f"data-row='{_e(sp.key + ' ' + label + ' ' + br)}'>"
                f"<td class=mono>{_e(sp.key)}</td>"
                f"<td><span class='pill s-{_e(st)}'>{_e(st)}</span></td>"
+               f"<td class=t>{_e(br) if br else '—'}</td>"
                f"<td>{_e(label)}<div class=t>{_e(why)}</div></td>"
                f"<td class='num mono'>{_e(_dur(secs))}</td></tr>")
-        rows.append(open_br + row + close_br)
-    body = ("<table><tr><th>phase</th><th>state</th><th>what it does</th>"
-            "<th class=num>elapsed</th></tr>" + "".join(rows) + "</table>")
+        rows.append(row)
+    body = ("<table><tr><th>phase</th><th>state</th><th>branch</th>"
+            "<th>what it does</th><th class=num>elapsed</th></tr>"
+            + "".join(rows) + "</table>")
+    if seen_branch:
+        body += ("<div class=t>本流水线在 " + _e("、".join(sorted(seen_branch)))
+                 + " 两条分支上并行, 因此各阶段耗时之和大于总时长 —— "
+                 "同一段时间被两条分支同时占用。</div>")
     done = sum(1 for sp in phases if dash.status.get(sp.key) == "done")
     pct = int(100 * done / max(len(phases), 1))
     body += f"<div class=bar><i style='width:{pct}%'></i></div>"
@@ -190,9 +322,22 @@ def _agents(dash: Any, transcript: list[dict[str, Any]] | None,
     here is the difference between "researcher_legacy_audit ok 225s" and being
     able to read what it concluded while the run is still going.
     """
-    by_role: dict[str, list[dict[str, Any]]] = {}
+    # JOIN ON THE CALL KEY, NEVER ON POSITION.
+    #
+    # These are two streams describing the same calls: `dash.all_agents` (the
+    # one-line summaries) and the transcript (the full returns). They used to be
+    # paired by index — `pool[min(i, len(pool)-1)]`, where `i` counts down a
+    # REVERSED list across ALL roles and `pool` is one role's calls in
+    # chronological order. Those two orderings have nothing to do with each
+    # other, so an expanded row showed some other call's output: on live42 the
+    # row headed `reporter … 04:42:11`, the first attempt at `audit_and_limits`,
+    # opened onto the top-down taxonomy section. A reader cannot tell a
+    # mispaired answer from a correct one, which makes it worse than a blank.
+    by_key: dict[str, dict[str, Any]] = {}
     for rec in (transcript or [])[-MAX_TRANSCRIPT_ITEMS:]:
-        by_role.setdefault(str(rec.get("role", "")), []).append(rec)
+        k = str(rec.get("cache_key") or "")
+        if k:
+            by_key[k] = rec
 
     recent = list(reversed(dash.all_agents[-MAX_TRANSCRIPT_ITEMS:]))
     items: list[str] = []
@@ -211,19 +356,27 @@ def _agents(dash: Any, transcript: list[dict[str, Any]] | None,
             # Older calls keep their result line; the full return stays in the
             # transcript artifact rather than in a page that has to stay openable.
             items.append(f"<details data-row='{row}'>{head}"
-                         "<pre class=t>full return in agent_transcript.json — this page keeps "
-                         f"the newest {detail_limit} in full so it stays responsive</pre></details>")
+                         + ("<pre class=t>完整返回在 agent_transcript.json —— "
+                            f"本页只保留最新 {detail_limit} 条全文以保持可打开</pre></details>"
+                            if transcript else
+                            "<pre class=t>完整返回未随本次运行保存 "
+                            "(agent_transcript.json 缺失或未加载)</pre></details>"))
             continue
-        pool = by_role.get(role) or by_role.get(role.split("_")[0], [])
-        full = ""
-        if pool:
-            rec = pool[-1] if len(pool) == 1 else pool[min(i, len(pool) - 1)]
-            out = str(rec.get("output", ""))
-            if len(out) > MAX_OUTPUT_CHARS:
-                out = out[:MAX_OUTPUT_CHARS] + f"\n… [{len(out) - MAX_OUTPUT_CHARS:,} more chars]"
-            full = out
-        detail = (f"<pre>{_e(full)}</pre>" if full else
-                  "<pre class=t>full return not captured for this call</pre>")
+        rec = by_key.get(str(a.get("key") or ""))
+        if rec is not None:
+            detail = _return_html(rec.get("output"))
+            ask = str(rec.get("user_head") or "")
+            if ask:
+                detail = (f"<details class=ask><summary class=t>它被问了什么 (开头)"
+                          f"</summary><div class=ret>{_e(ask)}</div></details>") + detail
+        elif transcript is None:
+            # `qmine watch` replays a FINISHED run, where there is no registry to
+            # call back into — so every row opened onto "not captured" and the
+            # feature looked broken rather than unavailable. Say which it is.
+            detail = ("<pre class=t>本页在回放已结束的运行, 完整返回来自 "
+                      "agent_transcript.json —— 该文件缺失或未被加载</pre>")
+        else:
+            detail = "<pre class=t>full return not captured for this call</pre>"
         items.append(f"<details data-row='{row}'>{head}{detail}</details>")
     if not items:
         return "<div class=sub>no agent calls yet</div>"
@@ -232,13 +385,84 @@ def _agents(dash: Any, transcript: list[dict[str, Any]] | None,
             f"<div id=agents>{''.join(items)}</div>")
 
 
+def _feed(dash: Any, phases: list[Any]) -> str:
+    """The event log, as something a person can actually read.
+
+    It was a flat reverse-chronological list of ~1,000 terse bilingual strings
+    with a timestamp — no severity, no phase, no way in. Over a four-hour run the
+    two lines that decide whether the delivery is trustworthy ("3/9 节通过校验",
+    "unfixable finding dropped") sit between hundreds of routine ones and read
+    exactly the same.
+
+    Three things fix that, and each is doing one job:
+
+    * **Severity, as a word and a tint.** Colour alone would not do it — WCAG 2.2
+      SC 1.4.1 (Use of Color) requires that colour never be the sole carrier of
+      information — so every row states its level in text as well.
+    * **Faceting**, the pattern every log explorer converges on: pre-computed
+      chips over the dimensions that exist (level, phase), each showing its own
+      count, so a reader can see there ARE 14 warnings without hunting for them.
+    * **A sentence saying how to read it.** The audience did not build this
+      pipeline. One line of orientation next to the thing it orients costs
+      nothing and is the difference between a log and a wall.
+    """
+    rows = dash.all_activity[-400:]
+    if not rows:
+        return "<div class=sub>no events yet</div>"
+
+    label_of = {sp.key: sp.label(getattr(dash, "language", "zh")) for sp in phases}
+    lv_names = {"error": "失败", "warn": "警告", "edit": "改稿", "ok": "通过", "info": "进展"}
+    lv_counts: dict[str, int] = {}
+    ph_counts: dict[str, int] = {}
+    html_rows: list[str] = []
+    for t, m, lv, ph in rows[::-1]:
+        lv_counts[lv] = lv_counts.get(lv, 0) + 1
+        if ph:
+            ph_counts[ph] = ph_counts.get(ph, 0) + 1
+        html_rows.append(
+            f"<div class='ev {lv}' data-lv='{_e(lv)}' data-ph='{_e(ph)}' "
+            f"data-row='{_e(m)} {_e(ph)} {_e(lv_names.get(lv, lv))}'>"
+            f"<span class=t>{_e(_clock(t))}</span>"
+            f"<span class=lv>{_e(lv_names.get(lv, lv))}</span>"
+            f"<span><span class=ph>{_e(label_of.get(ph, ph))}</span> {_e(m)}</span></div>")
+
+    def chips(kind: str, items: list[tuple[str, str, int]]) -> str:
+        out = [f"<button class=chip data-kind={kind} aria-pressed=true "
+               f"onclick=\"qmChip('{kind}','all',this)\">全部</button>"]
+        for val, text, n in items:
+            out.append(f"<button class=chip data-kind={kind} aria-pressed=false "
+                       f"onclick=\"qmChip('{kind}','{_e(val)}',this)\">{_e(text)}"
+                       f"<span class=n>{n}</span></button>")
+        return f"<div class=chips>{''.join(out)}</div>"
+
+    lv_chips = chips("lv", [(k, lv_names[k], lv_counts[k])
+                           for k in ("error", "warn", "edit", "ok", "info")
+                           if lv_counts.get(k)])
+    ph_chips = chips("ph", [(k, label_of.get(k, k), n)
+                            for k, n in sorted(ph_counts.items(), key=lambda kv: -kv[1])[:8]])
+    n_flag = lv_counts.get("warn", 0) + lv_counts.get("error", 0)
+    howto = (
+        "<div class=howto><b>怎么读这一栏。</b> 每一行是流水线自己发出的一条事件, 最新的在最上面。"
+        "左起依次是<b>时间</b>、<b>级别</b>、<b>发出它的阶段</b>, 然后是内容。"
+        f"本次运行有 <b>{n_flag}</b> 条<b>警告或失败</b> —— 先点下面的「警告」只看这些, "
+        "它们是唯一可能改变交付结论的事件; 「改稿」是交付前审核对报告正文做的逐条修订。"
+        "</div>")
+    return (howto + lv_chips + ph_chips
+            + "<input type=search id=evq placeholder='在事件里搜索…' oninput='qmEvApply()'>"
+            + f"<div class=t id=evcount>{len(rows)} 条可见</div>"
+            + f"<div class=feed id=events>{''.join(html_rows)}</div>")
+
+
 def _artifacts(arts: list[dict[str, Any]]) -> str:
     if not arts:
         return "<div class=sub>nothing written yet</div>"
     def _row(a: dict[str, Any]) -> str:
         size = a.get("bytes") or a.get("size_bytes")
         size_s = f"{int(size):,}" if isinstance(size, (int, float)) else ""
-        key, summary = a.get("key", ""), a.get("summary", "")
+        # `index.jsonl` writes `name`; this read `key` and found nothing, so the
+        # artifact column was blank for every row of every run. `key` is kept
+        # first in case a caller supplies the store's own key.
+        key, summary = a.get("key") or a.get("name", ""), a.get("summary", "")
         return (f"<tr data-row='{_e(key)} {_e(summary)}'>"
                 f"<td class=mono>{_e(key)}</td>"
                 f"<td class=mono style='color:var(--dim)'>{_e(a.get('producer',''))}</td>"
@@ -265,7 +489,20 @@ def _gates(gates: list[dict[str, Any]]) -> str:
 
 def render(dash: Any, phases: list[Any], *, finished: bool = False) -> str:
     """Render the whole page from the dashboard's own state."""
-    elapsed = time.time() - dash.started
+    # THE RUN'S OWN CLOCK, NOT THE READER'S.
+    #
+    # `dash.started` is set from the first event's timestamp, and on a REPLAY
+    # that timestamp is seconds-since-midnight (`parse_log_clock`), not an epoch.
+    # Subtracting it from `time.time()` gave "496,632h" at the top of every page
+    # `qmine watch` produced for a finished run — the single most prominent
+    # number on the page, wrong by fifty-six years. Same `_EPOCH_FLOOR` rule the
+    # clock formatter already uses: when the run's clock is a replay clock,
+    # measure against the LAST event rather than against now.
+    if dash.started and dash.started < _EPOCH_FLOOR:
+        last = max((e[0] for e in dash.all_activity), default=dash.started)
+        elapsed = max(0.0, last - dash.started)
+    else:
+        elapsed = time.time() - dash.started
     usage: dict[str, Any] = {}
     if getattr(dash, "usage_fn", None):
         try:
@@ -317,13 +554,7 @@ def render(dash: Any, phases: list[Any], *, finished: bool = False) -> str:
     # The event feed is its own card and is ALWAYS shown. It was nested inside
     # "running now", so the moment the run finished — the moment you most want to
     # read back what happened — it vanished along with the running phases.
-    feed_rows = "".join(
-        f"<div data-row='{_e(m)}'><span class=t>{_e(_clock(t))}</span> {_e(m)}</div>"
-        for t, m in dash.all_activity[-400:][::-1])
-    feed_body = (f"<input type=search id=evq placeholder='filter events…' "
-                 f"oninput=\"qmFilter('evq','events')\">"
-                 f"<div class=feed id=events>{feed_rows}</div>"
-                 if feed_rows else "<div class=sub>no events yet</div>")
+    feed_body = _feed(dash, phases)
 
     queue_body = ("<div class=sub>nothing queued — this is the last phase</div>" if not queued
                   else "".join(

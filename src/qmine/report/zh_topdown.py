@@ -120,17 +120,41 @@ def build(state: Any, deps: Any) -> str:
                 f"{str(n.get('user_need', ''))[:160]} | {'✓' if n.get('pragmatic_only') else ''} |")
         L += ["", "</details>", ""]
 
-    # L2 sub-intents, which the English report never mentioned at all.
-    subs = _t(sub, "subintents", default=[]) or _t(sub, "groups", default=[]) or []
-    if subs:
+    # L2 SUB-INTENTS. THIS SECTION HAD NEVER RENDERED.
+    #
+    # It read a LIST from `subintents` or `groups`; the artifact carries a DICT
+    # under `subdivision`, keyed by L1 code. Neither key has ever existed, so the
+    # `if subs:` guard was always false and the section silently vanished — while
+    # the panel's strongest comparative claim (L2 purity 0.7989 against bottom-up
+    # leaves 0.7797) rests on exactly these 54 groups.
+    #
+    # They carry no names, only the numbers that chose each k. So this reports
+    # what the artifact actually supports, and says plainly that they are
+    # unnamed rather than implying a layer that can be read.
+    sub_map = _t(sub, "subdivision", default={}) or {}
+    if isinstance(sub_map, dict) and sub_map:
+        split = {c: v for c, v in sub_map.items()
+                 if isinstance(v, dict) and int(v.get("k") or 0) > 1}
+        n_sub = _t(sub, "n_sub_intents", default=sum(
+            int(v.get("k") or 0) for v in split.values()))
         L += ["### 2.1 L2 子意图", "",
-              f"在 L1 之下另有 **{len(subs)}** 组子意图。它们的作用不是把类目做细, "
+              f"在 L1 之下另有 **{n_sub}** 组子意图, 分布在 **{len(split)}** 个 L1 类目内 "
+              f"(共 {len(sub_map)} 个类目被检查过)。它们的作用不是把类目做细, "
               "而是让**一个 L1 类目内部的不同处理方式**可被单独统计和路由。", "",
-              "| L1 | 子意图 | 依据 |", "|---|---|---|"]
-        for s in subs[:40]:
-            L.append(f"| `{s.get('parent') or s.get('l1') or ''}` | {s.get('name') or s.get('code') or ''} "
-                     f"| {str(s.get('rationale') or s.get('definition') or '')[:120]} |")
-        L.append("")
+              "> ⚠️ **这些子意图没有名字。** 本次运行只定位了它们的存在与数量, "
+              "没有做命名步骤 —— 因此它们可以用来统计和路由, **不能**直接作为标签交付。", "",
+              "| L1 类目 | k | 该类行数 | 相对零假设的提升 | 复现稳定性 | silhouette 是否反对 |",
+              "|---|---:|---:|---:|---:|:---:|"]
+        for code, v in sorted(split.items(), key=lambda kv: -int(kv[1].get("n") or 0)):
+            L.append(
+                f"| `{code}` | {v.get('k')} | {int(v.get('n') or 0):,} | "
+                f"{num(v.get('lift_over_null'))} | {num(v.get('stability_ari'))} | "
+                f"{'✓ 反对' if v.get('silhouette_disagrees') else ''} |")
+        dis = [c for c, v in split.items() if v.get("silhouette_disagrees")]
+        L += ["", "> `silhouette 是否反对` 标出 silhouette 会选一个不同的 k 的类目"
+              + (f" (共 {len(dis)} 个)。" if dis else " (本次没有)。")
+              + " 它只作披露, 不参与决定 —— 选择依据写在 `chosen_by` 里, "
+                "是「相对零假设的提升」加复现稳定性的否决权。", ""]
 
     # Which research angles actually searched. A taxonomy presented as
     # web-researched should be able to say which parts of it were: a tool loop

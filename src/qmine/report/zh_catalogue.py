@@ -38,6 +38,26 @@ def build(state: Any, deps: Any) -> str:
         "它同时是**标注规范**、**验收标准**和**下游产品需求** —— 这就是为什么"
         "只给一个名字是不够的: **名字是可以各自理解的, 一句定义是可以被检验的。**", "",
     ]
+    # THE EVIDENCE THE NAMER SAW, WHICH REACHED NO DELIVERABLE.
+    #
+    # `naming_cards.json` holds, for every leaf, the exact sample the blind namer
+    # was shown: 15 centroid queries, 10 random, 5 edge. A reader who wants to
+    # judge whether a name is right has to see what it was named FROM — and none
+    # of the 1,470 sampled queries appeared in any of live42's six documents.
+    #
+    # The sampling is what makes them admissible: centroid / random / edge is
+    # mechanical, so these cannot be a flattering selection. The edge samples are
+    # the useful ones — a name that covers the centre and not the edge is a name
+    # that is too narrow, and that is only visible if both are shown.
+    cards_by_leaf: dict[int, dict[str, Any]] = {}
+    if deps.has("naming_cards"):
+        raw_cards = deps.load("naming_cards")
+        for c in (raw_cards.get("cards", []) if isinstance(raw_cards, dict) else raw_cards) or []:
+            try:
+                cards_by_leaf[int(c["leaf_id"])] = c
+            except (KeyError, TypeError, ValueError):        # noqa: PERF203
+                continue
+
     namings = naming.get("namings", []) or []
     if not namings or labels is None:
         return "\n".join(L + ["_本次运行没有可用的命名结果。_"])
@@ -172,5 +192,21 @@ def build(state: Any, deps: Any) -> str:
             if hits:
                 L.append(f"- 🔍 **风险筛查命中 {hits:,} 行** ({pct(hits / max(1, sz))} 的该叶)"
                          + ("" if n.get("risk_flag") else " —— 命名者未标记此叶"))
+            card = cards_by_leaf.get(lid)
+            if card:
+                centre = list(card.get("center_samples") or [])[:8]
+                edge = list(card.get("edge_samples") or [])[:5]
+                grams = list(card.get("top_ngrams") or [])[:8]
+                if grams:
+                    L.append("- 高频片段: " + ", ".join(f"`{g}`" for g in grams))
+                if centre or edge:
+                    L += ["", "<!-- 命名依据: 质心/随机/边缘三段是机械抽样, 不是挑出来的 -->",
+                          "| 位置 | 样例 |", "|---|---|"]
+                    if centre:
+                        L.append("| **质心** (最像这个叶的) | "
+                                 + " · ".join(f"`{q}`" for q in centre) + " |")
+                    if edge:
+                        L.append("| **边缘** (最不像的, 名字若盖不住这些就是太窄) | "
+                                 + " · ".join(f"`{q}`" for q in edge) + " |")
             L.append("")
     return "\n".join(L)

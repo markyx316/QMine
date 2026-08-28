@@ -109,8 +109,69 @@ def test_single_provider_shares_annotators_but_says_so(catalog):
 
 
 def test_explicit_overrides_beat_the_router(catalog):
-    plan = route(catalog, ["anthropic"], prefer={"namer": "my-own-model"})
-    assert plan.assignments["namer"].model == "my-own-model"
+    plan = route(catalog, ["anthropic"], prefer={"namer": "mid-a"})
+    assert plan.assignments["namer"].model == "mid-a"
+
+
+def test_a_pin_too_new_for_the_catalogue_can_still_name_its_provider(catalog):
+    """The catalogue is FETCHED, so a just-released model cannot have a card.
+
+    `glm-5.3-flash` and `qwen3.8-flash` both answer on their providers' direct
+    endpoints while appearing nowhere in a 1,930-model catalogue. Pinning one has
+    to remain possible, or the price feed's release cadence decides which models
+    this project may use.
+
+    The provider must survive to the assignment: it is what resolves a base URL.
+    Note the COLON — `qwen/qwen3.8-flash` is a catalogue id meaning the
+    OpenRouter gateway, which is the hop these pins exist to avoid.
+    """
+    plan = route(catalog, ["anthropic"], prefer={"namer": "zhipu:glm-5.3-flash"})
+    a = plan.assignments["namer"]
+    assert a.provider == "zhipu", "a qualified pin must route to the named provider"
+    assert a.api_model == "glm-5.3-flash", "the endpoint wants the bare id, not the pin"
+    assert any("NO PRICE" in w for w in a.warnings), (
+        "a synthesised card has no rate; it must read as UNKNOWN, never as free"
+    )
+
+
+def test_a_pin_that_names_no_reachable_provider_fails_before_the_run_starts(catalog):
+    """A pin with no card used to reach `provider="explicit"`, a sentinel
+    nothing handles: no base URL was resolved and `init_chat_model` got a bare
+    id it could not attribute. The run died on that role's FIRST REAL CALL —
+    after `qmine models` printed a clean plan, and after every phase above it
+    had been paid for. Same rule as the startup schema probe: find the broken
+    model before a real call pays for it.
+    """
+    from qmine.llm.router import UnroutablePin
+
+    with pytest.raises(UnroutablePin) as e:
+        route(catalog, ["anthropic"], prefer={"namer": "glm-9.9-imaginary"})
+    # The message must teach the fix, not just report the failure.
+    assert "glm-9.9-imaginary" in str(e.value)
+    assert "zhipu:glm-9.9-imaginary" in str(e.value)
+
+    with pytest.raises(UnroutablePin):
+        route(catalog, ["anthropic"], prefer={"namer": "notaprovider:some-model"})
+
+
+def test_an_unroutable_pin_does_not_degrade_to_the_static_tiers(catalog, tmp_path):
+    """`_build_routing_plan` degrades on ANY exception so that a missing
+    catalogue or a dead network cannot make the pipeline unrunnable offline.
+    That handler also swallowed a bad pin — and degrading there honours NO pin
+    at all, running the whole pipeline on models the user did not choose behind
+    one `warning` line. Environment failures degrade; config errors fail closed.
+    """
+    from qmine.config import QMineConfig
+    from qmine.llm.registry import ModelRegistry
+    from qmine.llm.router import UnroutablePin
+
+    cfg = QMineConfig()
+    cfg.llm.provider = "router"
+    cfg.llm.model_overrides = {"namer": "glm-9.9-imaginary"}
+    with mock.patch.dict(os.environ, {"DEEPSEEK_API_KEY": "sk-test"}, clear=False), \
+         mock.patch("qmine.llm.catalog.fetch", return_value=catalog):
+        with pytest.raises(UnroutablePin):
+            ModelRegistry(cfg.llm, cache_dir=tmp_path, run_cfg=cfg)
 
 
 def test_no_reachable_model_is_reported_not_silently_dropped(catalog):

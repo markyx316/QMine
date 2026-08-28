@@ -131,7 +131,7 @@ def _plan_lines(plan: Any) -> list[str]:
     dashboard and a headless run alike — the places an operator actually looks
     when a run is already going.
     """
-    from .router import lab_of
+    from .router import lab_of, route_label
 
     rows = sorted(plan.assignments.items(), key=lambda kv: -kv[1].estimated_cost_usd)
     width = max((len(r) for r, _ in rows), default=8)
@@ -140,7 +140,7 @@ def _plan_lines(plan: Any) -> list[str]:
         if not a.model:
             out.append(f"    {role:<{width}}  [UNSERVED]")
             continue
-        out.append(f"    {role:<{width}}  {a.provider}:{a.model}  "
+        out.append(f"    {role:<{width}}  {route_label(a)}  "
                    f"lab={lab_of(a.model)}  {a.estimated_calls} calls  "
                    f"${a.estimated_cost_usd:.3f}")
     # The independence property double-blind annotation depends on, stated in the
@@ -442,7 +442,7 @@ class ModelRegistry:
         """
         from .catalog import fetch
         from .providers import detect
-        from .router import route
+        from .router import UnroutablePin, route
 
         av = detect()
         if not av.usable:
@@ -507,6 +507,16 @@ class ModelRegistry:
             for line in _plan_lines(self.plan):
                 log.info("%s", line)
             self._probe_structured_output()
+        except UnroutablePin:
+            # A BAD PIN IS A CONFIG ERROR AND MUST NOT DEGRADE.
+            #
+            # The handler below exists so a missing catalogue or a dead network
+            # cannot make the pipeline unrunnable. It also used to swallow an
+            # unroutable pin, which is the opposite situation: nothing is
+            # missing, the user asked for a specific model, and degrading runs
+            # the whole pipeline on the static tiers instead — every pin
+            # ignored, announced by a single `warning` line. Fail closed.
+            raise
         except Exception as exc:  # noqa: BLE001
             log.warning("routing unavailable (%s); falling back to the static tiers", exc)
             self.provider = self._resolve_provider("auto")
@@ -1042,8 +1052,21 @@ class ModelRegistry:
                     system, user, tier, time.time() - latency)
 
     def report_call(self, role: str, model: str, tier: str, latency: float,
-                    value: Any, *, ok: bool = True, note: str = "") -> None:
-        """Announce one agent turn: what it was, what it cost, what it returned."""
+                    value: Any, *, ok: bool = True, note: str = "",
+                    call_key: str = "") -> None:
+        """Announce one agent turn: what it was, what it cost, what it returned.
+
+        `call_key` IS THE JOIN KEY, and it exists because two streams describe the
+        same call and had nothing in common. `on_call` carries the one-line
+        summary a dashboard shows; `raw_log` carries the full return. With no
+        shared id the HTML dashboard paired them by POSITION — a global index over
+        a reversed list, against a per-role chronological list — so an expanded
+        row showed a different call's output. Observed on live42: the row headed
+        `reporter ... 04:42:11` (the first attempt at `audit_and_limits`) opened
+        onto the top-down taxonomy section, an earlier call entirely. A reader has
+        no way to tell that apart from a correct answer, which makes it worse than
+        showing nothing.
+        """
         if not self.on_call:
             return
         u = self.ledger.by_role.get(role, {})
@@ -1064,6 +1087,7 @@ class ModelRegistry:
                 "calls": u.get("calls", 0), "errors": u.get("errors", 0),
                 "output_tokens": total_out, "call_output_tokens": call_out,
                 "returned": summarize_return(value) if ok else note,
+                "key": call_key,
             })
         except Exception:  # noqa: BLE001 — a watcher must never break a run
             pass
@@ -1093,7 +1117,8 @@ class ModelRegistry:
                 payload,
                 {"role": role, "tier": tier, "model": model, "ts": time.time()},
             )
-        self.report_call(role, model, tier, time.time() - t0, payload, ok=True)
+        self.report_call(role, model, tier, time.time() - t0, payload,
+                         ok=True, call_key=key)
         if self.cfg.record_raw_outputs:
             _spent = getattr(self._raw, "last", None)
             _usage = getattr(_spent, "usage_metadata", None) or {}
@@ -1211,8 +1236,24 @@ _NO_TEMPERATURE = ("claude-opus-5", "claude-opus-4-8", "claude-opus-4-7", "claud
 #: Roles whose work is bulk classification against a fixed guide, where a
 #: reasoning trace is billed output that no downstream step reads. Deliberation
 #: roles are deliberately absent — see the block in `_build` that uses this.
+#:
+#: `referee` and `namer` were here and were REMOVED. Neither is bulk
+#: classification against a fixed guide, which is the only thing this set is
+#: meant to cover:
+#:
+#: * the referee adjudicates rows the two annotators DISAGREED on — the residue
+#:   left after the easy cases are gone — and its output is not just a label but
+#:   the adjudication rules that reach the annotator (see
+#:   `test_every_rule_the_referee_drafts_reaches_the_annotator`). It is also the
+#:   role whose stated discriminator was once vacuous against its own evidence.
+#: * the namer writes the class names that appear in the deliverable, and a split
+#:   re-names BOTH halves. A name is authored prose about a cluster's contents,
+#:   not a lookup.
+#:
+#: Both are low-volume relative to the annotators, so the billed-trace argument
+#: that justifies this set does not apply to them.
 NO_REASONING_ROLES: frozenset[str] = frozenset({
-    "annotator", "annotator_a", "annotator_b", "referee", "namer",
+    "annotator", "annotator_a", "annotator_b",
 })
 
 #: Providers measured to accept `thinking: {"type": "disabled"}`. Sending an

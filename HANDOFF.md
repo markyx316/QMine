@@ -143,17 +143,68 @@ have never met a real model" (they have — K=18 via `legacy_l2`, split measurem
    A run cannot be checked at all without it. Fix the serializer registration and
    the teardown ordering; then re-verify live42, whose real score is unknown.
 
-### P1 — real defects with a known cause
+### P1 — two of four FIXED 2026-08-28
 
-2. **The narrative report shipped 3 of 9 sections.** Three failed with EMPTY prose
-   on all three attempts (`vector_choice_first`, `two_level_tree`,
-   `samples_and_deployment`) — the model returned nothing, so retry feedback has
-   nothing to act on. 10 `prompt block truncated` events fired during the report
-   (sheets of 50-53k against a 40,000 budget), which is the obvious suspect and is
-   NOT established. Reproduce one empty section offline against its recorded sheet
-   before changing anything; ids and bundles are in `final_report_meta.json`.
+2. ~~**The narrative report shipped 3 of 9 sections.**~~ **The recorded suspicion
+   — truncation — is REFUTED.** Reproduced against the real model: a
+   58,246-char sheet with 18,246 chars dropped still returned 1,784 chars of
+   prose, and a 33,462-char sheet returned 1,933. Size is not the cause either.
 
-3. **The narrative door has a numeric guarantee and NO attribution guarantee.**
+   The actual defect: the empty-return branch appended a rejection and
+   `continue`d **without setting `rejected`**, so the retry re-sent a
+   byte-identical prompt and got a byte-identical answer. Three attempts were one
+   call's outcome paid for three times. `interpret.py` states the rule this broke
+   — a retry must carry EXTERNAL feedback. Now it names the empty field and says
+   what to return. Mutation-tested.
+
+   Context that makes empties plausible at all: `reporter` routes to
+   `deepseek-v4-pro`, which is in plain-JSON mode, so a whole section of Chinese
+   prose must survive as an escaped JSON string. A repro run also returned
+   `covered=[]` where an identical call returned 48 entries, so that path does
+   drop fields.
+
+4. ~~**Two English strings reach three Chinese reports each.**~~ Fixed by
+   `report/translate.py` — see the translation note below.
+
+### P1 — still open
+
+2. **Why does the writer sometimes return a literally empty JSON?** Not "why did
+   live42 ship 3 of 9" — that is answered below, and the dominant cause is fixed.
+   This is the residue: three sections returned `{"markdown": "", "covered": []}`
+   on attempt 1, a *parseable* object with both fields empty, which is what
+   `SectionDraft` validates from `{}`. `complete()` raises rather than
+   manufacturing such an object, so the model emitted it.
+
+   **Not reproduced.** Two real calls against live42's own bundles
+   (`representation`, `hierarchy`) both returned good prose, 1,790 and 801 chars.
+   The one measurement worth carrying forward: **93-94% of completion tokens were
+   reasoning** (9,937/10,930 and 7,805/8,338). The reporter's cap is 24,000 and
+   shares it with the trace, so a section with more bundles could plausibly spend
+   it all thinking. That is a hypothesis, not a finding.
+
+   The retry now carries feedback naming the empty field, so this costs one
+   attempt rather than three, and the failure notice no longer calls it a
+   validation failure. Do NOT add mitigation machinery until a blank reproduces —
+   the last three suspicions here (truncation, sheet size, prompt-block
+   truncation) were each refuted by measurement.
+
+3. ~~**The narrative door has a numeric guarantee and NO attribution guarantee.**~~
+   **FIXED 2026-08-28 by SUPPLYING the sentence rather than checking it.** A
+   general "is this noun right?" check is not achievable, and pattern-matching
+   Chinese prose for misattributions fails silently — so where attribution is
+   load-bearing, `MustCover.verbatim` carries a sentence the pipeline writes from
+   artifacts and the section must reproduce exactly. The model still writes
+   everything around it.
+
+   Why anchors could never have caught live42's error: the anchor was the
+   deciding reference's NAME, and `legacy_l2` does appear in the wrong sentence.
+   "Which reference is the subject of this claim" is not expressible as a
+   substring. Mutation-tested; the test also asserts the anchor-only check still
+   fails on the same text, so it cannot go stale silently. Applied to the
+   K-locator attribution — extend it wherever a claim's subject matters more than
+   its numbers. Original defect below for context:
+
+   **The narrative door has a numeric guarantee and NO attribution guarantee.**
    live42's §4 wrote 「交付的 K=18 是参照 phrasing_groups 的粒度锚点」 — the wrong
    reference, two lines after listing all three correctly. `check_numbers` is
    precision-only on NUMBERS; a wrong noun is invisible, and the must-cover anchor
@@ -2115,3 +2166,296 @@ the text. **The narrative door has a numeric guarantee and no ATTRIBUTION
 guarantee** — same class as the `locator_reference` contradiction the p5 observer
 caught. This is the top open item for the report, ahead of the empty-section
 problem.
+
+## Translation: from 34 hardcoded prefixes to a guarded model call
+
+`PROSE_ZH` maps an English PREFIX to fixed Chinese at 20 call sites. Two holes no
+diligence closes: a newly authored string is English until a human notices (three
+separate leaks in one day), and an f-string can never be matched by a fixed prefix
+— which stranded all 22 `deps.gate()` messages permanently.
+
+`report/translate.py` adds a third tier to `prose()`, below the curated mapping
+and above the English fallthrough. What makes it safe is that **nothing is
+trusted** — every result is verified before use:
+
+* **numbers** — the numeral multiset must match both ways. A rounded value is a
+  changed value.
+* **identifiers** — every backticked span survives verbatim. Numerals INSIDE
+  backticks are excluded from the number count, because the "2" in
+  `p2b_annotator_symmetry` is part of a name; counting it made a translated
+  identifier report as a changed NUMBER, which a test caught.
+* **actually translated** — a result with no CJK is the model echoing the source.
+
+Any failure keeps the ENGLISH, exactly the old behaviour, so this cannot make a
+report worse than the mapping it extends. Results cache by content hash in
+`.cache/translations.json`: a string is paid for once and renders identically on
+every future run — wording that drifts between runs for no measured reason is its
+own defect.
+
+**Verified against a real model** on the two strings that leaked into live42:
+both translated cleanly, and `kappa 0.8928 on 2999 rows` returned as
+`2999 行上的 kappa 0.8928` with both numbers intact. A gate message carrying five
+interpolated values also translates — a class previously unreachable.
+
+`GATE_MESSAGE_DEBT` is now OFFLINE-ONLY (the fixture installs no translator). Off
+in `offline`; `cfg.translate_prose` disables it.
+
+---
+
+## Session (2026-08-28, late) — model pins, reasoning, and why the report was two-thirds empty
+
+### The empty sections: measured, not inferred
+
+live42's `00_最终报告.md` delivered **3 of 9 sections**. The document's own
+placeholders under-report this — three of them say only 「空白正文」 three times,
+and all of them say 「未通过校验」. `final_report_meta.json` and `run.log` carry the
+real picture:
+
+| section | what actually happened |
+|---|---|
+| `question_and_two_routes` | rejected: `90, 99, 10` |
+| `vector_choice_first` | **blank body** ×3 |
+| `topdown_taxonomy_and_labels` | rejected once (`5.23, 5.2`), then passed |
+| `bottomup_k_not_single` | rejected once (`0.014048, 0.007024`), then passed |
+| `two_level_tree` | **blank body** ×3 |
+| `governance_and_risk` | rejected: `0.0169`, then `32, 40, 42, 43, 44, 45` |
+| `unified_panel` | rejected once (`0.0162`), then passed |
+| `samples_and_deployment` | **blank body** ×3 |
+| `audit_and_limits` | rejected: `21, 5.23`, then `5.23, 5.2` |
+
+So the number check touched **6 of 9** sections and killed 3 outright. Reading the
+cached drafts (`runs/live42/llm_cache/`, `meta.role == "reporter"`) shows what the
+author had actually written:
+
+- `z_vs_even=-5.23` → extracted as `+5.23`. **`_NUMBER` had no sign.** A negative
+  fact was uncitable: the author copied the sheet exactly and was told the number
+  was not in the sheet. No retry can satisfy that.
+- `裁判模型是 qwen:glm-5.2` → a phantom claim of `5.2`. A hyphen before a digit
+  read as a discarded minus, so naming the model that did the work was a
+  fabrication.
+- `第 90 百分位为 13`, `家族 32、40、42` → the sheet SHOWS these (`length.p90`,
+  dict keys) but the value-only pool did not carry them.
+
+This selects against the sections that matter: negative numbers are where the
+**warnings** live, so it deletes governance, audit-and-limits and the panel.
+
+Verified with `check_numbers(text, {"z_vs_even": -5.23})` → unsupported, control
+passing. Fixed in `verify._NUMBER` with two lookbehinds separating a minus from an
+identifier hyphen by what precedes it. **Every one of live42's number-rejections
+now passes**, replayed against the run's own artifacts; the three cases that must
+still fail (fabrication, sign flip, miscount) still do. Mutation-tested.
+
+Two further fixes from the same reading:
+
+- **`annotator_balance` was in no bundle.** It is measured and lives in
+  `taxonomy_v2.json`, which `build_catalogue` never read. Shown `n_contested=274`
+  and `annotator_a_won=92` through other bundles, the narrator DERIVED the rest —
+  `178 = 270-92`, `0.3407 = 92/270` — and every one was correctly refused. A
+  starved sheet induces derivation, not caution. Added to `topdown_gold`, where
+  `lopsided` belongs on the merits anyway.
+- **Everything the writer was shown is now citable** (`_reject(shown=...)`):
+  must-cover items, figure captions, previous section. A must-cover arrives under
+  「必须原样包含这句话」, so a number inside one ORDERS the author to write what the
+  check forbids. The outline is excluded — `_plan` verifies nothing numeric, so
+  pooling the thesis would launder a number into every section — and so is the
+  rejection notice, which prints the offending values.
+
+The blank-body residue is unresolved and is now §2 item 2. It did not reproduce in
+two real calls; both spent 93-94% of their output tokens on reasoning.
+
+### Model pins
+
+`glm-5.3-flash` and `qwen3.8-flash` are real and answer on their providers' direct
+endpoints (verified by real calls). `qwen3.8-flash-next` **does not exist** (404).
+Neither flash model is in the 1,930-model catalogue, because the catalogue is
+fetched and they are newer than the price feed.
+
+A bare pin with no card became `provider="explicit"`, a sentinel nothing handles —
+so the run died on that role's **first real call**, after `qmine models` printed a
+clean plan. Now: `resolve_pin` accepts `provider:model`, and an unresolvable pin
+raises `UnroutablePin`, which `_build_routing_plan` re-raises rather than degrading
+to the static tiers (its blanket `except` is for a missing catalogue, not a config
+error). `configs/live.yaml` pins `zhipu:glm-5.3-flash` (referee, researcher) and
+`qwen:qwen3.8-flash` (annotator_b); all three verified with real calls.
+
+`glm-5.3-max` does not exist either — error 1214 on both endpoints with **both**
+the user's abroad-registered and China-registered keys, so the China key changes
+nothing and can be ignored. Note qwen IS region-split: an abroad key 401s on
+`dashscope.aliyuncs.com` and works on `dashscope-intl`.
+
+### Reasoning re-enabled for `referee` and `namer`
+
+Both left `NO_REASONING_ROLES`. Neither is bulk classification: the referee
+adjudicates the residue the annotators disagreed on and drafts rules that reach
+them; the namer authors names that appear in the deliverable.
+
+**This required raising `namer`'s budget.** The trace shares the role's output cap,
+and measured here it runs 8-10x the content. `namer` had
+`output_tokens_per_call=1200` → a 3,600 cap, which is inside a single trace — the
+same shape as the referee's 88% failure rate on live41. Raised to 3,000 (cap
+9,000); the declared budget moves too, or the ledger under-reports. `referee` had
+36,000 already. Now pinned by test.
+
+### State
+
+- **571 tests passing**, `ruff --select F src/qmine/` clean.
+- Verified live: the three pins route direct and answer; `referee` emits reasoning
+  tokens (160) while `annotator_b` stays at `None`.
+- Not yet run end to end. The next live run is the first to exercise the pins, the
+  widened citable pool and the two reasoning roles together.
+
+---
+
+## Session (2026-08-28, evening) — the reference shelf, and a dashboard that was showing the wrong call
+
+### Budgets for the two roles that now reason — measured, and my first sizing was wrong
+
+I sized `namer` by extrapolating the REPORTER's reasoning ratio (93-94% of
+completion tokens). That does not transfer. Measured directly, on the real
+prompts:
+
+| role | completion | reasoning | content |
+|---|---|---|---|
+| namer | 696 / 1,149 | 531 / 994 | 165 / 155 |
+| referee | 6,145 / 2,497 | 3,873 / 598 | 2,272 / 1,899 |
+
+Reasoning is a roughly FIXED cost here, not a ratio — a few hundred to a few
+thousand tokens, not 8-10x the content.
+
+**The namer raise was still right, for a different reason than I gave.** live42's
+namer spent 2,542-3,039 output tokens per call with reasoning OFF, against a
+3,600 cap — 20% headroom. Adding a measured 531-994 exceeds it. Now 3,000/9,000.
+**The referee needed nothing**: 1,486/call on live42 against a 36,000 cap.
+
+**Bonus finding, from live42's own `usage.json`:** the declared budgets are badly
+calibrated in both directions and this is HANDOFF item #7, now quantified. The
+annotators are 500 of 702 calls, declared 12,000, actual 1,612-1,751 — a **7x
+over-estimate on the dominant roles**. Observers, researchers and the delivery
+auditor run 2-6x UNDER their declared budget. Not changed: recalibrating moves
+caps, which moves truncation risk, and that deserves its own pass.
+
+### The dashboard was showing a different call's output
+
+Four defects, all verified in code AND against the user's screenshots:
+
+1. **The agent detail was mispaired.** `raw_log` and `on_call` are two streams
+   from the same `_store` with no join key, so `_agents()` paired them by index —
+   a global reversed index against a per-role chronological list. The user's
+   screenshot proves it: the row headed `reporter … 04:42:11` (attempt 1 at
+   `audit_and_limits`) opened onto the top-down taxonomy section. Both streams
+   now carry `cache_key`.
+2. **`qmine watch` never set `transcript_fn`**, so on a FINISHED run every row
+   read "full return not captured" — the exact thing the user was looking at.
+3. **The detail was `str(dict)`** — a Python repr of Chinese prose.
+4. **`agent_transcript.json` never existed for live42** (killed by the teardown
+   bug, since fixed), so the fallback pointed at a missing file.
+
+Plus, found by audit and verified here: the artifact column read `key` where
+`index.jsonl` writes `name` (blank for every run); replay elapsed printed
+**496,632h**; and §8 of the top-down report shipped six rows of `| ? |  | — |`
+because `_failure_history` reads `option`/`why_rejected` while the architect's
+dropped candidates carry `name`/`why_dropped`.
+
+**The event log** is now faceted: severity (from `logging`'s own level when
+replaying, glyph otherwise) and phase, both captured at emit time, both with
+counts, plus a 「怎么读这一栏」 line. Replaying live42 gives 99 warnings / 3 edits /
+227 info across 12 phases — the log level alone caught 45 warnings the glyph
+convention missed, including the two teardown failures.
+
+### The reference shelf — the run was producing this and delivering none of it
+
+`zh_reference.py`, wired into `builder.py`, four documents plus three CSV twins:
+
+- **类目清单.md** — the 21 L1 classes with definition, `user_need`, positive and
+  negative examples, **measured delivered size** beside the architect's
+  prediction, and how many rules route to each. Symmetric to 叶清单.md.
+- **标注规范与裁定规则.md** — the labeling guide VERBATIM (it appeared zero times in
+  the whole delivery) and all 139 rules, one section each, grouped by target
+  class, marked 架构师预判 vs 裁判补充.
+- **家族与叶层级.md** — the delivered two-level tree, with a Mermaid top level.
+  Reads `leaf_*_final`, and says out loud that the audit describes 20 families
+  where 24 were delivered.
+- **00_索引.md** — the reading order. Ten files landed in one directory with no
+  index; every `put_markdown` call already passed a `summary` and all of them
+  were thrown away.
+
+Format follows the evidence (W3C DWBP BP 12; GitHub renders MD to 400KB and CSV
+as a searchable table to 512KB; these are 7-38KB): Markdown is the reading
+surface, CSV is the machine twin, and rules get one section each rather than a
+table because a row cannot hold `when → then` plus rationale and examples.
+
+Also fixed: the referee's rules shipped in English (`drafted by the referee to
+close a gap…`) on 100 of the 139 — our own hardcoded template, now through
+`prose()`, with the disagreeing query left verbatim as evidence.
+
+Two further gaps from the same audit, closed in the same pass:
+
+- **叶清单.md now shows the evidence each name was made FROM.** `naming_cards.json`
+  holds the exact sample the blind namer saw — 15 centroid, 10 random, 5 edge per
+  leaf — and none of the 1,470 sampled queries reached any deliverable. The EDGE
+  samples carry the weight: leaf 1 is named 「2026年中小学暑假放假时间查询」 and its
+  edges are `目瑙纵歌2026年时间表`, `退潮赶海时间表` — queries about times in general.
+  A reader sees the boundary immediately. The sampling is mechanical, which is
+  what makes it admissible rather than a flattering selection.
+- **家族与叶层级.md now carries the cross-route mapping per family.**
+  `route_crosswalk.csv` is the only artifact that says how the two routes line
+  up and was named in no document. It is keyed by delivered family, so it belongs
+  beside the family rather than in a table a reader has to join by hand. On
+  live42 it reads well: families 5/7/11 agree with the intent taxonomy at 91-96%,
+  while family 8 (14,171 rows) has 8.33 effective classes and 「routes disagree」.
+
+### Five more, found by the workflow's synthesis re-checking current source
+
+It correctly identified everything already fixed, and surfaced five live defects.
+All five verified here before acting; all five fixed.
+
+1. **The family definitions in my OWN new document were borrowed.** 14 of the 24
+   delivered families carried a definition shared with one or two others —
+   family 8 (17 leaves, 14,171 rows) and family 10 (1 leaf) got the identical
+   sentence. This is this project's own delivered-partition trap, documented in
+   `report-generators.md` and then walked into. A definition is now shown only
+   when the family's leaves come from ONE audit family AND that audit family
+   backs no other delivered family; the other 16 are told plainly whose
+   definition it is and which delivered families share it.
+2. **The branch grouping rendered as nothing.** `close_br` was initialised to
+   `""` at `web.py:278` and never reassigned — two UNCLOSED `<div>`s emitted
+   between `</tr>` and `<tr>`, which the HTML5 parser foster-parents out of the
+   table. The two concurrent branches read as sequential and the elapsed column
+   summed past the total with no explanation. A wrapper could not express the
+   shape anyway (`PHASES` interleaves branch and spine phases); it is now a row
+   class plus a real column, with a note about the overlap.
+3. **§2.1 L2 子意图 had never rendered.** It read a LIST from `subintents` or
+   `groups`; the artifact carries a DICT under `subdivision`, keyed by L1 code.
+   Neither key has ever existed. 54 sub-intents across 19 of 21 classes, and the
+   panel's strongest comparative claim rests on them. Now rendered from the real
+   shape, stating that they are UNNAMED and disclosing where silhouette disagreed.
+4. **The escape hatch pointed at a file that need not exist** — unconditional
+   "full return in agent_transcript.json".
+5. **`qmine watch` hardcoded `provider=""`**, so every replayed page read
+   "provider ?" while `usage.json`, already loaded for the KPIs, says `routed`.
+   That is the exact field this project uses to decide whether a run was real.
+
+### Still open from the synthesis, NOT done
+
+- `fig_gates.png` plots 7 of 26 gates and treats `True` as `1` (`viz.py:310-314`).
+- `zh_panel.py:187-200` slices findings `[:12]`/`[:8]` with no "showing N of M",
+  hiding two BLOCKING findings, and cuts claims mid-token at `[:90]`/`[:150]`.
+- Broken link to `Report_Uniform_Panel.md` (`zh_topdown.py:89`) and eight wrong
+  `§9` cross-references (`zh_bottomup.py:827`).
+- The `<details>` rule table in the top-down report should become a link to
+  `标注规范与裁定规则.md` rather than have its truncation fixed twice.
+- **No CLI path regenerates reports from finished artifacts.** Everything above
+  was verified through a scratch harness; a `qmine render-reports RUN_ID`
+  writing into a new generation would make it a one-command, zero-LLM operation.
+  This is the highest-value remaining item: the reference shelf exists and has
+  never been delivered by the pipeline itself.
+
+### State
+
+- **594 tests passing**, `ruff --select F src/qmine/` clean.
+- Verified by replaying live42: the reference documents build from its real
+  artifacts (14,395 / 33,252 / 10,992 chars), and the dashboard renders with
+  correct elapsed, artifact names, facet counts and per-call detail.
+- **Not yet exercised by a live run.** `live42/gen01` was deliberately left
+  byte-identical to what it delivered; the new documents were built into
+  `/tmp/qmine_refs` instead.

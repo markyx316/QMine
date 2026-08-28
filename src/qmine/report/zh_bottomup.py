@@ -1004,6 +1004,17 @@ def _failure_history(state: Any, phases: tuple[str, ...] | None = None) -> str:
         for r in d.rejected[:10]:
             m = r.get("metrics") or {}
             mt = ", ".join(f"{k}={num(vv)}" for k, vv in m.items() if vv is not None) or "—"
-            parts.append(f"| `{r.get('option','?')}` | {r.get('why_rejected','')} | {mt} |")
+            # ONE RENDERER, SEVERAL PRODUCERS, TWO SPELLINGS.
+            #
+            # The clustering decisions write `option`/`why_rejected`; the taxonomy
+            # architect's `dropped_candidates` write `name`/`why_dropped`. This
+            # read only the first pair, so §8 of the top-down report shipped six
+            # rows of `| ? |  | — |` — under a heading promising the rejected
+            # designs and their reasons, which is the section the report itself
+            # calls "说服力的来源". The reasons were in the artifact the whole time.
+            # Prefer the explicit key, then the alternate, and only then give up.
+            opt = r.get("option") or r.get("name") or "?"
+            why = r.get("why_rejected") or r.get("why_dropped") or ""
+            parts.append(f"| `{opt}` | {why} | {mt} |")
         parts.append("")
     return "\n".join(parts)

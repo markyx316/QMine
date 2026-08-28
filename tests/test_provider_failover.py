@@ -699,12 +699,28 @@ def test_bulk_classification_roles_do_not_pay_for_reasoning_tokens():
     """
     from qmine.llm.registry import NO_REASONING_ROLES, REASONING_TOGGLE_PROVIDERS
 
-    for bulk in ("annotator_a", "annotator_b", "referee", "namer"):
+    for bulk in ("annotator", "annotator_a", "annotator_b"):
         assert bulk in NO_REASONING_ROLES, f"{bulk} emits bulk labels; reasoning is waste"
     for thinker in ("taxonomy_architect", "taxonomy_critic", "observer",
-                    "delivery_auditor", "adversary", "researcher", "reporter"):
+                    "delivery_auditor", "adversary", "researcher", "reporter",
+                    "referee", "namer"):
         assert thinker not in NO_REASONING_ROLES, (
             f"{thinker} was silenced — deliberation is the job it is paid for")
+
+    # A ROLE THAT REASONS NEEDS ROOM FOR THE TRACE IT IS NOW BILLED FOR.
+    #
+    # The trace shares the role's output cap with the answer. That is not a
+    # theory here: it is how the referee reached the 88% failure rate this
+    # docstring records — reasoning spent the budget before the JSON was
+    # written. Measured on this project's providers the trace runs 8-10x the
+    # content (the reporter: 9,937 of 10,930 completion tokens). `namer` was
+    # taken out of the silenced set with a 3,600 cap, which is inside a single
+    # trace. Whoever un-silences a role must move its budget with it.
+    from qmine.llm.requirements import requirement_for
+
+    for role in ("referee", "namer"):
+        assert requirement_for(role).max_output_tokens >= 9000, (
+            f"{role} reasons now; its cap must hold a trace AND the answer")
 
     # Measured to accept `thinking: {"type": "disabled"}`.
     assert REASONING_TOGGLE_PROVIDERS == frozenset({"deepseek", "zhipu", "qwen"})
@@ -724,11 +740,19 @@ def test_the_reasoning_switch_reaches_the_request_for_bulk_roles_only():
         return reasoning_kwargs(role, provider).get("thinking")
 
     assert thinking_for("annotator_a", "deepseek") == {"type": "disabled"}
-    assert thinking_for("referee", "zhipu") == {"type": "disabled"}
     assert thinking_for("annotator_b", "qwen") == {"type": "disabled"}
+    assert thinking_for("annotator", "zhipu") == {"type": "disabled"}
 
     # A deliberation role keeps its reasoning...
     assert thinking_for("taxonomy_architect", "deepseek") is None
+    # ...and so do the referee and the namer, which were silenced here and are
+    # not bulk classification: the referee adjudicates the residue the two
+    # annotators disagreed on AND drafts the rules that reach them, and the
+    # namer authors the class names that appear in the deliverable. The billed-
+    # trace argument that justifies this set is about volume, and neither is
+    # high-volume next to the annotators.
+    assert thinking_for("referee", "zhipu") is None
+    assert thinking_for("namer", "deepseek") is None
     # ...and a provider not on the allowlist is never sent the parameter, even
     # for a silenced role, because an endpoint that rejects an unknown field
     # fails the call outright.
@@ -757,3 +781,28 @@ def test_the_reasoning_switch_reaches_the_request_for_bulk_roles_only():
         "`model_kwargs` as top-level SDK arguments and the call will TypeError")
     assert 'kwargs["model_kwargs"] = {**kwargs.get("model_kwargs", {}), **extra}' not in src, (
         "vendor body fields must not go through `model_kwargs`")
+
+
+def test_a_capable_model_no_provider_publishes_is_reported():
+    """An unmatched `capable_models` entry constrained nothing, silently.
+
+    The gate builds an allow-set and filters the catalogue by it, so an id that
+    matches no card simply contributes nothing. `glm-5.3-max` was configured by
+    hand and Zhipu does not publish it (HTTP 400, `modelCode：不存在`), so the
+    capable set was narrowed by one entry that carried no signal. Had every entry
+    been wrong, the gate would have found nothing eligible and fallen through to
+    exactly the price-decided routing the list exists to replace — without
+    saying so anywhere.
+    """
+    import inspect
+
+    from qmine.llm.router import route
+
+    src = inspect.getsource(route)
+    assert "_unmatched" in src, "the router no longer checks capable_models names"
+    assert "constrain nothing" in src, (
+        "the unmatched names are computed but never reported to the operator")
+    # It must reach the PLAN's notes, not a bare log line the CLI can drop.
+    block = src[src.index("if _unmatched:"):]
+    assert block.startswith("if _unmatched:") and "plan.notes.append" in block[:400], (
+        "the unmatched names are computed but never attached to the plan")

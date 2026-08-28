@@ -30,7 +30,34 @@ import logging
 from dataclasses import dataclass, field
 from typing import Any, Sequence
 
-from .catalog import Catalog, ModelCard
+from .catalog import Catalog, ModelCard, resolve_pin
+
+
+def route_label(a: Any) -> str:
+    """`provider:model` as a human reads it, for one assignment.
+
+    A pin may already name its provider (`zhipu:glm-5.3-flash`), and pasting the
+    provider in front of it again renders `zhipu:zhipu:glm-5.3-flash`. The
+    endpoint id is the honest thing to show beside the provider, since that is
+    what is actually sent.
+    """
+    return f"{a.provider}:{a.api_model or a.model}"
+
+
+class UnroutablePin(ValueError):
+    """A pinned model that names no model anyone can call.
+
+    Distinct from every other routing failure because it is a CONFIG error, not
+    an environmental one. `_build_routing_plan` deliberately degrades to the
+    static two-tier behaviour when the catalogue or the network is missing — a
+    router that failed closed there would make the pipeline unrunnable offline.
+
+    A typo'd or unqualified pin must NOT take that path. Degrading silently
+    honours none of the pins, so the run proceeds on models the user did not
+    choose while the log carries one `warning` line about "routing unavailable".
+    That is the same silent-wrong-model failure the pins exist to prevent.
+    """
+
 from .providers import CHINESE_NATIVE
 from .requirements import TIER_ORDER, RoleRequirement, requirement_for
 
@@ -388,6 +415,20 @@ def route(
 
     reqs = requirements or ROLE_REQUIREMENTS
     role_list = list(roles or reqs.keys())
+    # A `capable_models` NAME THAT MATCHES NO CARD IS A TYPO, AND IT WAS SILENT.
+    #
+    # The gate builds an allow-set and filters the catalogue by it, so an id that
+    # matches nothing simply contributes nothing. `glm-5.3-max` — which Zhipu does
+    # not publish (HTTP 400, `modelCode：不存在`) — narrowed the capable set by one
+    # with no signal at all; had every entry been wrong the gate would have found
+    # nothing eligible and fallen through to exactly the price-decided routing
+    # this list exists to replace, without saying so.
+    _unmatched: list[str] = []
+    if capable_models:
+        _known = {c.id.lower() for c in catalog.for_providers(available_providers)}
+        _known |= {i.split("/")[-1] for i in set(_known)}
+        _unmatched = [str(m) for m in capable_models
+                      if str(m).strip() and str(m).strip().lower() not in _known]
     # Partner-constrained roles are routed after the role they must differ from.
     role_list.sort(key=lambda r: (len(MUST_DIFFER_FROM.get(r, ())), r))
     cards = catalog.for_providers(available_providers)
@@ -427,7 +468,30 @@ def route(
 
         if prefer and role in prefer:
             chosen_id = prefer[role]
-            card = by_id.get(chosen_id)
+            card = resolve_pin(chosen_id, by_id)
+            if card is None:
+                # A PIN THAT NAMES NO REACHABLE PROVIDER MUST FAIL HERE.
+                #
+                # This used to fall through to `provider="explicit"`, a sentinel
+                # no downstream consumer handles: `BY_KEY` has no such key, so no
+                # base URL was resolved and `init_chat_model` got a bare model id
+                # it could not attribute. The run then died on the role's FIRST
+                # REAL CALL -- after `qmine models` printed a clean plan, and
+                # after every phase above it had been paid for. A model too new
+                # for the price feed (`glm-5.3-flash`, `qwen3.8-flash`) hits this
+                # while being perfectly reachable on its provider's own endpoint.
+                #
+                # Failing at planning time is the whole point: this is the same
+                # rule as the startup schema probe -- find the broken model
+                # before a real call pays for it.
+                from .providers import BY_KEY
+                raise UnroutablePin(
+                    f"role {role!r} pins model {chosen_id!r}, which is not in the "
+                    f"catalogue ({len(by_id)} models) and does not name a provider. "
+                    f"If a provider serves it, pin it as '<provider>:{chosen_id}' -- "
+                    f"e.g. 'zhipu:{chosen_id}'. Known providers: "
+                    f"{', '.join(sorted(BY_KEY))}."
+                )
             _pin_fb = _pin_fallbacks(role, chosen_id, cards, tiers, req,
                                      by_id, plan.assignments)
             plan.assignments[role] = Assignment(
@@ -437,15 +501,15 @@ def route(
                 # endpoint wants `glm-4.5-airx` — which 404s, and which also
                 # changes the LLM cache key, so pinning a run to its own previous
                 # models would silently replay nothing.
-                api_model=card.api_id if card else None,
-                max_output_tokens=card.max_output_tokens if card else None,
-                input_per_mtok=card.input_per_mtok if card else None,
-                output_per_mtok=card.output_per_mtok if card else None,
-                provider=card.provider if card else "explicit",
+                api_model=card.api_id or None,
+                max_output_tokens=card.max_output_tokens,
+                input_per_mtok=card.input_per_mtok,
+                output_per_mtok=card.output_per_mtok,
+                provider=card.provider,
                 tier=tiers.get(chosen_id, "explicit"),
                 estimated_calls=req.typical_calls,
                 estimated_cost_usd=(card.blended_cost(avg_input_tokens, req.output_tokens_per_call) or 0)
-                                   * req.typical_calls if card else 0.0,
+                                   * req.typical_calls,
                 # A PIN STILL NEEDS FAILOVER. This branch returned with an empty
                 # `fallbacks`, so pinning a model meant "use this one, and abandon
                 # the run if its provider is unavailable" — on a 256-call role,
@@ -768,5 +832,11 @@ def route(
                 f"{sorted(related)} — failing over there would destroy the "
                 f"independence the gold set depends on ({', '.join(dropped)})")
             a.fallbacks = kept
+
+    if _unmatched:
+        plan.notes.append(
+            f"capable_models names {len(_unmatched)} model(s) no provider "
+            f"publishes: {', '.join(_unmatched)} — they constrain nothing. "
+            "Check the spelling with `qmine models`.")
 
     return plan

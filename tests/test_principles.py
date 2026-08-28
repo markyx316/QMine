@@ -717,3 +717,54 @@ def test_local_k_is_ranked_on_lift_over_the_null_not_raw_silhouette():
     # Neither dominates, so the Pareto guard cannot be what saves this.
     assert family2[0]["stability_ari"] > family2[1]["stability_ari"]
     assert family2[1]["lift_over_null"] > family2[0]["lift_over_null"]
+
+
+def test_a_translation_may_never_alter_a_number_or_an_identifier():
+    """The one thing machine translation must not be allowed to do here.
+
+    This pipeline asks readers to check its arithmetic, so a translator that
+    renders "kappa 0.802 on 200 queries" as "0.80" or "20" would be strictly
+    worse than leaving the English. Every result is therefore verified before
+    use, and any failure keeps the source — which is exactly the behaviour the
+    hand-written mapping already had, so this cannot make a report worse.
+    """
+    from qmine.report.translate import verify
+
+    src = "kappa 0.8928 on 2999 rows; see `p2b_annotator_symmetry`."
+
+    assert verify(src, "2999 行上的 kappa 0.8928; 见 `p2b_annotator_symmetry`。") == ""
+
+    # A rounded number is a changed number.
+    assert "numbers changed" in verify(src, "2999 行上的 kappa 0.89; 见 `p2b_annotator_symmetry`。")
+    # An invented number is caught in the other direction too.
+    assert "numbers changed" in verify(
+        src, "2999 行上的 kappa 0.8928, 共 12 组; 见 `p2b_annotator_symmetry`。")
+    # A translated identifier is a broken cross-reference.
+    assert "identifiers changed" in verify(src, "2999 行上的 kappa 0.8928; 见 `标注员对称性`。")
+    # A model that echoes the source has not translated anything.
+    assert "no CJK" in verify(src, src)
+    assert "empty" in verify(src, "   ")
+
+
+def test_prose_prefers_the_curated_wording_over_a_machine_translation():
+    """`PROSE_ZH` is hand-written for strings whose phrasing matters; a model
+    must not overwrite it. The translator only reaches what the mapping cannot:
+    a newly authored string nobody has noticed, and the 22 `deps.gate()`
+    f-strings that no fixed prefix can ever match."""
+    from qmine.report.i18n import PROSE_ZH, prose, set_translator
+
+    curated_key = next(iter(PROSE_ZH))
+    try:
+        set_translator(lambda t: "机器翻译的版本")
+        assert prose(curated_key) == PROSE_ZH[curated_key], (
+            "a machine translation overwrote curated wording")
+
+        # An unmapped English string DOES reach the translator...
+        novel = "This rationale has never been mapped by anyone and is plain English."
+        assert prose(novel) == "机器翻译的版本"
+
+        # ...and with no translator installed it degrades to English, as before.
+        set_translator(None)
+        assert prose(novel) == novel
+    finally:
+        set_translator(None)

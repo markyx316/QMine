@@ -296,7 +296,7 @@ def watch(
     — or by someone else entirely — and still be watched, re-watched after it
     finishes, or watched from two terminals at once.
     """
-    from .ui.live import PHASES, LiveDashboard, parse_log_clock, parse_log_line
+    from .ui.live import PHASES, LiveDashboard, parse_log_clock, parse_log_line, parse_log_level
     from .ui.web import HtmlWriter, artifacts_from_index
 
     root = Path(run_root) / run_id
@@ -335,8 +335,54 @@ def watch(
                 pass
         return False
 
-    dash = LiveDashboard(run_id=run_id, domain="", provider="", language=language)
+    # PROVIDER AND DOMAIN COME FROM THE RUN, NOT FROM BLANKS.
+    #
+    # These were hardcoded empty, so every page a follower built read
+    # "provider ?" — while `usage.json`, which this same page already loads for
+    # its KPIs, carries `provider`. That is not cosmetic here: this project's own
+    # rule for deciding whether a run is real is that the provider reads `routed`
+    # and not `offline`, and the dashboard was the one surface that could not
+    # answer it.
+    _u0 = usage() or {}
+    _prov = str(_u0.get("provider") or "")
+    _dom = ""
+    for _f in sorted(root.glob("gen*/config.resolved.yaml"), reverse=True):
+        try:
+            import yaml as _yaml
+
+            _d = (_yaml.safe_load(_f.read_text()) or {}).get("domain", "")
+            # `domain` is resolved to the whole DomainProfile, not its key.
+            _dom = str(_d.get("key", "") if isinstance(_d, dict) else _d or "")
+        except Exception:  # noqa: BLE001
+            _dom = ""
+        break
+    dash = LiveDashboard(run_id=run_id, domain=_dom, provider=_prov, language=language)
     dash.usage_fn = usage
+
+    def _transcript() -> list[dict] | None:
+        """The full agent returns of a FINISHED run, read back from disk.
+
+        `transcript_fn` was wired only by `runner`, as a callback into the live
+        registry — so a follower, which by definition has no registry, left it
+        unset and EVERY agent row in the page opened onto "full return not
+        captured for this call". The one place an operator goes to read what an
+        agent actually said is the one place that never had it, and the page
+        blamed the call rather than itself.
+
+        The run writes `agent_transcript.json` at teardown, so it exists for any
+        run that completed; the newest generation carries it.
+        """
+        for gen in sorted(root.glob("gen*"), reverse=True):
+            f = gen / "agent_transcript.json"
+            if f.exists():
+                try:
+                    data = json.loads(f.read_text(encoding="utf-8"))
+                except Exception:  # noqa: BLE001
+                    return None
+                return data if isinstance(data, list) else None
+        return None
+
+    dash.transcript_fn = _transcript
     dash.artifacts_fn = lambda: artifacts_from_index(root / "index.jsonl")
     # A follower rebuilds the browsable page too, so a run launched detached — or
     # by someone else — still gets one.
@@ -371,7 +417,8 @@ def watch(
                                     # under a second, so wall-clock timing showed
                                     # every phase as "0s" — the follower's whole
                                     # point is re-watching, and it timed nothing.
-                                    dash.handle(msg, at=parse_log_clock(line))
+                                    dash.handle(msg, at=parse_log_clock(line),
+                                                level=parse_log_level(line))
                             offset = fh.tell()
                         idle = 0.0
                     else:
@@ -776,7 +823,7 @@ def models_cmd(
     from .config import QMineConfig
     from .llm.catalog import fetch
     from .llm.providers import detect
-    from .llm.router import route
+    from .llm.router import route, route_label
 
     # Route against the config a RUN would use. Without this the command built a
     # bare `QMineConfig()`, so `excluded_labs` and `model_overrides` were invisible
@@ -832,7 +879,7 @@ def models_cmd(
                   f"{cfg.taxonomy.kappa_repair_rounds} repair round(s)[/dim]")
     r = Table("role", "model", "tier", "calls", "est. $", "fallback")
     for role, a in sorted(plan.assignments.items(), key=lambda kv: -kv[1].estimated_cost_usd):
-        r.add_row(role, f"{a.provider}:{a.model}" if a.model else "[red]none[/red]",
+        r.add_row(role, route_label(a) if a.model else "[red]none[/red]",
                   a.tier, str(a.estimated_calls), f"{a.estimated_cost_usd:.3f}",
                   (a.fallbacks[:1] or [""])[0][:34])
     console.print(r)

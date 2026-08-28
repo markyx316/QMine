@@ -13,6 +13,7 @@ the report harder to check rather than easier.
 from __future__ import annotations
 
 import re
+from typing import Any
 
 ZH: dict[str, str] = {
     # headings
@@ -194,6 +195,13 @@ def decision_question(text: str, language: str = "zh") -> str:
 #: so small edits to the English tail do not silently drop a translation; a test
 #: asserts that everything reaching a real report is covered.
 PROSE_ZH: dict[str, str] = {
+    # --- referee-drafted adjudication rules, authored in `graph/nodes/topdown.py`
+    # These reach the reader through 标注规范与裁定规则.md, on 100 of that
+    # document's 139 rules — the ones the referee EARNED on real disagreements,
+    # which are the rules most worth reading, shipping in English inside a
+    # Chinese annotation manual.
+    "drafted by the referee to close a gap this disagreement exposed":
+        "由裁判补写, 用于填补这次分歧暴露出的规则空缺",
     # --- p2b_rules_match_their_evidence, authored in `graph/nodes/topdown.py` --
     # The prefix must stay free of interpolated numbers: `prose()` matches a
     # LITERAL PREFIX, so a count spliced into the front means the mapping never
@@ -334,17 +342,43 @@ PROSE_ZH: dict[str, str] = {
 }
 
 
+#: Set once per run by `set_translator`. `prose` is called from report modules
+#: that have no access to the model registry, so the translator is configured
+#: rather than threaded through 20 call sites.
+_TRANSLATOR: Any = None
+
+
+def set_translator(call: Any) -> None:
+    """Install (or clear, with `None`) the machine translator `prose` may use."""
+    global _TRANSLATOR
+    _TRANSLATOR = call
+
+
 def prose(text: str, language: str = "zh") -> str:
     """Authored rationale/remediation prose in the report's language.
 
-    Falls through to the original when unmapped, so a new string degrades to
-    English rather than disappearing.
+    Three tiers, in order:
+
+    1. **A curated `PROSE_ZH` mapping wins.** Hand-written wording for the
+       strings whose phrasing matters is not something a model should overwrite.
+    2. **Otherwise a machine translation, if one is installed** — guarded by
+       `translate.verify`, which refuses any result that alters a number or an
+       identifier. This exists because the mapping cannot close two holes: a new
+       authored string is English until a human notices (it happened three times
+       in one day), and an f-string can never be mapped at all, which strands all
+       22 `deps.gate()` messages permanently.
+    3. **Otherwise the original.** Unchanged behaviour: a string degrades to
+       English rather than disappearing, and every failure path above lands here.
     """
     if language != "zh" or not text:
         return text
     for prefix, zh in PROSE_ZH.items():
         if text.startswith(prefix):
             return zh
+    if _TRANSLATOR is not None and looks_like_english_prose(text, min_words=5):
+        from .translate import translate
+
+        return translate(text, language, _TRANSLATOR)
     return text
 
 

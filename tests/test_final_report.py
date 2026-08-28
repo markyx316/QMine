@@ -343,3 +343,219 @@ def test_a_number_the_agent_was_shown_is_citable():
     # And the original defect reproduces without the sheet pool.
     assert not check_numbers("治理把叶 32 拆成 49。", facts).ok, (
         "the original defect no longer reproduces; this test is stale")
+
+
+def test_an_empty_section_retry_carries_feedback_instead_of_repeating_the_call():
+    """Three identical calls are one call's outcome, paid for three times.
+
+    The empty-return branch appended a rejection and `continue`d WITHOUT setting
+    `rejected`, so the retry re-sent a byte-identical prompt to a deterministic-
+    enough model and got a byte-identical answer. live42's three empty sections
+    (`vector_choice_first`, `two_level_tree`, `samples_and_deployment`) each
+    burned all three attempts that way.
+
+    `interpret.py` states the rule this broke: a retry must carry EXTERNAL
+    feedback, because re-asking unchanged is intrinsic self-correction — the
+    configuration shown not to improve reasoning and sometimes to degrade it.
+
+    Diagnosis note for anyone revisiting this: truncation was the recorded
+    suspicion and it is REFUTED. Reproduced against the real model, a 58,246-char
+    sheet with 18,246 chars dropped still returned 1,784 chars of prose, and a
+    33,462-char sheet returned 1,933. Do not "fix" the budget on this evidence.
+    """
+    from types import SimpleNamespace
+
+    from qmine.agents import narrate
+
+    seen_rejected: list[str] = []
+
+    class _Agent:
+        role = "reporter"
+
+        def __init__(self, *a, **k):
+            pass
+
+        def run(self, **kw):
+            seen_rejected.append(kw.get("rejected", ""))
+            return SimpleNamespace(markdown="", covered=[])
+
+    import qmine.agents.roles as roles
+
+    original = roles.StoryWriterAgent
+    roles.StoryWriterAgent = _Agent
+    try:
+        deps = SimpleNamespace(emit=lambda *_a, **_k: None,
+                               agent_ctx=lambda: None)
+        b = narrate.Bundle("b", "t", "r", facts={"k": 1})
+        res = narrate._write_section(deps, SimpleNamespace(id="s", heading="h", intent="i"),
+                                     [b], [], "outline", "", "zh")
+    finally:
+        roles.StoryWriterAgent = original
+
+    assert not res.ok and res.attempts == narrate.MAX_ATTEMPTS
+    # The FIRST call has nothing to report; every later one must.
+    assert seen_rejected[0] == ""
+    assert all(r.strip() for r in seen_rejected[1:]), (
+        f"a retry re-sent an identical prompt: {seen_rejected}")
+    assert "markdown" in seen_rejected[1], (
+        "the feedback does not name the field that came back empty")
+
+
+def test_an_attribution_is_supplied_rather_than_trusted():
+    """`check_numbers` guarantees NUMBERS. A wrong noun passes it untouched.
+
+    live42's §4 wrote 「交付的 K=18 是参照 phrasing_groups 的粒度锚点」 while
+    `legacy_l2` located K and `phrasing_groups` located 10 — two lines after the
+    same paragraph listed all three correctly. Every figure in that sentence was
+    sourced from the fact sheet; only the subject was wrong.
+
+    Note WHY anchors could not catch it: the anchor for that item is the deciding
+    reference's name, and `legacy_l2` does appear in the wrong text — so
+    anchor-matching passes. Nothing about "which reference is the subject of this
+    claim" is expressible as a substring.
+
+    A general "is this noun right?" check is not achievable, and pattern-matching
+    Chinese prose for misattributions fails silently. So for the few claims where
+    attribution is load-bearing, the pipeline WRITES the sentence and the section
+    must reproduce it verbatim. The model still writes everything around it.
+    """
+    from qmine.agents.narrate import _coverage
+    from qmine.report.narrative_brief import MustCover
+
+    supplied = ("交付的家族层 K=18 由参照系 `legacy_l2` 定位; "
+                "各参照系各自定位到的 K 为 legacy_l1→K=30, legacy_l2→K=18, phrasing_groups→K=10。")
+    m = MustCover("k_deciding_reference", "写明定位参照系", ["legacy_l2"], verbatim=supplied)
+
+    # The live42 text: anchor present, attribution wrong.
+    wrong = "交付的 K=18 是参照 phrasing_groups 的粒度锚点, 不是语料常数。legacy_l2 定位到 18。"
+    assert [x.id for x in _coverage(wrong, [m])] == ["k_deciding_reference"], (
+        "the misattribution slipped through — the anchor alone cannot see it")
+
+    # And the anchor-only check demonstrably does NOT catch it, which is why the
+    # verbatim requirement exists at all.
+    anchor_only = MustCover("k", "", ["legacy_l2"])
+    assert _coverage(wrong, [anchor_only]) == [], (
+        "this test is stale: anchors now catch it and `verbatim` is redundant")
+
+    # Reproducing the supplied sentence satisfies the requirement.
+    right = f"经过上面的比较: {supplied} 因此下游必须连同参照系一起读这个 K。"
+    assert _coverage(right, [m]) == []
+
+    # A paraphrase is NOT enough — that is the guarantee.
+    para = supplied.replace("由参照系", "依据参照系")
+    assert _coverage(para, [m]), "a rewritten sentence was accepted as verbatim"
+
+
+def test_a_negative_number_from_the_sheet_can_actually_be_cited():
+    """The defect that emptied most of live42's final report.
+
+    `_NUMBER` had no sign, so `-5.23` was extracted as `+5.23` and reported as
+    "not in the fact sheet" against a sheet whose value was exactly `-5.23`. The
+    author had copied it correctly, so no retry could ever satisfy the check: the
+    section burned all three attempts and shipped as a hole.
+
+    It selects for the sections that matter. Negative numbers are where the
+    WARNINGS live — a lopsided annotator split (`z_vs_even = -5.23`), a family
+    layer that is less compact than its parts (`template_fragmentation
+    = -0.0169`, silhouette `-0.0162`). live42 delivered 3 of 9 sections, and
+    governance, audit-and-limits and the panel were among the six lost.
+
+    The sign must survive, and it must still DISCRIMINATE: quoting `+5.23` for a
+    fact of `-5.23` is a different claim and must fail.
+    """
+    b = _bundle(z_vs_even=-5.23, template_fragmentation=-0.0169)
+    body = "标注分歧的 `z_vs_even` 为 -5.23, 家族层 `template_fragmentation` 为 -0.0169。" * 4
+    assert _reject(body, [b], {"fig1_ksweep.png"}, "zh") == [], (
+        "a negative fact quoted exactly as the sheet carries it must ship")
+
+    flipped = _reject("`z_vs_even` 为 5.23。" * 8, [b], {"fig1_ksweep.png"}, "zh")
+    assert any("不在事实表" in p for p in flipped), (
+        "dropping the sign changes the claim; the check must still catch it")
+
+    # U+2212, which a typographically careful writer may emit.
+    assert _reject("`z_vs_even` 为 −5.23。" * 8, [b], {"fig1_ksweep.png"}, "zh") == []
+
+
+def test_naming_the_model_that_did_the_work_is_not_a_fabrication():
+    """`glm-5.2` yielded a phantom claim of `5.2`, and `glm-4.5-airx` one of
+    `4.5`, because a hyphen before a digit read as a minus sign that was then
+    discarded. live42's `audit_and_limits` was rejected for `5.23, 5.2` in one
+    message: the first was the negative-number defect, the second was the
+    referee's own model name in the same sentence.
+
+    Provenance is something a report SHOULD state, so stating it must not be
+    a rejection. The version digits are not claims about the corpus.
+    """
+    b = _bundle(n_contested=274)
+    body = "争议样本 274 条, 裁判模型是 qwen:glm-5.2, 命名用 `glm-4.5-airx`。" * 4
+    assert _reject(body, [b], {"fig1_ksweep.png"}, "zh") == []
+
+
+def test_a_number_the_writer_was_ORDERED_to_include_is_citable():
+    """A must-cover arrives under "必须原样包含这句话" — reproduce this sentence
+    exactly. If it carries a number outside the section's bundles, the prompt
+    demands what the checker forbids, and the section cannot be written at all.
+
+    That is the same shape as the negative-number defect: an instruction the
+    author can satisfy only by failing. The pool must therefore be everything
+    the writer was SHOWN, not only the fact sheet.
+    """
+    b = _bundle(kappa=0.8928)
+    must = "K 的并列集合是 2.3436、2.6297、3.044、3.6856, 必须整组报出。"
+    body = ("本次 kappa 为 0.8928。" + must) * 3
+    assert any("不在事实表" in p for p in
+               _reject(body, [b], {"fig1_ksweep.png"}, "zh")), (
+        "sanity: without being shown the must-cover, these numbers are refused")
+    assert _reject(body, [b], {"fig1_ksweep.png"}, "zh", shown=must) == [], (
+        "a number the writer was ordered to reproduce must be citable")
+
+
+def test_the_rejection_notice_cannot_launder_its_own_numbers():
+    """The notice PRINTS the offending values. Pooling it would make every
+    rejected number citable on the retry, so the check would pass on its second
+    attempt no matter what was written — a guarantee that always succeeds is not
+    a guarantee. `_write_section` must never pass `rejected` as `shown`.
+    """
+    import inspect
+
+    from qmine.agents.narrate import _write_section
+
+    src = inspect.getsource(_write_section)
+    call = src[src.index("problems = _reject("):]
+    call = call[:call.index(")\n")]
+    assert "shown=" in call, "the shown-channels pool must reach _reject"
+    assert "rejected" not in call, (
+        "the rejection notice quotes the bad numbers; pooling it defeats the check")
+
+
+def test_the_failure_notice_says_which_of_the_two_things_went_wrong(tmp_path):
+    """A hole in the flagship deliverable has to explain itself accurately.
+
+    One notice covered both outcomes and read 「未通过校验」 — did not pass
+    validation. For a blank return nothing was ever validated: the writer produced
+    no text, which is a different fact about the run and points at a different
+    remedy. live42 shipped three sections whose entire explanation was 「空白正文」
+    listed three times, which tells a reader neither what happened nor that it was
+    one failure repeated rather than three findings.
+    """
+    import types
+
+    from qmine.agents.narrate import SectionResult, _assemble
+
+    blank = SectionResult(id="s1", heading="空的一节")
+    blank.attempts, blank.rejections = 3, ["空白正文 (markdown 字段为空或缺失)"] * 3
+    checked = SectionResult(id="s2", heading="被退回的一节")
+    checked.attempts, checked.rejections = 3, ["这些数字不在事实表里: 0.9134"] * 2
+
+    outline = types.SimpleNamespace(title="T", thesis="", sections=[])
+    deps = types.SimpleNamespace(store=types.SimpleNamespace(gen_dir=tmp_path))
+    doc = _assemble(outline, [blank, checked], {"run_id": "r"}, deps, tmp_path)
+
+    body = doc[doc.index("## 1."):doc.index("## 2.")]
+    assert "没有返回任何文字" in body, "a blank return must not be called a check failure"
+    assert "未通过校验" not in body
+    assert body.count("空白正文") <= 1, "one failure repeated is one fact, not three"
+
+    tail = doc[doc.index("## 2."):]
+    assert "未通过校验" in tail, "a real check failure must still say so"
+    assert tail.count("这些数字不在事实表里: 0.9134") == 1, "de-duplicated, but still shown"

@@ -106,6 +106,45 @@ def build_all_reports(state: PipelineState, deps: Any) -> dict[str, ArtifactRef]
         refs["leaf_catalogue"] = deps.store.put_markdown(
             "Leaf_Catalogue", leaf_catalogue(state, deps),
             producer="p11", summary="every leaf with its user_need definition")
+
+    # THE REFERENCE SHELF, AND WHY IT IS SEPARATE FROM THE REPORTS ABOVE.
+    #
+    # Everything above argues. None of it is what a person opens when they want
+    # to USE the taxonomy — the classes with their definitions, the rules the
+    # annotators followed, the shape of the tree. That content was in the
+    # artifacts and reached no deliverable: the labeling guide appeared ZERO
+    # times across all six documents and the notebook, 33 of the 39 first-round
+    # rule ids appeared nowhere, and the class table shipped collapsed inside a
+    # `<details>` in a 72KB file. See `zh_reference`.
+    #
+    # Each ships a CSV twin, which is what a controlled vocabulary always ships:
+    # the person reads the prose and the program reads the table, and neither
+    # has to parse the other.
+    if zh:
+        from . import zh_reference as _ref
+
+        refs["class_catalogue"] = deps.store.put_markdown(
+            "类目清单", _ref.build_classes(state, deps),
+            producer="p11", summary="21 个 L1 类目的定义、正反例与实际交付规模")
+        refs["rules"] = deps.store.put_markdown(
+            "标注规范与裁定规则", _ref.build_rules(state, deps),
+            producer="p11", summary="标注指南原文与全部裁定规则, 按目标类目分组")
+        refs["tree"] = deps.store.put_markdown(
+            "家族与叶层级", _ref.build_tree(state, deps),
+            producer="p11", summary="已交付的两层树: 家族 → 叶")
+        for name, text, why in (
+            ("类目", _ref.classes_csv(state, deps), "一行一个 L1 类目"),
+            ("规则", _ref.rules_csv(state, deps), "一行一条裁定规则"),
+            ("家族与叶", _ref.tree_csv(state, deps), "一行一个已交付的叶"),
+        ):
+            refs[f"csv_{name}"] = deps.store.put_text(
+                name, text, kind="table", suffix=".csv",
+                producer="p11", summary=why)
+        # LAST, so it can list what actually got written rather than what the
+        # builder intended to write.
+        refs["index"] = deps.store.put_markdown(
+            "00_索引", _ref.build_index(state, deps, refs),
+            producer="p11", summary="交付物索引与阅读顺序")
     return refs
 
 

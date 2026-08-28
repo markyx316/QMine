@@ -268,3 +268,24 @@ def test_the_relation_is_treated_as_symmetric():
     src = inspect.getsource(router.route)
     assert "for o, must in MUST_DIFFER_FROM.items() if role in must" in src, \
         "a role must also avoid the labs of roles declared to differ from IT"
+
+
+def test_a_provider_qualified_pin_does_not_fool_the_lab_check():
+    """Double-blind annotation depends on `lab_of`, and pins now carry a provider
+    prefix (`zhipu:glm-5.3-flash`) so that a model too new for the catalogue can
+    be routed at all. The prefix is a GATEWAY, not a lab, and the two genuinely
+    differ here: `qwen:glm-5.2` is Zhipu's model reached through Alibaba, which
+    is exactly the arrangement `configs/live.yaml` relied on. Keying the lab off
+    the prefix would call it `qwen`, agree with `annotator_b`, and report the
+    annotators as independent when they are not.
+    """
+    from qmine.llm.router import lab_of
+
+    assert lab_of("qwen:glm-5.2") == "zhipu", "the prefix is a gateway, not a lab"
+    assert lab_of("zhipu:glm-5.3-flash") == "zhipu"
+    assert lab_of("qwen:qwen3.8-flash") == "qwen"
+    assert lab_of("openrouter:z-ai/glm-5.3") == "zhipu"
+    # And the bare form must not have drifted from the qualified one.
+    for bare, qualified in (("glm-5.2", "qwen:glm-5.2"),
+                            ("qwen3.8-flash", "qwen:qwen3.8-flash")):
+        assert lab_of(bare) == lab_of(qualified)

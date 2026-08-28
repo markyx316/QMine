@@ -637,3 +637,189 @@ def test_the_adversarial_direction_is_derived_not_hardcoded():
     src = inspect.getsource(zh_topdown)
     assert "if acc > cvacc:" in src, "the direction must be derived from the numbers"
     assert "**低于**交叉验证" in src, "the lower case needs its own honest reading"
+
+
+# ------------------------------------------------------------------ the HTML page
+
+
+def _dash_with(agents, transcript=None):
+    """A LiveDashboard carrying the two streams the agents panel joins."""
+    d = LiveDashboard(run_id="t", domain="", provider="", language="zh")
+    d.all_agents = list(agents)
+    d.transcript_fn = (lambda: transcript) if transcript is not None else None
+    return d
+
+
+def test_an_expanded_agent_row_shows_ITS_OWN_return():
+    """The row and the full return are two streams describing the same calls, and
+    they were paired by POSITION: `pool[min(i, len(pool)-1)]`, where `i` counts
+    down a REVERSED list across ALL roles while `pool` is one role's calls in
+    chronological order. Those orderings are unrelated, so an expanded row opened
+    onto some other call's output.
+
+    Seen on live42: the row headed `reporter … 04:42:11` — the first attempt at
+    the `audit_and_limits` section — opened onto the top-down taxonomy section, an
+    earlier call entirely. A reader cannot tell a mispaired answer from a correct
+    one, which makes it strictly worse than showing nothing. Join on the key.
+    """
+    from qmine.ui.web import _agents
+
+    agents = [
+        {"role": "reporter", "ok": True, "model": "m", "key": "k_first",
+         "returned": "第一节", "at": 1.0},
+        {"role": "reporter", "ok": True, "model": "m", "key": "k_second",
+         "returned": "第二节", "at": 2.0},
+        {"role": "reporter", "ok": True, "model": "m", "key": "k_third",
+         "returned": "第三节", "at": 3.0},
+    ]
+    transcript = [
+        {"role": "reporter", "cache_key": "k_first", "output": {"markdown": "AAA_OLDEST"}},
+        {"role": "reporter", "cache_key": "k_second", "output": {"markdown": "BBB_MIDDLE"}},
+        {"role": "reporter", "cache_key": "k_third", "output": {"markdown": "CCC_NEWEST"}},
+    ]
+    html = _agents(_dash_with(agents), transcript)
+    # Rows render newest-first. The first detail block must be the NEWEST call's.
+    first = html[html.index("CCC_NEWEST"):] if "CCC_NEWEST" in html else ""
+    assert first, "the newest call's own return must appear"
+    assert html.index("CCC_NEWEST") < html.index("AAA_OLDEST"), (
+        "the newest row opened onto an older call's output — the pairing is by "
+        "position again, not by key"
+    )
+
+
+def test_a_finished_run_can_still_show_what_each_agent_returned(tmp_path: Path):
+    """`transcript_fn` was wired only by the runner, as a callback into the live
+    registry. A follower has no registry, so it left the hook unset and EVERY row
+    in a replayed page read "full return not captured for this call" — the one
+    place an operator goes to read what an agent said was the one place that never
+    had it, and the page blamed the call rather than itself.
+    """
+    import json as _json
+
+    from qmine.ui.web import _agents
+
+    gen = tmp_path / "gen01"
+    gen.mkdir()
+    (gen / "agent_transcript.json").write_text(_json.dumps(
+        [{"role": "namer", "cache_key": "kk", "output": {"name_zh": "查询字词读音"}}]),
+        encoding="utf-8")
+
+    # What `qmine watch` now does: find the newest generation's transcript.
+    found = None
+    for g in sorted(tmp_path.glob("gen*"), reverse=True):
+        f = g / "agent_transcript.json"
+        if f.exists():
+            found = _json.loads(f.read_text(encoding="utf-8"))
+    assert found, "a finished run's transcript must be discoverable on disk"
+
+    html = _agents(_dash_with([{"role": "namer", "ok": True, "model": "m",
+                                "key": "kk", "returned": "…", "at": 1.0}]), found)
+    assert "查询字词读音" in html
+    assert "not captured" not in html
+
+
+def test_an_agent_return_is_rendered_as_fields_not_as_a_python_repr():
+    """The detail pane was `<pre>{str(payload)}</pre>` and a return is a dict, so a
+    reader got `{'markdown': '...', 'covered': [...]}` — one unwrapped line with
+    the prose buried in escaped newlines and quotes. The longest and most valuable
+    returns, the report sections, were the least readable.
+    """
+    from qmine.ui.web import _return_html
+
+    out = _return_html({"markdown": "第一段。\n\n第二段。", "covered": ["a", "b"], "n": 3})
+    assert "{'markdown'" not in out and "\\n" not in out, "a Python repr reached the page"
+    assert "第一段。" in out and "第二段。" in out
+    assert "<li>a</li>" in out, "a list field must render as a list"
+    assert "3" in out, "scalars belong in the header line"
+
+    # And the degenerate cases must say which one they are.
+    assert "no return value" in _return_html({})
+    assert "no return value" in _return_html(None)
+
+
+def test_a_replayed_run_reports_the_time_it_actually_took():
+    """`dash.started` comes from the first event, and on a REPLAY that is
+    seconds-since-midnight, not an epoch. Subtracting it from `time.time()` put
+    "496,632h" at the top of every page `qmine watch` built for a finished run —
+    the most prominent number on the page, wrong by fifty-six years, on the one
+    view whose whole job is to describe a run that already happened.
+    """
+    from qmine.ui.web import render
+
+    d = LiveDashboard(run_id="t", domain="", provider="", language="zh")
+    d.started = 2044.0                       # 00:34:04 as a replay clock
+    d.all_activity = [(2044.0, "start", "info", ""),
+                      (18244.0, "end", "info", "")]      # +4h30m
+    page = render(d, PHASES, finished=True)
+    assert "4h30m" in page, "a replayed run must report its own elapsed time"
+    assert "496" not in page.split("elapsed")[0][-400:]
+
+
+def test_the_artifact_table_names_the_artifacts():
+    """`index.jsonl` writes `name`; the table read `key`, found nothing, and
+    rendered an empty first column for every artifact of every run — a table
+    whose entire purpose is to say which artifacts exist.
+    """
+    from qmine.ui.web import _artifacts
+
+    html = _artifacts([{"name": "taxonomy_v2", "producer": "p2b",
+                        "summary": "the delivered taxonomy", "bytes": 12}])
+    assert "taxonomy_v2" in html
+
+
+def test_a_rejected_candidate_is_named_and_its_reason_given():
+    """§8 of the top-down report shipped six rows of `| ? |  | — |`. The renderer
+    read `option`/`why_rejected`; the taxonomy architect's dropped candidates are
+    written as `name`/`why_dropped`. The reasons were in the artifact the whole
+    time, under a heading the report itself calls 「说服力的来源」.
+    """
+    from qmine.report.zh_bottomup import _failure_history
+
+    class D:
+        phase, question, choice = "p2a", "taxonomy_shape", "21 L1"
+        rejected = [{"name": "生成例句作为独立 L1", "why_dropped": "证据仅约 4 条, 不足以支撑顶层类"},
+                    {"option": "Broder 粗粒度类目", "why_rejected": "与真实查询证据不匹配"}]
+
+    md = _failure_history({"decisions": [D()]}, ("p2",))
+    assert "?" not in md, f"a candidate rendered as a question mark: {md}"
+    assert "生成例句作为独立 L1" in md and "不足以支撑顶层类" in md
+    assert "Broder 粗粒度类目" in md and "与真实查询证据不匹配" in md
+
+
+def test_the_two_concurrent_branches_are_visible_as_branches():
+    """`close_br` was initialised to "" and never reassigned, so the grouping
+    emitted two UNCLOSED `<div>`s between `</tr>` and `<tr>`. The HTML5 parser
+    foster-parents non-table content out of the table, so the grouping rendered
+    as nothing and the concurrent branches read as sequential — p2a (50m30s),
+    p2b (48m24s) and p3 (14m03s) stacking in a column that sums past the 4h30m
+    elapsed KPI with nothing on the page explaining why.
+
+    A wrapper could not express this shape anyway: `PHASES` interleaves branch
+    phases with spine phases, so branch members are not contiguous.
+    """
+    from qmine.ui.web import _pipeline
+
+    d = LiveDashboard(run_id="t", domain="", provider="", language="zh")
+    html = _pipeline(d, PHASES)
+    assert "<div class='branch" not in html, "an unclosed div in a table renders as nothing"
+    assert "br-topdown" in html and "br-bottomup" in html
+    assert "并行" in html, "the reader must be told why the times sum past the total"
+    # The branch must survive as a real cell, so it can be read and filtered.
+    assert html.count("<th") == 5, "branch is a real column, not a wrapper"
+
+
+def test_a_replayed_page_says_which_provider_actually_ran():
+    """`qmine watch` constructed the dashboard with `provider=""`, so every page
+    a follower built read "provider ?" — while `usage.json`, which the same page
+    already loads for its KPIs, carries it. Not cosmetic: this project decides
+    whether a run is real by whether the provider reads `routed` and not
+    `offline`, and the dashboard was the one surface that could not say.
+    """
+    import inspect
+
+    from qmine import cli
+
+    src = inspect.getsource(cli.watch) if hasattr(cli, "watch") else inspect.getsource(cli)
+    seg = src[src.index("dash = LiveDashboard(run_id=run_id"):][:200]
+    assert 'provider=""' not in seg, "the follower must read the provider from the run"
+    assert "_prov" in seg

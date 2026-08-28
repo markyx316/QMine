@@ -54,8 +54,29 @@ _STRUCTURAL = re.compile(
     r")"
 )
 
-#: A number as it appears in prose: 1,234 / 0.8221 / 36 / 9.9% / 97.6％
-_NUMBER = re.compile(r"(?<![\w.])(\d{1,3}(?:,\d{3})+|\d+(?:\.\d+)?)\s*(%|％)?")
+#: A number as it appears in prose: 1,234 / 0.8221 / 36 / 9.9% / 97.6％ / -5.23
+#:
+#: THE SIGN IS PART OF THE NUMBER, and a hyphen inside an identifier is not.
+#: Without the first, a negative fact was UNCITABLE: the sheet carried
+#: `z_vs_even = -5.23`, the author copied it exactly, extraction dropped the
+#: minus, and `+5.23` was reported as "not in the fact sheet". No retry could
+#: fix that — the author was already right — so every section whose argument
+#: rested on a negative statistic burned all three attempts and shipped as a
+#: hole. On live42 that was `governance_and_risk` (-0.0169),
+#: `audit_and_limits` (-5.23) and `unified_panel` (-0.0162): the quality-gate
+#: sections, because warnings are where the negative numbers live.
+#:
+#: Without the second, `glm-5.2` yielded a phantom claim of `5.2` and
+#: `glm-4.5-airx` one of `4.5` — naming the model that did the work became a
+#: fabrication. The two lookbehinds separate the cases by what precedes the
+#: hyphen: glued to a Latin identifier it is a hyphen (`glm-5.2`), otherwise it
+#: is a minus (`为 -5.23`, `差值为-0.0169`). CJK never hyphenates a numeral, so
+#: nothing is skipped unchecked on the Chinese side — skipping would be its own
+#: hole, since an unextracted number is an unverified one.
+_NUMBER = re.compile(
+    r"(?<![A-Za-z0-9_.])(?<![A-Za-z0-9][-−])"
+    r"([-−]?)(\d{1,3}(?:,\d{3})+|\d+(?:\.\d+)?)\s*(%|％)?"
+)
 
 
 @dataclass
@@ -112,13 +133,15 @@ def extract_claims(text: str) -> list[Claim]:
     for m in _NUMBER.finditer(text):
         if any(s <= m.start() < e for s, e in blocked):
             continue
-        raw = m.group(1)
+        # U+2212 MINUS SIGN reads as a minus to a human and is not `-` to
+        # `float`; a report that renders it typographically must still verify.
+        raw = m.group(1).replace("−", "-") + m.group(2)
         try:
             value = float(raw.replace(",", ""))
         except ValueError:                        # pragma: no cover - regex guards
             continue
         lo, hi = max(0, m.start() - 34), min(len(text), m.end() + 34)
-        claims.append(Claim(raw=raw, value=value, is_pct=bool(m.group(2)),
+        claims.append(Claim(raw=raw, value=value, is_pct=bool(m.group(3)),
                             context=text[lo:hi].replace("\n", " ")))
     return claims
 

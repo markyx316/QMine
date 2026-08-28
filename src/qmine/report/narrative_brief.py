@@ -99,6 +99,21 @@ class MustCover:
     what: str
     anchors: list[str]
     severity: str = "must"
+    #: A sentence the pipeline SUPPLIES and the section must reproduce verbatim.
+    #:
+    #: `check_numbers` guarantees numbers and nothing else, so an attribution — a
+    #: NOUN — is invisible to it. live42's §4 wrote 「交付的 K=18 是参照
+    #: phrasing_groups 的粒度锚点」 when `legacy_l2` located K and
+    #: `phrasing_groups` located 10, two lines after listing all three correctly.
+    #: Every number in that sentence was sourced; the subject was wrong.
+    #:
+    #: A general "is this noun right?" check is not achievable, and pattern-
+    #: matching Chinese prose for wrong attributions would be fragile in a way
+    #: that fails silently. So for the few claims where attribution is
+    #: load-bearing, the pipeline writes the sentence and the section must contain
+    #: it exactly. The model still writes everything around it — this owns one
+    #: sentence, not the argument.
+    verbatim: str = ""
 
 
 def citable_numbers(facts: dict[str, Any]) -> dict[str, float]:
@@ -118,10 +133,22 @@ def citable_numbers(facts: dict[str, Any]) -> dict[str, float]:
     This widens the pool to exactly the sheet's own content and no further: a
     number absent from the rendered text is still refused.
     """
+    return numbers_in(sheet(facts))
+
+
+def numbers_in(text: str) -> dict[str, float]:
+    """Every number appearing in a block of text, keyed for `check_numbers`.
+
+    The pool a writer is checked against must be what the writer was SHOWN.
+    Anything shown through another channel is a trap: visible, quotable, and
+    guaranteed to be refused. The must-cover items are the sharp case — they
+    arrive under "必须原样包含这句话", so a number inside one is an ORDER to
+    write a number the checker would then reject, which no retry can satisfy.
+    """
     pool: dict[str, float] = {}
-    for i, tok in enumerate(re.findall(r"-?\d+(?:\.\d+)?", sheet(facts))):
+    for i, tok in enumerate(re.findall(r"-?\d+(?:\.\d+)?", text)):
         try:
-            pool[f"_sheet_{i}"] = float(tok)
+            pool[f"_shown_{i}"] = float(tok)
         except ValueError:                                       # noqa: PERF203
             continue
     return pool
@@ -173,6 +200,7 @@ def build_catalogue(state: Any, deps: Any) -> dict[str, Bundle]:
     gen = Path(deps.store.gen_dir)
     A = {name: _read(gen, f"{name}.json") for name in (
         "data_audit", "language_profile", "template_groups", "taxonomy",
+        "taxonomy_v2",
         "gold_agreement", "adversarial_validation", "representation",
         "granularity", "hierarchy_meta", "governance", "metrics_panel",
         "deployment", "run_summary", "risk_screen", "naming_cards",
@@ -244,8 +272,28 @@ def build_catalogue(state: Any, deps: Any) -> dict[str, Bundle]:
                                   ("rounds_run", "n_rules_added", "kappa_before",
                                    "kappa_after", "n_before", "n_after",
                                    "comparable", "paired")),
+            # A SHEET THE NARRATOR CAN ONLY PARTLY SEE INVITES ARITHMETIC.
+            #
+            # `annotator_balance` is measured and lives in `taxonomy_v2.json`,
+            # which this catalogue never read. live42's narrator was shown
+            # `n_contested = 274` and `annotator_a_won = 92` through other
+            # bundles and DERIVED the rest -- 178 = 270 - 92, 0.3407 = 92/270 --
+            # every one of which the checker then refused, correctly, as a
+            # number not in the sheet. Two sections burned all three attempts on
+            # it and shipped as holes.
+            #
+            # It also belongs here on the merits: `lopsided` is a headline
+            # quality warning about the gold labels this bundle exists to
+            # describe. Starving a sheet does not produce caution, it produces
+            # invention -- the same rule as `test_the_taxonomy_bundle_can_
+            # actually_name_a_class`.
+            "annotator_balance": _pick(
+                _dig(A["taxonomy_v2"], "annotator_balance", default={}) or {},
+                ("n_contested", "n_decided", "annotator_a_won", "annotator_b_won",
+                 "referee_chose_neither", "annotator_a_share", "z_vs_even",
+                 "lopsided", "undecidable")),
         },
-        sources=["gold_agreement"]))
+        sources=["gold_agreement", "taxonomy_v2"]))
 
     av = A["adversarial_validation"]
     B.append(Bundle(
@@ -609,6 +657,24 @@ def must_cover(state: Any, deps: Any, catalogue: dict[str, Bundle]) -> list[Must
 
     # 5. A tie set means the chosen K is one of several that stand up equally.
     #    Reporting the winner alone converts a tie into a result.
+    # THE ATTRIBUTION THE MODEL GOT WRONG, SUPPLIED RATHER THAN CHECKED.
+    gran = catalogue.get("granularity", Bundle("", "", "")).facts
+    deciding = _dig(gran, "triangulation", "deciding_reference")
+    located = _dig(gran, "triangulation", "reference_sensitivity",
+                   "located_k_values", default={}) or {}
+    chosen_k = _dig(gran, "triangulation", "chosen_family_k")
+    if deciding and chosen_k is not None:
+        per_ref = ", ".join(f"{n}→K={v}" for n, v in sorted(located.items()))
+        out.append(MustCover(
+            "k_deciding_reference",
+            f"必须写明定位 K 的参照系是 `{deciding}`, 且不得张冠李戴",
+            [str(deciding)],
+            verbatim=(f"交付的家族层 K={chosen_k} 由参照系 `{deciding}` 定位; "
+                      f"各参照系各自定位到的 K 为 {per_ref}。"
+                      if per_ref else
+                      f"交付的家族层 K={chosen_k} 由参照系 `{deciding}` 定位。"),
+        ))
+
     tie = _dig(catalogue.get("granularity", Bundle("", "", "")).facts,
                "triangulation", "tie_set", default=[]) or []
     if len(tie) > 1:

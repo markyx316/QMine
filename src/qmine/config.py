@@ -473,6 +473,11 @@ class QMineConfig(BaseModel):
     #: run's own warnings become a must-cover list checked over the whole text.
     #: Off means the run delivers the scripted documents alone.
     final_report: bool = True
+    #: Machine-translate authored prose the curated `PROSE_ZH` mapping does not
+    #: cover. Guarded: a translation that alters a number or an identifier is
+    #: refused and the English kept, and results are cached by content hash so a
+    #: string renders identically on every future run. Off in `offline`.
+    translate_prose: bool = True
     #: Let an agent write the "what this means for THIS corpus" sentences in the
     #: deliverables. Every number it writes is checked against a fact sheet built
     #: from artifacts, and an unverifiable one is rejected and re-asked; after

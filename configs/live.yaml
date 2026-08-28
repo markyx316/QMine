@@ -46,12 +46,20 @@ llm:
   # Add a model here only after a run has actually exercised it.
   capable_models:
     - kimi-k3
-    - deepseek-v4-pro
     - qwen3.8-max
-    - glm-5.2
+    - glm-5.3
   # Pin by the BARE model id. `deepseek/deepseek-v4-pro` exists as a card id for
   # BOTH the direct provider and the aggregator, and `by_id` is a dict — last one
   # wins, which silently routed these through OpenRouter.
+  #
+  # A MODEL TOO NEW FOR THE PRICE FEED HAS NO CARD AT ALL, so a bare pin cannot
+  # name its provider. `glm-5.3-flash` and `qwen3.8-flash` both answer on their
+  # providers' direct endpoints (verified by real calls) and appear nowhere in a
+  # 1,930-model catalogue. Qualify those with `provider:model` — a COLON, since
+  # `qwen/glm-5.3-flash` is a catalogue id meaning the OpenRouter gateway. An
+  # unqualified pin with no card is now refused at PLANNING time; it used to
+  # reach `provider="explicit"`, which nothing handles, and die on the role's
+  # first real call after the phases above it had been paid for.
   model_overrides:
     taxonomy_architect: deepseek-v4-pro
     taxonomy_critic: deepseek-v4-pro
@@ -89,7 +97,7 @@ llm:
     # catalogue carries a rate for it. `p1`/`models` now warn about that rather
     # than showing a confident zero. The OpenRouter card has a price ($0.32/$1.28)
     # if an accurate estimate matters more than avoiding the gateway.
-    annotator_b: qwen3.7-plus
+    annotator_b: qwen:qwen3.8-flash
     # `deepseek-v4-flash`, deliberately, not the lab's flagship. It is already the
     # p2b bottleneck at 83.4s per call over ~264 calls, and `pro` is a reasoning
     # model — the schedule cost is real and the quality case for it was never
@@ -113,7 +121,7 @@ llm:
     # `glm-5.2` resolves bare to provider `qwen` (Alibaba's gateway) but LAB
     # zhipu, so independence from annotator_a (deepseek) and annotator_b (qwen)
     # holds — and it is the exact model live38 adjudicated well with.
-    referee: glm-5.2
+    referee: zhipu:glm-5.3-flash
     # The router picked `glm-5-code` for both of these on price, and this account
     # gets 403 "您无权访问glm-5-code" — the model is listed in the catalogue but
     # not entitled. Both roles fail safe (the interpreter ships a section with no
@@ -130,7 +138,7 @@ llm:
     # phase result — live38 hit its tool cap at step 24 (tools working hard),
     # live39 hit a 400 at step 0 (tools never used) and both logged "2 tool loop
     # failures". glm-5.2 is what live38 actually searched the web with.
-    researcher: glm-5.2
+    researcher: zhipu:glm-5.3-flash
     # THE CRITIC ROLES, ON A LAB USED NOWHERE ELSE.
     #
     # These three exist to find what the rest of the pipeline got wrong, and all

@@ -462,6 +462,24 @@ def p11_report(state: PipelineState, deps: Deps) -> dict[str, Any]:
         recheck_run(deps)
     except Exception as exc:  # noqa: BLE001
         deps.emit(f"  findings re-check skipped ({type(exc).__name__}: {exc})")
+    # INSTALL THE TRANSLATOR BEFORE ANY REPORT RENDERS.
+    #
+    # `prose()` is called from report modules with no access to the registry, so
+    # the translator is configured here rather than threaded through 20 call
+    # sites. Curated `PROSE_ZH` wording still wins; this only reaches strings the
+    # mapping cannot cover — a newly authored rationale nobody has noticed yet,
+    # and the 22 `deps.gate()` f-strings that no fixed prefix can ever match.
+    # Every result is checked for altered numbers and identifiers before use, and
+    # anything suspect keeps the English.
+    if getattr(deps.cfg, "translate_prose", True) and not deps.cfg.offline:
+        from ...report.i18n import set_translator
+        from ...report.translate import registry_translator
+
+        try:
+            set_translator(registry_translator(deps.registry))
+        except Exception as exc:  # noqa: BLE001
+            deps.emit(f"  translator unavailable ({type(exc).__name__}); prose stays English")
+
     refs = build_all_reports(state, deps)
 
     # THE DOCUMENT A READER OPENS FIRST, AND THE ONLY ONE NOT ASSEMBLED BY PYTHON.
