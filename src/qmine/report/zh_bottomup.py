@@ -31,6 +31,18 @@ from .i18n import decision_question, num, pct, prose, stars, vocab
 from ._shape import delivered_shape, family_names
 
 
+def _batch_deltas(row: dict) -> dict:
+    """The governance deltas a ledger row carries — under either key.
+
+    Renamed to `metric_deltas_for_the_WHOLE_BATCH` because every executed
+    prescription carried the SAME dict, and the old name read as per-prescription
+    attribution. Both are accepted so a report can still be built from an artifact
+    written before the rename; a run whose ledger predates it is not unreadable.
+    """
+    return (row.get("metric_deltas_for_the_WHOLE_BATCH")
+            or row.get("metric_deltas") or {})
+
+
 def _t(d: dict[str, Any] | None, *path: str, default: Any = None) -> Any:
     cur: Any = d
     for k in path:
@@ -433,7 +445,7 @@ def build(state: Any, deps: Any, figs: dict[str, Any]) -> str:
         for r in gov["ledger"]:
             L.append(f"| `{r['id']}` | {r['kind']} | {r['targets']} | **{r['status']}** | "
                      f"`{r['executed_column'] or '—'}` | "
-                     f"{json.dumps(r['metric_deltas'], ensure_ascii=False)} |")
+                     f"{json.dumps(_batch_deltas(r), ensure_ascii=False)} |")
         L.append("")
         declined = [r for r in gov["ledger"] if r["status"] == "declined"]
         if declined:

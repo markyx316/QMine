@@ -36,6 +36,7 @@ or phrase anything. Those are the narrator's, and that is the whole point of it.
 from __future__ import annotations
 
 import json
+import re
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
@@ -98,6 +99,32 @@ class MustCover:
     what: str
     anchors: list[str]
     severity: str = "must"
+
+
+def citable_numbers(facts: dict[str, Any]) -> dict[str, float]:
+    """Every number the agent can SEE in `sheet(facts)`, keyed for `check_numbers`.
+
+    The contract a writer is given is "use only numbers from this sheet", so the
+    checker's pool must be what the sheet SHOWS. `verify._flatten` pools only
+    values, and `sheet` renders dotted paths — so a dict keyed by id puts numbers
+    in front of the author that the checker will not accept:
+
+        execution.splits.32.new_leaf = 49     <- the agent reads "32"
+
+    live42's `governance_and_risk` section was rejected three times for citing
+    `32, 40, 42, 43, 44, 45` — the leaf ids it had just been shown — and shipped
+    as a hole. The numbers were in the sheet; only the pool disagreed.
+
+    This widens the pool to exactly the sheet's own content and no further: a
+    number absent from the rendered text is still refused.
+    """
+    pool: dict[str, float] = {}
+    for i, tok in enumerate(re.findall(r"-?\d+(?:\.\d+)?", sheet(facts))):
+        try:
+            pool[f"_sheet_{i}"] = float(tok)
+        except ValueError:                                       # noqa: PERF203
+            continue
+    return pool
 
 
 def sheet(facts: dict[str, Any]) -> str:

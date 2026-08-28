@@ -168,7 +168,15 @@ def run(
                 console.print(f"[dim]reusing taxonomy from {reuse_taxonomy}[/dim]")
             console.print(f"[dim]resuming {run_id} generation {gen} from {ckpt} "
                           f"(config {cfg.config_hash})[/dim]")
-            out = resume_run(cfg, run_id, generation=gen)
+            _dash = _attach_dashboard(cfg, run_id, run_root,
+                                      enabled=dashboard and verbose)
+            with _dash:
+                if _dash.enabled:
+                    _console_level(logging.WARNING)
+                out = resume_run(cfg, run_id, generation=gen,
+                                 on_event=_dash.handle)
+                _dash.finish(ok=not out["summary"].get("halted", False))
+            _console_level(logging.INFO)
             _print_summary(out["summary"])
             return
         console.print(f"[yellow]nothing to resume for {run_id}; starting a fresh run[/yellow]")
@@ -223,27 +231,54 @@ def run(
     # screen; --plain (or --quiet, or a pipe) falls back to plain lines so CI and
     # `tee` keep working.
     use_dash = dashboard and verbose
-    if use_dash:
-        from .ui.live import LiveDashboard
 
-        dash = LiveDashboard(run_id=run_id or "", domain=cfg.domain.key,
-                             provider=cfg.llm.provider, language=cfg.report_language)
-        with dash:
-            # Quiet the *console handler*, not the logger. Lowering the logger
-            # here used to take `<run>/run.log` down with it, so choosing the
-            # pretty view meant choosing to have no record of the run at all.
-            if dash.enabled:
-                _console_level(logging.WARNING)
-            result = run_pipeline(cfg, run_id=run_id, human_review=human_review,
-                                  on_event=dash.handle)
-            # The dashboard cannot tell a halt from ordinary progress — a
-            # blocking gate returns normally — so the outcome is handed to it.
-            dash.finish(ok=not result["summary"].get("halted", False))
-        _console_level(logging.INFO)
-    else:
+    # THE BROWSABLE PAGE IS NOT PART OF THE TERMINAL PANEL, AND MUST NOT BE
+    # GATED ON IT.
+    #
+    # It was built inside `if use_dash:`, so a run launched detached — no TTY, so
+    # `verbose` is off — wrote no page at all. That is exactly backwards: the
+    # headless run is the one that most needs a browsable view, because there is
+    # no terminal to watch. Worse, the only page then on disk was the one a
+    # `qmine watch` follower wrote, which replays `run.log` from offset 0 and so
+    # re-rendered superseded generations into the file the operator was reading.
+    dash = _attach_dashboard(cfg, run_id or "", run_root, enabled=use_dash)
+
+    with dash:
+        # Quiet the *console handler*, not the logger. Lowering the logger here
+        # used to take `<run>/run.log` down with it, so choosing the pretty view
+        # meant choosing to have no record of the run at all.
+        if dash.enabled:
+            _console_level(logging.WARNING)
         result = run_pipeline(cfg, run_id=run_id, human_review=human_review,
-                              on_event=lambda m: console.print(f"  [dim]{m}[/dim]"))
+                              on_event=dash.handle)
+        # The dashboard cannot tell a halt from ordinary progress — a blocking
+        # gate returns normally — so the outcome is handed to it.
+        dash.finish(ok=not result["summary"].get("halted", False))
+    _console_level(logging.INFO)
     _print_summary(result["summary"])
+
+
+def _attach_dashboard(cfg: "QMineConfig", run_id: str, run_root: str, *, enabled: bool):
+    """Build the dashboard and its browsable page for either run path.
+
+    Factored because the RESUME branch returns before the fresh-run setup, which
+    the branch's own comment warns about — so `--resume` had no terminal panel
+    and no page at all, and the only `dashboard.html` on disk was whatever a
+    `qmine watch` follower had written by replaying every generation.
+    """
+    from .ui.live import PHASES, LiveDashboard
+    from .ui.web import HtmlWriter, artifacts_from_index
+
+    dash = LiveDashboard(run_id=run_id or "", domain=cfg.domain.key,
+                         provider=cfg.llm.provider, language=cfg.report_language,
+                         enabled=enabled)
+    if run_id:
+        root = Path(run_root) / run_id
+        root.mkdir(parents=True, exist_ok=True)
+        dash.html_writer = HtmlWriter(root / "dashboard.html", PHASES)
+        dash.artifacts_fn = lambda: artifacts_from_index(root / "index.jsonl")
+        console.print(f"  [dim]dashboard → {root / 'dashboard.html'}[/dim]")
+    return dash
 
 
 @app.command()
@@ -261,7 +296,8 @@ def watch(
     — or by someone else entirely — and still be watched, re-watched after it
     finishes, or watched from two terminals at once.
     """
-    from .ui.live import LiveDashboard, parse_log_line
+    from .ui.live import PHASES, LiveDashboard, parse_log_clock, parse_log_line
+    from .ui.web import HtmlWriter, artifacts_from_index
 
     root = Path(run_root) / run_id
     log_path, usage_path = root / "run.log", root / "usage.json"
@@ -301,6 +337,18 @@ def watch(
 
     dash = LiveDashboard(run_id=run_id, domain="", provider="", language=language)
     dash.usage_fn = usage
+    dash.artifacts_fn = lambda: artifacts_from_index(root / "index.jsonl")
+    # A follower rebuilds the browsable page too, so a run launched detached — or
+    # by someone else — still gets one.
+    # A SEPARATE FILE FROM THE RUN'S OWN PAGE.
+    #
+    # Both were written to `dashboard.html`, so a follower attached to a LIVE run
+    # fought the run for the same path — and the follower always won on content,
+    # because it replays `run.log` from offset 0. `run.log` is append-only across
+    # generations, so watching a run at gen03 re-rendered gen01 and gen02 into the
+    # page the run was trying to keep current. The operator saw stale events from
+    # a generation that had been superseded twice.
+    dash.html_writer = HtmlWriter(root / "dashboard.watch.html", PHASES)
     offset, idle = 0, 0.0
     with dash:
         try:
@@ -318,7 +366,12 @@ def watch(
                             for line in fh:
                                 msg = parse_log_line(line)
                                 if msg:
-                                    dash.handle(msg)
+                                    # The LOG's clock, not the follower's. A
+                                    # finished run replays a thousand lines in
+                                    # under a second, so wall-clock timing showed
+                                    # every phase as "0s" — the follower's whole
+                                    # point is re-watching, and it timed nothing.
+                                    dash.handle(msg, at=parse_log_clock(line))
                             offset = fh.tell()
                         idle = 0.0
                     else:
@@ -376,7 +429,9 @@ def new_generation_cmd(
     run_id: str = typer.Argument(..., help="Run to open a new generation of."),
     reason: str = typer.Option(..., "--reason", help="Why the previous generation was set aside."),
     run_root: str = typer.Option("runs", "--run-root"),
-    from_generation: int = typer.Option(1, "--from-generation"),
+    from_generation: Optional[int] = typer.Option(
+        None, "--from-generation",
+        help="Branch from this generation instead of the newest one."),
     config: Optional[str] = typer.Option(
         None, "--config", "-c",
         help="Config the NEW generation will run under. Without it the new "
@@ -390,9 +445,21 @@ def new_generation_cmd(
     way to make it. A rejected generation is evidence, not waste: the source
     project's discarded 107-leaf tree became its phrasing-pattern library.
     """
+    from .artifacts import latest_generation
     from .runner import new_generation
 
     cfg = _load_config(config, domain, run_root=run_root)
+    # DEFAULT TO THE NEWEST GENERATION, NOT GENERATION 1.
+    #
+    # This defaulted to 1, so "open the next generation" on a run already at gen02
+    # re-created **gen02** and overwrote it, rather than advancing to gen03. On
+    # live41 that silently put a resumed run back into the generation whose pilot
+    # had just failed, and the operator had no way to tell from the command they
+    # typed. `artifacts.latest_generation` exists precisely because both RESUME
+    # paths had this same hardcoded 1 — its docstring says so — and this call site
+    # was missed.
+    if from_generation is None:
+        from_generation = latest_generation(Path(run_root) / run_id)
     nxt = new_generation(cfg, run_id, from_generation=from_generation, reason=reason)
 
     # SNAPSHOT THE CONFIG THE NEW GENERATION WILL RUN UNDER. Without this,

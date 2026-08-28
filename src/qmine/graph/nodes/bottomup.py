@@ -284,9 +284,19 @@ def p4_battery(state: PipelineState, deps: Deps) -> dict[str, Any]:
         silhouette_sample=cfg.clustering.silhouette_sample,
         include_hdbscan=not cfg.fast_mode,
     )
+    # THE NOTE STILL DESCRIBED THE RETRACTED "ELECTION".
+    #
+    # "the winner is then fitted on the full corpus" is the framing the spec
+    # withdrew: `build_hierarchy` hardcodes KMeans, so there is no winner and
+    # nothing is promoted. live41's own p4 observer caught the contradiction
+    # between this string and `verdict.role` ("falsification probe") sitting in
+    # the same artifact. Same class as the retracted 淘汰赛 sentence removed from
+    # the reports — this copy was in the artifact itself.
     result["note"] = (
-        "the battery ranks algorithms on a capped sub-sample; the winner is then "
-        "fitted on the full corpus in Phase 6"
+        "this phase selects nothing: the delivered tree is always KMeans. The "
+        "battery runs structurally different algorithms through one harness on a "
+        "capped sub-sample to ask whether the structure is a property of the "
+        "corpus or of KMeans' spherical-cluster assumption"
     )
     verdict = result["verdict"]
     family = verdict["chosen_family"] or "kmeans"
@@ -377,7 +387,7 @@ def p5_granularity(state: PipelineState, deps: Deps) -> dict[str, Any]:
     # A reference that occupies only part of the partition cannot express a
     # preference about the rest, however good its rows are. Measured at a
     # representative k so the choice does not depend on the K it is choosing.
-    from ...ops.cluster import choose_locator, kmeans_fit, locator_reach
+    from ...ops.cluster import choose_locator, discrimination, kmeans_fit, locator_reach
 
     _probe_k = sorted(ks)[len(ks) // 2]
     _probe_labels = kmeans_fit(H, _probe_k, seed=cfg.seed_metric,
@@ -399,8 +409,21 @@ def p5_granularity(state: PipelineState, deps: Deps) -> dict[str, Any]:
                   f"(行覆盖 {_r['row_coverage']:.0%}) @ k={_probe_k}")
 
     locator_key, _deciding = choose_locator(
-        reach, getattr(cfg.clustering, "k_locator", "auto"))
-    deps.emit(f"  K 由 `{_deciding}` 定位 (触及率最高)")
+        reach, getattr(cfg.clustering, "k_locator", "auto"), sweep=sweep)
+    for _label, _r in sorted(reach.items()):
+        _r["discrimination"] = discrimination(sweep, _r["column"])
+    # SAY WHICH CRITERION ACTUALLY DECIDED.
+    #
+    # This always said "highest reach", but reach is only the ADMISSION test —
+    # on live41 both legacy columns reach 1.0 and discrimination broke the tie
+    # (legacy_l2 17.19 against legacy_l1's 5.88). A reader told "highest reach"
+    # would look at two identical numbers and be unable to see why one won.
+    _r = reach.get(_deciding, {})
+    _tied_on_reach = sum(1 for r in reach.values()
+                         if (r.get("reach") or 0) >= (_r.get("reach") or 0) - 1e-9)
+    _why = ("触及率最高" if _tied_on_reach == 1
+            else f"触及率并列 ({_tied_on_reach} 个), 由分辨力 {_r.get('discrimination')} 胜出")
+    deps.emit(f"  K 由 `{_deciding}` 定位 ({_why})")
 
     expected_mid = int(sum(cfg.domain.expected_family_range) / 2)
     da = deep_aligned_estimate(H, expected_mid, multiplier=cfg.clustering.deep_aligned_multiplier,
@@ -423,7 +446,27 @@ def p5_granularity(state: PipelineState, deps: Deps) -> dict[str, Any]:
     # that would have agreed with that prior under a reference it already had.
     from ...ops.cluster import reference_profile
 
+    # PROFILE THE REFERENCE THAT ACTUALLY DECIDED, not the one that used to.
+    #
+    # `reference_profile` was added when the phrasing groups were the only
+    # locator, and it kept describing them after `choose_locator` was given other
+    # candidates — so live42 shipped `locator_reference.reference = "phrasing
+    # (template) groups"` beside `deciding_reference = legacy_l2`, with a caveat
+    # asserting K was located against "THIS partition". Two contradictory answers
+    # in one artifact; its own p5 observer caught it. Same defect as the decision
+    # record's hardcoded `decisive_metrics`, one file over.
     profile = reference_profile(masks, len(deps.df))
+    profile["is_the_deciding_reference"] = (locator_key == "intent_alignment_ami")
+    profile["deciding_reference"] = _deciding
+    if not profile["is_the_deciding_reference"]:
+        _dr = reach.get(_deciding, {})
+        profile["deciding_reference_profile"] = {
+            "reference": _deciding,
+            "reach": _dr.get("reach"),
+            "row_coverage": _dr.get("row_coverage"),
+            "discrimination": _dr.get("discrimination"),
+            "n_clusters_reached": _dr.get("n_clusters_reached"),
+        }
     deps.emit(f"  locator scored against {profile.get('n_classes')} phrasing classes "
               f"covering {profile.get('coverage')} of rows")
 
@@ -489,14 +532,26 @@ def p5_granularity(state: PipelineState, deps: Deps) -> dict[str, Any]:
         "Replay stability only REJECTS here — its seed-to-seed spread on this corpus "
         "(~0.10 ARI) is larger than the differences between adjacent K (~0.05), and its "
         "curve is still climbing below the grid, so ranking by it reads noise and trends "
-        "toward a degenerate two-way split. K is LOCATED by alignment with the phrasing "
-        "groups (AMI), the one metric here with a two-sided penalty and therefore a real "
-        "interior optimum. Where several K are indistinguishable the tie set is reported "
-        "and the simplest is taken — an averaged K is defensible to nobody.",
+        "toward a degenerate two-way split. K is LOCATED by alignment (AMI) with the "
+        "reference named in `deciding_reference` — chosen for REACH across the partition "
+        "and for its ability to tell different K apart, not fixed in advance. AMI is the "
+        "one metric here with a two-sided penalty and therefore a real interior optimum. "
+        "Where several K are indistinguishable the tie set is reported and the simplest "
+        "is taken — an averaged K is defensible to nobody.",
+        # NAME THE REFERENCE THAT ACTUALLY DECIDED.
+        #
+        # These two fields were hardcoded to `intent_alignment_ami` from when the
+        # phrasing groups were the only locator. live41 located K by
+        # `ami_vs_legacy_l1` and the decision record still said phrasing groups —
+        # its own observer caught the contradiction between the rationale and
+        # `reference_sensitivity` in the same artifact.
         evidence={**tri["estimates"], "locator": tri.get("locator"),
+                  "deciding_reference": tri.get("deciding_reference"),
+                  "locator_reach": tri.get("locator_reach"),
                   "tie_set": [t["k"] for t in tri.get("tie_set", [])],
                   "n_rejected_as_unstable": tri.get("n_rejected_as_unstable")},
-        decisive_metrics=["intent_alignment_ami", "stability_ari (rejection only)"],
+        decisive_metrics=[tri.get("locator") or "intent_alignment_ami",
+                          "stability_ari (rejection only)"],
         rejected=[{"option": f"K={r['k']}",
                    "why_rejected": ("rejected: replay stability below the floor"
                                     if r["stability_ari"] < tri.get("stability_floor", 0.55)

@@ -22,6 +22,7 @@ failed its own test.
 from __future__ import annotations
 
 import functools
+import time
 import logging
 from typing import Any, Callable, Literal
 
@@ -130,9 +131,20 @@ def _wrap(fn: Callable, deps: Deps, name: str) -> Callable:
         # starts with an empty `phase_status` and re-runs everything it should.
         if (state.get("phase_status") or {}).get(name) == "ok":
             return {}
+        # EMIT COMPLETION RATHER THAN LEAVING THE UI TO INFER IT.
+        #
+        # The dashboard inferred "phase done" from "next phase started", which is
+        # unobservable for the fork: under the p1 branch split the next phase to
+        # start is usually on the OTHER branch, and a branch that finishes early
+        # then WAITS at the superstep boundary. On live40 that rendered p3 as 72
+        # minutes when its work took 12 — the rest was waiting. One line here
+        # makes the duration measured instead of guessed, and no inference rule
+        # can substitute for it.
+        _t0 = time.time()
         try:
             out = fn(state, deps) or {}
             out.setdefault("phase_status", {})[name] = "ok"
+            deps.emit(f"✔ {name} completed in {time.time() - _t0:.1f}s")
             return out
         except Exception as exc:  # noqa: BLE001
             log.exception("node %s failed", name)

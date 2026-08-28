@@ -35,6 +35,13 @@ class PhaseSpec:
     key: str
     label_zh: str
     label_en: str
+    #: Which concurrent branch this phase belongs to, mirroring `graph/build.py`.
+    #: "" is the sequential spine. Needed because completion is INFERRED from the
+    #: next phase starting, and under the p1 fork the next phase to start is often
+    #: on the OTHER branch — which marked the first one done while it was still
+    #: running. Measured on live40: P2a and P3a both start at 14:56:08, P2b and P4
+    #: both at 16:08:26, and the phase list flipped p3 from done back to running.
+    branch: str = ""
     #: What this phase does and why, for the operator watching it run. A phase
     #: name tells you where you are; it does not tell you what a four-minute
     #: pause is buying, which is the question a long run actually raises.
@@ -58,13 +65,13 @@ PHASES: list[PhaseSpec] = [
               why_en="corpus shape, phrasing families, language & risk screen"),
     PhaseSpec("p2a", "意图体系设计 (研究扇出)", "taxonomy design",
               why_zh="5 名研究员并行提案 → 架构师定类目 → 规则员写裁决规则 → 评审 → 试标校准",
-              why_en="5 researchers, architect, rule writer, critic, pilot calibration"),
+              why_en="5 researchers, architect, rule writer, critic, pilot calibration", branch="topdown"),
     PhaseSpec("p2b", "金标构建 (双盲+κ)", "gold standard",
               why_zh="双盲标注金标集, 用标注者自一致上限解读 κ",
-              why_en="double-blind gold set; kappa read against the self-consistency ceiling"),
+              why_en="double-blind gold set; kappa read against the self-consistency ceiling", branch="topdown"),
     PhaseSpec("p3", "表征构建 (bake-off + α)", "representation",
               why_zh="编码器 bake-off、字符 TF-IDF 稀疏块、α 扫描定混合表征",
-              why_en="encoder bake-off, sparse block, alpha sweep"),
+              why_en="encoder bake-off, sparse block, alpha sweep", branch="bottomup"),
     PhaseSpec("p2c", "规则+ML 分类器", "classifier",
               why_zh="规则优先、ML 兜底的分类器, 含交叉验证与概率校准",
               why_en="rules-first classifier with ML fallback, CV and calibration"),
@@ -76,13 +83,13 @@ PHASES: list[PhaseSpec] = [
               why_en="L2 sub-intents beneath each L1"),
     PhaseSpec("p4", "算法选型 battery", "algorithm battery",
               why_zh="多算法对照 — 检验 KMeans 的球形簇假设是否被推翻",
-              why_en="battery — can KMeans's assumption be falsified"),
+              why_en="battery — can KMeans's assumption be falsified", branch="bottomup"),
     PhaseSpec("p5", "粒度选择 (K 三角验证)", "granularity",
               why_zh="K 扫描: 意图对齐定位 K, 稳定性只做否决",
-              why_en="K sweep: intent alignment locates K, stability only rejects"),
+              why_en="K sweep: intent alignment locates K, stability only rejects", branch="bottomup"),
     PhaseSpec("p6", "两层层级构建", "hierarchy",
               why_zh="构建家族/叶子两层结构, 并做留出复现检验",
-              why_en="two-level tree plus held-out reproduction"),
+              why_en="two-level tree plus held-out reproduction", branch="bottomup"),
     PhaseSpec("p7", "盲评命名与树审计", "blind naming & audit",
               why_zh="命名者看不到任何旧标签, 命名后审计整棵树",
               why_en="naming behind the blindness firewall, then tree audit"),
@@ -167,6 +174,28 @@ _GATE_ICON = {"PASSED": "[green]✓[/green]", "WARNED": "[yellow]![/yellow]",
 
 #: ``run.log`` lines are "HH:MM:SS LEVEL   logger.name: <the emitted message>".
 _LOG_LINE_RE = re.compile(r"^\d\d:\d\d:\d\d \s*\w+\s+[\w.]+: (.*)$")
+_LOG_TS_RE = re.compile(r"^(\d\d):(\d\d):(\d\d) ")
+#: `_wrap` in graph/build.py emits this when a node returns. Measured completion
+#: beats inferring it from "the next phase started", which cannot be right for a
+#: forked graph: a branch that finishes early then WAITS, and the next phase to
+#: start belongs to the other branch.
+_DONE_RE = re.compile(r"^\s*✔ (\S+) completed in ([\d.]+)s")
+
+
+def parse_log_clock(line: str) -> float | None:
+    """Seconds-since-midnight from a log line, for timing a REPLAY.
+
+    Phase durations were measured with `time.time()`, which is right for a live
+    run and wrong for every other use of the same code: `qmine watch` on a
+    finished run replays a thousand lines in under a second, so every phase
+    rendered as "0s" — the follower advertised as working on a finished run
+    showed no timings at all. The log already carries the clock; use it.
+    """
+    m = _LOG_TS_RE.match(line)
+    if not m:
+        return None
+    h, mi, sec = (int(g) for g in m.groups())
+    return h * 3600.0 + mi * 60.0 + sec
 
 
 def parse_log_line(line: str) -> str | None:
@@ -200,6 +229,9 @@ class LiveDashboard:
     timings: dict[str, float] = field(default_factory=dict)
     _phase_start: dict[str, float] = field(default_factory=dict)
     current: str = ""
+    #: Every phase running RIGHT NOW. Under the p1 fork that is genuinely more
+    #: than one, and `current` alone could not say so.
+    running: set[str] = field(default_factory=set)
     activity: list[str] = field(default_factory=list)
     metrics: list[tuple[str, str]] = field(default_factory=list)
     gates: list[tuple[str, str, str]] = field(default_factory=list)
@@ -207,8 +239,33 @@ class LiveDashboard:
     agents: list[tuple[str, bool, str, str, str, str]] = field(default_factory=list)
     usage_fn: Any = None
 
+    # -- FULL HISTORY, for views that are not 175 columns wide -----------------
+    #
+    # The terminal panel keeps `agents[-8:]`, `activity[-6:]` and `metrics[-8:]`
+    # because that is what fits. live40 emitted 696 agent lines and ~1000 events,
+    # so the panel showed roughly 1% of the run and the rest was gone. These keep
+    # everything for the HTML view; they are plain lists of small tuples, and a
+    # four-hour run costs a couple of MB.
+    all_agents: list[dict[str, Any]] = field(default_factory=list)
+    all_activity: list[tuple[float, str]] = field(default_factory=list)
+    all_metrics: list[tuple[float, str, str]] = field(default_factory=list)
+    all_gates: list[dict[str, Any]] = field(default_factory=list)
+    #: Artifacts as they are produced, newest last. Fed by `artifacts_fn`.
+    artifacts: list[dict[str, Any]] = field(default_factory=list)
+    #: Returns `registry.raw_log` so the HTML view can show what each agent
+    #: actually returned, not just the one-line summary the log carries.
+    transcript_fn: Any = None
+    artifacts_fn: Any = None
+    #: An `ui.web.HtmlWriter`, if a browsable view was requested. Driven from
+    #: `handle` so both views advance off the same events.
+    html_writer: Any = None
+    halted: bool = False
+    halt_reason: str = ""
+
     _live: Any = None
     _console: Any = None
+    _clock_base: float | None = None
+    _clock_last: float = 0.0
 
     # -- lifecycle ----------------------------------------------------------
     def __enter__(self) -> "LiveDashboard":
@@ -227,10 +284,26 @@ class LiveDashboard:
             self._live.__enter__()
         except Exception:
             self.enabled = False
+        finally:
+            # Independent of whether the terminal panel came up: a headless run
+            # still wants its page to keep ticking.
+            if self.html_writer is not None and hasattr(self.html_writer, "start_heartbeat"):
+                self.html_writer.start_heartbeat(self)
         return self
 
     def __exit__(self, *exc: Any) -> None:
         self.finish(ok=exc[0] is None)
+        if self.html_writer is not None:
+            if hasattr(self.html_writer, "stop_heartbeat"):
+                self.html_writer.stop_heartbeat()
+            if self.artifacts_fn is not None:
+                try:
+                    self.artifacts = self.artifacts_fn()
+                except Exception:                                # noqa: BLE001
+                    pass
+            # `finished=True` drops the meta-refresh, so the page stops reloading
+            # once there is nothing left to show.
+            self.html_writer.maybe_write(self, force=True, finished=True)
         if self._live is not None:
             try:
                 self._live.update(self._render())
@@ -246,16 +319,26 @@ class LiveDashboard:
         the dashboard showing "working" at the exact moment the run had stopped,
         which is the one thing it exists to prevent.
         """
-        if self.current and self.status.get(self.current) == "running":
-            self.status[self.current] = "done" if ok else "failed"
-            self.timings.setdefault(
-                self.current, time.time() - self._phase_start.get(self.current, time.time())
-            )
+        # Use the REPLAY clock when one is in play. Mixing it with `time.time()`
+        # printed p12 as 1,787,758,540s — an epoch minus a seconds-since-midnight.
+        end = self._clock_last if self._clock_base is not None else time.time()
+        for key in list(self.running) or ([self.current] if self.current else []):
+            if self.status.get(key) == "running":
+                self.status[key] = "done" if ok else "failed"
+                self.timings.setdefault(key, max(0.0, end - self._phase_start.get(key, end)))
+        self.running.clear()
 
     # -- event intake -------------------------------------------------------
-    def handle(self, msg: str) -> None:
+    def handle(self, msg: str, at: float | None = None) -> None:
         """Parse one emitted line and update the model behind the view."""
-        self._ingest(msg)
+        self._ingest(msg, at=at)
+        if self.html_writer is not None:
+            if self.artifacts_fn is not None:
+                try:
+                    self.artifacts = self.artifacts_fn()
+                except Exception:                                # noqa: BLE001
+                    pass
+            self.html_writer.maybe_write(self)
         if self._live is not None:
             try:
                 self._live.update(self._render())
@@ -264,14 +347,31 @@ class LiveDashboard:
         elif self.enabled is False and msg.strip():
             print(f"  {msg}")
 
-    def _ingest(self, msg: str) -> None:
-        now = time.time()
+    def _ingest(self, msg: str, at: float | None = None) -> None:
+        # `at` lets a REPLAY supply the log's own clock instead of wall time, so a
+        # finished run shows the durations it actually had. Monotonic-ised here so
+        # a run crossing midnight cannot produce negative phase times.
+        if at is None:
+            now = time.time()
+        else:
+            if self._clock_base is None:
+                self._clock_base, self._clock_last = at, at
+                self.started = at
+            while at < self._clock_last - 1.0:      # midnight rollover
+                at += 86400.0
+            self._clock_last = at
+            now = at
 
         m = _AGENT_RE.match(msg)
         if m:
             role, ok, secs, out, model, ret = m.groups()
             self.agents.append((role, ok == "ok", secs, out, model.strip(), ret.strip()))
             self.agents = self.agents[-8:]
+            self.all_agents.append({
+                "at": now, "role": role, "ok": ok == "ok", "seconds": secs,
+                "out_tokens": out, "model": model.strip(), "returned": ret.strip(),
+                "phase": self.current,
+            })
             return
 
         m = _GATE_RE.search(msg)
@@ -280,6 +380,26 @@ class LiveDashboard:
             # again by the panel, which reliably removed the actionable half:
             # "…97.4%, threshold 98%" became "…Use a monolin".
             self.gates.append((m.group(1), m.group(2).upper(), m.group(3).strip()))
+            self.all_gates.append({"at": now, "gate": m.group(1),
+                                   "status": m.group(2).upper(),
+                                   "note": m.group(3).strip(), "phase": self.current})
+            return
+
+        m = _DONE_RE.match(msg)
+        if m:
+            node, secs = m.group(1), float(m.group(2))
+            # One node can cover several declared rows (`p456_tree` is p4+p5+p6),
+            # so close every row whose key the node name starts with.
+            hit = False
+            for sp in PHASES:
+                if node.lower().startswith(sp.key) or declared_phase(node.split("_")[0]) == sp.key:
+                    if self.status.get(sp.key) in ("running", None, "pending"):
+                        self.status[sp.key] = "done"
+                        self.timings.setdefault(sp.key, secs)
+                    self.running.discard(sp.key)
+                    hit = True
+            if hit and self.current not in self.running:
+                self.current = next(iter(sorted(self.running)), "")
             return
 
         m = _PHASE_RE.match(msg)
@@ -287,19 +407,47 @@ class LiveDashboard:
             key = declared_phase(m.group(1))
             if key is None:
                 return
-            if self.current and self.current != key and self.status.get(self.current) == "running":
-                self.status[self.current] = "done"
-                self.timings[self.current] = now - self._phase_start.get(self.current, now)
+            # A PHASE IS ONLY CLOSED BY A PHASE THAT COULD HAVE FOLLOWED IT.
+            #
+            # Completion is inferred from the next phase starting, and under the
+            # p1 fork the next phase to start is usually on the OTHER branch. The
+            # old rule closed whatever `current` happened to be, so a branch was
+            # marked done while it was still running: on live40 P2a and P3a both
+            # begin at 14:56:08 and the list flipped p3 from done back to running.
+            #
+            # A phase on a branch closes only earlier phases of the SAME branch.
+            # A phase on the sequential spine closes everything, because reaching
+            # the spine means the join has happened and both branches are in.
+            order = {sp.key: i for i, sp in enumerate(PHASES)}
+            branch = next((sp.branch for sp in PHASES if sp.key == key), "")
+            for other in list(self.running):
+                if other == key:
+                    continue
+                ob = next((sp.branch for sp in PHASES if sp.key == other), "")
+                # Close an earlier running phase UNLESS both sit on branches that
+                # are different — the only case where "still going" is genuine.
+                # Requiring the same branch was too strict the other way: p1 is on
+                # the spine and the phase that follows it is a BRANCH phase, so p1
+                # stayed open from 14:56 until the join at 17:27 and rendered as
+                # 9,067s on live40's own log.
+                concurrent = bool(branch) and bool(ob) and branch != ob
+                if not concurrent and order.get(other, -1) < order.get(key, 0):
+                    self.status[other] = "done"
+                    self.timings[other] = now - self._phase_start.get(other, now)
+                    self.running.discard(other)
             self.current = key
             self.status[key] = "running"
+            self.running.add(key)
             self._phase_start.setdefault(key, now)
             self.activity.clear()
             self.activity.append(msg.strip())
             return
 
         if msg.startswith("!!"):
-            if self.current:
-                self.status[self.current] = "failed"
+            self.halted = True
+            self.halt_reason = msg.strip()[2:].strip()
+            for key in list(self.running):
+                self.status[key] = "failed"
             self.activity.append(f"[red]{escape(msg.strip()[:120])}[/red]")
             return
 
@@ -308,6 +456,7 @@ class LiveDashboard:
             # slicing it again reintroduced the mid-word cut in the metrics box
             # ("held-out structure reproduct"). The panel folds long labels.
             self.metrics.append((label.strip(), val))
+            self.all_metrics.append((now, label.strip(), val))
         self.metrics = self.metrics[-8:]
 
         if msg.strip():
@@ -329,6 +478,7 @@ class LiveDashboard:
             else:
                 self.activity.append(line)
             self.activity = self.activity[-6:]
+            self.all_activity.append((now, msg.strip()))
 
     # -- rendering ----------------------------------------------------------
     def _render(self) -> Any:

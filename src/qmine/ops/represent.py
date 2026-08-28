@@ -293,9 +293,20 @@ def alpha_sweep(
         "tie_band_value": round(float(band), 4),
         "tie_band_source": band_src,
         "tie_band_relative_pct": round(tie_band * 100, 1),
+        # SAY WHAT THE RULE DOES, NOT WHAT IT SOUNDS LIKE IT DOES.
+        #
+        # This read "lowest template_fragmentation within a tie-band, broken on
+        # highest stability_ari", which a reader parses as "the winner has the
+        # lowest fragmentation". It usually does not: the band admits every alpha
+        # within 5% of the minimum and stability then picks among them, so the
+        # winner is normally NOT the minimum. live41's observer confirmed it
+        # mechanically on the run's own artifacts — chosen alpha=0.1 while
+        # alpha=0.0 fragments less — and the same mismatch was in live40.
         "chosen_by": (
-            "lowest template_fragmentation within a tie-band, broken on "
-            "highest stability_ari"
+            "every alpha within the tie-band of the LOWEST template_fragmentation "
+            "is treated as tied; among those the highest stability_ari wins. The "
+            "winner is therefore usually not the lowest-fragmentation alpha — that "
+            "is the rule working, not a contradiction of it"
         ),
         "tie_band": tie_band,
         "contenders": [r["alpha"] for r in contenders],

@@ -12,9 +12,9 @@
 
 ---
 
-## 1. Status — last updated 2026-08-27
+## 1. Status — last updated 2026-08-27 (night)
 
-# 534 tests passing. Bottom-up selection audited end to end; 15 verified defects fixed.
+# 552 tests passing. live41 abandoned after a RESUME dropped a branch; live42 relaunched fresh.
 
 **The one thing to know:** the final report (`00_最终报告.md`) is now written by an
 agent rather than assembled by Python, guarded by a fact-sheet check per section
@@ -26,7 +26,7 @@ artifacts (~15 calls) before committing to a full run.
 
 | | |
 |---|---|
-| Tests | **534** passing; `ruff --select F src/qmine/` clean |
+| Tests | **552** passing; `ruff --select F src/qmine/` clean |
 | `live40` gen01 | 17/17 phases, halted=False, **241.8 min**, `provider=routed` |
 | Verification | **25/26 PASS, 0 FAIL** (live39 control: 19 PASS, **6 FAIL**) |
 | Gates | 24 recorded — 20 passed, 4 warned, 0 failed |
@@ -102,181 +102,129 @@ now carry the measured rate.
 
 ## 2. Open questions — EDIT THIS SECTION, DO NOT APPEND
 
-0a. **The bottom-up selection changes have never met a real model either.** The
-   local-k rule now yields 18 leaves instead of 16 on live40's own candidate
-   tables, which cascades into naming, into which leaves Phase 8 then prescribes
-   splitting, and into every downstream count. Nothing is known about how the new
-   rule behaves on a fresh live run.
+**Resolved by live42 and deleted from this list:** "the final report has never met
+a real model" (it has — 3/9 sections, see below), "the bottom-up selection changes
+have never met a real model" (they have — K=18 via `legacy_l2`, split measurement
+7/9, local-k spanning 1-8).
 
-0. **The agent-written final report has never met a real model.** Built and green
-   offline, but the offline stand-in cannot produce a valid outline, so the
-   **agent-planned outline path has never executed once** — every offline run
-   falls back to the code-chosen spine. No section has been written by a real
-   model, so nothing is known about whether the prompts actually produce a
-   coherent through-line, how often `check_numbers` rejects a first draft, or
-   whether the must-cover items get addressed rather than name-dropped.
-   Cheapest validation by far: call `narrate()` alone against live40's existing
-   artifacts (~15 calls, cents) before spending a full run on it.
+### P0 — FIXED 2026-08-28, verified end to end
 
-0b. **All 22 `deps.gate()` messages are English f-strings** and the gate ledger
-   prints them verbatim into Chinese deliverables. Frozen by gate name in
-   `GATE_MESSAGE_DEBT` (`tests/test_pipeline.py`) so the set cannot grow. Fixing
-   it means restructuring 22 message sites, each with numbers interpolated —
-   a mapping will not do it.
+1. ~~**The run crashes at TEARDOWN and `run_summary.json` is never written.**~~
+   **Root cause was NOT the serializer.** `DecisionRecord` encodes fine; the
+   message naming it was a symptom. `_checkpointer` (and `open_memory`, the same
+   defect) wrapped a single `try/except` around its `yield` — and
+   `@contextmanager` throws a WITH-BODY exception back in at that point, so both
+   caught the ENTIRE pipeline's failures, relabelled them, and fell through to a
+   SECOND `yield`, which a generator may not do. Hence
+   "generator didn't stop after throw()", the original exception lost, and the run
+   dead before `write_summary`.
 
-1. **Does the guide repair help? First clean answer: no measurable effect.**
-   `live20` produced the first uncontaminated comparison — both rounds at **n=596**,
-   full annotator coverage on both sides, all 28 repair rules delivered:
+   Fixed by building the saver/store inside `try/except` and yielding OUTSIDE it,
+   exactly once, with no `except` around the yield. `write_summary` also moved
+   into a `finally`, so a crash still records how far the run got. Verified: a
+   full offline run writes a 13,370-byte summary with 17 phases and 15 gates, zero
+   teardown errors, and `verify_run.py`'s falsely-failing checks now read real
+   data. Mutation-tested — restoring the `except` reproduces live42's exact
+   message, "SQLite checkpointer unavailable (the pipeline itself failed)".
 
-   ```json
-   [{"round": 1, "kappa": 0.8335, "n": 596, "raw_agreement": 0.849, "sample": "initial"},
-    {"round": 2, "kappa": 0.8311, "n": 596, "raw_agreement": 0.849, "sample": "fresh"}]
-   ```
+   **live42's true verification score remains unknown** — its summary cannot be
+   reconstructed after the fact. The next live run is the first fully verifiable one.
 
-   **Δκ = −0.002**, against a standard error of roughly 0.016 at this n — about
-   0.1 SE, i.e. flat. Raw agreement is identical to four decimal places (0.849 both
-   rounds), which is the more striking number: the two rounds are indistinguishable.
+### P0 — none open
+   live42 completed 17/17 phases and shipped every deliverable, then died:
+   `DecisionRecord` is no longer msgpack-serializable, the SQLite checkpointer
+   fell back to in-memory, and the store's context manager raised
+   `RuntimeError: generator didn't stop after throw()` on exit.
 
-   So the machinery works — 8 of 8 open boundaries decided, 28 of 28 rules delivered,
-   the guide rewritten, a fresh disjoint sample annotated — and **agreement does not
-   move**. The honest reading is that marker-based boundary rules are not the binding
-   constraint on annotator agreement here, which is consistent with the earlier
-   finding that this corpus's disagreement is *diffuse* across ~40 pairs rather than
-   concentrated in a few.
+   **This is worse than lost metadata: it blinds the verification harness.** Five
+   of `verify_run.py`'s six failures on live42 are FALSE — "no observer gate
+   reached state", "provider=None", "no completed_phases recorded", "0 observers",
+   "the blocking delivery gate absent" — all of them read `run_summary.json`.
+   A run cannot be checked at all without it. Fix the serializer registration and
+   the teardown ordering; then re-verify live42, whose real score is unknown.
 
-   Open for tomorrow: is the effect genuinely zero, or too small to see at 596? At
-   3,000 rows the resolvable effect size drops to roughly 0.015. Worth one run to
-   find out — and if it is still flat, the repair loop should probably be demoted
-   from a gate remedy to a diagnostic that reports contested boundaries without
-   claiming to fix them.
-2. **The comparison design is still confounded.** Round 1 is scored on sample A and
-   round 2 on sample B, so the delta mixes "guide improved" with "sample differed".
-   The clean fix is a **control arm** — annotate sample B with the *old* guide too —
-   at the cost of one extra annotation pass. Not built; the code now at least refuses
-   to present the two numbers as comparable (`comparable: false` in the artifact).
-3. **Rule contradictions are now MEASURED, not inferred from wording.**
-   `ops/rule_conflict.py` runs each rule's trigger over the corpus and reports
-   pairs that co-fire and disagree — on live39, R018/R019 on **301 rows** (a real
-   ambiguity zone) against R006/R007 on **4** (a legitimate discriminating pair).
-   Nothing is withheld: deleting both removes the guidance and leaves the boundary
-   unaddressed, which is how a text-similarity filter once shredded 32 of 41 rules.
-   **RESOLVED 2026-08-26, and the plan in this item was wrong.** "Make the referee
-   emit a trigger with every rule" would have made things worse. Its rules are
-   SEMANTIC — "when the query is a proverb and the user wants its moral" — and
-   only **1 of live39's 80** trigger-less rules contained an extractable marker.
-   Demanding a regex produces 79 fabricated predicates, and every overlap measured
-   through one is an artifact of the regex rather than a fact about the rules.
-   `rules_against_evidence` measures them against the referee's own adjudications
-   instead. See §1.
+### P1 — real defects with a known cause
 
-   **Still open:** whether a contradicted boundary should get an automatic
-   evidence-derived tie-break rule. Deliberately NOT built, because §2.1 measured
-   guide repair at Δκ = −0.002 — generating more rules with no evidence they help
-   is the wrong move. The measurement is reported; the remedy is undecided.
-4. **Three domain profiles are untested on real data:** `finance_zh`, `sports_zh`,
-   `politics_zh`. **This is the actual test of "works on any corpus"** — every
-   portability fix so far (measured tie bands, the grid proposer, corpus-derived
-   K ceilings, the generic-default fix) has only ever run on K12.
-   Fixed today so those runs start from a sound base: a bare `QMineConfig()` used
-   to report `key="generic"` while carrying `language=zh`, `tokenizer=jieba`,
-   Chinese-only encoders and **zero** risk categories — so omitting `--domain` on
-   an English corpus meant a Chinese tokeniser and no harm screening, silently.
-   An unknown `--domain` now lists what exists instead of raising a bare
-   `FileNotFoundError`, and `DomainScoutAgent` (defined, registered, never called
-   — the fourth such) now runs in p1 when no vertical is declared, emitting
-   HYPOTHESES ONLY.
-5f. **`AdjudicationRule.then` is declared "the class that wins" and 36% of the
-   time holds a SENTENCE.** Measured on live38's taxonomy: 18 of 50 architect
-   rules put whole Chinese instructions there —
-   `then='归 JUDGE_LANGUAGE_USAGE，不归 LOOKUP_CHAR_PRONUNCIATION。'` — rather than
-   a class code. Three consequences, none run-breaking, all quiet:
+2. **The narrative report shipped 3 of 9 sections.** Three failed with EMPTY prose
+   on all three attempts (`vector_choice_first`, `two_level_tree`,
+   `samples_and_deployment`) — the model returned nothing, so retry feedback has
+   nothing to act on. 10 `prompt block truncated` events fired during the report
+   (sheets of 50-53k against a 40,000 budget), which is the obvious suspect and is
+   NOT established. Reproduce one empty section offline against its recorded sheet
+   before changing anything; ids and bundles are in `final_report_meta.json`.
 
-   - the merge-prune added this session (`r.then not in gone`) can only prune the
-     32 rules whose `then` IS a code; a prose rule referencing a merged-away
-     class survives;
-   - `_dedupe_rules` compares `then` as a string, so differently-phrased
-     equivalents read as CONTRADICTIONS. Observed live: R112 vs R053 withheld on
-     `LOOKUP_WORD词语释义` vs `LOOKUP_WORD_MEANING` — the first is not a real code
-     at all, so a hallucinated variant cost two valid rules;
-   - the guide renders `→ **{then}**`, which for those rules bolds a paragraph.
+3. **The narrative door has a numeric guarantee and NO attribution guarantee.**
+   live42's §4 wrote 「交付的 K=18 是参照 phrasing_groups 的粒度锚点」 — the wrong
+   reference, two lines after listing all three correctly. `check_numbers` is
+   precision-only on NUMBERS; a wrong noun is invisible, and the must-cover anchor
+   matched because every reference name appears somewhere. Same class as the
+   `locator_reference` contradiction the p5 observer caught.
 
-   Fix is to validate `then` against the class codes at construction and move the
-   instruction to `rationale` — which changes what the architect and referee are
-   ASKED to emit, so it is a prompt change, invalidates the cache, and wants its
-   own pass rather than being bolted onto a live run.
+4. **Two English strings reach three Chinese reports each (6 lines).**
+   "DIAGNOSTIC ONLY — do not choose a model from this number…" and "Match the two
+   annotators…", both from the annotator-balance work, never routed through
+   `prose()`. The static AST guard covers `deps.decision()` rationales only — it
+   does not see gate messages or remediations, which is where these live.
 
-5d. **The catch-all is a THRESHOLD question and nothing addresses it.** 36-55% of
-   pilot disagreement is a named class against the catch-all — "does this query
-   qualify at all?" — which no per-pair tie-break rule can express. Options: an
-   explicit inclusion threshold per class, or an `UNDERDETERMINED` class. Neither
-   built; this is a methodology decision, not a bug.
+5. **The resume rewind silently drops a concurrent branch.** Made LOUD (the join
+   halts with `p2c_both_branches_arrived`), not fixed. Open: whether
+   `update_state(as_node=...)` can restore a multi-superstep fan-out at all, or
+   whether a gap in `phase_status` should force a clean re-run of the generation.
+   Until answered: open a new generation and run it ONCE, never restart mid-flight.
 
-6. **Which annotator is worth its tokens? The question INVERTED — re-ask it about
-   `annotator_a`.** It was recorded as "annotator_b, the reasoning model, emits
-   6-20x its partner and dominates wall-clock". Measured on `live38`, with
-   annotator_b routed to an *instruct* model instead:
+### P2 — measured, disclosed, not acted on
 
-   | | model | tokens/call | 200 rows |
-   |---|---|---|---|
-   | annotator_a | `deepseek-v4-flash` | **9,457** | ~4 min |
-   | annotator_b | `qwen3-next-80b-a3b-instruct` | **914** | **~27 s** |
+6. **`challenger_beats_incumbent` has no production call site.** Four docstrings
+   and a model-budget decision rested on it; they now say so. Needs a signature
+   change (`propose_grid` returns a flat list, so selection cannot tell a proposed
+   value from a configured one). Applying it as written flips live40 to a worse K.
 
-   annotator_a now emits **10x** its partner and is the wall-clock bottleneck —
-   ~378 output tokens per label against ~37, which is reasoning tokens being
-   billed as output. The premise moved because ROUTING moved, not because either
-   model changed. Any finding phrased as "annotator_b is the expensive one" is
-   pinned to a routing decision and must be re-checked against the run it is
-   quoted for. `qmine_annotator_worth.py` (scratchpad) still tests the real
-   question — on every row the two split, the referee's verdict says which was
-   right — and still needs a completed gold set.
+7. **The spend ledger is wrong in both directions and neither is measured.**
+   Provider prompt-cache discounts are not recorded (input is 7.3x output — 8.98M
+   vs 1.24M on live42, annotators 94% of it — and the prompt is already ordered
+   for prefix caching), so cost OVER-reports; `qwen3.7-plus` publishes no price so
+   annotator_b counts as $0.00 and it UNDER-reports.
 
-8. **ANSWERED, and the answer is negative: guide repair makes agreement WORSE.**
-   The question was open since live20 because every prior measurement was taken
-   with the repair's own rules truncated out of the annotation prompt — the rule
-   block reached 46,814 chars against a 9,000 head-only budget, and the referee's
-   rules are APPENDED, so all of them were cut. Both "flat" results (live20
-   −0.002, live38 gen02 +0.010) were obtained that way.
+8. **The alpha decision sits inside its own noise.** Winners across 5 seed
+   replicates: 0.1, 0.5, 0.1, 0.0, 0.1. `tie_band=0.05` is an unreachable default
+   ~4.5x narrower than the metric's spread. **Do not widen the band** — at a
+   measured 2-sd band live40 elects alpha=0.5, which its own k=7 panel shows
+   fragments worse. The fix is replication.
 
-   `live38` gen05 is the first run in which **112/112 rules reached the guide**:
+9. **Annotator asymmetry, unattributed.** live42: annotator_a won 34.1% of 270
+   contested rows, z=-5.2. NO baseline exists (the gate postdates live40). The
+   parsimonious reading is the pairing — `deepseek-v4-flash` against
+   `qwen3.7-plus`, flash tier against plus tier. Testing whether disabling
+   reasoning contributed needs a paired re-run of the same rows.
 
-   | | kappa | n |
-   |---|---|---|
-   | before repair | **0.822** | 2,991 |
-   | after repair | **0.794** | 2,978 |
+10. **Observers cost ~2.5 hours of a 4-hour run.** 11 observers, median 809s on
+    live41 against 285s on live40 for the SAME output volume — latency, not token
+    inflation. They earn it (three real defects today), but the trade should be a
+    decision, not an accident.
 
-   **Δ = −0.028, about 3.5 standard errors** at this n — an order of magnitude
-   larger than the ±0.01 wobbles seen when the rules were invisible, and BELOW
-   the 0.80 reliability floor, so it turned a gate that would have passed into a
-   halt.
+11. **Refinement has not converged on any run.** live40, live41, live42 all hit
+    the 5-round limit. Honestly disclosed in the report, but it means the
+    delivered leaf count depends on which round it stopped at.
 
-   The reading that fits everything else measured on this corpus: the residual
-   disagreement lives in queries carrying **no signal at all** — bare terms
-   (`芬顿反应`, `等电位`, `解析几何`), bare poetry lines — where the referee itself
-   writes `both_defensible: True`. Adding 112 tie-breaks cannot resolve a query
-   with no marker, but it CAN give two readers more ways to justify differing.
-   Same shape as the redraw result: interventions that add guidance to boundaries
-   the data does not support do not help.
+12. **Two vacuous rule triggers found live and not repaired.**
+    `academic_knowledge_qa x problem_solving` names 求/解/计算 with 0 of 19
+    contested rows carrying any; `navigational x school_info` names 主页/入口/好不好
+    with 0 of 8. The detector works; nothing acts on what it finds.
 
-   **Still confounded** — round 1 is scored on sample A and round 2 on sample B,
-   so the delta mixes "guide changed" with "sample differed", and the control arm
-   (item 2) remains unbuilt. But the direction and magnitude are now well outside
-   what the sample difference explained before.
+13. **Two of nine governance splits are geometrically unsupported** (leaf 19 -> 54
+    at ARI 0.0595 with a near-duplicate name; leaf 0 -> 49 at 0.3876). Disclosed
+    by design (measure-don't-veto). Nobody has looked at them.
 
-   Fixed: the repair now **reverts** when it lowers kappa, exactly as the redraw
-   does. The fresh rows are kept — they are real annotations — and only the
-   unproven guide is undone.
+### P3 — frozen debt, deliberately not growing
 
-9. **`positive_examples` overlap cannot be detected mechanically.** A check for
-   "do two classes claim the same example" scored **zero on both real taxonomies**
-   — models make semantic overlaps, not syntactic ones. The pilot's
-   self-consistency pass is the only detector we have. Do not rebuild this.
-10. **The architect is high-variance and one probe does not predict a run.** A
-   $0.52 probe on stored submissions produced 19 classes with a consistent basis
-   of division; the live run on the same corpus with the same prompt produced 20
-   classes across fourteen different bases. Treat a single probe as a smoke test,
-   never as evidence a prompt change holds.
+14. **22 `deps.gate()` messages are English f-strings** printed verbatim into
+    Chinese deliverables. Frozen by gate NAME in `GATE_MESSAGE_DEBT`
+    (`tests/test_pipeline.py`); the set may shrink, anything new fails the test.
 
----
+15. **Three domain profiles are untested on real data:** `finance_zh`,
+    `sports_zh`, `politics_zh`. `generic.yaml` ships 0 template seeds, so a corpus
+    without a profile locates K against unvalidated mined groups — now gated by
+    `p3_locator_reference_validated`, but never exercised.
 
 ## 3. Durable notes — worth not re-learning
 
@@ -1683,3 +1631,487 @@ restores the old behaviour exactly.
 - The probe still does not run at the delivered K.
 - Phase-8 metric deltas are one aggregate stamped on every prescription and
   computed on pre-split labels (+0.061 recorded vs +0.250 delivered).
+
+---
+
+## Session — 2026-08-27 (evening): a browsable dashboard, and three bugs it exposed
+
+The terminal panel keeps `agents[-8:]`, `activity[-6:]`, `metrics[-8:]` because
+that is what fits on a screen. live40 made **696 agent calls** over four hours, so
+the panel showed roughly **1%** of the run and dropped the rest as it went. The
+questions an operator actually has — what did that agent return, what exists so
+far, what is queued — need scrolling, folding and search.
+
+**`ui/web.py` renders `LiveDashboard`'s state as `runs/<id>/dashboard.html`.** One
+model, two views, so they cannot disagree. A file rather than a server: no port,
+no dependency, no lifecycle, and it keeps working after the run because the page
+IS the record. Atomic `.tmp`-rename write, throttled to 3s, meta-refresh until the
+run finishes, plus a daemon heartbeat every 10s.
+
+### Three bugs found by replaying live40's own log
+
+1. **The panel misreported the fork.** `current` was a single phase, so when P2a
+   and P3a both start at 14:56:08 one branch was marked done while still running —
+   p3 visibly flipped done → running. Completion is now **emitted** by `_wrap`
+   (`✔ <node> completed in Xs`) instead of inferred from "a different phase
+   started", which cannot be right for a forked graph. A branch phase never closes
+   the other branch; a spine phase closes both, because reaching the spine means
+   the join happened.
+2. **`qmine watch` on a finished run showed every phase as 0s.** Timings used
+   `time.time()`, and a replay reads 1000 lines in under a second — the follower
+   built for re-watching timed nothing. `parse_log_clock` reads the log's own
+   timestamp (midnight-safe). Replaying live40 now reproduces **241.8 min**,
+   matching `run_summary.json` exactly, with p2a 72m / p2b 79m.
+3. **Inferred durations were inflated** — live40's p3 rendered as 72 min when its
+   work took ~12; the rest was the branch waiting at the superstep boundary.
+   live41 measured it directly: **p3 = 1548.6s**.
+
+Both fixes are mutation-tested.
+
+### Two things found by looking rather than assuming
+
+- Embedding all 696 full returns produced a **5 MB page that hung the browser's
+  renderer**. Now 457 KB: newest `DETAIL_LIMIT=40` in full, older keep their
+  result line and point at `agent_transcript.json`.
+- The page **froze during quiet stretches** — it only rewrote on events, and a
+  40-minute researcher fan-out emits almost none, so the meta-refresh reloaded the
+  same stale elapsed time. Fixed with the heartbeat thread. **live41 started
+  minutes before that landed, so its page ticks on events only.**
+
+### live41 (running)
+
+`--config configs/live.yaml --reference-columns legacy_l1,legacy_l2 --provider
+router`. Pre-flight clean: annotator labs independent, est. $9.11, `reporter`
+routed. Watch for **K landing near 18 rather than 7** if `legacy_l1` wins the
+locator role on reach — that is the change from this morning and it has never run
+live.
+
+### Found and fixed DURING live41: a rule id that resolves to nothing
+
+`p2a_observer` WARNED with a machine-confirmed check: 3 node-cited
+`adjudication_rules` ids exist in no rule. Verified rather than assumed — 6
+citing slots across 4 classes, referencing `RULE_POEM_TEXT_CHILD_OF_FULL_TEXT`,
+`RULE_MATH_SCIENCE_OVER_FULL_TEXT`, `RULE_FULL_TEXT_RESOURCE_OVER_MATH_SCIENCE`.
+The architect had invented a second id convention (SCREAMING_SNAKE with a `RULE_`
+prefix) against the registry's lowercase snake_case.
+
+**The consequence was concrete.** `_render_rules` treated a bare id as a
+cross-reference only when it MATCHED a real rule; a dangling one fell through to
+the free-text branch and reached the annotator's guide as
+
+    - [POEM_TEXT_LOOKUP] RULE_POEM_TEXT_CHILD_OF_FULL_TEXT
+
+— a line that looks like a rule, carries no adjudication content, and consumes a
+budgeted section. So those boundaries had no tie-break **and** the guide gained
+three lines of noise. Dropping is strictly better than passing through.
+
+Fixed: `_is_bare_identifier` (ASCII-only, so an English rule's spaces and a
+Chinese rule's CJK both survive) drops it, and `dangling_rule_references()`
+reports every citing slot. live41's taxonomy renders 42 lines instead of 45 under
+the fix. Mutation-tested.
+
+**live41 is unaffected by the fix** — it passed p2a before the change, so its gold
+set was annotated with the three noise lines present and those two boundaries
+unruled. Worth checking whether POEM_TEXT/FULL_TEXT and MATH_SCIENCE/FULL_TEXT
+show up as confused pairs in its referee log.
+
+### live41 exercised the reach rule — and showed reach alone is NOT enough
+
+The machinery worked exactly as designed and the design was incomplete. Reach
+reproduced the offline measurement on fresh data (phrasing groups **40%** @ k=20
+against 38.9% @ k=18 offline), `legacy_l1` won on 100% reach, and K moved 7 → 12.
+
+**But 12 came out of an eight-way tie** — `[12,18,20,25,30,40,50,65]` — with the
+raw argmax at 30. `min(tie_set)` returned the smallest of eight indistinguishable
+values. Measured on live41's own sweep:
+
+| reference | reach | range | range/se | peak K | tie set |
+|---|---|---|---|---|---|
+| phrasing groups | 40% | 0.2190 | 17.5 | 6 | 4 |
+| **`legacy_l1`** ← chosen | 100% | 0.0373 | **5.9** | 30 | **8** |
+| `legacy_l2` | 100% | 0.1072 | 17.5 | 18 | **3** |
+
+Reach picked the LEAST discriminating of the three. `legacy_l1` is nine coarse
+classes with two holding ~79% of the corpus, so its entire curve spans 0.037
+against a 0.0126 tie band. The honest reading of its output is "this reference
+cannot tell 12 from 65 apart", and it was reported as a located K.
+
+**A locator must do two things: see the whole partition, and tell different K
+apart.** `discrimination()` = range / `noise_floor`, and `choose_locator` now
+requires reach ≥ 0.80 first, then maximises discrimination. On live41's data that
+picks `legacy_l2` — same reach, 3x the signal-to-noise, a 3-way tie, locating
+**K=18**, which is what every full-coverage reference gave on live40.
+Mutation-tested against reach-only.
+
+**live41 keeps K=12** — it passed p5 before the change.
+
+### Also found by live41's observer: the decision record named the wrong locator
+
+`evidence.locator` said `ami_vs_legacy_l1` while the same record's `rationale` and
+`decisive_metrics` were hardcoded to the phrasing groups, left over from when they
+were the only locator. Both now read from `tri`, and `deciding_reference` and
+`locator_reach` are recorded beside them.
+
+### Closed during the run
+
+The observer machine-confirmed the alpha `chosen_by` mismatch flagged in the
+audit: the string said "lowest template_fragmentation, broken on stability", and
+the winner (alpha=0.1) is not the minimum (alpha=0.0 is). That is the tie band
+working as designed and the sentence describing something else. `chosen_by` now
+states the actual rule. **The selection itself is unchanged** — this was a
+description defect, not a measurement one.
+
+---
+
+## Session — 2026-08-27 (night): three models silently became reasoning models
+
+live41 gen01 was halted at **$28.14** against a $9.11 estimate, with the referee at
+an **88% failure rate** and one batch of 11 rows abandoned outright. One root cause
+explained all of it.
+
+### The cause, probed directly rather than inferred
+
+`deepseek-v4-flash`, `glm-5.2` and `qwen3.7-plus` all began returning
+`reasoning_content` under the SAME model names since live40, and the tokens are
+billed. One trivial prompt against each endpoint:
+
+| model | completion tokens | of which reasoning | with `thinking: disabled` |
+|---|---|---|---|
+| deepseek-v4-flash | 505 | 497 | **9** |
+| glm-5.2 | 237 | 227 | **10** |
+| qwen3.7-plus | 586 | 573 | **10** |
+
+Identical answers in every case. `enable_thinking: false` does NOT work on
+DeepSeek (still 1,037 reasoning tokens); `thinking: {"type": "disabled"}` works on
+all three.
+
+### It caused three symptoms that looked unrelated
+
+1. **Cost.** annotator_a went from 202 to 1,030 output tokens per label. Not the
+   prompt — input HALVED (14,714 → 7,836/call) while output rose 5x, so the
+   out/in ratio moved 0.35 → 3.25.
+2. **The ValueError failures.** Reasoning consumed the output budget before the
+   JSON was written, so responses truncated and surfaced as "no parseable
+   structured output". **Plain-JSON mode could not fix this** — both models were
+   ALREADY flagged `no_native_schema: true` in `.cache/model_quirks.json` from a
+   previous run and failing anyway, which is why no switch message ever appeared.
+   The schema wrapper was never the problem.
+3. **The APIConnectionErrors.** Not the operator's network — proven by temporal
+   segregation: qwen failed alone 20:15-21:15 while zhipu was clean, zhipu failed
+   alone from 21:30 (the moment the referee fired 30 calls), and only **1** of 48
+   failures had a cross-provider co-occurrence within 60s. glm-5.2's failure rate
+   went 14% → 86% with load. Calls held connections open for 200-1000s because of
+   reasoning; short calls should stop that.
+
+### Fixed
+
+`reasoning_kwargs(role, provider)` sends `thinking: {"type": "disabled"}` for
+`NO_REASONING_ROLES` (annotators, referee, namer) on `REASONING_TOGGLE_PROVIDERS`
+(deepseek, zhipu, qwen — an allowlist, because an endpoint that rejects an unknown
+field fails the call). Deliberation roles keep their reasoning: an architect or an
+observer is where those tokens earn their cost. Mutation-tested both ways.
+
+**Output caps were deliberately NOT lowered** and **concurrency was deliberately
+left at 8** — one variable at a time, and reasoning alone may fix the connection
+errors by shortening calls ~20x. If they persist, lower `max_concurrency` next.
+
+### Two defects of MINE, found by running it
+
+**1. The reasoning field went in the wrong place.** I put `thinking` in
+`model_kwargs`. LangChain forwards those as TOP-LEVEL arguments to the OpenAI SDK,
+so every annotator call raised `TypeError: Completions.create() got an unexpected
+keyword argument 'thinking'`. gen02 lost **24 annotation batches in one second**
+and the pilot gate reported "kappa nan on 0 queries". Cost $0.62 — the calls failed
+in 0.0s with nothing billed, and the gate caught it immediately.
+
+The failure behind the failure: I verified the parameter was SET in the kwargs dict
+and that `_build_routed` called the rule, and both were true while every call
+failed. I had probed the raw HTTP API (which works) but never a call through the
+actual client. Vendor body fields belong in **`extra_body`**. Now verified by real
+calls: `annotator_a` → 9 completion tokens, reasoning None; `taxonomy_architect` →
+124 tokens, 114 reasoning, both succeeding.
+
+The test was strengthened to assert the field lands in `extra_body` specifically —
+the original asserted the rule returned the right dict and that the builder called
+it, which passed green while nothing worked.
+
+**2. `new-generation --from-generation` defaulted to 1.** So running it on a run
+already at gen02 created "the next after gen01" — gen02 AGAIN — and overwrote it
+rather than advancing. That silently put a resumed run back into the generation
+whose pilot had just failed, with nothing in the typed command to say so.
+`artifacts.latest_generation` exists precisely because both RESUME paths had this
+same hardcoded 1 (its docstring records that); this call site was missed. Now
+defaults to the newest generation, verified by the command itself printing
+"generation 3 inherits generation 2's config".
+
+### Three more dashboard defects, all from one operator observation
+
+The operator reported "my dashboard is still displaying old messages". Three
+independent bugs, all mine from this session, all with that one symptom.
+
+**1. A `--resume` run never had a dashboard at all.** The resume branch calls
+`resume_run(...)` and RETURNS before the fresh-run setup — its own comment warns
+"this branch returns before the fresh-run setup below ever sees it", and I walked
+into exactly that. `resume_run` already accepted `on_event`; the CLI never passed
+it. Both paths now go through `_attach_dashboard`.
+
+**2. The page was gated on the terminal panel.** I built the HTML writer inside
+`if use_dash:`, and `use_dash = dashboard and verbose` — both off without a TTY.
+So a detached run, the case that most needs a browsable page because there is no
+terminal to watch, wrote none. `enabled` now only switches the Rich view off.
+
+**3. `qmine watch` fought the run for the same file.** Both wrote
+`runs/<id>/dashboard.html`, and the follower always won on content because it
+replays `run.log` from offset 0 — and `run.log` is append-only ACROSS generations,
+so a run at gen03 had gen01 and gen02 events rendered into the page being read as
+current. The follower now writes `dashboard.watch.html`.
+
+**Plus a display bug the above exposed:** `_clock` ran `time.localtime` on a
+REPLAY timestamp (seconds since midnight), so 22:03:48 rendered as "06:03:48" once
+the timezone offset was applied. Durations were unaffected — differences cancel —
+which is why it went unnoticed. Now discriminated on magnitude.
+
+**The lesson, twice in one session:** I verified the writer was CONSTRUCTED rather
+than that a page APPEARED, exactly as I earlier verified a kwarg was set rather
+than that a call succeeded. Both times the check passed while the thing did not
+work. Verified this time by watching the file appear, refresh, and contain only
+the current generation.
+
+### gen03 CONFIRMED every fix from today, on live data
+
+**The reasoning fix.** annotator_a went 1,030 -> **67** output tokens per label
+(15x), annotator_b 254 -> 70. The pilot completed **200/200 with zero rows lost**,
+where gen02 lost all 200. Errors 53 -> 4, APIConnectionError 33 -> 2, batches lost
+24 -> 0, spend $28.14 -> $1.38 at the same point.
+
+**The battery fixes.** `best_alternative = agglo_average_k15` — correctly NOT a
+KMeans-family variant, which the old name-prefix filter would have allowed. Paired
+within-k margins expose the sign flip the unpaired comparison hid entirely:
+k=15 **-0.0776**, k=20 **+0.0603** (gmm_diag ahead), k=30 **-0.1574**.
+
+**The discrimination locator — and it vindicated the correction.** Measured live:
+
+| reference | reach | discrimination | outcome |
+|---|---|---|---|
+| phrasing_groups | 0.40 | 17.48 | rejected on reach |
+| `legacy_l1` | 1.00 | **5.88** | rejected on discrimination |
+| **`legacy_l2`** | **1.00** | **17.19** | **locates K** |
+
+**K = 18, tie set [18, 25, 40].** Against gen01's reach-only rule, which gave
+K=12 out of an **eight**-way tie. 18 is the value every full-coverage reference
+gave on live40. The two-stage rule (reach admits, discrimination decides) is doing
+exactly what it was corrected to do.
+
+### Small honesty fixes made during gen03
+
+- `battery.note` still described the retracted "election" ("the winner is then
+  fitted on the full corpus"), contradicting `verdict.role` in the same artifact.
+  live41's p4 observer caught it.
+- The probe's materiality bar (0.10 ARI) was applied and never recorded, so the
+  conclusion "no alternative is MATERIALLY more reproducible" could not be checked.
+  Now `materiality_threshold_ari` in the verdict.
+- The p5 log said "K located by X (highest reach)" even when reach was TIED and
+  discrimination decided — on live41 both legacy columns reach 1.0. Now names the
+  criterion that actually broke the tie.
+
+### A confirmed observation that was NOT a defect
+
+`p2a_observer` WARNED: one query appears in two classes. Verified — it is a
+`positive_example` of RIDDLE_BRAIN_TEASER and `source_evidence` for
+RISK_COMPLIANCE_INTERCEPT. Different roles (one teaches a label, one records what
+motivated the class), and **both classes are risk=True**, so handling is identical.
+Checked the sharper property directly: 136 positive examples, 136 distinct
+queries, **zero** duplicates and zero positive/negative contradictions. Another
+instance of confirmed != defective.
+
+### gen03
+
+Clean branch from gen02, resumed off the 330-entry run-level cache — the five
+researchers replay in under a second against gen01's 5+ minutes each. gen01 and
+gen02 both kept as evidence.
+
+**Note gen01's K=12 is superseded twice over** — it used the reach-only locator
+AND ran before the discrimination fix.
+
+---
+
+## The resume rewind silently drops a concurrent branch
+
+**The most serious defect of the day, and the hardest to see.** live41 gen03 ran
+for 40 minutes through P4, P5 and P6 emitting healthy gates while the entire
+top-down branch was missing.
+
+| run | how it started | P4 | P2b |
+|---|---|---|---|
+| gen01 | fresh, no resume | 20:24:58 | **20:24:58** — same second |
+| gen03 | resumed, then **rewound** | 23:45:23 | **never ran** |
+
+`--resume` found a partial checkpoint and took the rewind path,
+`graph.update_state(config, {...}, as_node="p1_audit")`. The fan-out survives for
+the FIRST superstep — p2a and p3 both started — and not the second: `p456_tree`
+was queued from p3's completion, `p2b_gold` never was. `phase_status` confirms it:
+`{p0, p1, p2a, p3}` only, `halted: False`, no halting gate, `gold.csv` absent.
+
+**This is NOT caused by the `--from-generation` fix** — that only chose a
+directory. It is the pre-existing rewind path, which a fresh run never touches.
+Restarting gen03 three times is what put the run on it.
+
+**Why it is the worst shape of failure:** everything downstream still produced
+artifacts and passed its gates, so nothing looked wrong. The run would have
+reached the join and trained the classifier on a gold set that does not exist.
+
+**Guard added at the join.** `_require_both_branches` reads `phase_status` and
+halts with `p2c_both_branches_arrived` naming the phases that never ran. The gate
+is RETURNED rather than registered — `deps.gate` only builds the record, and a
+discarded gate cannot halt anything, which is exactly what
+`test_the_delivered_leaves_gate_reaches_the_operator` was written against.
+Mutation-tested: discarding the gate fails the test.
+
+**The rewind itself is NOT fixed** — only made loud. Open question: whether
+`update_state(as_node=...)` can restore a multi-superstep fan-out at all, or
+whether a gap in `phase_status` should force a clean re-run of the generation
+instead of a surgical rewind. Until then: **open a new generation and run it once,
+without restarting mid-flight.**
+
+## live42
+
+live41 abandoned. Its three generations stay as evidence: gen01 (reasoning
+tokens, 88% referee failure), gen02 (my `model_kwargs` TypeError), gen03 (the
+dropped branch). live42 starts cold — no cache — which is the price of a clean
+test of every fix at once.
+
+---
+
+## live42 results as they land (fresh run, all of today's fixes active)
+
+**Gold set — better than live40 on two of three measures, with reasoning OFF:**
+kappa **0.8928** on n=2999/3000 (live40: 0.8427), adversarial estimated accuracy
+**0.9333** (live40: 0.82), classifier CV 0.857 (live40: 0.8625). The reasoning
+disable did not cost label quality. NOT a controlled comparison — different
+taxonomy, 21 L1 classes against 25 — so this is consistent evidence, not proof.
+
+**`p2b_annotator_symmetry` fired for the first time ever:** annotator_a won only
+34.1% of 270 contested rows, z=-5.2. There is NO baseline (the gate postdates
+live40 and live41 gen01 never finished its referee), so this cannot be attributed
+to the reasoning change. The parsimonious reading is the pairing itself —
+`deepseek-v4-flash` against `qwen3.7-plus` is flash tier against plus tier.
+Testing the reasoning hypothesis needs a paired re-run of the same rows.
+
+**`p2b_rules_match_their_evidence` found 2 vacuous discriminators:**
+`academic_knowledge_qa x problem_solving` names 求/解/计算 with **0 of 19**
+contested rows carrying any; `navigational x school_info` names 主页/入口/好不好
+with **0 of 8**. Rules naming a marker that appears in none of the rows they
+adjudicate.
+
+**The split measurement DISCRIMINATES — 7/9, not 9/9.** live40's retroactive
+replay passed all nine, which made it look like a rubber stamp. live42:
+
+| parent -> new | lift | stability | supported |
+|---|---|---|---|
+| 19 -> 54 | 0.0610 | **0.0595** | **no** |
+| 0 -> 49 | 0.0778 | **0.3876** | **no** |
+| 7 others | ok | 0.68-1.00 | yes |
+
+Both failures are on STABILITY, not the null test — real structure that does not
+reproduce. And the naming corroborates independently: leaf 19
+「作文范文与写作指导查询」 split into leaf 54 「作文范文查询」, a near-duplicate of
+its parent, at an ARI of 0.0595 (chance). The namer never saw the stability
+number and the measurement never saw the name.
+
+**This vindicates measure-don't-veto.** A veto would have blocked a split the
+audit had semantic reason to want; disclosure lets a human weigh both.
+
+**Tree:** 18 families / 49 leaves pre-governance, per-family k spanning 1-8
+(`{1:1, 2:9, 3:4, 4:3, 8:1}`) against live40's 5-of-7-at-the-minimum. Half still
+sit at k=2, so the small-k attractor is weakened, not gone.
+
+**`converged: False` for the third run running.** The refinement loop hits its
+5-round limit on live40, live41 and live42. Honestly disclosed in the report, but
+a standing weakness: the delivered leaf count depends on which round it stopped at.
+
+## The narrative report's FIRST live run: 3/9 sections, and why
+
+The agent-written report ran against a real model for the first time. The
+structural machinery worked: **the agent-authored outline passed on attempt 1**
+(9 sections, the path the offline stand-in could never exercise), and **6 of 7
+must-cover items were covered**, with the seventh disclosed in the document.
+
+**But only 3 of 9 sections passed**, and the guardrails failed closed on the rest
+— safe, and not useful. Two distinct causes, one of them mine.
+
+### Cause B (fixed): the pool did not match the sheet
+
+`sheet()` renders dotted paths, so a dict keyed by id displays numbers to the
+author that `verify._flatten` — which pools only VALUES — refuses:
+
+    execution.splits.32.new_leaf = 49      <- the agent reads "32"
+
+`governance_and_risk` was rejected three times for citing `32, 40, 42, 43, 44,
+45` — the leaf ids it had just been shown — and shipped as a hole. It was doing
+exactly what it was told. `citable_numbers()` now pools every number the rendered
+sheet SHOWS, and no more: an id absent from the text is still refused, verified
+both ways and mutation-tested through `_reject` (a first version tested
+`check_numbers` directly and the mutation passed — the test has to walk the path
+the code walks).
+
+### Cause A (OPEN): three sections returned EMPTY prose, three times each
+
+`vector_choice_first`, `two_level_tree` and `samples_and_deployment` each failed
+with `空白正文` on all three attempts — the model returned an empty `markdown`
+field, not a wrong one. That is not a grounding failure and the retry feedback
+cannot help it, because there is nothing to give feedback on.
+
+Suspected but NOT established: 10 `prompt block truncated` events fired during
+the report (fact sheets of 50-53k against a 40,000-char budget). Note the total of
+all 16 bundles measured only 33k with EMPTY gates/decisions, so the live gates and
+decisions bundles are what push a section over. Whether truncation causes the
+empty returns is unverified — do not fix it as though it were established.
+
+**Next step for this: reproduce one empty section offline against the recorded
+sheet.** The section ids and their bundles are in `final_report_meta.json`.
+
+## live42 finished — 17/17 phases, and what the narrative report is really like
+
+All 17 phases completed and every deliverable shipped. **The run then crashed at
+teardown**: `DecisionRecord` is no longer msgpack-serializable, so the SQLite
+checkpointer failed, fell back to in-memory, and the store's context manager
+raised `RuntimeError: generator didn't stop after throw()` on exit. Consequence:
+**`run_summary.json` was never written** — the artifact `verify_run.py` and
+several tests read. The deliverables themselves are intact.
+
+### The pre-delivery auditor worked for the first time: 3 applied, 0 refused
+
+On live40 it made 4 proposals and MY bugs refused all four. Here all three landed,
+and they are good:
+
+- `统一度量面板.md` — the prose claimed fragmentation "rises monotonically with
+  cluster count" while the panel's own table falls from 1.8661 (k=18) to 1.827
+  (k=24). It caught the report contradicting its own table.
+- `自上而下类目体系最终报告.md` — a count mismatch around
+  `n_triggers_rejected=39` with only 12 shown and 27 truncated.
+- `00_最终报告.md` — the narrative report said the references "disagree"
+  QUALITATIVELY without the numbers, so a reader could not follow the gate's own
+  instruction to read the K together with its reference. It added the values.
+
+One finding was dropped rather than applied: it cited `annotator_balance.n_contested`,
+which does not resolve. The content was real (294 disagreements vs ~270 contested
+rows adjudicated — two populations again), and the citation guard correctly
+refused an edit it could not source.
+
+### The report reads well where it passes — and has an error the checks cannot see
+
+§4 explains why the locator is `ami_vs_legacy_l2`, names the competing indicators
+(silhouette peak K=5, expert range 15-25, deep_aligned 28), reports the FULL tie
+set 18/25/30/40 with every metric, shows the metrics disagreeing, embeds the
+figure where it argues, and hands off to the next section.
+
+**But it writes 「交付的 K=18 是参照 phrasing_groups 的粒度锚点」 — naming the
+WRONG reference.** K=18 was located by `legacy_l2`; `phrasing_groups` located 10,
+which the same paragraph states correctly two lines earlier.
+
+`check_numbers` is precision-only on NUMBERS. A wrong noun is invisible to it, and
+the must-cover anchor matched because every reference name appears somewhere in
+the text. **The narrative door has a numeric guarantee and no ATTRIBUTION
+guarantee** — same class as the `locator_reference` contradiction the p5 observer
+caught. This is the top open item for the report, ahead of the empty-section
+problem.

@@ -171,17 +171,34 @@ def open_memory(
         return
 
     Path(path).parent.mkdir(parents=True, exist_ok=True)
+
+    # OPEN THE STORE INSIDE try/except; YIELD IT OUTSIDE.
+    #
+    # `@contextmanager` throws a WITH-BODY exception back in at the yield, so a
+    # try/except wrapped around the yield caught the whole pipeline's failures and
+    # then yielded a SECOND time — which a generator may not do. live42 finished
+    # all 17 phases and died with "generator didn't stop after throw()", the real
+    # exception lost and `run_summary.json` never written. `_checkpointer` in
+    # `runner.py` had the identical defect; see the note there for the cost.
+    stack = contextlib.ExitStack()
+    store: Any = None
     try:
         from langgraph.store.sqlite import SqliteStore
 
-        with SqliteStore.from_conn_string(str(path)) as store:
-            with contextlib.suppress(Exception):
-                store.setup()
-            yield QMineMemory(store, project=project, domain=domain)
-    except Exception as exc:  # noqa: BLE001
+        store = stack.enter_context(SqliteStore.from_conn_string(str(path)))
+        with contextlib.suppress(Exception):
+            store.setup()
+    except Exception as exc:  # noqa: BLE001 — opening only; the body is not in scope
         log.warning("SQLite store unavailable (%s); using in-process memory", exc)
+        stack.close()
         store = InMemoryStore(index=index) if index else InMemoryStore()
+
+    try:
+        # Exactly one yield, with no `except` around it, so a pipeline exception
+        # reaches the caller unchanged instead of being renamed.
         yield QMineMemory(store, project=project, domain=domain)
+    finally:
+        stack.close()
 
 
 def make_embedding_fn(encoder: Any) -> Any:

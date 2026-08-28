@@ -29,6 +29,7 @@ Deliverables are written in the corpus's own language. On a Chinese corpus:
 | `统一度量面板.md` | every candidate re-measured by one code path, plus the open-findings ledger |
 | `叶清单.md` | every delivered cluster with a checkable `user_need` sentence; unnamed leaves listed as defects |
 | `交付前审核报告.md` | what the pre-delivery auditor changed, **what it was refused**, and what it read and dismissed |
+| `dashboard.html` | **browsable run view** — pipeline with both concurrent branches, what is running and what is queued, every agent call with its full return, artifacts as they appear, gates, and the event log. Self-contained: no server, opens over `file://`, keeps working after the run |
 | `labels_full.csv` | both label systems side by side (`td_l1`, `td_l2`, `bu_family_final`, `bu_leaf`) plus confidence margins |
 | `自下而上聚类全流程.ipynb` | executed — every number computed in-cell, nothing pasted |
 | `centroid_classifier.joblib` | the deployable model, a few hundred KB |

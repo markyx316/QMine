@@ -23,6 +23,18 @@ from .i18n import decision_question
 from ..state import PipelineState
 
 
+def _batch_deltas(row: dict) -> dict:
+    """The governance deltas a ledger row carries — under either key.
+
+    Renamed to `metric_deltas_for_the_WHOLE_BATCH` because every executed
+    prescription carried the SAME dict, and the old name read as per-prescription
+    attribution. Both are accepted so a report can still be built from an artifact
+    written before the rename; a run whose ledger predates it is not unreadable.
+    """
+    return (row.get("metric_deltas_for_the_WHOLE_BATCH")
+            or row.get("metric_deltas") or {})
+
+
 def build_all_reports(state: PipelineState, deps: Any) -> dict[str, ArtifactRef]:
     """Write every figure, report, and the executed notebook."""
     refs: dict[str, ArtifactRef] = {}
@@ -468,7 +480,8 @@ def bottomup_report(state: PipelineState, deps: Any, figs: dict[str, ArtifactRef
             p += ["| id | kind | targets | status | column changed | metric deltas |", "|---|---|---|---|---|---|"]
             for r in ledger:
                 p.append(f"| `{r['id']}` | {r['kind']} | {r['targets']} | **{r['status']}** | "
-                         f"`{r['executed_column'] or '—'}` | {json.dumps(r['metric_deltas'], ensure_ascii=False)} |")
+                         f"`{r['executed_column'] or '—'}` | "
+                         f"{json.dumps(_batch_deltas(r), ensure_ascii=False)} |")
             p.append("")
         ex = gov.get("execution", {})
         if ex.get("metric_deltas"):

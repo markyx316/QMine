@@ -1,0 +1,482 @@
+loaded 4 key(s) from /Users/mayouxuan/Documents/Claude/Search Query Mining Agent
+Team/QMine/.env
+resuming live41 generation 3 from runs/live41/checkpoints.sqlite (config 
+eecb19f0b0c87bcd)
+  dashboard → runs/live41/dashboard.html
+23:13:12 INFO    qmine.llm: provider quirks recalled from .cache/model_quirks.json: 10 model(s) start in plain-JSON mode, 4 with a raised output cap — not rediscovered this run
+23:13:12 INFO    qmine.llm: routing plan: 18 roles, estimated $9.11, catalogue ['litellm', 'openrouter']
+23:13:12 INFO    qmine.llm:   role assignments for this run (model · lab · est. calls · est. $):
+23:13:12 INFO    qmine.llm:     annotator_a         deepseek:deepseek-v4-flash  lab=deepseek  264 calls  $4.879
+23:13:12 INFO    qmine.llm:     referee             qwen:glm-5.2  lab=zhipu  20 calls  $1.224
+23:13:12 INFO    qmine.llm:     observer            openrouter:moonshotai/kimi-k3  lab=moonshot  11 calls  $0.858
+23:13:12 INFO    qmine.llm:     namer               deepseek:deepseek-v4-pro  lab=deepseek  60 calls  $0.760
+23:13:12 INFO    qmine.llm:     adversary           openrouter:moonshotai/kimi-k3  lab=moonshot  10 calls  $0.555
+23:13:12 INFO    qmine.llm:     researcher          qwen:glm-5.2  lab=zhipu  5 calls  $0.174
+23:13:12 INFO    qmine.llm:     taxonomy_architect  deepseek:deepseek-v4-pro  lab=deepseek  2 calls  $0.158
+23:13:12 INFO    qmine.llm:     reporter            deepseek:deepseek-v4-pro  lab=deepseek  3 calls  $0.119
+23:13:12 INFO    qmine.llm:     delivery_auditor    openrouter:moonshotai/kimi-k3  lab=moonshot  1 calls  $0.108
+23:13:12 INFO    qmine.llm:     interpreter         deepseek:deepseek-v4-pro  lab=deepseek  6 calls  $0.083
+23:13:12 INFO    qmine.llm:     tree_auditor        deepseek:deepseek-v4-pro  lab=deepseek  1 calls  $0.040
+23:13:12 INFO    qmine.llm:     l2_interpreter      qwen:deepseek-v4-flash  lab=deepseek  20 calls  $0.034
+23:13:12 INFO    qmine.llm:     proposer            deepseek:deepseek-v4-pro  lab=deepseek  2 calls  $0.025
+23:13:12 INFO    qmine.llm:     domain_scout        deepseek:deepseek-v4-pro  lab=deepseek  1 calls  $0.024
+23:13:12 INFO    qmine.llm:     risk_sentinel       deepseek:deepseek-v4-pro  lab=deepseek  1 calls  $0.024
+23:13:12 INFO    qmine.llm:     taxonomy_critic     deepseek:deepseek-v4-pro  lab=deepseek  1 calls  $0.024
+23:13:12 INFO    qmine.llm:     maintainer          deepseek:deepseek-v4-pro  lab=deepseek  1 calls  $0.020
+23:13:12 INFO    qmine.llm:     annotator_b         qwen:qwen3.7-plus  lab=qwen  256 calls  $0.000
+23:13:12 INFO    qmine.llm:     annotator/referee labs: a=deepseek, b=qwen, referee=zhipu — independent
+23:13:12 INFO    qmine.llm:     ! observer: pinned with NO FALLBACK — nothing reachable meets this role's 200,000-token context need in another lab, so a single provider outage silently removes this role from the run
+23:13:12 INFO    qmine.llm:     ! namer: chosen from the configured `capable_models` list; price only broke ties inside it, never against it
+23:13:12 INFO    qmine.llm:     ! taxonomy_architect: pinned with NO FALLBACK — nothing reachable meets this role's 200,000-token context need in another lab, so a single provider outage silently removes this role from the run
+23:13:12 INFO    qmine.llm:     ! reporter: chosen from the configured `capable_models` list; price only broke ties inside it, never against it
+23:13:12 INFO    qmine.llm:     ! delivery_auditor: pinned with NO FALLBACK — nothing reachable meets this role's 200,000-token context need in another lab, so a single provider outage silently removes this role from the run
+23:13:12 INFO    qmine.llm:     ! tree_auditor: pinned with NO FALLBACK — nothing reachable meets this role's 200,000-token context need in another lab, so a single provider outage silently removes this role from the run
+23:13:12 INFO    qmine.llm:     ! domain_scout: chosen from the configured `capable_models` list; price only broke ties inside it, never against it
+23:13:12 INFO    qmine.llm:     ! risk_sentinel: chosen from the configured `capable_models` list; price only broke ties inside it, never against it
+23:13:12 INFO    qmine.llm:     ! taxonomy_critic: pinned with NO FALLBACK — nothing reachable meets this role's 128,000-token context need in another lab, so a single provider outage silently removes this role from the run
+23:13:12 INFO    qmine.llm:     ! maintainer: chosen from the configured `capable_models` list; price only broke ties inside it, never against it
+23:13:12 INFO    qmine.llm:     ! annotator_b: qwen3.7-plus publishes NO PRICE in the catalogue — the pin overrides `_eligible`'s exclusion of unpriced models. Its estimate reads $0.00 and the spend ledger will under-report: the cost is UNKNOWN, not free.
+23:13:12 INFO    qmine: resume: p2a_taxonomy never ran though the run is not halted — rewound to p1_audit to continue
+23:13:12 INFO    qmine.graph: P2a taxonomy — 5 researchers fanning out
+23:13:12 INFO    qmine.graph:   researcher[pragmatic_intents] → 12 candidates
+23:13:12 INFO    qmine.graph:   researcher[risk_compliance] → 10 candidates (web-researched)
+23:13:12 INFO    qmine.graph:   researcher[literature] → 13 candidates (web-researched)
+23:13:12 INFO    qmine.graph: P3a encoder bake-off — 4 candidates
+23:13:12 INFO    qmine.graph:   researcher[legacy_audit] → 12 candidates
+23:13:13 INFO    qmine.graph:   researcher[log_reading] → 12 candidates
+23:13:13 INFO    qmine.graph:   rule writer → 35 rules over 190 class pairs (47 total after merge)
+23:13:13 INFO    qmine.graph:   critic → 12 findings, verdict revise
+23:13:13 INFO    qmine.graph:   12 rule(s) held a sentence in `then` — reduced to the class they name, sentence kept in the rationale
+23:13:13 INFO    qmine.graph:   annotators a and b running concurrently (peak 16 in-flight requests)
+23:13:14 INFO    httpx: HTTP Request: POST https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions "HTTP/1.1 401 Unauthorized"
+23:13:14 INFO    sentence_transformers.base.model: No device provided, using mps
+23:13:15 INFO    httpx: HTTP Request: HEAD https://huggingface.co/BAAI/bge-small-zh-v1.5/resolve/main/modules.json "HTTP/1.1 307 Temporary Redirect"
+Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+23:13:15 WARNING huggingface_hub.utils._http: Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+23:13:15 INFO    httpx: HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/BAAI/bge-small-zh-v1.5/7999e1d3359715c523056ef9478215996d62a620/modules.json "HTTP/1.1 200 OK"
+23:13:15 INFO    httpx: HTTP Request: HEAD https://huggingface.co/BAAI/bge-small-zh-v1.5/resolve/main/config_sentence_transformers.json "HTTP/1.1 307 Temporary Redirect"
+23:13:15 INFO    httpx: HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/BAAI/bge-small-zh-v1.5/7999e1d3359715c523056ef9478215996d62a620/config_sentence_transformers.json "HTTP/1.1 200 OK"
+23:13:15 INFO    sentence_transformers.base.model: Loading SentenceTransformer model from BAAI/bge-small-zh-v1.5.
+23:13:15 INFO    httpx: HTTP Request: HEAD https://huggingface.co/BAAI/bge-small-zh-v1.5/resolve/main/config_sentence_transformers.json "HTTP/1.1 307 Temporary Redirect"
+23:13:15 INFO    httpx: HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/BAAI/bge-small-zh-v1.5/7999e1d3359715c523056ef9478215996d62a620/config_sentence_transformers.json "HTTP/1.1 200 OK"
+23:13:16 INFO    httpx: HTTP Request: HEAD https://huggingface.co/BAAI/bge-small-zh-v1.5/resolve/main/README.md "HTTP/1.1 307 Temporary Redirect"
+23:13:16 INFO    httpx: HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/BAAI/bge-small-zh-v1.5/7999e1d3359715c523056ef9478215996d62a620/README.md "HTTP/1.1 200 OK"
+23:13:16 INFO    httpx: HTTP Request: HEAD https://huggingface.co/BAAI/bge-small-zh-v1.5/resolve/main/modules.json "HTTP/1.1 307 Temporary Redirect"
+23:13:17 INFO    httpx: HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/BAAI/bge-small-zh-v1.5/7999e1d3359715c523056ef9478215996d62a620/modules.json "HTTP/1.1 200 OK"
+23:13:17 INFO    httpx: HTTP Request: HEAD https://huggingface.co/BAAI/bge-small-zh-v1.5/resolve/main/sentence_bert_config.json "HTTP/1.1 307 Temporary Redirect"
+23:13:17 INFO    httpx: HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/BAAI/bge-small-zh-v1.5/7999e1d3359715c523056ef9478215996d62a620/sentence_bert_config.json "HTTP/1.1 200 OK"
+23:13:18 INFO    httpx: HTTP Request: HEAD https://huggingface.co/BAAI/bge-small-zh-v1.5/resolve/main/adapter_config.json "HTTP/1.1 404 Not Found"
+23:13:18 INFO    httpx: HTTP Request: HEAD https://huggingface.co/BAAI/bge-small-zh-v1.5/resolve/main/config.json "HTTP/1.1 307 Temporary Redirect"
+23:13:18 INFO    httpx: HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/BAAI/bge-small-zh-v1.5/7999e1d3359715c523056ef9478215996d62a620/config.json "HTTP/1.1 200 OK"
+  P2a taxonomy — 5 researchers fanning out
+    researcher[pragmatic_intents] → 12 candidates
+    researcher[risk_compliance] → 10 candidates (web-researched)
+    researcher[literature] → 13 candidates (web-researched)
+  P3a encoder bake-off — 4 candidates
+    researcher[legacy_audit] → 12 candidates
+    researcher[log_reading] → 12 candidates
+    rule writer → 35 rules over 190 class pairs (47 total after merge)
+    critic → 12 findings, verdict revise
+    12 rule(s) held a sentence in `then` — reduced to the class they name, sentence kept in the rationale
+    annotators a and b running concurrently (peak 16 in-flight requests)
+Loading weights:   0%|          | 0/71 [00:00<?, ?it/s]Loading weights: 100%|██████████| 71/71 [00:00<00:00, 10734.85it/s]
+23:13:18 INFO    httpx: HTTP Request: HEAD https://huggingface.co/BAAI/bge-small-zh-v1.5/resolve/main/processor_config.json "HTTP/1.1 404 Not Found"
+23:13:19 INFO    httpx: HTTP Request: HEAD https://huggingface.co/BAAI/bge-small-zh-v1.5/resolve/main/preprocessor_config.json "HTTP/1.1 404 Not Found"
+23:13:19 INFO    httpx: HTTP Request: HEAD https://huggingface.co/BAAI/bge-small-zh-v1.5/resolve/main/video_preprocessor_config.json "HTTP/1.1 404 Not Found"
+23:13:19 INFO    httpx: HTTP Request: HEAD https://huggingface.co/BAAI/bge-small-zh-v1.5/resolve/main/preprocessor_config.json "HTTP/1.1 404 Not Found"
+23:13:20 INFO    httpx: HTTP Request: HEAD https://huggingface.co/BAAI/bge-small-zh-v1.5/resolve/main/tokenizer_config.json "HTTP/1.1 307 Temporary Redirect"
+23:13:20 INFO    httpx: HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/BAAI/bge-small-zh-v1.5/7999e1d3359715c523056ef9478215996d62a620/tokenizer_config.json "HTTP/1.1 200 OK"
+23:13:20 INFO    httpx: HTTP Request: HEAD https://huggingface.co/BAAI/bge-small-zh-v1.5/resolve/main/config.json "HTTP/1.1 307 Temporary Redirect"
+23:13:20 INFO    httpx: HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/BAAI/bge-small-zh-v1.5/7999e1d3359715c523056ef9478215996d62a620/config.json "HTTP/1.1 200 OK"
+23:13:20 INFO    httpx: HTTP Request: HEAD https://huggingface.co/BAAI/bge-small-zh-v1.5/resolve/main/config.json "HTTP/1.1 307 Temporary Redirect"
+23:13:21 INFO    httpx: HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/BAAI/bge-small-zh-v1.5/7999e1d3359715c523056ef9478215996d62a620/config.json "HTTP/1.1 200 OK"
+23:13:21 INFO    httpx: HTTP Request: HEAD https://huggingface.co/BAAI/bge-small-zh-v1.5/resolve/main/tokenizer_config.json "HTTP/1.1 307 Temporary Redirect"
+23:13:21 INFO    httpx: HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/BAAI/bge-small-zh-v1.5/7999e1d3359715c523056ef9478215996d62a620/tokenizer_config.json "HTTP/1.1 200 OK"
+23:13:21 INFO    httpx: HTTP Request: GET https://huggingface.co/api/models/BAAI/bge-small-zh-v1.5/tree/main/additional_chat_templates?recursive=false&expand=false "HTTP/1.1 404 Not Found"
+23:13:22 INFO    httpx: HTTP Request: GET https://huggingface.co/api/models/BAAI/bge-small-zh-v1.5/tree/main?recursive=true&expand=false "HTTP/1.1 200 OK"
+23:13:22 INFO    httpx: HTTP Request: HEAD https://huggingface.co/BAAI/bge-small-zh-v1.5/resolve/main/1_Pooling/config.json "HTTP/1.1 307 Temporary Redirect"
+23:13:22 INFO    httpx: HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/BAAI/bge-small-zh-v1.5/7999e1d3359715c523056ef9478215996d62a620/1_Pooling%2Fconfig.json "HTTP/1.1 200 OK"
+23:13:22 INFO    httpx: HTTP Request: GET https://huggingface.co/api/models/BAAI/bge-small-zh-v1.5 "HTTP/1.1 200 OK"
+23:13:30 INFO    sentence_transformers.base.model: No device provided, using mps
+23:13:30 INFO    httpx: HTTP Request: HEAD https://huggingface.co/BAAI/bge-base-zh-v1.5/resolve/main/modules.json "HTTP/1.1 307 Temporary Redirect"
+23:13:30 INFO    httpx: HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/BAAI/bge-base-zh-v1.5/f03589ceff5aac7111bd60cfc7d497ca17ecac65/modules.json "HTTP/1.1 200 OK"
+23:13:31 INFO    httpx: HTTP Request: HEAD https://huggingface.co/BAAI/bge-base-zh-v1.5/resolve/main/config_sentence_transformers.json "HTTP/1.1 307 Temporary Redirect"
+23:13:31 INFO    httpx: HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/BAAI/bge-base-zh-v1.5/f03589ceff5aac7111bd60cfc7d497ca17ecac65/config_sentence_transformers.json "HTTP/1.1 200 OK"
+23:13:31 INFO    sentence_transformers.base.model: Loading SentenceTransformer model from BAAI/bge-base-zh-v1.5.
+23:13:31 INFO    httpx: HTTP Request: HEAD https://huggingface.co/BAAI/bge-base-zh-v1.5/resolve/main/config_sentence_transformers.json "HTTP/1.1 307 Temporary Redirect"
+23:13:31 INFO    httpx: HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/BAAI/bge-base-zh-v1.5/f03589ceff5aac7111bd60cfc7d497ca17ecac65/config_sentence_transformers.json "HTTP/1.1 200 OK"
+23:13:32 INFO    httpx: HTTP Request: HEAD https://huggingface.co/BAAI/bge-base-zh-v1.5/resolve/main/README.md "HTTP/1.1 307 Temporary Redirect"
+23:13:32 INFO    httpx: HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/BAAI/bge-base-zh-v1.5/f03589ceff5aac7111bd60cfc7d497ca17ecac65/README.md "HTTP/1.1 200 OK"
+23:13:32 INFO    httpx: HTTP Request: HEAD https://huggingface.co/BAAI/bge-base-zh-v1.5/resolve/main/modules.json "HTTP/1.1 307 Temporary Redirect"
+23:13:32 INFO    httpx: HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/BAAI/bge-base-zh-v1.5/f03589ceff5aac7111bd60cfc7d497ca17ecac65/modules.json "HTTP/1.1 200 OK"
+23:13:33 INFO    httpx: HTTP Request: HEAD https://huggingface.co/BAAI/bge-base-zh-v1.5/resolve/main/sentence_bert_config.json "HTTP/1.1 307 Temporary Redirect"
+23:13:33 INFO    httpx: HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/BAAI/bge-base-zh-v1.5/f03589ceff5aac7111bd60cfc7d497ca17ecac65/sentence_bert_config.json "HTTP/1.1 200 OK"
+23:13:33 INFO    httpx: HTTP Request: HEAD https://huggingface.co/BAAI/bge-base-zh-v1.5/resolve/main/adapter_config.json "HTTP/1.1 404 Not Found"
+23:13:34 INFO    httpx: HTTP Request: HEAD https://huggingface.co/BAAI/bge-base-zh-v1.5/resolve/main/config.json "HTTP/1.1 307 Temporary Redirect"
+23:13:34 INFO    httpx: HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/BAAI/bge-base-zh-v1.5/f03589ceff5aac7111bd60cfc7d497ca17ecac65/config.json "HTTP/1.1 200 OK"
+23:13:34 INFO    httpx: HTTP Request: HEAD https://huggingface.co/BAAI/bge-base-zh-v1.5/resolve/main/model.safetensors "HTTP/1.1 404 Not Found"
+Loading weights:   0%|          | 0/199 [00:00<?, ?it/s]Loading weights: 100%|██████████| 199/199 [00:00<00:00, 57850.46it/s]
+23:13:35 INFO    httpx: HTTP Request: GET https://huggingface.co/api/models/BAAI/bge-base-zh-v1.5 "HTTP/1.1 200 OK"
+23:13:35 INFO    httpx: HTTP Request: HEAD https://huggingface.co/BAAI/bge-base-zh-v1.5/resolve/main/processor_config.json "HTTP/1.1 404 Not Found"
+23:13:35 INFO    httpx: HTTP Request: GET https://huggingface.co/api/models/BAAI/bge-base-zh-v1.5/commits/main "HTTP/1.1 200 OK"
+23:13:35 INFO    httpx: HTTP Request: GET https://huggingface.co/api/models/BAAI/bge-base-zh-v1.5/discussions?p=0 "HTTP/1.1 200 OK"
+23:13:35 INFO    httpx: HTTP Request: HEAD https://huggingface.co/BAAI/bge-base-zh-v1.5/resolve/main/preprocessor_config.json "HTTP/1.1 404 Not Found"
+23:13:36 INFO    httpx: HTTP Request: GET https://huggingface.co/api/models/BAAI/bge-base-zh-v1.5/commits/refs%2Fpr%2F1 "HTTP/1.1 200 OK"
+23:13:36 INFO    httpx: HTTP Request: HEAD https://huggingface.co/BAAI/bge-base-zh-v1.5/resolve/main/video_preprocessor_config.json "HTTP/1.1 404 Not Found"
+23:13:36 INFO    httpx: HTTP Request: HEAD https://huggingface.co/BAAI/bge-base-zh-v1.5/resolve/main/preprocessor_config.json "HTTP/1.1 404 Not Found"
+23:13:36 INFO    httpx: HTTP Request: HEAD https://huggingface.co/BAAI/bge-base-zh-v1.5/resolve/refs%2Fpr%2F1/model.safetensors.index.json "HTTP/1.1 404 Not Found"
+23:13:37 INFO    httpx: HTTP Request: HEAD https://huggingface.co/BAAI/bge-base-zh-v1.5/resolve/main/tokenizer_config.json "HTTP/1.1 307 Temporary Redirect"
+23:13:37 INFO    httpx: HTTP Request: HEAD https://huggingface.co/BAAI/bge-base-zh-v1.5/resolve/refs%2Fpr%2F1/model.safetensors "HTTP/1.1 302 Found"
+23:13:37 INFO    httpx: HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/BAAI/bge-base-zh-v1.5/f03589ceff5aac7111bd60cfc7d497ca17ecac65/tokenizer_config.json "HTTP/1.1 200 OK"
+23:13:37 INFO    httpx: HTTP Request: HEAD https://huggingface.co/BAAI/bge-base-zh-v1.5/resolve/main/config.json "HTTP/1.1 307 Temporary Redirect"
+23:13:37 INFO    httpx: HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/BAAI/bge-base-zh-v1.5/f03589ceff5aac7111bd60cfc7d497ca17ecac65/config.json "HTTP/1.1 200 OK"
+23:13:37 INFO    httpx: HTTP Request: HEAD https://huggingface.co/BAAI/bge-base-zh-v1.5/resolve/main/config.json "HTTP/1.1 307 Temporary Redirect"
+23:13:38 INFO    httpx: HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/BAAI/bge-base-zh-v1.5/f03589ceff5aac7111bd60cfc7d497ca17ecac65/config.json "HTTP/1.1 200 OK"
+23:13:38 INFO    httpx: HTTP Request: HEAD https://huggingface.co/BAAI/bge-base-zh-v1.5/resolve/main/tokenizer_config.json "HTTP/1.1 307 Temporary Redirect"
+23:13:38 INFO    httpx: HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/BAAI/bge-base-zh-v1.5/f03589ceff5aac7111bd60cfc7d497ca17ecac65/tokenizer_config.json "HTTP/1.1 200 OK"
+23:13:39 INFO    httpx: HTTP Request: GET https://huggingface.co/api/models/BAAI/bge-base-zh-v1.5/tree/main/additional_chat_templates?recursive=false&expand=false "HTTP/1.1 404 Not Found"
+23:13:39 INFO    langchain_openai.chat_models._client_utils: langchain-openai detected HTTP_PROXY, HTTPS_PROXY and no explicit `http_socket_options` / `http_client` / `http_async_client` / `openai_proxy`; skipping the custom `httpx` transport so httpx's env-proxy auto-detection applies. Pass `http_socket_options=[...]` to opt back into kernel-level TCP keepalive tuning on top of the env proxy.
+23:13:39 INFO    httpx: HTTP Request: GET https://huggingface.co/api/models/BAAI/bge-base-zh-v1.5/tree/main?recursive=true&expand=false "HTTP/1.1 200 OK"
+23:13:39 INFO    httpx: HTTP Request: POST https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions "HTTP/1.1 401 Unauthorized"
+23:13:39 INFO    httpx: HTTP Request: HEAD https://huggingface.co/BAAI/bge-base-zh-v1.5/resolve/main/1_Pooling/config.json "HTTP/1.1 307 Temporary Redirect"
+23:13:39 INFO    httpx: HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/BAAI/bge-base-zh-v1.5/f03589ceff5aac7111bd60cfc7d497ca17ecac65/1_Pooling%2Fconfig.json "HTTP/1.1 200 OK"
+23:13:39 INFO    httpx2: HTTP Request: POST https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions "HTTP/1.1 401 Unauthorized"
+23:13:39 INFO    qmine:   ~ annotator_b !! 26.3s out 0 · qwen3.7-plus · AuthenticationError
+23:13:39 WARNING qmine.llm: provider qwen is unusable this run (AuthenticationError: Error code: 401 - {'error': {'message': 'Incorrect API key provided. For details, see: https://help); NO USABLE FALLBACK — calls on this provider will fail
+23:13:40 INFO    httpx: HTTP Request: GET https://huggingface.co/api/models/BAAI/bge-base-zh-v1.5 "HTTP/1.1 200 OK"
+23:13:44 INFO    httpx: HTTP Request: POST https://dashscope-intl.aliyuncs.com/compatible-mode/v1/chat/completions "HTTP/1.1 200 OK"
+23:13:44 INFO    qmine.providers: qwen: key belongs to the dashscope-intl region
+23:13:44 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+23:13:44 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+23:13:44 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+23:13:44 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+23:13:44 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+23:13:44 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+23:13:45 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+23:13:45 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+23:13:49 INFO    openai._base_client: Retrying request to /chat/completions in 0.462753 seconds
+23:13:49 INFO    openai._base_client: Retrying request to /chat/completions in 0.419520 seconds
+23:13:49 INFO    openai._base_client: Retrying request to /chat/completions in 0.451414 seconds
+23:13:53 INFO    qmine:   ~ annotator_a ok 39.8s out 1,623 · deepseek-v4-flash · labels=25 · 轰的组词 → WORD_FORMATION_LOOKUP
+23:13:53 INFO    qmine:   ~ annotator_a ok 39.8s out 1,581 · deepseek-v4-flash · labels=25 · 蠢货是什么意思 → WORD_MEANING_LOOKUP
+23:13:53 INFO    qmine:   ~ annotator_a ok 40.0s out 1,627 · deepseek-v4-flash · labels=25 · 终有弱水替沧海 → POEM_TEXT_LOOKUP
+23:13:54 INFO    qmine:   ~ annotator_a ok 40.7s out 1,662 · deepseek-v4-flash · labels=25 · 蜘 → CHITCHAT_NOISE
+23:13:54 INFO    qmine:   ~ annotator_a ok 40.9s out 1,673 · deepseek-v4-flash · labels=25 · 花肖道中 → RIDDLE_BRAIN_TEASER
+23:13:54 INFO    qmine:   ~ annotator_a ok 41.1s out 1,757 · deepseek-v4-flash · labels=25 · 胡不归数学模型是什么?在初中数学里主要用来解决哪种题 → SUBJECT_CONCEPT_EXPLANATIO
+23:13:54 INFO    qmine:   ~ annotator_a ok 41.2s out 1,758 · deepseek-v4-flash · labels=25 · 同道中人的含义和道理 → WORD_MEANING_LOOKUP
+23:13:54 INFO    qmine:   ~ annotator_a ok 41.4s out 1,706 · deepseek-v4-flash · labels=25 · 人生的经典句子 → DECORATIVE_SENTENCE_LOOKUP
+23:13:54 INFO    qmine.graph:   annotator[a] labelled 200/200
+23:13:57 INFO    sentence_transformers.base.model: No device provided, using mps
+23:13:58 INFO    httpx: HTTP Request: HEAD https://huggingface.co/BAAI/bge-large-zh-v1.5/resolve/main/modules.json "HTTP/1.1 307 Temporary Redirect"
+23:13:58 INFO    httpx: HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/BAAI/bge-large-zh-v1.5/79e7739b6ab944e86d6171e44d24c997fc1e0116/modules.json "HTTP/1.1 200 OK"
+23:13:58 INFO    httpx: HTTP Request: HEAD https://huggingface.co/BAAI/bge-large-zh-v1.5/resolve/main/config_sentence_transformers.json "HTTP/1.1 307 Temporary Redirect"
+23:13:58 INFO    httpx: HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/BAAI/bge-large-zh-v1.5/79e7739b6ab944e86d6171e44d24c997fc1e0116/config_sentence_transformers.json "HTTP/1.1 200 OK"
+23:13:58 INFO    sentence_transformers.base.model: Loading SentenceTransformer model from BAAI/bge-large-zh-v1.5.
+23:13:59 INFO    httpx: HTTP Request: HEAD https://huggingface.co/BAAI/bge-large-zh-v1.5/resolve/main/config_sentence_transformers.json "HTTP/1.1 307 Temporary Redirect"
+23:13:59 INFO    httpx: HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/BAAI/bge-large-zh-v1.5/79e7739b6ab944e86d6171e44d24c997fc1e0116/config_sentence_transformers.json "HTTP/1.1 200 OK"
+23:13:59 INFO    httpx: HTTP Request: HEAD https://huggingface.co/BAAI/bge-large-zh-v1.5/resolve/main/README.md "HTTP/1.1 307 Temporary Redirect"
+23:13:59 INFO    httpx: HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/BAAI/bge-large-zh-v1.5/79e7739b6ab944e86d6171e44d24c997fc1e0116/README.md "HTTP/1.1 200 OK"
+23:14:00 INFO    httpx: HTTP Request: HEAD https://huggingface.co/BAAI/bge-large-zh-v1.5/resolve/main/modules.json "HTTP/1.1 307 Temporary Redirect"
+23:14:00 INFO    httpx: HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/BAAI/bge-large-zh-v1.5/79e7739b6ab944e86d6171e44d24c997fc1e0116/modules.json "HTTP/1.1 200 OK"
+23:14:00 INFO    httpx: HTTP Request: HEAD https://huggingface.co/BAAI/bge-large-zh-v1.5/resolve/main/sentence_bert_config.json "HTTP/1.1 307 Temporary Redirect"
+23:14:00 INFO    httpx: HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/BAAI/bge-large-zh-v1.5/79e7739b6ab944e86d6171e44d24c997fc1e0116/sentence_bert_config.json "HTTP/1.1 200 OK"
+23:14:01 INFO    httpx: HTTP Request: HEAD https://huggingface.co/BAAI/bge-large-zh-v1.5/resolve/main/adapter_config.json "HTTP/1.1 404 Not Found"
+23:14:01 INFO    httpx: HTTP Request: HEAD https://huggingface.co/BAAI/bge-large-zh-v1.5/resolve/main/config.json "HTTP/1.1 307 Temporary Redirect"
+23:14:01 INFO    httpx: HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/BAAI/bge-large-zh-v1.5/79e7739b6ab944e86d6171e44d24c997fc1e0116/config.json "HTTP/1.1 200 OK"
+23:14:01 INFO    httpx: HTTP Request: HEAD https://huggingface.co/BAAI/bge-large-zh-v1.5/resolve/main/model.safetensors "HTTP/1.1 404 Not Found"
+    ~ annotator_b !! 26.3s out 0 · qwen3.7-plus · AuthenticationError
+    ~ annotator_a ok 39.8s out 1,623 · deepseek-v4-flash · labels=25 · 轰的组词 → WORD_FORMATION_LOOKUP
+    ~ annotator_a ok 39.8s out 1,581 · deepseek-v4-flash · labels=25 · 蠢货是什么意思 → WORD_MEANING_LOOKUP
+    ~ annotator_a ok 40.0s out 1,627 · deepseek-v4-flash · labels=25 · 终有弱水替沧海 → POEM_TEXT_LOOKUP
+    ~ annotator_a ok 40.7s out 1,662 · deepseek-v4-flash · labels=25 · 蜘 → CHITCHAT_NOISE
+    ~ annotator_a ok 40.9s out 1,673 · deepseek-v4-flash · labels=25 · 花肖道中 → RIDDLE_BRAIN_TEASER
+    ~ annotator_a ok 41.1s out 1,757 · deepseek-v4-flash · labels=25 · 胡不归数学模型是什么?在初中数学里主要用来解决哪种题 → SUBJECT_CONCEPT_EXPLANATIO
+    ~ annotator_a ok 41.2s out 1,758 · deepseek-v4-flash · labels=25 · 同道中人的含义和道理 → WORD_MEANING_LOOKUP
+    ~ annotator_a ok 41.4s out 1,706 · deepseek-v4-flash · labels=25 · 人生的经典句子 → DECORATIVE_SENTENCE_LOOKUP
+    annotator[a] labelled 200/200
+Loading weights:   0%|          | 0/391 [00:00<?, ?it/s]Loading weights: 100%|██████████| 391/391 [00:00<00:00, 54793.61it/s]
+23:14:02 INFO    httpx: HTTP Request: GET https://huggingface.co/api/models/BAAI/bge-large-zh-v1.5 "HTTP/1.1 200 OK"
+23:14:02 INFO    httpx: HTTP Request: HEAD https://huggingface.co/BAAI/bge-large-zh-v1.5/resolve/main/processor_config.json "HTTP/1.1 404 Not Found"
+23:14:02 INFO    httpx: HTTP Request: GET https://huggingface.co/api/models/BAAI/bge-large-zh-v1.5/commits/main "HTTP/1.1 200 OK"
+23:14:02 INFO    httpx: HTTP Request: HEAD https://huggingface.co/BAAI/bge-large-zh-v1.5/resolve/main/preprocessor_config.json "HTTP/1.1 404 Not Found"
+23:14:02 INFO    httpx: HTTP Request: GET https://huggingface.co/api/models/BAAI/bge-large-zh-v1.5/discussions?p=0 "HTTP/1.1 200 OK"
+23:14:03 INFO    httpx: HTTP Request: HEAD https://huggingface.co/BAAI/bge-large-zh-v1.5/resolve/main/video_preprocessor_config.json "HTTP/1.1 404 Not Found"
+23:14:03 INFO    httpx: HTTP Request: GET https://huggingface.co/api/models/BAAI/bge-large-zh-v1.5/commits/refs%2Fpr%2F35 "HTTP/1.1 200 OK"
+23:14:03 INFO    httpx: HTTP Request: HEAD https://huggingface.co/BAAI/bge-large-zh-v1.5/resolve/refs%2Fpr%2F35/model.safetensors.index.json "HTTP/1.1 404 Not Found"
+23:14:03 INFO    httpx: HTTP Request: HEAD https://huggingface.co/BAAI/bge-large-zh-v1.5/resolve/main/preprocessor_config.json "HTTP/1.1 404 Not Found"
+23:14:03 INFO    httpx: HTTP Request: HEAD https://huggingface.co/BAAI/bge-large-zh-v1.5/resolve/main/tokenizer_config.json "HTTP/1.1 307 Temporary Redirect"
+23:14:03 INFO    httpx: HTTP Request: HEAD https://huggingface.co/BAAI/bge-large-zh-v1.5/resolve/refs%2Fpr%2F35/model.safetensors "HTTP/1.1 302 Found"
+23:14:03 INFO    httpx: HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/BAAI/bge-large-zh-v1.5/79e7739b6ab944e86d6171e44d24c997fc1e0116/tokenizer_config.json "HTTP/1.1 200 OK"
+23:14:04 INFO    httpx: HTTP Request: HEAD https://huggingface.co/BAAI/bge-large-zh-v1.5/resolve/main/config.json "HTTP/1.1 307 Temporary Redirect"
+23:14:04 INFO    httpx: HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/BAAI/bge-large-zh-v1.5/79e7739b6ab944e86d6171e44d24c997fc1e0116/config.json "HTTP/1.1 200 OK"
+23:14:04 INFO    httpx: HTTP Request: HEAD https://huggingface.co/BAAI/bge-large-zh-v1.5/resolve/main/config.json "HTTP/1.1 307 Temporary Redirect"
+23:14:04 INFO    httpx: HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/BAAI/bge-large-zh-v1.5/79e7739b6ab944e86d6171e44d24c997fc1e0116/config.json "HTTP/1.1 200 OK"
+23:14:05 INFO    httpx: HTTP Request: HEAD https://huggingface.co/BAAI/bge-large-zh-v1.5/resolve/main/tokenizer_config.json "HTTP/1.1 307 Temporary Redirect"
+23:14:05 INFO    httpx: HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/BAAI/bge-large-zh-v1.5/79e7739b6ab944e86d6171e44d24c997fc1e0116/tokenizer_config.json "HTTP/1.1 200 OK"
+23:14:05 INFO    httpx: HTTP Request: GET https://huggingface.co/api/models/BAAI/bge-large-zh-v1.5/tree/main/additional_chat_templates?recursive=false&expand=false "HTTP/1.1 404 Not Found"
+23:14:05 INFO    httpx: HTTP Request: GET https://huggingface.co/api/models/BAAI/bge-large-zh-v1.5/tree/main?recursive=true&expand=false "HTTP/1.1 200 OK"
+23:14:06 INFO    httpx: HTTP Request: HEAD https://huggingface.co/BAAI/bge-large-zh-v1.5/resolve/main/1_Pooling/config.json "HTTP/1.1 307 Temporary Redirect"
+23:14:06 INFO    httpx: HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/BAAI/bge-large-zh-v1.5/79e7739b6ab944e86d6171e44d24c997fc1e0116/1_Pooling%2Fconfig.json "HTTP/1.1 200 OK"
+23:14:06 INFO    httpx: HTTP Request: GET https://huggingface.co/api/models/BAAI/bge-large-zh-v1.5 "HTTP/1.1 200 OK"
+23:14:09 INFO    openai._base_client: Retrying request to /chat/completions in 0.857134 seconds
+23:14:28 INFO    httpx2: HTTP Request: POST https://dashscope-intl.aliyuncs.com/compatible-mode/v1/chat/completions "HTTP/1.1 200 OK"
+23:14:28 INFO    qmine:   ~ annotator_b ok 75.1s out 1,739 · qwen3.7-plus · labels=25 · 蜘 → CHITCHAT_NOISE
+23:14:48 INFO    openai._base_client: Retrying request to /chat/completions in 0.801686 seconds
+23:14:48 INFO    sentence_transformers.base.model: No device provided, using mps
+23:14:49 INFO    httpx: HTTP Request: HEAD https://huggingface.co/shibing624/text2vec-base-chinese/resolve/main/modules.json "HTTP/1.1 307 Temporary Redirect"
+23:14:49 INFO    httpx: HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/shibing624/text2vec-base-chinese/183bb99aa7af74355fb58d16edf8c13ae7c5433e/modules.json "HTTP/1.1 200 OK"
+23:14:49 INFO    httpx: HTTP Request: HEAD https://huggingface.co/shibing624/text2vec-base-chinese/resolve/main/config_sentence_transformers.json "HTTP/1.1 404 Not Found"
+23:14:49 INFO    sentence_transformers.base.model: Loading SentenceTransformer model from shibing624/text2vec-base-chinese.
+23:14:50 INFO    httpx: HTTP Request: HEAD https://huggingface.co/shibing624/text2vec-base-chinese/resolve/main/config_sentence_transformers.json "HTTP/1.1 404 Not Found"
+23:14:50 INFO    httpx: HTTP Request: HEAD https://huggingface.co/shibing624/text2vec-base-chinese/resolve/main/README.md "HTTP/1.1 307 Temporary Redirect"
+23:14:50 INFO    httpx: HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/shibing624/text2vec-base-chinese/183bb99aa7af74355fb58d16edf8c13ae7c5433e/README.md "HTTP/1.1 200 OK"
+23:14:50 INFO    httpx: HTTP Request: HEAD https://huggingface.co/shibing624/text2vec-base-chinese/resolve/main/modules.json "HTTP/1.1 307 Temporary Redirect"
+23:14:51 INFO    httpx: HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/shibing624/text2vec-base-chinese/183bb99aa7af74355fb58d16edf8c13ae7c5433e/modules.json "HTTP/1.1 200 OK"
+23:14:51 INFO    httpx: HTTP Request: HEAD https://huggingface.co/shibing624/text2vec-base-chinese/resolve/main/sentence_bert_config.json "HTTP/1.1 307 Temporary Redirect"
+23:14:51 INFO    httpx: HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/shibing624/text2vec-base-chinese/183bb99aa7af74355fb58d16edf8c13ae7c5433e/sentence_bert_config.json "HTTP/1.1 200 OK"
+23:14:51 INFO    httpx2: HTTP Request: POST https://dashscope-intl.aliyuncs.com/compatible-mode/v1/chat/completions "HTTP/1.1 200 OK"
+23:14:51 INFO    qmine:   ~ annotator_b ok 70.8s out 1,801 · qwen3.7-plus · labels=25 · 胡不归数学模型是什么?在初中数学里主要用来解决哪种题 → SUBJECT_CONCEPT_EXPLANATIO
+23:14:51 INFO    qmine.graph:   annotator[b] batch recovered on retry 1
+23:14:51 INFO    httpx: HTTP Request: HEAD https://huggingface.co/shibing624/text2vec-base-chinese/resolve/main/adapter_config.json "HTTP/1.1 404 Not Found"
+23:14:52 INFO    httpx: HTTP Request: HEAD https://huggingface.co/shibing624/text2vec-base-chinese/resolve/main/config.json "HTTP/1.1 307 Temporary Redirect"
+23:14:52 INFO    httpx: HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/shibing624/text2vec-base-chinese/183bb99aa7af74355fb58d16edf8c13ae7c5433e/config.json "HTTP/1.1 200 OK"
+    ~ annotator_b ok 75.1s out 1,739 · qwen3.7-plus · labels=25 · 蜘 → CHITCHAT_NOISE
+    ~ annotator_b ok 70.8s out 1,801 · qwen3.7-plus · labels=25 · 胡不归数学模型是什么?在初中数学里主要用来解决哪种题 → SUBJECT_CONCEPT_EXPLANATIO
+    annotator[b] batch recovered on retry 1
+Loading weights:   0%|          | 0/199 [00:00<?, ?it/s]Loading weights: 100%|██████████| 199/199 [00:00<00:00, 10774.20it/s]
+23:14:52 INFO    httpx: HTTP Request: HEAD https://huggingface.co/shibing624/text2vec-base-chinese/resolve/main/processor_config.json "HTTP/1.1 404 Not Found"
+23:14:52 INFO    httpx: HTTP Request: HEAD https://huggingface.co/shibing624/text2vec-base-chinese/resolve/main/preprocessor_config.json "HTTP/1.1 404 Not Found"
+23:14:53 INFO    httpx: HTTP Request: HEAD https://huggingface.co/shibing624/text2vec-base-chinese/resolve/main/video_preprocessor_config.json "HTTP/1.1 404 Not Found"
+23:14:53 INFO    httpx: HTTP Request: HEAD https://huggingface.co/shibing624/text2vec-base-chinese/resolve/main/preprocessor_config.json "HTTP/1.1 404 Not Found"
+23:14:54 INFO    httpx: HTTP Request: HEAD https://huggingface.co/shibing624/text2vec-base-chinese/resolve/main/tokenizer_config.json "HTTP/1.1 307 Temporary Redirect"
+23:14:54 INFO    httpx: HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/shibing624/text2vec-base-chinese/183bb99aa7af74355fb58d16edf8c13ae7c5433e/tokenizer_config.json "HTTP/1.1 200 OK"
+23:14:54 INFO    httpx2: HTTP Request: POST https://dashscope-intl.aliyuncs.com/compatible-mode/v1/chat/completions "HTTP/1.1 200 OK"
+23:14:54 INFO    qmine:   ~ annotator_b ok 100.9s out 1,757 · qwen3.7-plus · labels=25 · 花肖道中 → CHITCHAT_NOISE
+23:14:54 INFO    httpx: HTTP Request: HEAD https://huggingface.co/shibing624/text2vec-base-chinese/resolve/main/config.json "HTTP/1.1 307 Temporary Redirect"
+23:14:54 INFO    httpx: HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/shibing624/text2vec-base-chinese/183bb99aa7af74355fb58d16edf8c13ae7c5433e/config.json "HTTP/1.1 200 OK"
+23:14:55 INFO    httpx: HTTP Request: HEAD https://huggingface.co/shibing624/text2vec-base-chinese/resolve/main/config.json "HTTP/1.1 307 Temporary Redirect"
+23:14:55 INFO    httpx: HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/shibing624/text2vec-base-chinese/183bb99aa7af74355fb58d16edf8c13ae7c5433e/config.json "HTTP/1.1 200 OK"
+23:14:55 INFO    httpx: HTTP Request: HEAD https://huggingface.co/shibing624/text2vec-base-chinese/resolve/main/tokenizer_config.json "HTTP/1.1 307 Temporary Redirect"
+23:14:55 INFO    httpx: HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/shibing624/text2vec-base-chinese/183bb99aa7af74355fb58d16edf8c13ae7c5433e/tokenizer_config.json "HTTP/1.1 200 OK"
+23:14:55 INFO    httpx: HTTP Request: GET https://huggingface.co/api/models/shibing624/text2vec-base-chinese/tree/main/additional_chat_templates?recursive=false&expand=false "HTTP/1.1 404 Not Found"
+23:14:56 INFO    httpx: HTTP Request: GET https://huggingface.co/api/models/shibing624/text2vec-base-chinese/tree/main?recursive=true&expand=false "HTTP/1.1 200 OK"
+23:14:56 INFO    httpx: HTTP Request: HEAD https://huggingface.co/shibing624/text2vec-base-chinese/resolve/main/1_Pooling/config.json "HTTP/1.1 307 Temporary Redirect"
+23:14:56 INFO    httpx: HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/shibing624/text2vec-base-chinese/183bb99aa7af74355fb58d16edf8c13ae7c5433e/1_Pooling%2Fconfig.json "HTTP/1.1 200 OK"
+23:14:57 INFO    httpx: HTTP Request: GET https://huggingface.co/api/models/shibing624/text2vec-base-chinese "HTTP/1.1 200 OK"
+23:14:59 INFO    openai._base_client: Retrying request to /chat/completions in 0.497420 seconds
+23:15:02 INFO    httpx2: HTTP Request: POST https://dashscope-intl.aliyuncs.com/compatible-mode/v1/chat/completions "HTTP/1.1 200 OK"
+23:15:02 INFO    qmine:   ~ annotator_b ok 109.0s out 1,689 · qwen3.7-plus · labels=25 · 人生的经典句子 → DECORATIVE_SENTENCE_LOOKUP
+23:15:10 INFO    qmine:   ~ annotator_b !! 117.1s out 0 · qwen3.7-plus · APIConnectionError
+23:15:10 WARNING qmine.llm: role=annotator_b attempt=0 failed (APIConnectionError: Connection error.); transient transport error — retrying the same call
+23:15:15 INFO    qmine.graph:   chose BAAI/bge-base-zh-v1.5 on stability; silhouette would have chosen BAAI/bge-small-zh-v1.5
+23:15:15 INFO    sentence_transformers.base.model: No device provided, using mps
+23:15:15 INFO    httpx: HTTP Request: HEAD https://huggingface.co/BAAI/bge-base-zh-v1.5/resolve/main/modules.json "HTTP/1.1 307 Temporary Redirect"
+23:15:16 INFO    httpx: HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/BAAI/bge-base-zh-v1.5/f03589ceff5aac7111bd60cfc7d497ca17ecac65/modules.json "HTTP/1.1 200 OK"
+23:15:16 INFO    httpx: HTTP Request: HEAD https://huggingface.co/BAAI/bge-base-zh-v1.5/resolve/main/config_sentence_transformers.json "HTTP/1.1 307 Temporary Redirect"
+23:15:16 INFO    httpx: HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/BAAI/bge-base-zh-v1.5/f03589ceff5aac7111bd60cfc7d497ca17ecac65/config_sentence_transformers.json "HTTP/1.1 200 OK"
+23:15:16 INFO    sentence_transformers.base.model: Loading SentenceTransformer model from BAAI/bge-base-zh-v1.5.
+23:15:16 INFO    httpx: HTTP Request: HEAD https://huggingface.co/BAAI/bge-base-zh-v1.5/resolve/main/config_sentence_transformers.json "HTTP/1.1 307 Temporary Redirect"
+23:15:16 INFO    httpx: HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/BAAI/bge-base-zh-v1.5/f03589ceff5aac7111bd60cfc7d497ca17ecac65/config_sentence_transformers.json "HTTP/1.1 200 OK"
+23:15:17 INFO    httpx: HTTP Request: HEAD https://huggingface.co/BAAI/bge-base-zh-v1.5/resolve/main/README.md "HTTP/1.1 307 Temporary Redirect"
+23:15:17 INFO    httpx: HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/BAAI/bge-base-zh-v1.5/f03589ceff5aac7111bd60cfc7d497ca17ecac65/README.md "HTTP/1.1 200 OK"
+23:15:18 INFO    httpx: HTTP Request: HEAD https://huggingface.co/BAAI/bge-base-zh-v1.5/resolve/main/modules.json "HTTP/1.1 307 Temporary Redirect"
+23:15:18 INFO    httpx: HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/BAAI/bge-base-zh-v1.5/f03589ceff5aac7111bd60cfc7d497ca17ecac65/modules.json "HTTP/1.1 200 OK"
+23:15:18 INFO    httpx: HTTP Request: HEAD https://huggingface.co/BAAI/bge-base-zh-v1.5/resolve/main/sentence_bert_config.json "HTTP/1.1 307 Temporary Redirect"
+23:15:18 INFO    httpx: HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/BAAI/bge-base-zh-v1.5/f03589ceff5aac7111bd60cfc7d497ca17ecac65/sentence_bert_config.json "HTTP/1.1 200 OK"
+23:15:19 INFO    httpx: HTTP Request: HEAD https://huggingface.co/BAAI/bge-base-zh-v1.5/resolve/main/adapter_config.json "HTTP/1.1 404 Not Found"
+23:15:19 INFO    httpx: HTTP Request: HEAD https://huggingface.co/BAAI/bge-base-zh-v1.5/resolve/main/config.json "HTTP/1.1 307 Temporary Redirect"
+23:15:19 INFO    httpx: HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/BAAI/bge-base-zh-v1.5/f03589ceff5aac7111bd60cfc7d497ca17ecac65/config.json "HTTP/1.1 200 OK"
+23:15:19 INFO    httpx: HTTP Request: HEAD https://huggingface.co/BAAI/bge-base-zh-v1.5/resolve/main/model.safetensors "HTTP/1.1 404 Not Found"
+    ~ annotator_b ok 100.9s out 1,757 · qwen3.7-plus · labels=25 · 花肖道中 → CHITCHAT_NOISE
+    ~ annotator_b ok 109.0s out 1,689 · qwen3.7-plus · labels=25 · 人生的经典句子 → DECORATIVE_SENTENCE_LOOKUP
+    ~ annotator_b !! 117.1s out 0 · qwen3.7-plus · APIConnectionError
+    chose BAAI/bge-base-zh-v1.5 on stability; silhouette would have chosen BAAI/bge-small-zh-v1.5
+Loading weights:   0%|          | 0/199 [00:00<?, ?it/s]Loading weights: 100%|██████████| 199/199 [00:00<00:00, 50829.21it/s]
+23:15:20 INFO    httpx: HTTP Request: GET https://huggingface.co/api/models/BAAI/bge-base-zh-v1.5 "HTTP/1.1 200 OK"
+23:15:20 INFO    httpx: HTTP Request: GET https://huggingface.co/api/models/BAAI/bge-base-zh-v1.5/commits/main "HTTP/1.1 200 OK"
+23:15:20 INFO    httpx: HTTP Request: HEAD https://huggingface.co/BAAI/bge-base-zh-v1.5/resolve/main/processor_config.json "HTTP/1.1 404 Not Found"
+23:15:20 INFO    httpx: HTTP Request: GET https://huggingface.co/api/models/BAAI/bge-base-zh-v1.5/discussions?p=0 "HTTP/1.1 200 OK"
+23:15:20 INFO    httpx: HTTP Request: HEAD https://huggingface.co/BAAI/bge-base-zh-v1.5/resolve/main/preprocessor_config.json "HTTP/1.1 404 Not Found"
+23:15:21 INFO    httpx: HTTP Request: HEAD https://huggingface.co/BAAI/bge-base-zh-v1.5/resolve/main/video_preprocessor_config.json "HTTP/1.1 404 Not Found"
+23:15:21 INFO    httpx: HTTP Request: GET https://huggingface.co/api/models/BAAI/bge-base-zh-v1.5/commits/refs%2Fpr%2F1 "HTTP/1.1 200 OK"
+23:15:21 INFO    httpx: HTTP Request: HEAD https://huggingface.co/BAAI/bge-base-zh-v1.5/resolve/main/preprocessor_config.json "HTTP/1.1 404 Not Found"
+23:15:21 INFO    httpx: HTTP Request: HEAD https://huggingface.co/BAAI/bge-base-zh-v1.5/resolve/refs%2Fpr%2F1/model.safetensors.index.json "HTTP/1.1 404 Not Found"
+23:15:21 INFO    httpx: HTTP Request: HEAD https://huggingface.co/BAAI/bge-base-zh-v1.5/resolve/main/tokenizer_config.json "HTTP/1.1 307 Temporary Redirect"
+23:15:21 INFO    httpx: HTTP Request: HEAD https://huggingface.co/BAAI/bge-base-zh-v1.5/resolve/refs%2Fpr%2F1/model.safetensors "HTTP/1.1 302 Found"
+23:15:21 INFO    httpx: HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/BAAI/bge-base-zh-v1.5/f03589ceff5aac7111bd60cfc7d497ca17ecac65/tokenizer_config.json "HTTP/1.1 200 OK"
+23:15:22 INFO    httpx: HTTP Request: HEAD https://huggingface.co/BAAI/bge-base-zh-v1.5/resolve/main/config.json "HTTP/1.1 307 Temporary Redirect"
+23:15:22 INFO    httpx: HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/BAAI/bge-base-zh-v1.5/f03589ceff5aac7111bd60cfc7d497ca17ecac65/config.json "HTTP/1.1 200 OK"
+23:15:22 INFO    httpx: HTTP Request: HEAD https://huggingface.co/BAAI/bge-base-zh-v1.5/resolve/main/config.json "HTTP/1.1 307 Temporary Redirect"
+23:15:22 INFO    httpx: HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/BAAI/bge-base-zh-v1.5/f03589ceff5aac7111bd60cfc7d497ca17ecac65/config.json "HTTP/1.1 200 OK"
+23:15:23 INFO    httpx: HTTP Request: HEAD https://huggingface.co/BAAI/bge-base-zh-v1.5/resolve/main/tokenizer_config.json "HTTP/1.1 307 Temporary Redirect"
+23:15:23 INFO    httpx: HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/BAAI/bge-base-zh-v1.5/f03589ceff5aac7111bd60cfc7d497ca17ecac65/tokenizer_config.json "HTTP/1.1 200 OK"
+23:15:23 INFO    httpx: HTTP Request: GET https://huggingface.co/api/models/BAAI/bge-base-zh-v1.5/tree/main/additional_chat_templates?recursive=false&expand=false "HTTP/1.1 404 Not Found"
+23:15:23 INFO    httpx: HTTP Request: GET https://huggingface.co/api/models/BAAI/bge-base-zh-v1.5/tree/main?recursive=true&expand=false "HTTP/1.1 200 OK"
+23:15:24 INFO    httpx: HTTP Request: HEAD https://huggingface.co/BAAI/bge-base-zh-v1.5/resolve/main/1_Pooling/config.json "HTTP/1.1 307 Temporary Redirect"
+23:15:24 INFO    httpx: HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/BAAI/bge-base-zh-v1.5/f03589ceff5aac7111bd60cfc7d497ca17ecac65/1_Pooling%2Fconfig.json "HTTP/1.1 200 OK"
+23:15:24 INFO    httpx: HTTP Request: GET https://huggingface.co/api/models/BAAI/bge-base-zh-v1.5 "HTTP/1.1 200 OK"
+23:15:24 INFO    qmine.graph:   encoded (49999, 768) (cache hit)
+23:15:24 INFO    qmine.graph: P3b sparse block — char TF-IDF → SVD
+23:15:28 INFO    qmine.graph:   grid proposer[alpha]: +[0.6] (0 rejected) — 该语料有12个短语模式覆盖了约36.6%的查询，且模式名显示大量 K12 固定/半固定表达（如“是什么”“有哪些”“什么字”“五年级”等），说明短语相似度在本语料中携带真实、但非压倒性的意图信号。α以
+23:15:28 INFO    qmine.graph: P3c alpha sweep — [0.0, 0.1, 0.2, 0.3, 0.5, 0.6]
+23:15:28 INFO    openai._base_client: Retrying request to /chat/completions in 0.452070 seconds
+23:15:51 INFO    httpx2: HTTP Request: POST https://dashscope-intl.aliyuncs.com/compatible-mode/v1/chat/completions "HTTP/1.1 200 OK"
+23:15:51 INFO    qmine:   ~ annotator_b ok 158.4s out 1,891 · qwen3.7-plus · labels=25 · 轰的组词 → WORD_FORMATION_LOOKUP
+23:15:51 INFO    httpx2: HTTP Request: POST https://dashscope-intl.aliyuncs.com/compatible-mode/v1/chat/completions "HTTP/1.1 200 OK"
+23:15:51 INFO    qmine:   ~ annotator_b ok 158.4s out 1,754 · qwen3.7-plus · labels=25 · 同道中人的含义和道理 → WORD_MEANING_LOOKUP
+23:16:09 INFO    openai._base_client: Retrying request to /chat/completions in 0.758021 seconds
+23:16:55 INFO    httpx2: HTTP Request: POST https://dashscope-intl.aliyuncs.com/compatible-mode/v1/chat/completions "HTTP/1.1 200 OK"
+23:16:55 INFO    qmine:   ~ annotator_b ok 221.5s out 1,795 · qwen3.7-plus · labels=25 · 蠢货是什么意思 → WORD_MEANING_LOOKUP
+23:17:26 INFO    openai._base_client: Retrying request to /chat/completions in 0.457809 seconds
+23:17:29 INFO    httpx2: HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+23:18:21 INFO    openai._base_client: Retrying request to /chat/completions in 0.965608 seconds
+23:19:07 INFO    httpx2: HTTP Request: POST https://dashscope-intl.aliyuncs.com/compatible-mode/v1/chat/completions "HTTP/1.1 200 OK"
+23:19:07 INFO    qmine:   ~ annotator_b ok 353.6s out 1,749 · qwen3.7-plus · labels=25 · 终有弱水替沧海 → POEM_TEXT_LOOKUP
+23:19:07 INFO    qmine.graph:   annotator[b] labelled 200/200
+23:19:07 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+23:19:07 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+23:19:07 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+23:19:07 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+23:19:07 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+23:19:07 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+23:19:07 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+23:19:07 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+23:19:15 INFO    qmine:   ~ annotator_a ok 8.7s out 1,653 · deepseek-v4-flash · labels=25 · 宏志中学 → EXAM_SCHOOL_INFO
+23:19:16 INFO    qmine:   ~ annotator_a ok 9.0s out 1,691 · deepseek-v4-flash · labels=25 · 浪淘沙李煜 → POEM_TEXT_LOOKUP
+23:19:16 INFO    qmine:   ~ annotator_a ok 9.3s out 1,689 · deepseek-v4-flash · labels=25 · 我忍不住___作文 → ESSAY_TEMPLATE_LOOKUP
+23:19:16 INFO    qmine:   ~ annotator_a ok 9.4s out 1,645 · deepseek-v4-flash · labels=25 · 求十十之一丢失十之九 → CHITCHAT_NOISE
+23:19:16 INFO    qmine:   ~ annotator_a !! 9.5s out 1,723 · deepseek-v4-flash · ValueError
+23:19:16 WARNING qmine.llm: role=annotator_a attempt=0 failed (ValueError: no parseable structured output); repairing via plain-JSON mode
+23:19:16 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+23:19:17 INFO    qmine:   ~ annotator_a ok 10.2s out 1,698 · deepseek-v4-flash · labels=25 · 很组词 → WORD_FORMATION_LOOKUP
+23:19:17 INFO    qmine:   ~ annotator_a ok 10.3s out 1,766 · deepseek-v4-flash · labels=25 · 《致良知》原文 → OBTAIN_FULL_TEXT
+23:19:18 INFO    qmine:   ~ annotator_a ok 11.6s out 1,752 · deepseek-v4-flash · labels=25 · 《三国演义》读后感 → ESSAY_TEMPLATE_LOOKUP
+23:19:26 INFO    qmine:   ~ annotator_a ok 19.4s out 1,738 · deepseek-v4-flash · labels=25 · 薄冰的拼音 → PRONUNCIATION_LOOKUP
+23:19:26 INFO    qmine.graph:   annotator[a] labelled 200/200
+23:19:26 INFO    qmine.graph:   2 confused pair(s) seen only once — below the noise floor at n=200, not sent to the redraw
+23:19:26 INFO    qmine.graph: gate p2a_pilot_agreement: PASSED — pilot: kappa 0.873 (95% upper 0.914) on 200 queries; raw agreement 88.5%, but kappa 0.9 needs about 90.9%; annotator self-consistency kappa 0.8626 (1.0 of ceiling reached) — NOTE the target 0.9 is ABOVE this annotator's own ceiling of 0.8626, so it is unreachable by any guide; the recoverable slack is -0.0107 ± 0.0358 — top confusions ['POEM_TEXT_LOOKUP × WORD_MEANING_LOOKUP (3)', 'SUBJECT_CONCEPT_EXPLANATION × WORD_MEANING_LOOKUP (3)', 'CHITCHAT_NOISE × WORD_MEANING_LOOKUP (2)']
+23:19:26 INFO    qmine.graph: gate p2a_taxonomy_shape: PASSED — 20 L1 intents, 47 adjudication rules the annotator can cite
+23:19:26 INFO    qmine.graph:   prescriptions (recorded limitations): 4 structural (redraw), 1 guide (tie-break)
+23:19:31 INFO    httpx2: HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+23:22:20 INFO    qmine:   ~ observer_p3 ok 293.9s out 10,790 · moonshotai/kimi-k3 · observations=4, checked=8 · note → template_cohesion 中 meanin
+23:22:20 INFO    qmine.graph:   ⚠ observation dropped — cites 'representation.alpha_sweep.grid_proposal.corpus_signals', which is not in this phase's artifacts: grid_proposal 补充 0.6 的经验依据（12 个短语模式覆盖约 36.6% 查询，由此推出 α²≈0.366、α≈0.605）所引用的语料信号未包含在本阶段任何 ar
+23:22:20 INFO    qmine.graph:   observer[p3]: 0 CONFIRMED by check, 3 unverified, 3 kept (1 dropped)
+23:22:20 INFO    qmine.graph:     [note/unverified] template_cohesion 中 meaning 组的 verdict 为 rejected，但它同时出现在 kept_because_seeded 中、dropped 为空，且在 alpha_sweep 每一行的  ← representation.template_cohesion
+23:22:20 INFO    qmine.graph:     [note/unverified] D002 给全部五个被否决的 alpha 记录了同一条模板化理由 higher fragmentation or lower stability，但对 alpha=0.5 而言 lower stability 不成立（其  ← representation.alpha_sweep.rows
+23:22:20 INFO    qmine.graph:     [note/unverified] alpha_sweep 各行及整个 sweep 均未记录样本量 n：bakeoff 明确标注 subsample_size=15000，template_cohesion 各组 n 合计 17007，但决定 alpha   ← representation.alpha_sweep.rows
+23:22:20 INFO    qmine.graph: gate p3_observer: PASSED — observer found nothing blocking in p3
+23:22:20 INFO    qmine.graph: ✔ p3_represent completed in 547.9s
+23:34:24 INFO    qmine:   ~ observer_p2a !! 898.0s out 19,524 · moonshotai/kimi-k3 · ValueError
+23:34:24 WARNING qmine.llm: role=observer_p2a attempt=0 failed (ValueError: no parseable structured output); repairing via plain-JSON mode
+23:34:26 INFO    httpx2: HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+23:45:23 INFO    qmine:   ~ observer_p2a ok 1556.8s out 17,708 · moonshotai/kimi-k3 · observations=8, checked=7 · blocking → 同一条查询“无钱多老婆的生肖正确答案”同时被列为娱乐
+23:45:23 INFO    qmine.graph:   observer[p2a]: 5 CONFIRMED by check, 3 unverified, 8 kept (0 dropped)
+23:45:23 INFO    qmine.graph:     [blocking/✔MEASURED] 同一条查询“无钱多老婆的生肖正确答案”同时被列为娱乐类 RIDDLE_BRAIN_TEASER 的正例和风险拦截类 RISK_COMPLIANCE_INTERCEPT 的 source_evidence，同一查询在两个类  ← taxonomy.taxonomy.nodes
+23:45:23 INFO    qmine.graph:         check FAILED: not ("无钱多老婆的生肖正确答案" in [n for n in taxonomy.taxonomy.nodes if n.code == "RIDDLE_BRAIN_TEASER"][0].positive_examples)
+23:45:23 INFO    qmine.graph:     [warn/✔MEASURED] “底牌”“回溯”作为 CHITCHAT_NOISE 的正例，与 WORD_MEANING_LOOKUP 的 source_evidence（R3 legacy_audit 含“底牌”）以及规则 single_normal  ← taxonomy.taxonomy.nodes
+23:45:23 INFO    qmine.graph:         check FAILED: not ("底牌" in [n for n in taxonomy.taxonomy.nodes if n.code == "CHITCHAT_NOISE"][0].positive_examples)
+23:45:23 INFO    qmine.graph:     [warn/✔MEASURED] PRONUNCIATION_LOOKUP、ESSAY_TEMPLATE_LOOKUP、CHITCHAT_NOISE 三个节点的 adjudication_rules 为空，但规则集中存在以这些类为 classes 的 s  ← taxonomy.taxonomy.nodes
+23:45:23 INFO    qmine.graph:         check FAILED: len([n for n in taxonomy.taxonomy.nodes if n.code == "PRONUNCIATION_LOOKUP"][0].adjudication_rules) > 0
+23:45:23 INFO    qmine.graph:     [warn/unverified] 研究端明确标记的两条风险信号在最终 taxonomy 中静默消失：log_reading 的“查作文范文”候选 risk=true 并指出“漫画的启示450字可抄免费”（学术诚信）与“全天体罚小学男生流程”（未成年人安全  ← taxonomy.submissions
+23:45:23 INFO    qmine.graph:     [warn/unverified] 决策 D003 自身记录的评审结论为 critic_verdict='revise'（12 条 findings），但 supersedes=null 且只有这一条决策记录，gates 为空，没有任何后续记录表明 rev  ← taxonomy.taxonomy.notes
+23:45:23 INFO    qmine.graph:     [note/✔MEASURED] 20 个节点的 expected_share 合计为 0.965 而非 1.0，作为同一总体（全部查询）的分布预期，存在 3.5% 的无名缺口。  ← taxonomy.taxonomy.nodes
+23:45:23 INFO    qmine.graph:         check FAILED: abs(sum(n.expected_share for n in taxonomy.taxonomy.nodes) - 1.0) <= 0.01
+23:45:23 INFO    qmine.graph:     [note/✔MEASURED] taxonomy 元数据 axes 为空对象 {}，与决策和 notes 中“across 1 axes”的表述不一致，而每个节点又各自携带 axis="intent"。  ← taxonomy.taxonomy.axes
+23:45:23 INFO    qmine.graph:         check FAILED: len(taxonomy.taxonomy.axes) > 0
+23:45:23 INFO    qmine.graph:     [note/unverified] NAVIGATE_SITE 的 source_evidence 仅引用“R5 risk_compliance”，但给定 artifacts 中 risk_compliance submission 在 gambling_  ← taxonomy.submissions
+23:45:23 INFO    qmine.graph: gate p2a_observer: WARNED — observer flagged 1 blocking issue(s) in p2a, CONFIRMED by their own checks: 同一条查询“无钱多老婆的生肖正确答案”同时被列为娱乐类 RIDDLE_BRAIN_TEASER 的正例和风险拦截类 RISK_COMPLIANCE_INTERCEPT 的 source_evidence，同一查询在两个类
+23:45:23 INFO    qmine.graph: ✔ p2a_taxonomy completed in 1930.9s
+23:45:23 INFO    qmine.graph: P4 algorithm battery — 3 K values × 6 algorithms
+23:47:37 INFO    qmine.graph:   winner: kmeans_k15 (stability 0.8305)
+23:47:39 INFO    httpx2: HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+23:51:33 INFO    qmine:   ~ observer_p4 ok 236.4s out 4,761 · moonshotai/kimi-k3 · observations=2, checked=9 · warn → battery.note 描述的是一套“电池在封顶子
+23:51:33 INFO    qmine.graph:   observer[p4]: 0 CONFIRMED by check, 2 unverified, 2 kept (0 dropped)
+23:51:33 INFO    qmine.graph:     [warn/unverified] battery.note 描述的是一套“电池在封顶子样本上排名、胜者再由 Phase 6 在全量语料上拟合”的选择流程，与同一会话 verdict 的 role（falsification probe）和 chosen_  ← battery.note
+23:51:33 INFO    qmine.graph:     [warn/unverified] kmeans_assumption_contradicted=false 与 probe_note“无结构性不同算法可复现性明显更高”依赖一个 materiality 阈值，但该阈值未记录在 verdict 任何字段中，  ← battery.verdict.kmeans_assumption_contradicted
+23:51:33 INFO    qmine.graph: gate p4_observer: PASSED — observer found nothing blocking in p4
+23:51:33 INFO    qmine.graph:   grid proposer[family_k]: +[5, 6, 7] (0 rejected) — 当前网格最低只到 8，但这个语料没有支持高 K 的强信号：领域是 k12_zh，属于窄垂直领域；虽然 n_rows 为 49999，但 12 个短语组仅覆盖 36.6%，说明这些短语模板更像可归并的子
+    encoded (49999, 768) (cache hit)
+  P3b sparse block — char TF-IDF → SVD
+    grid proposer[alpha]: +[0.6] (0 rejected) — 该语料有12个短语模式覆盖了约36.6%的查询，且模式名显示大量 K12 固定/半固定表达（如“是什么”“有哪些”“什么字”“五年级”等），说明短语相似度在本语料中携带真实、但非压倒性的意图信号。α以
+  P3c alpha sweep — [0.0, 0.1, 0.2, 0.3, 0.5, 0.6]
+    ~ annotator_b ok 158.4s out 1,891 · qwen3.7-plus · labels=25 · 轰的组词 → WORD_FORMATION_LOOKUP
+    ~ annotator_b ok 158.4s out 1,754 · qwen3.7-plus · labels=25 · 同道中人的含义和道理 → WORD_MEANING_LOOKUP
+    ~ annotator_b ok 221.5s out 1,795 · qwen3.7-plus · labels=25 · 蠢货是什么意思 → WORD_MEANING_LOOKUP
+    ~ annotator_b ok 353.6s out 1,749 · qwen3.7-plus · labels=25 · 终有弱水替沧海 → POEM_TEXT_LOOKUP
+    annotator[b] labelled 200/200
+    ~ annotator_a ok 8.7s out 1,653 · deepseek-v4-flash · labels=25 · 宏志中学 → EXAM_SCHOOL_INFO
+    ~ annotator_a ok 9.0s out 1,691 · deepseek-v4-flash · labels=25 · 浪淘沙李煜 → POEM_TEXT_LOOKUP
+    ~ annotator_a ok 9.3s out 1,689 · deepseek-v4-flash · labels=25 · 我忍不住___作文 → ESSAY_TEMPLATE_LOOKUP
+    ~ annotator_a ok 9.4s out 1,645 · deepseek-v4-flash · labels=25 · 求十十之一丢失十之九 → CHITCHAT_NOISE
+    ~ annotator_a !! 9.5s out 1,723 · deepseek-v4-flash · ValueError
+    ~ annotator_a ok 10.2s out 1,698 · deepseek-v4-flash · labels=25 · 很组词 → WORD_FORMATION_LOOKUP
+    ~ annotator_a ok 10.3s out 1,766 · deepseek-v4-flash · labels=25 · 《致良知》原文 → OBTAIN_FULL_TEXT
+    ~ annotator_a ok 11.6s out 1,752 · deepseek-v4-flash · labels=25 · 《三国演义》读后感 → ESSAY_TEMPLATE_LOOKUP
+    ~ annotator_a ok 19.4s out 1,738 · deepseek-v4-flash · labels=25 · 薄冰的拼音 → PRONUNCIATION_LOOKUP
+    annotator[a] labelled 200/200
+    2 confused pair(s) seen only once — below the noise floor at n=200, not sent to the redraw
+  gate p2a_pilot_agreement: PASSED — pilot: kappa 0.873 (95% upper 0.914) on 200 queries; raw agreement 88.5%, but kappa 0.9 needs about 90.9%; annotator self-consistency kappa 0.8626 (1.0 of ceiling reached) — NOTE the target 0.9 is ABOVE this annotator's own ceiling of 0.8626, so it is unreachable by any guide; the recoverable slack is -0.0107 ± 0.0358 — top confusions ['POEM_TEXT_LOOKUP × WORD_MEANING_LOOKUP (3)', 'SUBJECT_CONCEPT_EXPLANATION × WORD_MEANING_LOOKUP (3)', 'CHITCHAT_NOISE × WORD_MEANING_LOOKUP (2)']
+  gate p2a_taxonomy_shape: PASSED — 20 L1 intents, 47 adjudication rules the annotator can cite
+    prescriptions (recorded limitations): 4 structural (redraw), 1 guide (tie-break)
+    ~ observer_p3 ok 293.9s out 10,790 · moonshotai/kimi-k3 · observations=4, checked=8 · note → template_cohesion 中 meanin
+    ⚠ observation dropped — cites 'representation.alpha_sweep.grid_proposal.corpus_signals', which is not in this phase's artifacts: grid_proposal 补充 0.6 的经验依据（12 个短语模式覆盖约 36.6% 查询，由此推出 α²≈0.366、α≈0.605）所引用的语料信号未包含在本阶段任何 ar
+    observer[p3]: 0 CONFIRMED by check, 3 unverified, 3 kept (1 dropped)
+      [note/unverified] template_cohesion 中 meaning 组的 verdict 为 rejected，但它同时出现在 kept_because_seeded 中、dropped 为空，且在 alpha_sweep 每一行的  ← representation.template_cohesion
+      [note/unverified] D002 给全部五个被否决的 alpha 记录了同一条模板化理由 higher fragmentation or lower stability，但对 alpha=0.5 而言 lower stability 不成立（其  ← representation.alpha_sweep.rows
+      [note/unverified] alpha_sweep 各行及整个 sweep 均未记录样本量 n：bakeoff 明确标注 subsample_size=15000，template_cohesion 各组 n 合计 17007，但决定 alpha   ← representation.alpha_sweep.rows
+  gate p3_observer: PASSED — observer found nothing blocking in p3
+  ✔ p3_represent completed in 547.9s
+    ~ observer_p2a !! 898.0s out 19,524 · moonshotai/kimi-k3 · ValueError
+    ~ observer_p2a ok 1556.8s out 17,708 · moonshotai/kimi-k3 · observations=8, checked=7 · blocking → 同一条查询“无钱多老婆的生肖正确答案”同时被列为娱乐
+    observer[p2a]: 5 CONFIRMED by check, 3 unverified, 8 kept (0 dropped)
+      [blocking/✔MEASURED] 同一条查询“无钱多老婆的生肖正确答案”同时被列为娱乐类 RIDDLE_BRAIN_TEASER 的正例和风险拦截类 RISK_COMPLIANCE_INTERCEPT 的 source_evidence，同一查询在两个类  ← taxonomy.taxonomy.nodes
+          check FAILED: not ("无钱多老婆的生肖正确答案" in [n for n in taxonomy.taxonomy.nodes if n.code == "RIDDLE_BRAIN_TEASER"][0].positive_examples)
+      [warn/✔MEASURED] “底牌”“回溯”作为 CHITCHAT_NOISE 的正例，与 WORD_MEANING_LOOKUP 的 source_evidence（R3 legacy_audit 含“底牌”）以及规则 single_normal  ← taxonomy.taxonomy.nodes
+          check FAILED: not ("底牌" in [n for n in taxonomy.taxonomy.nodes if n.code == "CHITCHAT_NOISE"][0].positive_examples)
+      [warn/✔MEASURED] PRONUNCIATION_LOOKUP、ESSAY_TEMPLATE_LOOKUP、CHITCHAT_NOISE 三个节点的 adjudication_rules 为空，但规则集中存在以这些类为 classes 的 s  ← taxonomy.taxonomy.nodes
+          check FAILED: len([n for n in taxonomy.taxonomy.nodes if n.code == "PRONUNCIATION_LOOKUP"][0].adjudication_rules) > 0
+      [warn/unverified] 研究端明确标记的两条风险信号在最终 taxonomy 中静默消失：log_reading 的“查作文范文”候选 risk=true 并指出“漫画的启示450字可抄免费”（学术诚信）与“全天体罚小学男生流程”（未成年人安全  ← taxonomy.submissions
+      [warn/unverified] 决策 D003 自身记录的评审结论为 critic_verdict='revise'（12 条 findings），但 supersedes=null 且只有这一条决策记录，gates 为空，没有任何后续记录表明 rev  ← taxonomy.taxonomy.notes
+      [note/✔MEASURED] 20 个节点的 expected_share 合计为 0.965 而非 1.0，作为同一总体（全部查询）的分布预期，存在 3.5% 的无名缺口。  ← taxonomy.taxonomy.nodes
+          check FAILED: abs(sum(n.expected_share for n in taxonomy.taxonomy.nodes) - 1.0) <= 0.01
+      [note/✔MEASURED] taxonomy 元数据 axes 为空对象 {}，与决策和 notes 中“across 1 axes”的表述不一致，而每个节点又各自携带 axis="intent"。  ← taxonomy.taxonomy.axes
+          check FAILED: len(taxonomy.taxonomy.axes) > 0
+      [note/unverified] NAVIGATE_SITE 的 source_evidence 仅引用“R5 risk_compliance”，但给定 artifacts 中 risk_compliance submission 在 gambling_  ← taxonomy.submissions
+  gate p2a_observer: WARNED — observer flagged 1 blocking issue(s) in p2a, CONFIRMED by their own checks: 同一条查询“无钱多老婆的生肖正确答案”同时被列为娱乐类 RIDDLE_BRAIN_TEASER 的正例和风险拦截类 RISK_COMPLIANCE_INTERCEPT 的 source_evidence，同一查询在两个类
+  ✔ p2a_taxonomy completed in 1930.9s
+  P4 algorithm battery — 3 K values × 6 algorithms
+    winner: kmeans_k15 (stability 0.8305)
+    ~ observer_p4 ok 236.4s out 4,761 · moonshotai/kimi-k3 · observations=2, checked=9 · warn → battery.note 描述的是一套“电池在封顶子
+    observer[p4]: 0 CONFIRMED by check, 2 unverified, 2 kept (0 dropped)
+      [warn/unverified] battery.note 描述的是一套“电池在封顶子样本上排名、胜者再由 Phase 6 在全量语料上拟合”的选择流程，与同一会话 verdict 的 role（falsification probe）和 chosen_  ← battery.note
+      [warn/unverified] kmeans_assumption_contradicted=false 与 probe_note“无结构性不同算法可复现性明显更高”依赖一个 materiality 阈值，但该阈值未记录在 verdict 任何字段中，  ← battery.verdict.kmeans_assumption_contradicted
+  gate p4_observer: PASSED — observer found nothing blocking in p4
+    grid proposer[family_k]: +[5, 6, 7] (0 rejected) — 当前网格最低只到 8，但这个语料没有支持高 K 的强信号：领域是 k12_zh，属于窄垂直领域；虽然 n_rows 为 49999，但 12 个短语组仅覆盖 36.6%，说明这些短语模板更像可归并的子23:51:33 INFO    qmine.graph: P5 granularity — K sweep over 17 values
+23:58:49 INFO    qmine.graph:   参照系 `legacy_l1`: 触及 100% 的簇 (行覆盖 100%) @ k=20
+23:58:49 INFO    qmine.graph:   参照系 `legacy_l2`: 触及 100% 的簇 (行覆盖 100%) @ k=20
+23:58:49 INFO    qmine.graph:   参照系 `phrasing_groups`: 触及 40% 的簇 (行覆盖 33%) @ k=20
+23:58:49 INFO    qmine.graph:   K 由 `legacy_l2` 定位 (触及率最高)
+23:59:19 INFO    qmine.graph:   located K=18 (by ami_vs_legacy_l2); DeepAligned leaf estimate 28; converged=True
+23:59:19 INFO    qmine.graph:   locator scored against 6 phrasing classes covering 0.3341 of rows
+23:59:19 INFO    qmine.graph:   ⚠ 参照系之间对 K 不一致: legacy_l1→K=30, legacy_l2→K=18, phrasing_groups→K=6
+23:59:19 INFO    qmine.graph: gate p5_k_references_agree: WARNED — 不同参照系定位到不同的 K —— 交付的 K 是**相对于当选参照系**的粒度锚点, 不是语料常数。请连同参照系一起阅读这个 K。
+23:59:21 INFO    httpx2: HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+00:17:49 INFO    qmine:   ~ observer_p5 ok 1110.2s out 21,560 · moonshotai/kimi-k3 · observations=6, checked=11 · warn → reference_sensitivity 把 de
+00:17:49 INFO    qmine.graph:   observer[p5]: 2 CONFIRMED by check, 4 unverified, 6 kept (0 dropped)
+00:17:49 INFO    qmine.graph:     [warn/✔MEASURED] reference_sensitivity 把 decides=true 标在 phrasing_groups 上、备注末句又称"决定权在 phrasing_groups"，但本次运行实际由 legacy_l2 决定 K  ← granularity.triangulation.reference_sensitivity.by_reference
+00:17:49 INFO    qmine.graph:         check FAILED: granularity.triangulation.reference_sensitivity.by_reference[granularity.triangulation.deciding_reference]["decides"] == True
+00:17:49 INFO    qmine.graph:     [warn/✔MEASURED] D005 对全部 14 个落选 K 统一给出拒绝理由 "lower alignment with the phrasing groups"，但决定的定位指标是 ami_vs_legacy_l2，且其中 5 个落选 K 在  ← granularity.k_sweep
+00:17:49 INFO    qmine.graph:         check FAILED: max([r["intent_alignment_ami"] for r in granularity.k_sweep]) == 0.7156
+00:17:49 INFO    qmine.graph:     [warn/unverified] triangulation 记录 agreement="full" 且 measured_estimators_agree=true，但其自身 estimates 给出的点估计为 located_k=18、deep_al  ← granularity.triangulation.estimates
+00:17:49 INFO    qmine.graph:     [warn/unverified] deep_aligned 块中 size_distribution（max=1731, median=804, min=253）与 survival_threshold=833.3 并排出现：若该分布描述的是 k_est  ← granularity.deep_aligned
+00:17:49 INFO    qmine.graph:     [note/unverified] grid_proposal 的语料依据称"12 个短语组仅覆盖 36.6%"，而 locator_reference 记录同一 phrasing 参照为 n_classes=6、coverage=0.3341（16703  ← granularity.locator_reference
+00:17:49 INFO    qmine.graph:     [note/unverified] chosen_by 称并列带 0.0125 等于 "2x measured noise (se=0.0062)"，但 2×0.0062=0.0124≠0.0125，所述换算关系不成立（对本次 tie_set 成员资格无影  ← granularity.triangulation.chosen_by
+00:17:49 INFO    qmine.graph: gate p5_observer: PASSED — observer found nothing blocking in p5
+00:17:49 INFO    qmine.graph: P6 hierarchy — 18 families, then local leaf selection
+00:21:13 INFO    qmine.graph:   built 18 families / 51 leaves — 1 个家族无内部结构未再分, 4 个 silhouette 的选择被稳定性否决
+00:21:31 INFO    qmine.graph:   refined to 49 leaves in 5 rounds (converged=False)
+00:21:31 INFO    qmine.graph:   held-out structure reproduction 0.985
+00:21:31 INFO    qmine.graph: gate p6_heldout_reproduction: PASSED — held-out rows land in the same cluster 98.5% of the time (95% CI 0.983-0.988, n=10000) — met
+00:21:34 INFO    httpx2: HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+/opt/homebrew/Cellar/python@3.12/3.12.13_4/Frameworks/Python.framework/Versions/3.12/lib/python3.12/multiprocessing/resource_tracker.py:279: UserWarning: resource_tracker: There appear to be 1 leaked semaphore objects to clean up at shutdown
+  warnings.warn('resource_tracker: There appear to be %d '

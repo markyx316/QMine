@@ -51,6 +51,7 @@ from typing import Any
 from ..report.i18n import looks_like_english_prose
 from ..report.narrative_brief import (
     Bundle,
+    citable_numbers,
     MustCover,
     build_catalogue,
     digest,
@@ -81,7 +82,12 @@ def _reject(section_md: str, bundles: list[Bundle], allowed_figs: set[str],
     problems: list[str] = []
 
     facts = {b.id: b.facts for b in bundles}
-    res = check_numbers(section_md, facts)
+    # The pool must be what the sheet SHOWS, not only what `_flatten` reaches.
+    # `sheet` renders dotted paths, so a dict keyed by id displays numbers the
+    # value-only pool rejects — live42 refused `32, 40, 42, 43, 44, 45`, the leaf
+    # ids the section had just been shown, three times, and the section shipped
+    # as a hole. See `citable_numbers`.
+    res = check_numbers(section_md, {**facts, "_sheet": citable_numbers(facts)})
     if not res.ok:
         bad = ", ".join(c.raw for c in res.unsupported[:8])
         problems.append(

@@ -662,6 +662,39 @@ class ModelRegistry:
         if self.cfg.temperature is not None and _accepts_temperature(model_id):
             kwargs["temperature"] = self.cfg.temperature
 
+        # TURN OFF REASONING WHERE IT IS PURE COST.
+        #
+        # `deepseek-v4-flash` and `glm-5.2` both began emitting `reasoning_content`
+        # under the SAME model names between live40 and live41, and the tokens are
+        # billed. Measured directly on both endpoints with one trivial probe:
+        #
+        #   deepseek-v4-flash  505 completion tokens, 497 of them reasoning ->   9
+        #   glm-5.2            237 completion tokens, 227 of them reasoning ->  10
+        #
+        # — identical answers. On live41 that changed annotator_a from 202 to
+        # 1,030 output tokens per label (5x) and took the run to $28 by phase 5
+        # against a $9.11 estimate. It also caused the referee's 88% failure rate:
+        # reasoning consumed the output budget before the JSON was written, so the
+        # response truncated and surfaced as "no parseable structured output" —
+        # which plain-JSON mode cannot fix, because the schema wrapper was never
+        # the problem. Both models were already in plain-JSON mode and failing.
+        #
+        # Only bulk-classification roles are silenced. A taxonomy architect or an
+        # observer is exactly where deliberation earns its tokens; an annotator
+        # emitting 25 labels is not. `enable_thinking: false` does NOT work on
+        # DeepSeek (measured: still 1,037 reasoning tokens) — this parameter does.
+        # `extra_body`, NOT `model_kwargs`. LangChain forwards `model_kwargs` as
+        # TOP-LEVEL arguments to the OpenAI SDK, so a non-standard body field
+        # raises `TypeError: Completions.create() got an unexpected keyword
+        # argument 'thinking'` on the first call and every retry. That is what it
+        # did: live41 gen02 lost 24 annotation batches in one second, each failing
+        # in 0.0s with no tokens billed, and the pilot gate then reported
+        # "kappa nan on 0 queries". Vendor-specific body fields go in `extra_body`,
+        # which the SDK passes through untouched.
+        extra = reasoning_kwargs(role, provider)
+        if extra:
+            kwargs["extra_body"] = {**kwargs.get("extra_body", {}), **extra}
+
         # Prefer the OpenAI-compatible path over a provider-specific LangChain
         # integration. Both work, but the dedicated integrations each need their
         # own package installed, and "pip install langchain-<vendor>" per provider
@@ -892,8 +925,20 @@ class ModelRegistry:
                             "%s returns unparseable structured output; switching to "
                             "plain-JSON mode for the remainder of this run", key
                         )
-                log.warning("role=%s attempt=%d failed (%s); repairing via plain-JSON mode",
-                            role, attempt, last_err[:160])
+                # SAY WHICH REMEDY IS ACTUALLY BEING APPLIED.
+                #
+                # This printed "repairing via plain-JSON mode" for every failure,
+                # including transport errors where the schema is irrelevant and
+                # nothing is being repaired — the call is simply retried. On live41
+                # that produced 23 `APIConnectionError` lines all claiming a
+                # JSON-mode repair, which reads as a schema problem with the model
+                # and sent a reader looking in the wrong place.
+                transport = not _native_schema_is_broken(last_err)
+                log.warning(
+                    "role=%s attempt=%d failed (%s); %s",
+                    role, attempt, last_err[:160],
+                    "transient transport error — retrying the same call" if transport
+                    else "repairing via plain-JSON mode")
 
         raise LLMUnavailable(f"role={role} failed after {max_repair + 1} attempts: {last_err}")
 
@@ -1161,6 +1206,31 @@ class ModelRegistry:
 
 #: Models that removed the sampling parameters entirely and return 400 on any value.
 _NO_TEMPERATURE = ("claude-opus-5", "claude-opus-4-8", "claude-opus-4-7", "claude-fable-5", "claude-mythos-5")
+
+
+#: Roles whose work is bulk classification against a fixed guide, where a
+#: reasoning trace is billed output that no downstream step reads. Deliberation
+#: roles are deliberately absent — see the block in `_build` that uses this.
+NO_REASONING_ROLES: frozenset[str] = frozenset({
+    "annotator", "annotator_a", "annotator_b", "referee", "namer",
+})
+
+#: Providers measured to accept `thinking: {"type": "disabled"}`. Sending an
+#: unknown parameter is not free — an endpoint that rejects it fails the call —
+#: so this is an allowlist rather than a hopeful broadcast.
+REASONING_TOGGLE_PROVIDERS: frozenset[str] = frozenset({"deepseek", "zhipu", "qwen"})
+
+
+def reasoning_kwargs(role: str, provider: str) -> dict[str, Any]:
+    """`{"thinking": {"type": "disabled"}}` for bulk roles on providers that take it.
+
+    Split out so the RULE can be tested without an API key — building a routed
+    model needs a live client, and a constant nothing sends is a constant that
+    does nothing.
+    """
+    if role in NO_REASONING_ROLES and provider in REASONING_TOGGLE_PROVIDERS:
+        return {"thinking": {"type": "disabled"}}
+    return {}
 
 
 def _accepts_temperature(model: str) -> bool:

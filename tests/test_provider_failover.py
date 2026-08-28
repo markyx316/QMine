@@ -671,3 +671,89 @@ def test_the_probe_schema_is_shaped_like_the_ones_that_actually_fail():
     assert "items" in props and props["items"].get("type") == "object", (
         "the probe must exercise a keyed map, not just scalars"
     )
+
+
+def test_bulk_classification_roles_do_not_pay_for_reasoning_tokens():
+    """Both annotator models became reasoning models between live40 and live41.
+
+    Same model NAMES, new behaviour, and the reasoning tokens are billed. Probed
+    directly against both endpoints with one trivial prompt:
+
+        deepseek-v4-flash   505 completion tokens, 497 reasoning  ->   9
+        glm-5.2             237 completion tokens, 227 reasoning  ->  10
+        qwen3.7-plus        586 completion tokens, 573 reasoning  ->  10
+
+    — identical answers each time. On live41 that took annotator_a from 202 to
+    1,030 output tokens per label and the run to $28 by phase 5 against a $9.11
+    estimate. It also produced the referee's 88% failure rate: reasoning consumed
+    the output budget before the JSON was written, so responses truncated and
+    surfaced as "no parseable structured output". Plain-JSON mode could not fix
+    that — both models were ALREADY in plain-JSON mode from a persisted quirk and
+    failing anyway, because the schema wrapper was never the problem.
+
+    Two properties are pinned. Deliberation roles keep their reasoning: an
+    architect or an observer is exactly where those tokens earn their cost. And
+    the parameter is only sent to providers measured to accept it — an endpoint
+    that rejects an unknown field fails the call, so this is an allowlist, not a
+    hopeful broadcast.
+    """
+    from qmine.llm.registry import NO_REASONING_ROLES, REASONING_TOGGLE_PROVIDERS
+
+    for bulk in ("annotator_a", "annotator_b", "referee", "namer"):
+        assert bulk in NO_REASONING_ROLES, f"{bulk} emits bulk labels; reasoning is waste"
+    for thinker in ("taxonomy_architect", "taxonomy_critic", "observer",
+                    "delivery_auditor", "adversary", "researcher", "reporter"):
+        assert thinker not in NO_REASONING_ROLES, (
+            f"{thinker} was silenced — deliberation is the job it is paid for")
+
+    # Measured to accept `thinking: {"type": "disabled"}`.
+    assert REASONING_TOGGLE_PROVIDERS == frozenset({"deepseek", "zhipu", "qwen"})
+
+
+def test_the_reasoning_switch_reaches_the_request_for_bulk_roles_only():
+    """A constant nothing sends is a constant that does nothing.
+
+    `NO_REASONING_ROLES` is only useful if `_build_routed` actually puts the
+    parameter in `model_kwargs`, and only for the roles and providers listed.
+    """
+    import inspect
+
+    from qmine.llm.registry import ModelRegistry, reasoning_kwargs
+
+    def thinking_for(role: str, provider: str):
+        return reasoning_kwargs(role, provider).get("thinking")
+
+    assert thinking_for("annotator_a", "deepseek") == {"type": "disabled"}
+    assert thinking_for("referee", "zhipu") == {"type": "disabled"}
+    assert thinking_for("annotator_b", "qwen") == {"type": "disabled"}
+
+    # A deliberation role keeps its reasoning...
+    assert thinking_for("taxonomy_architect", "deepseek") is None
+    # ...and a provider not on the allowlist is never sent the parameter, even
+    # for a silenced role, because an endpoint that rejects an unknown field
+    # fails the call outright.
+    assert thinking_for("annotator_a", "openrouter") is None
+
+    # And the builder must actually consult it — the rule being right is no use
+    # if `_build_routed` stopped calling it.
+    src = inspect.getsource(ModelRegistry._build_routed)
+    assert "reasoning_kwargs(" in src, (
+        "_build_routed no longer applies the reasoning switch")
+
+    # IT MUST GO IN `extra_body`, NOT `model_kwargs`.
+    #
+    # This is the whole defect this test exists for, and the first version of the
+    # test could not see it. LangChain forwards `model_kwargs` as TOP-LEVEL
+    # arguments to the OpenAI SDK, so a vendor body field raises
+    # `TypeError: Completions.create() got an unexpected keyword argument
+    # 'thinking'` on every call. live41 gen02 lost **24 annotation batches in one
+    # second** that way — each failing in 0.0s with nothing billed — and the pilot
+    # gate reported "kappa nan on 0 queries". Meanwhile a test asserting that
+    # `reasoning_kwargs` returned the right dict, and that `_build_routed` called
+    # it, passed green: both were true and every call still failed.
+    placement = src.split("reasoning_kwargs(")[1]
+    assert "extra_body" in placement, (
+        "the reasoning switch is not placed in `extra_body` — LangChain passes "
+        "`model_kwargs` as top-level SDK arguments and the call will TypeError")
+    assert 'kwargs["model_kwargs"] = {**kwargs.get("model_kwargs", {}), **extra}' not in src, (
+        "vendor body fields must not go through `model_kwargs`")

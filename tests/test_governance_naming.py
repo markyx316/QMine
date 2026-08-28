@@ -333,3 +333,45 @@ def test_an_agent_prescribed_split_is_measured_even_though_it_is_not_vetoed():
     assert len(set(lab2.tolist())) == 2, "the split was silently dropped"
     assert rec2["geometry_supports_the_split"] is False, (
         f"a structureless split was reported as geometrically supported: {rec2}")
+
+
+def test_a_batch_total_is_not_labelled_as_one_prescription_s_contribution():
+    """Every executed prescription carried the SAME deltas, keyed as its own.
+
+    live42's p8 observer confirmed it mechanically: all 20 executed prescriptions
+    recorded `{n_families: 6.0, template_fragmentation: -0.0169}` — the whole
+    batch's movement, stamped on each one under a key that reads like individual
+    attribution. The morning's audit had found the same thing independently.
+
+    Per-prescription attribution is not merely unimplemented, it is ill-defined:
+    the prescriptions are applied in sequence to one shared partition, so the
+    third one's delta depends on the first two having run, and any isolated
+    number would be order-dependent. So the key names its scope instead of
+    implying a precision the pipeline cannot deliver.
+    """
+    import numpy as np
+
+    from qmine.ops.governance import execute_prescriptions
+    from qmine.records import Prescription
+
+    leaf_family = np.array([0, 0, 1, 1, 2, 2], dtype=np.int64)
+    pres = [
+        Prescription(id="P1", kind="merge_families", targets=[0, 1], rationale="r"),
+        Prescription(id="P2", kind="isolate_leaf", targets=[4], rationale="r"),
+    ]
+    result = execute_prescriptions(
+        pres, leaf_family, recompute=lambda fam: {"n_families": float(len(set(fam.tolist())))})
+    detail = result[-1] if isinstance(result, tuple) else result
+
+    executed = [p for p in pres if p.status == "executed"]
+    assert executed, f"nothing executed: {[(p.id, p.status) for p in pres]}"
+    for p in executed:
+        ev = p.evidence
+        assert "metric_deltas" not in ev, (
+            "a batch total is still keyed as if it were this prescription's own")
+        assert "metric_deltas_for_the_WHOLE_BATCH" in ev
+        assert "batch total" in ev["metric_deltas_scope"]
+
+    # And the batch-level summary keeps its own, correctly scoped, key — the
+    # execution total is legitimately a batch number and the reports read it.
+    assert "metric_deltas" in detail

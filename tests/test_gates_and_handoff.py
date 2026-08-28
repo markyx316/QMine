@@ -1182,3 +1182,201 @@ def test_a_gate_that_passed_with_slack_says_so_to_the_reader():
     md = _gate_ledger({"gates": {"p2b_kappa": slack}})
     assert "带保留通过" in md, "the table does not flag a pass that sits under its bar"
     assert "RESIDUAL SLACK" in md, "the gate's own message still does not reach the reader"
+
+
+def test_the_dashboard_does_not_close_a_branch_that_is_still_running():
+    """Under the p1 fork the next phase to start is on the OTHER branch.
+
+    Completion used to be inferred from "a different phase started", which closed
+    whichever phase was `current`. On live40 P2a and P3a both begin at 14:56:08,
+    and the phase list flipped p3 from done back to running mid-run — the panel
+    reporting a branch finished while it was still working.
+
+    Two things fix it and both are asserted here: a phase on one branch never
+    closes a phase on the other, and `_wrap` now EMITS completion so the duration
+    is measured rather than guessed.
+    """
+    from qmine.ui.live import LiveDashboard
+
+    d = LiveDashboard(run_id="t", enabled=False)
+    base = 1000.0
+    d._ingest("P1 data audit — mining", at=base)
+    d._ingest("P2a taxonomy — researchers", at=base + 1)
+    d._ingest("P3a encoder bake-off", at=base + 2)
+
+    assert d.status["p1"] == "done", "the spine phase should close when a branch starts"
+    assert sorted(d.running) == ["p2a", "p3"], f"both branches must be running: {d.running}"
+    assert d.status["p2a"] == "running" and d.status["p3"] == "running"
+
+    # More top-down activity must NOT close the bottom-up branch.
+    d._ingest("P2b gold — annotating", at=base + 3)
+    assert d.status["p3"] == "running", "a top-down phase closed the bottom-up branch"
+    assert d.status["p2a"] == "done", "its own branch should have advanced"
+
+    # An explicit completion closes exactly its own phase, with a real duration.
+    d._ingest("✔ p3_represent completed in 42.5s", at=base + 4)
+    assert d.status["p3"] == "done"
+    assert d.timings["p3"] == 42.5, (
+        f"duration must come from the emitted measurement, got {d.timings.get('p3')}")
+
+
+def test_watching_a_finished_run_shows_the_durations_it_actually_had():
+    """A replay reads a thousand lines in under a second.
+
+    Phase timings were measured with `time.time()`, so `qmine watch` on a
+    completed run — the case it is most wanted for — rendered every phase as
+    "0s". The log carries its own clock; `parse_log_clock` reads it.
+    """
+    from qmine.ui.live import LiveDashboard, parse_log_clock, parse_log_line
+
+    lines = [
+        "14:56:04 INFO    qmine.graph: P0 foundation — seeding",
+        "14:56:07 INFO    qmine.graph: P1 data audit — mining",
+        "15:56:07 INFO    qmine.graph: ✔ p1_audit completed in 3600.0s",
+    ]
+    d = LiveDashboard(run_id="t", enabled=False)
+    for ln in lines:
+        msg = parse_log_line(ln)
+        assert msg is not None
+        d.handle(msg, at=parse_log_clock(ln))
+
+    assert d.timings["p0"] == 3.0, f"p0 should be 3s from the log clock: {d.timings}"
+    assert d.timings["p1"] == 3600.0
+    # And the clock must survive midnight rather than going negative.
+    d2 = LiveDashboard(run_id="t", enabled=False)
+    d2._ingest("P0 foundation", at=23 * 3600 + 3599)     # 23:59:59
+    d2._ingest("P1 audit", at=1.0)                        # 00:00:01 next day
+    assert d2.timings["p0"] == 2.0, f"midnight rollover produced {d2.timings.get('p0')}"
+
+
+def test_a_rule_id_that_resolves_to_nothing_never_reaches_the_annotator():
+    """An unresolved id is not a rule, and passing it through is worse than dropping it.
+
+    `_render_rules` treated a bare id as a cross-reference only when it MATCHED a
+    real rule; a dangling one fell through to the free-text branch and reached the
+    annotator's guide as a line that looks like a rule and carries no adjudication
+    content whatsoever:
+
+        - [POEM_TEXT_LOOKUP] RULE_POEM_TEXT_CHILD_OF_FULL_TEXT
+
+    live41's observer confirmed three of them across six citing slots. The
+    architect had invented a second id convention (SCREAMING_SNAKE with a `RULE_`
+    prefix, against the registry's lowercase snake_case) for boundaries the rule
+    writer never wrote — so those boundaries had no tie-break AND the guide gained
+    three lines of noise inside a budgeted section.
+
+    The discriminator must not swallow real rules in either language: an English
+    rule has spaces, a Chinese rule has CJK, and neither is a bare ASCII id.
+    """
+    from qmine.graph.nodes.topdown import _render_rules, dangling_rule_references
+    from qmine.records import AdjudicationRule, Taxonomy, TaxonomyNode
+
+    tax = Taxonomy(
+        version="v1",
+        nodes=[
+            TaxonomyNode(code="POEM", name="poem", level=1, definition="d", user_need="n",
+                         adjudication_rules=["real_rule", "RULE_DOES_NOT_EXIST"]),
+            TaxonomyNode(code="MATH", name="math", level=1, definition="d", user_need="n",
+                         # A Chinese rule has no spaces — it must survive.
+                         adjudication_rules=["诗词原文优先于全文查询", "prefer MATH when a formula appears"]),
+        ],
+        rules=[AdjudicationRule(id="real_rule", when="a marker appears",
+                                then="POEM", rationale="because")],
+    )
+    rendered = _render_rules(tax)
+
+    assert "RULE_DOES_NOT_EXIST" not in rendered, (
+        "an id resolving to nothing reached the annotator as if it were a rule")
+    assert "real_rule" in rendered, "the resolving cross-reference lost its rule"
+    assert "诗词原文优先于全文查询" in rendered, (
+        "a Chinese rule was mistaken for a bare identifier and dropped")
+    assert "prefer MATH when a formula appears" in rendered, "an English rule was dropped"
+
+    dangling = dangling_rule_references(tax)
+    assert dangling == [{"class": "POEM", "rule_id": "RULE_DOES_NOT_EXIST"}], dangling
+
+
+def test_new_generation_branches_from_the_newest_generation_by_default():
+    """"Open the next generation" must not silently re-open an existing one.
+
+    `--from-generation` defaulted to **1**, so running `new-generation` on a run
+    already at gen02 created "the next after gen01" — gen02 again — and overwrote
+    it instead of advancing to gen03. On live41 that put a resumed run straight
+    back into the generation whose pilot had just failed, and nothing in the
+    command the operator typed said so.
+
+    `artifacts.latest_generation` exists because both RESUME paths once had this
+    same hardcoded 1; its docstring records that. This call site was missed.
+    """
+    import inspect
+
+    from qmine.cli import new_generation_cmd
+
+    src = inspect.getsource(new_generation_cmd)
+    assert "latest_generation(" in src, (
+        "new-generation no longer resolves the newest generation and will "
+        "overwrite an existing one")
+    assert 'typer.Option(1, "--from-generation")' not in src, (
+        "--from-generation is hardcoded to 1 again")
+
+    # And the resolution must be conditional on the flag being absent, so an
+    # explicit --from-generation still branches where the operator asked.
+    assert "if from_generation is None:" in src
+
+
+def test_both_run_paths_attach_the_browsable_page():
+    """A detached run, and a RESUMED run, each wrote no page at all.
+
+    Two separate defects with the same symptom. First, the HTML writer was built
+    inside `if use_dash:`, and `use_dash` is `dashboard and verbose` — both off
+    without a TTY. Second, and worse, the `--resume` branch calls `resume_run`
+    and RETURNS before the fresh-run setup runs at all; its own comment warns
+    that "this branch returns before the fresh-run setup below ever sees it".
+
+    So the only `dashboard.html` on disk during a resumed run was whatever a
+    `qmine watch` follower wrote — and a follower replays `run.log` from offset
+    0, which is append-only ACROSS generations, so a run at gen03 had gen01 and
+    gen02 events rendered into the page the operator was reading as current.
+    """
+    import inspect
+
+    from qmine.cli import _attach_dashboard, run as run_cmd
+
+    helper = inspect.getsource(_attach_dashboard)
+    assert "HtmlWriter(" in helper, "the helper builds no page"
+    # It must not re-gate on the terminal panel: `enabled` only switches the
+    # Rich view off, the page is built either way.
+    body = helper[helper.index("dash = LiveDashboard"):]
+    assert "if run_id:" in body and "if enabled" not in body, (
+        "the page is gated on the terminal panel again")
+
+    # BOTH paths must call it — this is the half that was missing.
+    src = inspect.getsource(run_cmd)
+    code = "\n".join(l for l in src.splitlines() if not l.lstrip().startswith("#"))
+    resume_branch = code[code.index("if resume and run_id:"):code.index("return")]
+    assert "_attach_dashboard(" in resume_branch, (
+        "the resume path returns without ever attaching a dashboard")
+    assert "on_event=" in resume_branch, (
+        "resume_run is called without an event sink, so nothing can render")
+    assert code.count("_attach_dashboard(") >= 2, (
+        "the fresh-run path lost its dashboard")
+
+
+def test_a_replay_clock_is_not_rendered_as_an_epoch():
+    """`parse_log_clock` returns seconds since midnight, not a Unix timestamp.
+
+    `time.localtime` on 79,428 treats it as an epoch, so 22:03:48 rendered as
+    "06:03:48" once the timezone offset was applied — every absolute time on a
+    replayed page was wrong, while durations (differences) stayed correct and
+    hid it.
+    """
+    import time
+
+    from qmine.ui.web import _clock
+
+    assert _clock(22 * 3600 + 3 * 60 + 48) == "22:03:48"
+    assert _clock(0) == ""                      # falsy: no timestamp at all
+    assert _clock(90000) == "01:00:00"          # past midnight, wraps
+    # A real epoch still renders as local wall-clock.
+    now = time.time()
+    assert _clock(now) == time.strftime("%H:%M:%S", time.localtime(now))

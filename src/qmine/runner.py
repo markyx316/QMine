@@ -112,24 +112,52 @@ def _checkpointer(path: Path) -> Iterator[Any]:
     in practice on this project — a run killed during Phase 4 resumed at Phase 4
     rather than re-encoding 50,000 rows.
     """
+    # BUILD THE SAVER INSIDE try/except; YIELD IT OUTSIDE.
+    #
+    # `@contextmanager` throws an exception raised in the WITH-BODY back in at the
+    # yield point, so a single try/except wrapped around the yield caught the
+    # entire pipeline's failures — not just this function's setup. live42 ended
+    # its 17th phase, LangGraph's loop teardown raised, and this relabelled it
+    # "SQLite checkpointer unavailable (Type is not msgpack serializable:
+    # DecisionRecord)" — a message about a serializer that encodes
+    # `DecisionRecord` perfectly well — then fell through to a SECOND `yield`,
+    # which a generator may not do: "generator didn't stop after throw()".
+    #
+    # The damage was not the noise. The RuntimeError replaced the real exception
+    # and killed the run BEFORE `write_summary`, so `run_summary.json` was never
+    # written — and five of `verify_run.py`'s six checks read that file, so a
+    # completed 17/17 run scored as though observers had never run and no phase
+    # had completed. A masked exception cost the run its entire verifiability.
+    saver: Any = None
+    conn = None
     try:
         import sqlite3
 
         from langgraph.checkpoint.sqlite import SqliteSaver
 
         conn = sqlite3.connect(str(path), check_same_thread=False)
-        try:
-            saver = SqliteSaver(conn, serde=_serializer())
-            saver.setup()
-            yield saver
-            return
-        finally:
-            conn.close()
-    except Exception as exc:  # noqa: BLE001
+        saver = SqliteSaver(conn, serde=_serializer())
+        saver.setup()
+    except Exception as exc:  # noqa: BLE001 — setup only; the body is not in scope here
         log.warning("SQLite checkpointer unavailable (%s); using in-memory", exc)
-    from langgraph.checkpoint.memory import InMemorySaver
+        if conn is not None:
+            with contextlib.suppress(Exception):
+                conn.close()
+        conn, saver = None, None
 
-    yield InMemorySaver()
+    if saver is None:
+        from langgraph.checkpoint.memory import InMemorySaver
+
+        saver = InMemorySaver()
+
+    try:
+        # Exactly one yield, and no `except` around it: a pipeline exception now
+        # propagates unchanged to the caller instead of being renamed.
+        yield saver
+    finally:
+        if conn is not None:
+            with contextlib.suppress(Exception):
+                conn.close()
 
 
 def _wire_events(
@@ -203,6 +231,15 @@ def run_pipeline(
             dash.usage_fn = registry.usage
         if hasattr(dash, "provider"):
             dash.provider = registry.provider
+        # A BROWSABLE VIEW BESIDE THE TERMINAL ONE.
+        #
+        # The panel keeps the last 8 agent calls because that is what fits;
+        # live40 made 696. `registry.raw_log` holds every full return, and
+        # `index.jsonl` lists artifacts as they are written, so the HTML view can
+        # answer "what did that researcher actually say" and "what exists so far"
+        # while the run is still going. Same model, so the two cannot disagree.
+        if hasattr(dash, "transcript_fn"):
+            dash.transcript_fn = lambda: registry.raw_log
 
     with _run_log(root), open_memory(Path(cfg.run_root) / "memory.sqlite", project="qmine", domain=cfg.domain.key) as memory:
         deps = Deps(cfg=cfg, store=store, registry=registry, memory=memory,
@@ -216,15 +253,32 @@ def run_pipeline(
             }
             t0 = time.time()
             final: PipelineState = init
-            if stream:
-                for chunk in graph.stream(init, config=config, stream_mode="values"):
-                    final = chunk
-            else:
-                final = graph.invoke(init, config=config)
-
-            summary = write_summary(final, store, registry,
-                                    declared_gates=cfg.gates.blocking, run_id=run_id,
-                                    generation=generation, elapsed=time.time() - t0)
+            # WRITE THE SUMMARY EVEN IF THE GRAPH RAISES.
+            #
+            # It used to sit after the stream, so any exception — including one
+            # thrown during LangGraph's own loop teardown, after every phase had
+            # finished — skipped it. live42 completed 17/17 phases and shipped
+            # every deliverable with no `run_summary.json`, and FIVE of
+            # `verify_run.py`'s six checks read that file: the run scored as
+            # though no phase had completed and no observer had run.
+            #
+            # A summary of the last state reached is worth strictly more than
+            # none, and on a crash it is the only record of how far the run got.
+            # The exception still propagates; it is no longer paid for twice.
+            try:
+                if stream:
+                    for chunk in graph.stream(init, config=config, stream_mode="values"):
+                        final = chunk
+                else:
+                    final = graph.invoke(init, config=config)
+            finally:
+                try:
+                    summary = write_summary(
+                        final, store, registry, declared_gates=cfg.gates.blocking,
+                        run_id=run_id, generation=generation, elapsed=time.time() - t0)
+                except Exception as exc:  # noqa: BLE001
+                    log.warning("run_summary could not be written (%s)", exc)
+                    summary = {}
             return {"state": final, "summary": summary, "events": events, "deps": deps}
 
 

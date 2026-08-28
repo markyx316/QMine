@@ -189,6 +189,12 @@ def _agglo_predict(X_fit: np.ndarray, X_query: np.ndarray, k: int) -> np.ndarray
 # Phase 4 — the battery
 # ==========================================================================
 
+#: How much more reproducible a structurally different algorithm must be before
+#: the KMeans assumption is called into question. Applied since the probe existed
+#: and recorded in the verdict only after live41's observer pointed out that the
+#: conclusion could not be checked without it.
+CONTRADICTION_MARGIN = 0.10
+
 #: Algorithms that share KMeans's isotropic cluster-shape assumption. A probe
 #: asking "is this structure an artefact of that assumption?" learns nothing by
 #: comparing against another member of this family — MiniBatchKMeans is KMeans
@@ -427,13 +433,17 @@ def _battery_verdict(rows: list[dict[str, Any]]) -> dict[str, Any]:
     # The verdict is now taken from the paired comparison, which is the weaker and
     # the only valid statement. A single unpaired maximum could clear 0.10 purely
     # because the two rows sit at different k.
-    contradicted = bool(worst_paired is not None and worst_paired > 0.10)
+    contradicted = bool(worst_paired is not None and worst_paired > CONTRADICTION_MARGIN)
     return {
         "role": "falsification probe - the delivered tree is always KMeans (build_hierarchy)",
         "reference_algorithm": reference["algorithm"] if reference else None,
         "best_alternative": best_other["algorithm"] if best_other else None,
         "paired_margins_within_k": per_k,
         "largest_paired_margin": worst_paired,
+        # The bar the verdict rests on. It was applied and never recorded, so a
+        # reader could not check "no alternative is MATERIALLY more reproducible"
+        # against anything — live41's p4 observer flagged exactly that.
+        "materiality_threshold_ari": CONTRADICTION_MARGIN,
         "alternative_beats_reference_by": margin,
         "kmeans_assumption_contradicted": contradicted,
         "probe_note": (
@@ -512,6 +522,10 @@ def reference_profile(masks: dict[str, np.ndarray] | None, n_rows: int) -> dict[
     """
     if not masks:
         return {"n_classes": 0, "coverage": 0.0, "reference": "none"}
+    # NOTE: this profiles the PHRASING GROUPS specifically. It is not necessarily
+    # the reference that located K — `choose_locator` picks that on reach and
+    # discrimination, and on live42 it chose `legacy_l2`. The caller must label
+    # this accordingly; see `p5_granularity`.
     y = np.full(n_rows, -1, dtype=np.int64)
     for i, m in enumerate(masks.values()):
         m = np.asarray(m)
@@ -525,10 +539,10 @@ def reference_profile(masks: dict[str, np.ndarray] | None, n_rows: int) -> dict[
         "coverage": round(float(known.mean()), 4),
         "n_rows_scored": int(known.sum()),
         "caveat": (
-            "K is located by maximising AMI against THIS partition. The located K "
-            "tracks its cardinality, and rows outside it are unscored — so this is "
-            "a granularity anchor relative to a chosen reference, not a corpus "
-            "constant. Swapping the reference moves the answer."
+            "这是**措辞群**参照系的画像, 不一定是最终定位 K 的那个参照系 —— 后者见 "
+            "`triangulation.deciding_reference`。定位到的 K 跟着参照系**触及到多少簇**"
+            "走 (不是它的类目数: 固定行集、只改类目数, 6/9/25 类都定位到同一个 K), "
+            "参照系没覆盖到的行则完全不计分。换一个参照系, 答案就会变。"
         ),
     }
 
@@ -715,7 +729,16 @@ def triangulate_k(
         if np.isnan(se):
             band, band_source = ami_tie_band, f"configured {ami_tie_band} (sweep too short to measure)"
         else:
-            band, band_source = ami_tie_z * se, f"{ami_tie_z:g}x measured noise (se={se:.4f})"
+            # PRINT `se` AT ENOUGH PRECISION THAT THE STATED ARITHMETIC CHECKS.
+            #
+            # `se` was rendered at 4dp while the band came from the unrounded
+            # value, so live41 shipped "ties within 0.0125 — 2x measured noise
+            # (se=0.0062)" and 2 x 0.0062 is 0.0124. Its own p5 observer did the
+            # multiplication and found it did not hold. The band was right; the
+            # sentence describing it could not be verified by a reader, which is
+            # the kind of small wrongness that makes every other number suspect.
+            band = ami_tie_z * se
+            band_source = f"{ami_tie_z:g}x measured noise (se={se:.5g})"
         tie_set = [r for r in located
                    if best[locator_key] - r[locator_key] <= band]
         peak = min(tie_set, key=lambda r: r["k"])   # inside a tie, prefer the simpler tree
@@ -793,7 +816,11 @@ def triangulate_k(
                     for r in sorted(tie_set, key=lambda r: r["k"])],
         "chosen_by": (
             f"stability >= {stability_floor} rejects irreproducible K; among survivors the "
-            f"highest {locator}; ties within {band:.4f} — {band_source} — broken toward the simpler tree"
+            # BOTH numbers at the same precision, or the stated conversion cannot
+            # hold: `band` at 4dp against an `se` at 5sf gave "0.0125 = 2 x
+            # 0.0062377", which is 0.0124754. Rounding two values independently
+            # and then inviting the reader to multiply them is the defect.
+            f"highest {locator}; ties within {band:.5g} — {band_source} — broken toward the simpler tree"
         ),
         "converged": agreement == "full",
         "agreement": agreement,
@@ -848,17 +875,57 @@ def locator_reach(labels: np.ndarray, reference: np.ndarray, *,
     }
 
 
-def choose_locator(reach: dict[str, dict[str, Any]], want: str = "auto") -> tuple[str, str]:
+def discrimination(sweep: list[dict[str, Any]], key: str) -> float:
+    """How many noise-widths of signal a reference's curve actually carries.
+
+    `(max - min) / noise_floor`. A locator has to do two separate things: SEE the
+    whole partition (reach) and TELL DIFFERENT K APART. Reach alone was the rule
+    for one morning and live41 showed why that is not enough — measured on its own
+    sweep:
+
+    | reference | reach | range | range/se | tie set |
+    |---|---|---|---|---|
+    | phrasing groups | 40% | 0.2190 | 17.5 | 4 |
+    | `legacy_l1` | 100% | 0.0373 | **5.9** | **8** |
+    | `legacy_l2` | 100% | 0.1072 | 17.5 | 3 |
+
+    Reach picked `legacy_l1`, the least discriminating of the three: nine coarse
+    classes, of which two hold ~79% of the corpus, so its whole curve spans 0.037
+    against a tie band of 0.0126. Eight of seventeen k values tied and `min(tie_set)`
+    returned 12 while the raw argmax was 30 — the answer was "this reference cannot
+    tell 12 from 65 apart", reported as a K. `legacy_l2` dominates it outright.
+    """
+    vals = [r.get(key) for r in sweep]
+    vals = [v for v in vals if isinstance(v, (int, float)) and not np.isnan(v)]
+    if len(vals) < 4:
+        return 0.0
+    from .select import noise_floor
+
+    se = noise_floor(vals)
+    if not se or np.isnan(se) or se <= 0:
+        return 0.0
+    return round((max(vals) - min(vals)) / se, 2)
+
+
+def choose_locator(reach: dict[str, dict[str, Any]], want: str = "auto", *,
+                   sweep: list[dict[str, Any]] | None = None,
+                   min_reach: float = 0.80) -> tuple[str, str]:
     """Pick which reference locates K. Returns ``(column, reference_name)``.
 
     Extracted from p5 so the RULE is testable rather than only its inputs: a
     mutation swapping `reach` for `row_coverage` here changes the delivered K and
     was invisible to any test while this lived inline.
 
-    ``auto`` takes the highest reach, breaking ties on row coverage. Reach is the
-    right key and coverage is not: on live40 the phrasing groups cover 33.4% of
-    rows and reach 38.9% of clusters, while a reference covering the same rows
-    spread evenly would reach all of them and could speak for the corpus.
+    **Two requirements, in order.** A reference must first REACH enough of the
+    partition to speak for the corpus — 33% of rows concentrated in two clusters
+    cannot, however sharp its curve. Among those that qualify, the one whose curve
+    carries the most signal per unit of its own noise wins, because a reference
+    that sees everything and cannot tell 12 from 65 apart has not located
+    anything. See `discrimination` for the live41 measurement that added the
+    second half of this rule.
+
+    With no sweep to measure discrimination on, this degrades to reach — the
+    behaviour it had before, and still better than row coverage.
     """
     if not reach:
         return "intent_alignment_ami", "phrasing_groups"
@@ -869,8 +936,14 @@ def choose_locator(reach: dict[str, dict[str, Any]], want: str = "auto") -> tupl
             if name == want:
                 return rec["column"], name
         return "intent_alignment_ami", "phrasing_groups"
-    name, rec = max(reach.items(),
-                    key=lambda kv: (kv[1].get("reach") or 0.0,
+
+    disc = {name: (discrimination(sweep, rec["column"]) if sweep else 0.0)
+            for name, rec in reach.items()}
+    qualified = {n: r for n, r in reach.items() if (r.get("reach") or 0.0) >= min_reach}
+    pool = qualified or reach            # nothing qualifies: the reach gate says so
+    name, rec = max(pool.items(),
+                    key=lambda kv: (disc.get(kv[0], 0.0),
+                                    kv[1].get("reach") or 0.0,
                                     kv[1].get("row_coverage") or 0.0))
     return rec["column"], name
 

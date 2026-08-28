@@ -326,7 +326,29 @@ def execute_prescriptions(
             ),
             "before": detail.get("merges", {}).get("n_families_before"),
             "after": int(len(np.unique(new_family))),
-            "metric_deltas": deltas,
+            # NAME THE SCOPE. This was `metric_deltas`, and every executed
+            # prescription carried the SAME dict — the whole batch's movement,
+            # stamped on each one as if it were that prescription's own
+            # contribution. live42's p8 observer confirmed it mechanically:
+            # all 20 executed prescriptions recorded
+            # {n_families: 6.0, template_fragmentation: -0.0169}.
+            #
+            # Per-prescription attribution is not merely unimplemented, it is
+            # ill-defined here: the prescriptions are applied in sequence to a
+            # shared partition, so the third one's delta depends on the first two
+            # having run. Isolating it would need a re-measure per prescription in
+            # a fixed order, and the number would still be order-dependent.
+            #
+            # So the field says what it is. A reader who wants the batch total
+            # gets it; a reader who wanted per-prescription credit is told, in the
+            # key, that this is not that.
+            "metric_deltas_for_the_WHOLE_BATCH": deltas,
+            "metric_deltas_scope": (
+                "batch total across every executed prescription, not this "
+                "prescription's own contribution — the prescriptions are applied "
+                "in sequence to one partition, so an individual delta is "
+                "order-dependent and is not computed"
+            ),
         }
 
     if relabel:
@@ -379,7 +401,11 @@ def governance_ledger(prescriptions: Sequence[Prescription]) -> list[dict[str, A
             "status": p.status,
             "rationale": p.rationale,
             "executed_column": p.evidence.get("column", ""),
-            "metric_deltas": p.evidence.get("metric_deltas", {}),
+            # Carries the batch-scoped key forward under its real name; see the
+            # evidence block in  for why per-prescription
+            # attribution is not computed.
+            "metric_deltas_for_the_WHOLE_BATCH": p.evidence.get(
+                "metric_deltas_for_the_WHOLE_BATCH", {}),
             "decline_reason": p.decline_reason,
         }
         for p in prescriptions

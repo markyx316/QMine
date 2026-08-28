@@ -230,7 +230,15 @@ def test_execution_stamps_evidence_on_every_prescription():
                                      recompute=lambda f: {"m": 0.5})
     assert ps[0].status == "executed"
     assert ps[0].evidence["column"] == "family_final"
-    assert ps[0].evidence["metric_deltas"]["m"] == -0.5
+    # KEY RENAMED, CONTRACT UNCHANGED. Every executed prescription still carries
+    # the deltas; the key now says they are the BATCH's, because that is what
+    # they are — live42 stamped an identical
+    # {n_families: 6.0, template_fragmentation: -0.0169} on all 20 executed
+    # prescriptions, and its p8 observer confirmed the mislabel. Per-prescription
+    # attribution is ill-defined here: the prescriptions apply in sequence to one
+    # partition, so an individual delta is order-dependent.
+    assert ps[0].evidence["metric_deltas_for_the_WHOLE_BATCH"]["m"] == -0.5
+    assert "batch total" in ps[0].evidence["metric_deltas_scope"]
 
 
 # -- Principle 7: uniform panel, deterministic display ---------------------

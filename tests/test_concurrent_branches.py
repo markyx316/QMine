@@ -382,3 +382,55 @@ def test_the_fork_can_be_turned_off_and_the_phases_are_unchanged():
     expected = {n for n, _ in PHASE_NODES} | {"p7_name_shard", "halt"}
     assert set(forked.nodes) - {"__start__"} == expected
     assert set(serial.nodes) - {"__start__"} == expected
+
+
+def test_the_join_refuses_to_run_when_a_branch_never_arrived():
+    """A dropped branch must halt loudly, not produce a half-pipeline quietly.
+
+    On live41 gen03 a resumed run rewound with `update_state(as_node="p1_audit")`.
+    The fan-out was restored for the FIRST superstep — p2a and p3 both ran — and
+    not for the second: `p456_tree` was queued from p3's completion and
+    `p2b_gold` never was. The run then carried on through P4, P5 and P6 emitting
+    healthy gates for 40 minutes, and would have reached the join with **no gold
+    set at all** — the classifier's only training data.
+
+    That is the worst shape a failure can take here: everything downstream still
+    produces artifacts, so nothing looks wrong. Compare a fresh run, where the
+    fork works — gen01 started `P4 algorithm battery` and `P2b gold` in the same
+    second.
+
+    The gate is RETURNED rather than registered, because `deps.gate` only builds
+    the record; a gate the node discards cannot halt anything.
+    """
+    from types import SimpleNamespace
+
+    from qmine.graph.build import BOTTOMUP_BRANCH, TOPDOWN_BRANCH
+    from qmine.graph.nodes.topdown import _require_both_branches
+
+    emitted: list[str] = []
+    built: dict = {}
+
+    def _gate(name, phase=None, **kw):
+        g = SimpleNamespace(name=name, halts_run=bool(kw.get("blocking"))
+                            and not kw.get("passed", True), **kw)
+        built[name] = g
+        return g
+
+    deps = SimpleNamespace(emit=emitted.append, gate=_gate)
+    every = [n for n, _ in (*TOPDOWN_BRANCH, *BOTTOMUP_BRANCH)]
+
+    # All branches arrived: no gate, no halt, nothing in the way.
+    ok = _require_both_branches({"phase_status": {n: "ok" for n in every}}, deps)
+    assert ok == {}, f"a complete run was blocked: {ok}"
+    assert not built
+
+    # The live41 shape: the top-down branch's second node never ran.
+    partial = {n: "ok" for n in every if n != "p2b_gold"}
+    stop = _require_both_branches({"phase_status": partial}, deps)
+    assert stop.get("halted") is True, "a missing branch did not halt the run"
+    assert "p2b_gold" in stop["halt_reason"]
+    # The gate must be IN the returned state, or `_gate_router` can never see it.
+    assert "p2c_both_branches_arrived" in stop.get("gates", {}), (
+        "the gate was built but not returned — it cannot halt anything")
+    assert stop["gates"]["p2c_both_branches_arrived"].halts_run is True
+    assert any("p2b_gold" in m for m in emitted), "the operator was not told which"

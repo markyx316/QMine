@@ -299,3 +299,47 @@ def test_the_taxonomy_bundle_can_actually_name_a_class():
     assert "classes[0]" in text, "no class is reachable in the sheet"
     assert len(text.splitlines()) > 20, (
         f"the taxonomy sheet is too thin to explain the scheme: {len(text.splitlines())} facts")
+
+
+def test_a_number_the_agent_was_shown_is_citable():
+    """The contract is "use only numbers from this sheet" — so the pool must be
+    what the sheet SHOWS.
+
+    `verify._flatten` pools only VALUES, while `sheet()` renders dotted paths. A
+    dict keyed by id therefore puts numbers in front of the author that the
+    checker refuses:
+
+        execution.splits.32.new_leaf = 49      <- the agent reads "32"
+
+    live42's `governance_and_risk` was rejected three times for citing
+    `32, 40, 42, 43, 44, 45` — the leaf ids it had just been shown — and shipped
+    as a marked hole. The section was doing exactly what it was told.
+
+    Widening the pool to the sheet's own text must NOT weaken the guarantee: a
+    number absent from the rendered sheet is still refused.
+    """
+    from qmine.agents.verify import check_numbers
+    from qmine.report.narrative_brief import citable_numbers, sheet
+
+    facts = {"gov": {"execution": {"splits": {
+        "32": {"new_leaf": 49, "sizes": [834, 1368]},
+        "40": {"new_leaf": 57},
+    }}}}
+    rendered = sheet(facts)
+    assert "32" in rendered and "40" in rendered, "sanity: the ids are shown"
+
+    # Exercise the path narrate actually takes, not `check_numbers` directly —
+    # a test that builds the pool itself cannot notice `_reject` dropping it.
+    b = Bundle("gov", "治理", "治理证据", facts=facts["gov"])
+    prose = "治理把叶 32 拆成 49, 叶 40 拆成 57, 这是本次交付的实际改动。" * 8
+    assert _reject(prose, [b], set(), "zh") == [], (
+        "refused ids the sheet displays")
+
+    # The guarantee survives: an id that appears nowhere is still refused.
+    invented = "治理还拆了叶 77, 这在任何产物里都查不到, 属于凭空写出的数字。" * 8
+    assert any("77" in p for p in _reject(invented, [b], set(), "zh")), (
+        "an invented id was accepted — the pool is now too wide")
+
+    # And the original defect reproduces without the sheet pool.
+    assert not check_numbers("治理把叶 32 拆成 49。", facts).ok, (
+        "the original defect no longer reproduces; this test is stale")

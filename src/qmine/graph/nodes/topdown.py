@@ -2206,23 +2206,117 @@ def _render_rules(t: Taxonomy) -> str:
     ordered = sorted(t.rules, key=lambda r: -(r.added_in_round or 0))
     lines = [f"- [{r.id}] when {r.when} → {r.then} ({r.rationale})" for r in ordered]
     seen = {line.strip() for line in lines}
+    known = {r.id for r in t.rules}
     for node in t.nodes:
         for raw in node.adjudication_rules:
             text = str(raw).strip()
             # A bare id is a cross-reference to a rule already listed above.
-            if not text or text in seen or any(text == r.id for r in t.rules):
+            if not text or text in seen or text in known:
+                continue
+            # AN ID THAT RESOLVES TO NOTHING IS NOT A RULE — DROP IT.
+            #
+            # This fell through to the free-text branch, so an unresolved
+            # identifier reached the annotator as a line that LOOKS like a rule
+            # and carries no adjudication content at all:
+            #     - [POEM_TEXT_LOOKUP] RULE_POEM_TEXT_CHILD_OF_FULL_TEXT
+            # live41's observer confirmed 3 of them across 6 citing slots; the
+            # architect had invented a second id convention (SCREAMING_SNAKE with
+            # a RULE_ prefix) for boundaries the rule writer never wrote, so those
+            # boundaries had no rule AND the guide gained three lines of noise.
+            # Passing it through is strictly worse than dropping it: it consumes
+            # the guide's budget and tells the annotator nothing.
+            if _is_bare_identifier(text):
                 continue
             seen.add(text)
             lines.append(f"- [{node.code}] {text}")
     return "\n".join(lines)
 
 
+#: An ASCII identifier and nothing else — no whitespace, no CJK. A real rule is
+#: either an English sentence (has spaces) or a Chinese one (has CJK), so this
+#: cannot swallow adjudication content in either language.
+_BARE_ID_RE = re.compile(r"^[A-Za-z][A-Za-z0-9_.\-]*$")
+
+
+def _is_bare_identifier(text: str) -> bool:
+    return bool(_BARE_ID_RE.match(text))
+
+
+def dangling_rule_references(t: Taxonomy) -> list[dict[str, str]]:
+    """Node-cited rule ids that exist in no rule. A silent hole in the guide.
+
+    Separate from `_render_rules` so the renderer stays pure and the caller can
+    gate on this: a class whose stated tie-break resolves to nothing has no
+    tie-break, and neither the annotator nor the referee can be told so.
+    """
+    known = {r.id for r in t.rules}
+    out: list[dict[str, str]] = []
+    for node in t.nodes:
+        for raw in node.adjudication_rules:
+            text = str(raw).strip()
+            if text and text not in known and _is_bare_identifier(text):
+                out.append({"class": node.code, "rule_id": text})
+    return out
+
+
 # ==========================================================================
 # 2c / 2d — classifier and adversarial validation
 # ==========================================================================
 
+def _require_both_branches(state: PipelineState, deps: Deps) -> dict[str, Any]:
+    """The gate for a branch that never arrived. Returns `{}` when all did.
+
+    Reads `phase_status`, which `_wrap` sets to "ok" on every node that returns.
+    A branch node missing from it did not run — whatever the checkpoint's position
+    pointer says.
+
+    Returns the gate rather than registering it: `deps.gate` only BUILDS the
+    record, and a gate the calling node discards cannot halt anything. That is
+    the invariant `test_the_delivered_leaves_gate_reaches_the_operator` exists
+    for, and this guard would have reproduced it exactly.
+    """
+    from ..build import BOTTOMUP_BRANCH, TOPDOWN_BRANCH
+
+    done = state.get("phase_status") or {}
+    missing = [n for n, _ in (*TOPDOWN_BRANCH, *BOTTOMUP_BRANCH) if done.get(n) != "ok"]
+    if not missing:
+        return {}
+    deps.emit(f"!! 分支缺失: {', '.join(missing)} 从未运行, 但流程已到达汇合点")
+    gate = deps.gate(
+        "p2c_both_branches_arrived", phase="p2c", passed=False, blocking=True,
+        observed={"missing_branch_phases": missing,
+                  "phases_completed": sorted(k for k, v in done.items() if v == "ok")},
+        threshold={"rule": "every phase of both concurrent branches must have run "
+                           "before the join"},
+        message=("并发分支没有全部到达汇合点 —— 缺少 " + ", ".join(missing)
+                 + "。继续下去会用不存在的金标去训练分类器。"),
+        remediation=("这通常出现在 --resume 触发回卷之后: 回卷只恢复了第一个 superstep "
+                     "的分叉。用 `qmine new-generation` 开一个新 generation 并**一次性**"
+                     "跑完 (不要中途重启), 缓存会重放已付费的调用。"),
+    )
+    return {"gates": {"p2c_both_branches_arrived": gate}, "halted": True,
+            "halt_kind": "branch_missing",
+            "halt_reason": f"concurrent branch never ran: {', '.join(missing)}"}
+
+
 def p2c_classifier(state: PipelineState, deps: Deps) -> dict[str, Any]:
-    """Rules first, then a linear head over dense ⊕ sparse ⊕ rule-flag features."""
+    """Rules first, then a linear head over dense ⊕ sparse ⊕ rule-flag features.
+
+    **This is the JOIN, so it is where a dropped branch becomes detectable.**
+    Under the p1 fork the two branches must both arrive here. On live41 gen03 a
+    resumed run rewound with `update_state(as_node="p1_audit")`, the fan-out was
+    restored for the first superstep (p2a and p3 both ran) and NOT for the second:
+    p456_tree was queued from p3's completion, `p2b_gold` never was. The run
+    carried on through P4/P5/P6 looking healthy, and would have reached this node
+    with no gold set at all — the classifier's only training data.
+
+    A silent half-pipeline is the worst possible outcome here, because everything
+    downstream still produces artifacts and a reader cannot tell. So the join
+    checks that every branch phase actually ran, and halts saying which did not.
+    """
+    stop = _require_both_branches(state, deps)
+    if stop:
+        return stop
     cfg = deps.cfg
     df = deps.df
     gold: pd.DataFrame = deps._cache.get("gold_df")

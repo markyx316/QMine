@@ -582,3 +582,57 @@ def test_a_new_generation_inherits_the_runs_data_settings():
         assert f"cfg.data.{field}" in src, (
             f"{field} is set at launch, not in the config file — a snapshot that "
             "drops it cannot be resumed")
+
+
+def test_a_pipeline_exception_is_not_relabelled_as_a_checkpointer_failure(tmp_path):
+    """`@contextmanager` throws a WITH-BODY exception back in at the yield.
+
+    `_checkpointer` wrapped a single try/except around its `yield`, so it caught
+    the ENTIRE pipeline's failures — not just its own setup — logged them as
+    "SQLite checkpointer unavailable", and then fell through to a SECOND `yield`,
+    which a generator may not do.
+
+    live42 finished all 17 phases; LangGraph's loop teardown raised; this
+    relabelled it "Type is not msgpack serializable: DecisionRecord" — about a
+    serializer that encodes `DecisionRecord` perfectly well — and the resulting
+    `RuntimeError: generator didn't stop after throw()` replaced the real
+    exception and killed the run before `write_summary`. Five of
+    `verify_run.py`'s six checks read `run_summary.json`, so a completed run
+    scored as though no phase had run at all.
+    """
+    import pytest
+
+    from qmine.runner import _checkpointer
+
+    boom = ValueError("the pipeline itself failed")
+    with pytest.raises(ValueError) as caught:
+        with _checkpointer(tmp_path / "ck.sqlite"):
+            raise boom
+    assert caught.value is boom, (
+        "the body's exception was replaced — the original cause is unrecoverable")
+
+    # And the manager still works normally, yielding exactly once.
+    seen = []
+    with _checkpointer(tmp_path / "ck2.sqlite") as saver:
+        seen.append(saver)
+    assert len(seen) == 1 and seen[0] is not None
+
+
+def test_the_memory_store_does_not_swallow_a_pipeline_exception(tmp_path):
+    """`open_memory` had the identical defect, and it is the one that actually
+    raised on live42: "SQLite store unavailable (generator didn't stop after
+    throw())"."""
+    import pytest
+
+    from qmine.memory.store import open_memory
+
+    boom = KeyError("phase blew up")
+    with pytest.raises(KeyError) as caught:
+        with open_memory(tmp_path / "m.sqlite", project="t", domain="d"):
+            raise boom
+    assert caught.value is boom, "the body's exception was replaced"
+
+    seen = []
+    with open_memory(tmp_path / "m2.sqlite", project="t", domain="d") as mem:
+        seen.append(mem)
+    assert len(seen) == 1 and seen[0] is not None
