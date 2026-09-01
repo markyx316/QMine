@@ -302,21 +302,29 @@ def plot_gates(gates: dict[str, Any], path: Path, language: str = "zh") -> Path:
     zh = language == "zh"
     colour = {"passed": "#1baf7a", "warned": "#c9a227", "failed": "#d24d78",
               "rejected": "#8e44ad", "skipped": "#b0b0b0"}
-    rows = []
+    from ..records import paired_gate_metric
+
+    rows, unplottable = [], []
     for name, g in gates.items():
-        obs = g.get("observed") if isinstance(g, dict) else getattr(g, "observed", None)
-        thr = g.get("threshold") if isinstance(g, dict) else getattr(g, "threshold", None)
         st = g.get("status") if isinstance(g, dict) else getattr(g, "status", "")
-        o = next((v for v in (obs or {}).values() if isinstance(v, (int, float))), None)
-        t = next((v for v in (thr or {}).values() if isinstance(v, (int, float))), None)
-        if o is None or t in (None, 0):
+        pair = paired_gate_metric(g)
+        if pair is None or pair[2] == 0:
+            # A GATE WITH NO NUMERIC BAR IS NOT A GATE THAT PASSED.
+            #
+            # These were dropped with a bare `continue`, so the figure showed 7
+            # of live42's 26 gates, all of them green, and none of the four
+            # WARNED ones — a quality summary that could only ever look clean.
+            # Count them and say so under the axis.
+            unplottable.append((name, st))
             continue
-        rows.append((name, (o - t) / abs(t), st, o, t))
-    if not rows:
+        _field, o, t, higher = pair
+        head = (o - t) / abs(t)
+        rows.append((name, head if higher else -head, st, o, t))
+    if not rows and not unplottable:
         return path
     rows.sort(key=lambda r: r[1])
 
-    fig, ax = plt.subplots(figsize=(10.5, max(2.8, 0.5 * len(rows))))
+    fig, ax = plt.subplots(figsize=(10.5, max(2.8, 0.5 * max(1, len(rows)))))
     y = list(range(len(rows)))
     ax.barh(y, [r[1] for r in rows], color=[colour.get(r[2], "#888") for r in rows], height=0.6)
     ax.axvline(0, color="#333", lw=1.4)
@@ -328,5 +336,14 @@ def plot_gates(gates: dict[str, Any], path: Path, language: str = "zh") -> Path:
     ax.set_xlabel("相对门槛的余量 (0 = 恰好达标)" if zh else "headroom relative to threshold")
     ax.set_title("质量门: 每一道门离自己的门槛有多远" if zh else "Quality gates: headroom", fontsize=11)
     ax.margins(x=.22); ax.grid(axis="x", alpha=.25, ls=":")
+    if unplottable:
+        bad = sum(1 for _n, s_ in unplottable if s_ in ("failed", "warned", "rejected"))
+        note = (f"另有 {len(unplottable)} 道门没有可比的数值门槛, 未画在图上"
+                + (f" (其中 {bad} 道为警告/未通过)" if bad else "")
+                + " —— 判定见「质量门总账」。"
+                if zh else
+                f"{len(unplottable)} more gates have no comparable numeric bar and are "
+                f"not plotted" + (f" ({bad} warned/failed)" if bad else ""))
+        fig.text(0.01, 0.005, note, fontsize=8, color="#666", ha="left")
     fig.tight_layout(); fig.savefig(path, dpi=150, bbox_inches="tight"); plt.close(fig)
     return path

@@ -904,7 +904,14 @@ def discrimination(sweep: list[dict[str, Any]], key: str) -> float:
     se = noise_floor(vals)
     if not se or np.isnan(se) or se <= 0:
         return 0.0
-    return round((max(vals) - min(vals)) / se, 2)
+    # `float(...)` because `vals` are numpy scalars and `round()` on one returns
+    # a numpy scalar, which this function's own annotation says it does not. It
+    # reached `DecisionRecord.evidence` and broke CHECKPOINTING: ormsgpack cannot
+    # encode `numpy.float64`, and the failure surfaced as
+    # "Type is not msgpack serializable: DecisionRecord" — the wrapper's name,
+    # not the culprit's — which sent three separate investigations to the
+    # allowlist, where nothing was ever wrong.
+    return float(round((max(vals) - min(vals)) / se, 2))
 
 
 def choose_locator(reach: dict[str, dict[str, Any]], want: str = "auto", *,

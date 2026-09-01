@@ -1947,9 +1947,30 @@ def _annotate(ctx: Any, which: str, queries: list[str], classes: str, rules: str
         for attempt in range(3):
             try:
                 batch = agent.run(queries=chunk, classes=classes, rules=rules, guide=guide)
+                got = {l.query: l.model_dump() for l in batch.labels}
+                # AN EMPTY BATCH IS A FAILED CALL THAT DID NOT RAISE.
+                #
+                # `AnnotationBatch.labels` defaults to `[]`, so a model that
+                # returns nothing usable produces a schema-VALID empty batch:
+                # no exception, the retry below never fires, and 25 rows vanish
+                # without even the "batch lost" line. Measured on live43,
+                # `qwen3.8-flash` did this on **62 of 128 batches** — the
+                # distribution was bimodal, 0 or 25, never partial — and the
+                # phase reported `annotator[b] labelled 1500/3000` with zero
+                # lost-batch warnings, because nothing had failed by its own
+                # reckoning.
+                #
+                # Same shape as `SectionDraft.markdown` defaulting to "": a
+                # permissive default turns a failed generation into a successful
+                # empty one. Treat short as failed and let the retry work.
+                missing = [q for q in chunk if q not in got]
+                if missing:
+                    raise ValueError(
+                        f"returned {len(got)}/{len(chunk)} labels "
+                        f"({len(missing)} queries unlabelled)")
                 if attempt:
                     deps.emit(f"  annotator[{which}] batch recovered on retry {attempt}")
-                return {l.query: l.model_dump() for l in batch.labels}
+                return got
             except Exception as exc:  # noqa: BLE001
                 last = f"{type(exc).__name__}: {exc}"
                 if attempt < 2:

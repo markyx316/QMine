@@ -341,13 +341,31 @@ class ModelRegistry:
 
     def _resolve_provider(self, requested: str) -> str:
         if requested == "auto":
-            chosen = "anthropic" if self._has_anthropic_credentials() else "offline"
-            log.info(
-                "llm provider auto-resolved to %r (credentials %s)",
-                chosen,
-                "found" if chosen == "anthropic" else "absent",
-            )
-            return chosen
+            # `auto` MEANS "USE WHATEVER IS REACHABLE", NOT "USE ANTHROPIC".
+            #
+            # This asked only `_has_anthropic_credentials()`, so a machine with
+            # four working providers configured — deepseek, qwen, zhipu,
+            # openrouter — resolved to the OFFLINE stand-in, because none of them
+            # was Anthropic. On a project whose own live config EXCLUDES
+            # Anthropic, `auto` could therefore never route at all, and a run
+            # launched without an explicit `--provider` produced deliverables
+            # written by a deterministic stand-in that look exactly like real
+            # ones. Offline is a fallback for having nothing to call, not a
+            # preference for one vendor.
+            from .providers import detect
+
+            try:
+                usable = list(detect().usable)
+            except Exception:  # noqa: BLE001 — detection must not stop a run
+                usable = []
+            if usable:
+                log.info("llm provider auto-resolved to 'router' over %s", usable)
+                return "router"
+            log.warning(
+                "NO PROVIDER CREDENTIALS FOUND — falling back to the offline "
+                "stand-in. Its output is complete-looking and is NOT a model's; "
+                "put keys in QMine/.env to run the real agent team.")
+            return "offline"
         if requested == "mock":
             return "offline"
         return requested
@@ -943,11 +961,24 @@ class ModelRegistry:
                 # that produced 23 `APIConnectionError` lines all claiming a
                 # JSON-mode repair, which reads as a schema problem with the model
                 # and sent a reader looking in the wrong place.
+                # …AND THAT INCLUDES "ALREADY THERE".
+                #
+                # The fix above stopped calling a transport error a JSON repair,
+                # but still announced "repairing via plain-JSON mode" for a model
+                # ALREADY in plain-JSON mode — where the repair is a no-op and
+                # the real event is that the model returned unparseable JSON.
+                # live43: `qwen3.8-flash` did that on 6 of 134 annotator calls,
+                # each line claiming a mode switch that had happened days
+                # earlier, which reads as a newly-discovered quirk instead of a
+                # model that sometimes emits bad JSON.
                 transport = not _native_schema_is_broken(last_err)
+                already_plain = self.model_name(tier, role) in self._no_native_schema
                 log.warning(
                     "role=%s attempt=%d failed (%s); %s",
                     role, attempt, last_err[:160],
                     "transient transport error — retrying the same call" if transport
+                    else "already in plain-JSON mode — the model returned "
+                         "unparseable JSON; re-asking" if already_plain
                     else "repairing via plain-JSON mode")
 
         raise LLMUnavailable(f"role={role} failed after {max_repair + 1} attempts: {last_err}")
@@ -987,7 +1018,9 @@ class ModelRegistry:
         ask = HumanMessage(content=(
             (f"Your previous response could not be parsed.\nError: {last_err}\n\n" if last_err else "")
             + "Return ONLY a JSON object matching this schema. No prose, no markdown "
-            "fence, nothing before or after the JSON:\n\n" + schema_text
+            "fence, nothing before or after the JSON. Return the DATA, never the "
+            "schema itself — a reply containing `$defs` or `properties` is "
+            "wrong:\n\n" + schema_text
         ))
         resp = model.invoke(messages[:2] + [ask])
         self._raw.last = resp
@@ -997,7 +1030,16 @@ class ModelRegistry:
             if not candidate:
                 continue
             try:
-                return schema.model_validate(json.loads(candidate)), resp
+                loaded = json.loads(candidate)
+            except Exception:
+                continue
+            if _is_schema_echo(loaded):
+                # Not an answer. Falling through leaves `parsed` None, so the
+                # caller repairs and re-asks instead of accepting an object whose
+                # every field is a default.
+                continue
+            try:
+                return schema.model_validate(loaded), resp
             except Exception:
                 continue
         return None, resp
@@ -1322,10 +1364,41 @@ def _salvage(out: Any, schema: type[BaseModel]) -> Any:
         if not candidate:
             continue
         try:
-            return schema.model_validate(json.loads(candidate))
+            loaded = json.loads(candidate)
+        except Exception:
+            continue
+        if _is_schema_echo(loaded):
+            continue
+        try:
+            return schema.model_validate(loaded)
         except Exception:
             continue
     return None
+
+
+def _is_schema_echo(obj: Any) -> bool:
+    """Did the model hand back the SCHEMA instead of an answer?
+
+    `_plain_json_call` shows the schema and asks for an object matching it, and
+    some models return the schema itself. That parses, and — because every field
+    on these response models has a default and pydantic ignores unknown keys — it
+    VALIDATES, into a fully empty object. No exception, no repair, no retry.
+
+    Measured on live43: `qwen3.8-flash` did this on 62 of 128 annotator batches,
+    always the same 833-character reply beginning `{"$defs": {"QueryLabel": ...`
+    with `finish_reason=stop`. Each one became an empty `AnnotationBatch`, and
+    25 gold rows vanished per occurrence — 1,500 of 3,000, reported as
+    `labelled 1500/3000` with zero lost-batch warnings, because by the code's own
+    reckoning nothing had failed. Batch size is not involved; the echo is random.
+
+    Cheap to spot and worth spotting generically: a JSON Schema announces itself
+    with `$defs`/`$schema`, or with `properties` beside a `"type": "object"`.
+    """
+    if not isinstance(obj, dict):
+        return False
+    if "$defs" in obj or "$schema" in obj or "definitions" in obj:
+        return True
+    return "properties" in obj and obj.get("type") == "object"
 
 
 def _outermost_json(text: str) -> str:

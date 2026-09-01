@@ -44,8 +44,29 @@ from typing import Any
 # ---------------------------------------------------------------- primitives
 
 
-def _read(gen: Path, name: str) -> Any:
-    """Load an artifact, or return None. A missing artifact is normal."""
+def _read(gen: Path, name: str, deps: Any = None) -> Any:
+    """Load an artifact, or return None. A missing artifact is normal.
+
+    THROUGH THE STORE FIRST, because a generation is not self-contained.
+    Artifacts are written once and inherited by later generations through
+    `index.jsonl`; only the reports are rewritten. Reading `gen_dir / name`
+    directly therefore finds nothing in any generation that did not itself
+    produce the artifact — and `qmine render` writes exactly such a generation.
+
+    The first agent-written report produced this way passed all 9 sections and
+    described an EMPTY RUN: `n_named = 0` against 58 named leaves,
+    `n_ledger_entries = 0` against 26. Every number it cited was genuinely in its
+    fact sheet, so no guardrail could fire — the sheets were simply empty. A
+    report that is about nothing is a worse failure than one with a hole in it,
+    because nothing marks it.
+    """
+    stem = name[:-5] if name.endswith(".json") else name
+    if deps is not None:
+        try:
+            if deps.has(stem):
+                return deps.load(stem)
+        except Exception:                                    # noqa: BLE001
+            pass
     try:
         return json.loads((gen / name).read_text())
     except Exception:                                        # noqa: BLE001
@@ -198,7 +219,7 @@ def build_catalogue(state: Any, deps: Any) -> dict[str, Bundle]:
     describes THIS run rather than the pipeline in general.
     """
     gen = Path(deps.store.gen_dir)
-    A = {name: _read(gen, f"{name}.json") for name in (
+    A = {name: _read(gen, f"{name}.json", deps) for name in (
         "data_audit", "language_profile", "template_groups", "taxonomy",
         "taxonomy_v2",
         "gold_agreement", "adversarial_validation", "representation",

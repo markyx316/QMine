@@ -59,6 +59,38 @@ _SUBJECT_ZH = {
 }
 
 
+def _clip(text: str, n: int) -> str:
+    """Trim to `n` characters at a boundary, and SAY that it was trimmed.
+
+    `claim[:90]` cut findings mid-token — live42's longest claim is 346
+    characters — so a reader saw a sentence that stopped in the middle of a word
+    with nothing marking it as incomplete, and no way to tell a truncated claim
+    from a terse one.
+    """
+    t = str(text or "").strip()
+    if len(t) <= n:
+        return t
+    cut = t[:n]
+    for sep in ("。", "; ", ", ", "，", " "):
+        i = cut.rfind(sep)
+        if i > n * 0.6:
+            return cut[: i + len(sep)].rstrip() + " …"
+    return cut + " …"
+
+
+def _shown(n_shown: int, n_total: int, where: str = "findings.json") -> str:
+    """Disclose a cap. A table that silently stops reads as a complete list.
+
+    live42 recorded 43 open findings and this section printed 12 of them with
+    nothing saying so — and it is the ONLY place in the delivery where the
+    findings ledger appears at all.
+    """
+    if n_shown >= n_total:
+        return ""
+    return (f"> 表中只列出 {n_shown} / {n_total} 条 (按严重度排序, 阻断级在最前)。"
+            f"其余 {n_total - n_shown} 条在运行级的 `{where}` 里, 字段与此处相同。")
+
+
 def _label(subject: str) -> str:
     if subject in _SUBJECT_ZH:
         return _SUBJECT_ZH[subject]
@@ -184,11 +216,14 @@ def _open_findings(deps: Any) -> list[str]:
               "机器能证实的是**断言失败**, 不是**缺陷存在**。判断后者仍然需要人去读那个"
               "artifact —— 下表的「失败的断言」一列就是为此保留的, 它可以直接重新求值。", "",
               "| 阶段 | 严重度 | 发现 | 失败的断言 | 见过 |", "|---|---|---|---|---|"]
+        note = _shown(min(12, len(conf)), len(conf))
+        if note:
+            L += [note, ""]
         for f in conf[:12]:
             # The whole expression, never a prefix: a reader's next move is to
             # re-evaluate it against the artifacts, and an assertion cut off
             # mid-token cannot be re-run.
-            L.append(f"| `{f.phase}` | {f.severity} | {f.claim[:90]} | "
+            L.append(f"| `{f.phase}` | {f.severity} | {_clip(f.claim, 120)} | "
                      f"`{f.check}` | {f.times_seen} |")
         L.append("")
     if unver:
@@ -196,8 +231,12 @@ def _open_findings(deps: Any) -> list[str]:
               "观察者提出但**没有给出可求值断言**的疑问 —— 例如「结论是否真的由这份证据"
               "推出」这类判断本就不可机械判定。它们**不能**让任何一道门失败, 保留在此"
               "供人判断。", ""]
+        note = _shown(min(8, len(unver)), len(unver))
+        if note:
+            L += [note, ""]
         for f in unver[:8]:
-            L.append(f"- **`{f.phase}`** [{f.severity}] {f.claim[:150]}  ← `{f.artifact_key}`")
+            L.append(f"- **`{f.phase}`** [{f.severity}] {_clip(f.claim, 200)}  "
+                     f"← `{f.artifact_key}`")
         L.append("")
     if fixed:
         L += [f"### 7.3 已关闭 ({len(fixed)} 条)", "",

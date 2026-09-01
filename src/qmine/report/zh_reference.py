@@ -50,7 +50,7 @@ from typing import Any
 
 import numpy as np
 
-from ._shape import family_names
+from ._shape import family_composition, family_names
 from .i18n import pct, prose
 
 
@@ -343,6 +343,7 @@ def build_tree(state: Any, deps: Any) -> str:
     fam_of = {lid: int(fam[lid]) for lid in delivered_leaves if lid < len(fam)}
     delivered_fams = sorted(set(fam_of.values()))
     fnames = family_names(naming, fam, sizes)
+    fcomp = family_composition(naming, fam, sizes)
     leaf = {int(n["leaf_id"]): n for n in (naming.get("namings") or [])}
 
     audit_fams = ((naming or {}).get("audit", {}) or {}).get("families", []) or []
@@ -388,9 +389,17 @@ def build_tree(state: Any, deps: Any) -> str:
               f"{len(delivered_fams)} 个。** p8 治理在 p7 命名之后重写了这棵树, "
               "因此审计给出的家族定义**不能按编号对上交付的家族**。下面的家族名与定义"
               "是**按叶成员**关联回来的 (`_shape.family_names`), 一个交付家族可能"
-              "覆盖审计里的好几个家族 —— 名称后面的「等 N 类」就是这种情况。", ""]
+              "覆盖审计里的好几个家族 —— 名称写成 `混合·主要成分「X」N%` 的就是这种情况。", ""]
 
-    L += ["## 1. 树的形状", "", "| 家族 | 名称 | 叶数 | 行数 | 占比 |",
+    L += ["## 1. 树的形状", "",
+          "> **「名称」这一列怎么读。** 家族的**主键是编号**, 不是名称。名称来自 p7 "
+          "树审计, 而审计描述的是**治理之前**的那棵树 —— 所以一个交付家族未必有一个"
+          "属于它自己的名称:", "",
+          "> - 直接写名字 = 该家族的所有叶子都来自审计里的同一个家族, 这个名字就是它的;",
+          "> - 写成 `混合·主要成分「X」N%` = 它由多个来源合并而成, `X` 是其中**行数最多**"
+          "的一个, `N%` 是 X **占本家族总行数**的比例 (不是占语料, 也不是纯度)。"
+          "完整构成见下面每个家族自己的小节。", "",
+          "| 家族 | 名称 | 叶数 | 行数 | 占比 |",
           "|---:|---|---:|---:|---:|"]
     fam_rows = []
     for f in delivered_fams:
@@ -494,14 +503,29 @@ def build_tree(state: Any, deps: Any) -> str:
             if d:
                 L += [f"- **审计给出的定义**: {d}", ""]
         elif srcs:
-            names = "、".join(str(audit_fams[a].get("name_zh") or f"#{a}") for a in srcs)
             others = sorted({x for a in srcs for x in fams_of_src.get(a, set())} - {f})
-            L += [f"- **没有专属于本家族的定义。** 它的叶子来自树审计里的 {names} "
-                  f"({len(srcs)} 个审计家族)"
-                  + (f", 而这些审计家族同时也覆盖了交付家族 "
-                     f"{'、'.join(str(x) for x in others)}" if others else "")
-                  + " —— 治理重写这棵树之后, 审计的定义已经不是对本家族说的, "
-                    "因此这里不把它当成本家族的定义来展示。", ""]
+            L += ["- **没有专属于本家族的定义** —— 治理重写这棵树之后, 审计的定义"
+                  "已经不是对本家族说的, 因此这里不把它当成本家族的定义来展示。"
+                  + (f" 它涉及的审计家族同时也覆盖了交付家族 "
+                     f"{'、'.join(str(x) for x in others)}。" if others else ""), ""]
+            # THE COMPOSITION, NOT A PERCENTAGE FOLDED INTO THE NAME.
+            #
+            # The old label said `等 6 类 (42%)`, whose denominator was the
+            # NAMED subset rather than the family — so the governance-created
+            # leaves were missing from both the number and the story. Here every
+            # share is of the family, and the unnamed remainder is a row.
+            comp = fcomp.get(f) or {}
+            rows_c = comp.get("contributors") or []
+            if rows_c or comp.get("unnamed_rows"):
+                L += ["| 来源 (树审计中的家族) | 行数 | 占本家族 |",
+                      "|---|---:|---:|"]
+                for nm, cn, sh in rows_c:
+                    L.append(f"| {nm} | {cn:,} | {pct(sh)} |")
+                if comp.get("unnamed_rows"):
+                    L.append(f"| _治理新建的叶, 审计中没有对应家族_ | "
+                             f"{comp['unnamed_rows']:,} | "
+                             f"{pct(comp['unnamed_rows'] / max(1, comp['rows']))} |")
+                L.append("")
         L += ["| 叶 | 名称 | 行数 | 占本家族 | user_need |", "|---:|---|---:|---:|---|"]
         for lid in sorted(leaves, key=lambda x: -int(sizes[x])):
             nm = leaf.get(lid, {})
@@ -521,16 +545,34 @@ def tree_csv(state: Any, deps: Any) -> str:
                          "code", "n_rows", "user_need"])
     sizes = np.bincount(labels)
     fnames = family_names(naming, fam, sizes)
+    fcomp = family_composition(naming, fam, sizes)
     leaf = {int(n["leaf_id"]): n for n in (naming.get("namings") or [])}
     rows = []
     for lid in sorted({int(v) for v in np.unique(labels)}):
         f = int(fam[lid]) if lid < len(fam) else -1
         nm = leaf.get(lid, {})
-        rows.append({"family_id": f, "family_name": fnames.get(f, ""),
+        # A DISPLAY LABEL IS NOT A NAME, AND A CSV IS READ BY A PROGRAM.
+        #
+        # `family_name` carried `混合·主要成分「句子语录查询」38%` — a sentence, a
+        # percentage and a name in one field. A consumer grouping by family name
+        # gets a string that changes whenever the composition shifts. The name
+        # column now holds a name ONLY when the family genuinely has one; the
+        # label and the provenance are their own columns.
+        c = fcomp.get(f) or {}
+        top = (c.get("contributors") or [(None, 0, None)])[0]
+        rows.append({"family_id": f,
+                     "family_name": fnames.get(f, "") if c.get("exact") else "",
+                     "family_label": fnames.get(f) or f"家族 {f}",
+                     "family_name_is_exact": bool(c.get("exact")),
+                     "family_top_source": top[0] or "",
+                     "family_top_source_share": (round(top[2], 4)
+                                                 if top[2] is not None else ""),
                      "leaf_id": lid, "leaf_name": nm.get("name_zh", ""),
                      "code": nm.get("code", ""), "n_rows": int(sizes[lid]),
                      "user_need": nm.get("user_need", "")})
-    return _csv(rows, ["family_id", "family_name", "leaf_id", "leaf_name",
+    return _csv(rows, ["family_id", "family_name", "family_label",
+                       "family_name_is_exact", "family_top_source",
+                       "family_top_source_share", "leaf_id", "leaf_name",
                        "code", "n_rows", "user_need"])
 
 

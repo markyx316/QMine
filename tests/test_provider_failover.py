@@ -806,3 +806,71 @@ def test_a_capable_model_no_provider_publishes_is_reported():
     block = src[src.index("if _unmatched:"):]
     assert block.startswith("if _unmatched:") and "plan.notes.append" in block[:400], (
         "the unmatched names are computed but never attached to the plan")
+
+
+def test_a_repair_message_does_not_announce_a_mode_the_model_is_already_in():
+    """Three remedies, three messages, and they had been collapsing into one.
+
+    An earlier fix stopped calling a transport error a JSON repair. It still
+    announced "repairing via plain-JSON mode" for a model ALREADY in that mode,
+    where the repair is a no-op and the real event is that the model returned
+    unparseable JSON. live43: `qwen3.8-flash` did that on 6 of 134 annotator
+    calls, each line claiming a mode switch that had happened three days
+    earlier — which reads as a newly-discovered model quirk rather than a model
+    that sometimes emits bad JSON.
+
+    Same family as the msgpack error that named the wrapper instead of the numpy
+    scalar: a message that points at the wrong mechanism costs an investigation.
+    """
+    import inspect
+
+    from qmine.llm.registry import ModelRegistry
+
+    src = inspect.getsource(ModelRegistry.complete)
+    assert "already_plain" in src, "the third case is not distinguished"
+    seg = src[src.index("transport = not _native_schema_is_broken"):]
+    seg = seg[:seg.index("log.warning") + 400]
+    assert "_no_native_schema" in seg, (
+        "the message must consult what mode the model is actually in")
+
+
+def test_a_schema_echo_is_not_an_answer():
+    """`_plain_json_call` shows the schema and asks for an object matching it, and
+    some models return the SCHEMA. That parses — and because every field on these
+    response models has a default and pydantic ignores unknown keys, it
+    VALIDATES, into a fully empty object. No exception, no repair, no retry.
+
+    Measured on live43: `qwen3.8-flash` did this on 62 of 128 annotator batches,
+    always the same 833-character reply starting `{"$defs": {"QueryLabel": ...`
+    with `finish_reason=stop`. Each became an empty `AnnotationBatch` and lost 25
+    gold rows — 1,500 of 3,000, reported as `labelled 1500/3000` with zero
+    lost-batch warnings. Batch size is not involved; the echo is random.
+    """
+    from qmine.agents.roles import AnnotationBatch
+    from qmine.llm.registry import _is_schema_echo
+
+    echo = AnnotationBatch.model_json_schema()
+    # The thing that makes this dangerous: it validates, and comes out empty.
+    assert AnnotationBatch.model_validate(echo).labels == [], (
+        "sanity: a schema echo really does validate into an empty batch")
+    assert _is_schema_echo(echo), "the echo must be recognised"
+
+    # A real answer must not be mistaken for one.
+    assert not _is_schema_echo({"labels": [{"query": "q", "label": "x"}]})
+    assert not _is_schema_echo({"markdown": "…", "covered": []})
+    assert not _is_schema_echo({"properties": "this class has properties"})
+    assert not _is_schema_echo(None) and not _is_schema_echo([1, 2])
+
+
+def test_the_parser_refuses_a_schema_echo_rather_than_returning_it_empty():
+    """The detector is only worth anything at the call sites."""
+    import inspect
+
+    from qmine.llm.registry import ModelRegistry, _salvage
+
+    for fn in (ModelRegistry._plain_json_call, _salvage):
+        src = inspect.getsource(fn)
+        assert "_is_schema_echo" in src, f"{fn.__name__} accepts a schema echo"
+        # …and it must be checked BEFORE validation, or it cannot prevent one.
+        assert src.index("_is_schema_echo") < src.index("model_validate"), (
+            f"{fn.__name__} validates first, so the empty object is already made")

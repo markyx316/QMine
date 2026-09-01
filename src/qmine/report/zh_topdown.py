@@ -27,6 +27,14 @@ from pathlib import Path
 from typing import Any
 
 from .i18n import num, pct, prose
+
+#: The panel document's delivered filename. `builder.build_all_reports` writes
+#: `统一度量面板` on a `zh` run and `Report_Uniform_Panel` otherwise; a reference
+#: to it must resolve to the file that actually shipped.
+_PANEL_DOC = "统一度量面板.md"
+#: The reference shelf `builder.build_all_reports` writes beside these reports.
+_CLASSES_DOC = "类目清单.md"
+_RULES_DOC = "标注规范与裁定规则.md"
 from .zh_bottomup import _decision_chain, _failure_history, _gate_ledger
 
 
@@ -86,7 +94,13 @@ def build(state: Any, deps: Any) -> str:
         "聚类看的是「长得像不像」, 而这里的区别在于「要的是什么」。", "",
         "这条路线专门负责这一半问题。它的标签与自下而上的标签**并排交付**, 不合并 —— "
         "两套体系回答的是两个不同的问题, 强行合并会同时损失两边的信息。", "",
-        "> **两条路线在统一面板中的对照**见 `Report_Uniform_Panel.md`。"
+        # THE FILENAME DEPENDS ON `report_language`, AND THIS NAMED THE OTHER ONE.
+        #
+        # A `zh` run ships `统一度量面板.md`; this pointed at
+        # `Report_Uniform_Panel.md`, the English build's name, so the one
+        # cross-reference telling a reader where the two routes are compared was
+        # a dead link in every Chinese delivery.
+        f"> **两条路线在统一面板中的对照**见 `{_PANEL_DOC}`。"
         "同一套度量、同一子样本、同一随机种子, 才能把两者放在一起比。", "",
     ]
 
@@ -111,14 +125,21 @@ def build(state: Any, deps: Any) -> str:
         "没有触及语用层面, 要么架构师没有如实标注 —— 两种情况都值得复核。", "",
     ]
     if nodes:
-        L += ["<details><summary>展开完整类目表 (代码 / 名称 / 定义 / 用户需求)</summary>", "",
-              "| 代码 | 名称 | 定义 | 用户需求 (user_need) | 聚类不可见 |",
-              "|---|---|---|---|---|"]
+        # NOT A `<details>`, AND NOT TRUNCATED TWICE.
+        #
+        # This shipped the full class table collapsed inside a 72KB report, where
+        # it is invisible to in-page search on most renderers and — measurably —
+        # to readers, and it cut every definition at 160 characters. The same
+        # content now has its own document, un-truncated, with the examples and
+        # the delivered size this table could never carry. Point at it once
+        # rather than shipping a worse copy beside it.
+        L += [f"> **完整类目表见 `{_CLASSES_DOC}`** —— 21 个类目的定义、user_need、"
+              "正反例、实际交付行数, 以及指向每一类的裁定规则。这里只列出摘要。", "",
+              "| 代码 | 名称 | 聚类不可见 |", "|---|---|:---:|"]
         for n in nodes:
-            L.append(
-                f"| `{n.get('code')}` | {n.get('name', '')} | {str(n.get('definition', ''))[:160]} | "
-                f"{str(n.get('user_need', ''))[:160]} | {'✓' if n.get('pragmatic_only') else ''} |")
-        L += ["", "</details>", ""]
+            L.append(f"| `{n.get('code')}` | {n.get('name', '')} | "
+                     f"{'✓' if n.get('pragmatic_only') else ''} |")
+        L.append("")
 
     # L2 SUB-INTENTS. THIS SECTION HAD NEVER RENDERED.
     #
@@ -320,14 +341,16 @@ def build(state: Any, deps: Any) -> str:
 
     nr = agree.get("new_rules") or []
     if nr:
-        L += [f"<details><summary>展开裁判起草的 {len(nr)} 条规则</summary>", "",
-              "每一条都对应一次**真实发生过的分歧**。这是类目体系的程序性记忆 —— "
-              "现在这套规则已经不是一开始那套了。", "",
-              "| id | 触发条件 (when) | 裁定 (then) | 起因 |", "|---|---|---|---|"]
-        for r in nr:
-            L.append(f"| `{r.get('id')}` | {str(r.get('when', ''))[:120]} | "
-                     f"{str(r.get('then', ''))[:80]} | {str(r.get('added_because', ''))[:90]} |")
-        L += ["", "</details>", ""]
+        # The rules themselves live in their own manual now, one section each
+        # with the rationale and worked examples a table row cannot hold. This
+        # table cut `when` at 120 characters, which is where a rule's condition
+        # actually is — so it was the least usable rendering of the most useful
+        # content in the run.
+        L += [f"**裁判在真实分歧上起草了 {len(nr)} 条新规则。** 这是类目体系的程序性"
+              "记忆 —— 现在这套规则已经不是一开始那套了。", "",
+              f"> **每一条规则的完整内容 (当 → 归入 → 理由 → 判例) 见 "
+              f"`{_RULES_DOC}`**, 按目标类目分组, 并标出哪些是架构师预判、"
+              "哪些是裁判实测之后补的。", ""]
 
     # ---------------------------------------------------------------- 4 分类器
     L += ["## 4. 分类器", ""]

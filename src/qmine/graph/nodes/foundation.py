@@ -64,6 +64,39 @@ def p0_foundation(state: PipelineState, deps: Deps) -> dict[str, Any]:
     ref = deps.store.put_json("run_manifest", manifest, producer="p0", summary="run provenance")
     deps.cfg.dump(deps.store.gen_dir / "config.resolved.yaml")
 
+    # RUNNING ON THE STAND-IN IS A FACT ABOUT THE RUN, NOT A LOG LINE.
+    #
+    # This pipeline IS a team of agents; with the stand-in it is a deterministic
+    # function wearing their output shape. It produces a full set of
+    # deliverables, every gate passes, and nothing in the documents says the
+    # prose was not written by a model — which is why `verify_run.py` checks
+    # `llm_usage.provider` at all. A warning in `run.log` is not enough: the
+    # question "was this run real?" has to be answerable from the artifacts, so
+    # it is a gate, and it is recorded whichever way it goes.
+    provider = deps.registry.provider
+    live = provider not in ("offline", "mock", "")
+    try:
+        from ...llm.providers import detect
+
+        reachable = list(detect().usable)
+    except Exception:  # noqa: BLE001 — the gate must not be what breaks a run
+        reachable = []
+    deps.gate(
+        "p0_provider", "p0",
+        passed=live,
+        observed={"provider": provider, "configured_providers": reachable},
+        threshold={"rule": "a run must use real models unless offline was asked for"},
+        message=(f"real agents: provider={provider}" if live else
+                 "THE OFFLINE STAND-IN WROTE THIS RUN. Every deliverable below is "
+                 "the output of a deterministic function, not of a model — it "
+                 "looks complete and means nothing about the corpus."),
+        remediation=("Put provider keys in `QMine/.env` and relaunch. `qmine models` "
+                     "shows what is reachable and spends nothing."),
+        warn_only=True,
+    )
+    if not live:
+        deps.emit("  ⚠️  OFFLINE STAND-IN — no model wrote anything in this run")
+
     return {
         "phase": "p1",
         "artifacts": {"run_manifest": ref},

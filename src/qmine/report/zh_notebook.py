@@ -258,17 +258,15 @@ total = len(labels)
 # live38) and the partition numbers its own (12). Matching by integer id was
 # wrong for 19 of 19 and titled a family of classical-poetry leaves
 # "中考录取分数与学校排名查询".
-_aud = naming.get('audit', {}).get('families', [])
-_leafname = {int(l): f.get('name_zh', '') for f in _aud for l in (f.get('leaf_ids') or [])}
-_w = {}
-for _lid, _nm in _leafname.items():
-    if _lid < len(fam) and _nm:
-        _w.setdefault(int(fam[_lid]), {})
-        _w[int(fam[_lid])][_nm] = _w[int(fam[_lid])].get(_nm, 0) + int(sizes[_lid])
-fam_names = {}
-for _f, _nms in _w.items():
-    _r = sorted(_nms.items(), key=lambda kv: -kv[1])
-    fam_names[_f] = _r[0][0] if len(_r) == 1 else f"{_r[0][0]} 等 {len(_r)} 类"
+# ONE IMPLEMENTATION, IMPORTED — not a second copy of the join.
+# This cell used to re-implement `_shape.family_names` inline, and the two
+# drifted: the notebook printed `X 等 6 类` while the reports printed
+# `混合·主要成分「X」38%`, so one run produced two documents that disagreed about
+# what a family is called. The notebook already reads this run's artifacts by
+# path, so depending on the package that wrote them costs nothing it did not
+# already owe.
+from qmine.report._shape import family_names as _family_names
+fam_names = _family_names(naming, fam, sizes)
 by_fam = {}
 for n in naming['namings']:
     by_fam.setdefault(int(fam[n['leaf_id']]), []).append(n)

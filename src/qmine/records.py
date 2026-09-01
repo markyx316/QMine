@@ -20,9 +20,11 @@ rather than prose, and this module is where that representation lives:
 from __future__ import annotations
 
 import time
+
+import numpy as np
 from typing import Any, Literal
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
 
 # ==========================================================================
 # Metrics
@@ -63,7 +65,44 @@ METRIC_AUTHORITY: dict[str, MetricAuthority] = {
 }
 
 
-class MetricRecord(BaseModel):
+#: Free-form record fields are `dict[str, Any]`, and "Any" in this pipeline
+#: routinely means a numpy scalar: nearly every number in it is computed with
+#: numpy. ormsgpack cannot encode one, so a single `numpy.float64` anywhere in a
+#: record's evidence breaks LangGraph's checkpoint write — and the error names
+#: the pydantic wrapper it was nested in ("Type is not msgpack serializable:
+#: DecisionRecord"), not the scalar. That misdirection cost three investigations,
+#: all of them aimed at the serializer's allowlist, which gates DECODING and was
+#: never involved.
+#:
+#: Measured cost of the leak: `make demo` wrote 5 checkpoints for 17 phases, so
+#: the run silently lost the ability to resume; live42 wrote none at all.
+#:
+#: Coercing at construction rather than at each call site is deliberate. The call
+#: sites are every place that computes a metric, and one missed conversion
+#: reintroduces the whole failure with a message that points somewhere else.
+def _to_builtin(value: Any) -> Any:
+    """Recursively convert numpy scalars and arrays to Python natives."""
+    if isinstance(value, dict):
+        return {k: _to_builtin(v) for k, v in value.items()}
+    if isinstance(value, (list, tuple)):
+        return [_to_builtin(v) for v in value]
+    if isinstance(value, np.generic):          # np.float64, np.int64, np.bool_
+        return value.item()
+    if isinstance(value, np.ndarray):
+        return [_to_builtin(v) for v in value.tolist()]
+    return value
+
+
+class _PlainValues(BaseModel):
+    """A record whose free-form fields hold only checkpointable types."""
+
+    @model_validator(mode="before")
+    @classmethod
+    def _coerce_numpy(cls, data: Any) -> Any:
+        return _to_builtin(data) if isinstance(data, dict) else data
+
+
+class MetricRecord(_PlainValues):
     """One number, plus everything needed to compare it with another number.
 
     The uniform-panel rule (Principle 7) says two numbers may only be compared
@@ -130,7 +169,7 @@ class MetricSet(BaseModel):
 # Decisions and gates
 # ==========================================================================
 
-class DecisionRecord(BaseModel):
+class DecisionRecord(_PlainValues):
     """Why we chose what we chose — including what we rejected and why.
 
     Phase 11 requires a "failure history" section in every report.  It is not
@@ -157,7 +196,7 @@ class DecisionRecord(BaseModel):
 GateStatus = Literal["passed", "warned", "failed", "rejected", "skipped", "pending"]
 
 
-class GateResult(BaseModel):
+class GateResult(_PlainValues):
     """The outcome of a quality gate.
 
     ``rejected`` is reserved for a human veto (Principle 2): the numbers may be
@@ -196,7 +235,7 @@ PrescriptionKind = Literal[
 PrescriptionStatus = Literal["proposed", "accepted", "executed", "declined"]
 
 
-class Prescription(BaseModel):
+class Prescription(_PlainValues):
     """An audit finding, tracked until it becomes a column in the delivered data.
 
     ``status='executed'`` requires ``evidence``: the artifact and column that
@@ -370,7 +409,7 @@ class FamilyNaming(BaseModel):
     risk: bool = False
 
 
-class TreeAudit(BaseModel):
+class TreeAudit(_PlainValues):
     """The auditor's report: the tree, plus everything wrong with it."""
 
     families: list[FamilyNaming] = Field(default_factory=list)
@@ -429,3 +468,87 @@ class TemplateGroup(BaseModel):
     median_exemplar_idx: int | None = Field(
         default=None, description="Deterministic display exemplar (Principle 7)."
     )
+
+
+def paired_gate_metric(gate: Any) -> tuple[str, float, float, bool] | None:
+    """The one observed value a gate's threshold is actually ABOUT.
+
+    Returns ``(field, observed, threshold, higher_is_better)`` or ``None`` when
+    the gate has no numeric pair — a boolean assertion, a gate that skipped, a
+    threshold recorded as prose.
+
+    **Both callers used to guess, differently.** `plot_gates` took the first
+    numeric value out of `observed` and the first out of `threshold` with nothing
+    tying them together, so a gate observing `{"n": 600, "kappa": 0.8928}`
+    against `{"min_kappa": 0.70}` was drawn as 600 versus 0.70 — headroom of
+    +856, on a chart whose whole premise is distance from the bar. And because
+    `bool` is a subclass of `int` in Python, a gate asserting `{"lopsided":
+    True}` contributed a value of 1 and was plotted as if it had cleared its bar.
+
+    Matching is by like NAME, with the `min_` / `max_` / `_floor` prefixes that
+    thresholds conventionally carry stripped off, which is the rule
+    `report.zh_bottomup._passed_below_threshold` already applied. One definition
+    so a figure and a table can never disagree about which number a gate is
+    about.
+    """
+    obs = getattr(gate, "observed", None)
+    thr = getattr(gate, "threshold", None)
+    if obs is None and isinstance(gate, dict):
+        obs, thr = gate.get("observed"), gate.get("threshold")
+    if not isinstance(obs, dict) or not isinstance(thr, dict):
+        return None
+
+    def numeric(v: Any) -> bool:
+        # `isinstance(True, int)` is True. A boolean assertion is not a
+        # measurement against a bar and must never be plotted as one.
+        return isinstance(v, (int, float)) and not isinstance(v, bool)
+
+    pairs = gate_metric_pairs(gate)
+    return pairs[0] if pairs else None
+
+
+def gate_metric_pairs(gate: Any) -> list[tuple[str, float, float, bool]]:
+    """EVERY observed/threshold pair a gate carries, not just the first.
+
+    A gate can be judged on several numbers at once. `paired_gate_metric`
+    returns one because a bar chart plots one bar; a question like "is this gate
+    passing while any of its own numbers sits under its bar" has to look at all
+    of them. Collapsing the two cost a real regression: `_passed_below_threshold`
+    stopped flagging `p2b_kappa`, whose SECOND threshold is the one below bar,
+    and the Chinese "带保留通过" prefix that flag adds was the only CJK on a line
+    whose message is authored in English — so an untranslated gate conclusion
+    started reaching a Chinese report, caught by
+    `test_every_authored_rationale_reaches_the_reader_in_the_report_language`.
+    """
+    obs = getattr(gate, "observed", None)
+    thr = getattr(gate, "threshold", None)
+    if obs is None and isinstance(gate, dict):
+        obs, thr = gate.get("observed"), gate.get("threshold")
+    if not isinstance(obs, dict) or not isinstance(thr, dict):
+        return []
+
+    def numeric(v: Any) -> bool:
+        return isinstance(v, (int, float)) and not isinstance(v, bool)
+
+    out: list[tuple[str, float, float, bool]] = []
+    for tk, tv in thr.items():
+        if not numeric(tv):
+            continue
+        base = str(tk).replace("min_", "").replace("max_", "").replace("_floor", "")
+        higher_is_better = not str(tk).startswith("max_")
+        for ok, ov in obs.items():
+            if not numeric(ov):
+                continue
+            k = str(ok)
+            if k == base or k.endswith(base) or base.endswith(k):
+                # NO `break`. One threshold can name several observed values —
+                # `min_kappa` matches `kappa` AND `self_consistency_kappa` — and
+                # stopping at the first silently drops the rest. That regressed
+                # `_passed_below_threshold`, which then stopped flagging a gate
+                # whose LATER number is the one under its bar; the Chinese
+                # "带保留通过" prefix that flag adds was the only CJK on a line
+                # whose message is authored in English, so an untranslated gate
+                # conclusion reached a Chinese report. Caught by
+                # `test_every_authored_rationale_reaches_the_reader_in_the_report_language`.
+                out.append((k, float(ov), float(tv), higher_is_better))
+    return out

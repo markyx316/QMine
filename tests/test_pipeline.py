@@ -615,7 +615,14 @@ def test_a_family_is_named_after_the_leaves_it_actually_contains(completed_run):
                for f in audit for l in (f.get("leaf_ids") or [])}
     for fid, label in names.items():
         members = [l for l in by_leaf if l < len(fam) and int(fam[l]) == fid]
-        assert members, f"family {fid} was named {label!r} with no member leaves"
+        if not members:
+            # A family governance built entirely from leaves the audit never saw
+            # has no audit name to borrow, and must not appear to have one. It
+            # cannot violate the invariant below because it makes no claim.
+            assert "树审计未覆盖" in label, (
+                f"family {fid} contains no audit-named leaf yet is titled "
+                f"{label!r}, which reads as an audit name")
+            continue
         assert any(by_leaf[l] and by_leaf[l] in label for l in members), (
             f"family {fid} is titled {label!r}, which is not the audit name of any "
             f"leaf it contains ({sorted({by_leaf[l] for l in members})})"

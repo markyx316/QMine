@@ -15,6 +15,18 @@
 # Pinning it to DeepSeek would have made it side systematically with annotator_a
 # and corrupted the gold set in a direction nobody would think to look for.
 llm:
+  # REAL AGENTS ARE THE DEFAULT. Offline is a fallback, never a silent one.
+  #
+  # This file is the DEFAULT config for every `qmine run` (`cli._load_config`),
+  # so this line makes routing the default posture: the pipeline is a team of
+  # agents, and a run that quietly replaced them with a deterministic stand-in
+  # produced complete-looking deliverables that meant nothing.
+  #
+  # `router` degrades on its own when there is nothing to route to — no keys, no
+  # catalogue, no network — and that degradation is announced loudly rather than
+  # logged: see `ModelRegistry._build_routing_plan` and the `p0_provider` gate.
+  # The commands that are meant to be free say so themselves (`demo`, `full`,
+  # and `--offline`); everything else routes.
   provider: router
   excluded_labs:
     - openai

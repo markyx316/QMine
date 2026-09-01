@@ -824,7 +824,15 @@ def _decision_chain(state: Any, phases: tuple[str, ...] | None = None) -> str:
                               for k, v in list(ev.items())[:6])
             out += ["", f"证据: {shown}"]
         if getattr(d, "rejected", None):
-            out += ["", f"落选 {len(d.rejected)} 个方案 (详见 §{'9'} 失败史)。"]
+            # A HARDCODED SECTION NUMBER IN A HELPER TWO DOCUMENTS SHARE.
+            #
+            # `_decision_chain` is called from both reports, whose section
+            # numbering differs, and the failure history is §12 in the bottom-up
+            # report — §9 is the decision chain itself, so this pointed a reader
+            # at the page they were already on. Cite the section by NAME: the
+            # title is stable, searchable, and correct in both documents.
+            out += ["", f"落选 {len(d.rejected)} 个方案 "
+                        f"(详见「{vocab()['failure_history']}」一节)。"]
         out.append("")
     return "\n".join(out)
 
@@ -952,25 +960,14 @@ def _passed_below_threshold(g: Any) -> bool:
     explanation, will read it as clean. Compares like-named fields only, so a
     threshold about one quantity is never checked against another's observation.
     """
+    from ..records import gate_metric_pairs
+
     if getattr(g, "status", "") != "passed":
         return False
-    obs, thr = getattr(g, "observed", None) or {}, getattr(g, "threshold", None) or {}
-    if not isinstance(obs, dict) or not isinstance(thr, dict):
-        return False
-    for tk, tv in thr.items():
-        if not isinstance(tv, (int, float)) or isinstance(tv, bool):
-            continue
-        base = str(tk).replace("min_", "").replace("max_", "").replace("_floor", "")
-        for ok, ov in obs.items():
-            if not isinstance(ov, (int, float)) or isinstance(ov, bool):
-                continue
-            if str(ok) == base or str(ok).endswith(base) or base.endswith(str(ok)):
-                if str(tk).startswith("max_"):
-                    if ov > tv:
-                        return True
-                elif ov < tv:
-                    return True
-    return False
+    # ANY of the gate's numbers, not just the first: a gate can be judged on
+    # several at once, and `p2b_kappa`'s second threshold is the one below bar.
+    return any(o < t if higher else o > t
+               for _f, o, t, higher in gate_metric_pairs(g))
 
 def _governance_ledger(state: Any, gov: dict) -> str:
     """Every prescription: who proposed it, what happened to it, and why."""

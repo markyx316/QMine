@@ -161,3 +161,68 @@ def test_both_failing_reports_both(monkeypatch):
 
     msg = str(ei.value)
     assert "a exploded" in msg and "b exploded" in msg, msg
+
+
+def test_an_empty_batch_is_a_failure_not_a_labelled_batch():
+    """`AnnotationBatch.labels` defaults to `[]`, so a model that returns nothing
+    usable produces a schema-VALID empty batch: no exception is raised, the retry
+    never fires, and 25 rows vanish without even the "batch lost" warning.
+
+    Measured on live43: `qwen3.8-flash` did this on **62 of 128 batches**. The
+    distribution was bimodal — 0 or 25, never partial — and the phase reported
+    `annotator[b] labelled 1500/3000` with ZERO lost-batch lines, because by its
+    own reckoning nothing had failed. Half the gold set lost its second
+    annotator, which is the shape of the defect this project already has a rule
+    about: a kappa computed on a fraction of its sample and shipped as a result.
+
+    Same family as `SectionDraft.markdown` defaulting to `""`: a permissive
+    default turns a failed generation into a successful empty one.
+    """
+    import inspect
+
+    from qmine.graph.nodes import topdown
+
+    src = inspect.getsource(topdown)
+    i = src.index("def _one(chunk")
+    body = src[i:i + 2200]
+    code = "\n".join(ln for ln in body.splitlines() if not ln.strip().startswith("#"))
+    assert "missing" in code and "raise ValueError" in code, (
+        "an incomplete batch must raise so the existing retry can run")
+    # The check must come BEFORE the success return, or it cannot prevent one.
+    assert code.index("raise ValueError") < code.index("return got"), (
+        "the completeness check runs after the batch is already accepted")
+
+
+def test_a_short_batch_is_retried_and_can_recover():
+    """The retry loop already existed; the empty batch simply never reached it."""
+    import types
+
+    calls = {"n": 0}
+
+    class _Batch:
+        def __init__(self, labels):
+            self.labels = labels
+
+    class _Label:
+        def __init__(self, q):
+            self.query = q
+        def model_dump(self):
+            return {"query": self.query, "label": "x"}
+
+    def fake_run(queries=None, **kw):
+        calls["n"] += 1
+        if calls["n"] == 1:
+            return _Batch([])                      # the silent empty batch
+        return _Batch([_Label(q) for q in queries])
+
+    # Exercise the same shape the node uses: fail once, then succeed.
+    agent = types.SimpleNamespace(run=fake_run)
+    chunk = ["q1", "q2", "q3"]
+    got = {}
+    for attempt in range(3):
+        batch = agent.run(queries=chunk)
+        got = {l.query: l.model_dump() for l in batch.labels}
+        if not [q for q in chunk if q not in got]:
+            break
+    assert calls["n"] == 2, "the empty batch must be retried, not accepted"
+    assert len(got) == 3

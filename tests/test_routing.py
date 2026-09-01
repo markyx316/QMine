@@ -755,3 +755,114 @@ def test_the_direct_promotion_does_not_override_a_capability_gate():
     a = plan.assignments["referee"]          # blast_radius=run, so gated
     assert a.model == "zhipu/good-1", (
         "the capability gate must bind before the direct-provider preference")
+
+
+def test_the_default_posture_is_REAL_agents():
+    """This pipeline IS a team of agents. With the deterministic stand-in it is a
+    function wearing their output shape: a full set of deliverables, every gate
+    passing, and nothing in the documents saying no model wrote the prose. So
+    routing is the default and offline is a fallback.
+
+    Two things had to be true for that, and neither was:
+
+    * `configs/live.yaml` is the default config and must ask to route;
+    * `--provider` defaulted to `"auto"` and was assigned unconditionally, so
+      Typer's default overwrote whatever the config said before the file was read
+      for anything else.
+    """
+    import inspect
+    from pathlib import Path
+
+    import yaml
+
+    from qmine import cli
+
+    raw = yaml.safe_load(Path("configs/live.yaml").read_text()) or {}
+    assert (raw.get("llm") or {}).get("provider") == "router", (
+        "the default config must ask for real models")
+
+    sig = inspect.signature(cli.run).parameters["provider"].default
+    assert getattr(sig, "default", sig) == "", (
+        "a non-empty --provider default overrules the config on every run")
+
+    src = inspect.getsource(cli.run)
+    assert "if provider:\n        cfg.llm.provider = provider" in src, (
+        "the provider is assigned unconditionally, so the config never wins")
+
+
+def test_auto_means_whatever_is_reachable_not_anthropic():
+    """`auto` asked only `_has_anthropic_credentials()`, so a machine with four
+    working providers configured — deepseek, qwen, zhipu, openrouter — resolved
+    to the OFFLINE stand-in because none of them was Anthropic. On a project
+    whose own live config EXCLUDES Anthropic, `auto` could never route at all.
+    """
+    import inspect
+
+    from qmine.llm.registry import ModelRegistry
+
+    src = inspect.getsource(ModelRegistry._resolve_provider)
+    # Strip comments and docstring text: the fix's own comment names the old
+    # helper, and an assertion that matches it tests nothing.
+    head = src[:src.index('if requested ==', src.index('auto'))]
+    code = "\n".join(ln for ln in head.splitlines()
+                     if not ln.strip().startswith(("#", '"', "'")))
+    assert "detect()" in code, "auto must ask what is actually reachable"
+    assert "_has_anthropic_credentials" not in code, (
+        "auto is deciding on one vendor's credentials again")
+
+
+def test_the_free_commands_stay_free():
+    """`demo` is the documented ~4-minute wiring check and `full` the ~25-minute
+    offline pass. The default config now routes, so both must say offline
+    explicitly or they quietly become paid runs on 8,000 and 50,000 rows.
+    """
+    import inspect
+    from pathlib import Path
+
+    from qmine import cli
+
+    demo_src = inspect.getsource(cli.demo)
+    assert "offline=True" in demo_src and 'provider="mock"' in demo_src, (
+        "demo would route to real models")
+
+    makefile = Path("Makefile").read_text()
+    full = makefile[makefile.index("\nfull:"):]
+    full = full[:full.index("\n\n")]
+    assert "--offline" in full, "make full would route to real models"
+
+
+def test_a_config_the_caller_names_still_wins():
+    """Defaulting must not shadow an explicit `--config`."""
+    import tempfile
+
+    from qmine.cli import _load_config
+
+    with tempfile.NamedTemporaryFile("w", suffix=".yaml", delete=False) as fh:
+        fh.write("llm:\n  temperature: 0.42\n")
+        path = fh.name
+    cfg = _load_config(path, "k12_zh")
+    assert cfg.llm.temperature == 0.42
+    assert not cfg.llm.model_overrides, "the default file leaked into an explicit config"
+
+
+def test_the_preflight_routes_against_the_config_a_run_would_use():
+    """`qmine models` is the pre-flight: it exists to show which model each role
+    gets before any money is spent. It guarded its config load with
+    `if (config or domain)`, so a bare `qmine models` built a stock
+    `QMineConfig()` and pre-flighted a configuration no run would ever use —
+    listing price-chosen models where the run will use pinned ones.
+
+    That is the exact failure the comment above the line describes; it was left
+    in place for the one case where nothing on the command line hints at it.
+    """
+    import inspect
+
+    from qmine import cli
+
+    src = inspect.getsource(cli.models_cmd)
+    call = src[src.index("cfg = _load_config"):]
+    call = call[:call.index("\n")]
+    assert "if (config or domain)" not in call, (
+        "the pre-flight skips the config when no flag is given, so it "
+        "pre-flights a different configuration than the run")
+    assert "QMineConfig()" not in call

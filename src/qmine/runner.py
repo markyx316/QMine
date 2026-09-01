@@ -18,7 +18,7 @@ from pathlib import Path
 from collections.abc import Sequence
 from typing import Any, Iterator
 
-from .artifacts import ArtifactStore
+from .artifacts import ArtifactStore, latest_generation
 from .config import QMineConfig
 from .graph.build import build_graph
 from .graph.deps import Deps
@@ -162,6 +162,7 @@ def _checkpointer(path: Path) -> Iterator[Any]:
 
 def _wire_events(
     root: Path, registry: ModelRegistry, on_event: Any = None,
+    usage_path: Path | None = None,
 ) -> tuple[list[str], Any]:
     """Wire agent lines and usage snapshots, for either entry point.
 
@@ -179,8 +180,17 @@ def _wire_events(
         # spend. Snapshotting usage beside it keeps the two things the dashboard
         # promises to show continuously — gates and money — available to a viewer
         # that is not this process.
+        # `usage_path` EXISTS BECAUSE A RE-RENDER IS NOT THE RUN.
+        #
+        # This was hardcoded to `root/usage.json`, which is run-level. A render
+        # calls `_wire_events` too, so re-rendering live42 overwrote that run's
+        # own spend record — 702 calls and $29.69 replaced by the render's 11
+        # calls and $0.78, unrecoverably, because live42's teardown bug meant no
+        # `run_summary.json` held a second copy. A render writes its own spend
+        # into its own generation instead.
         try:
-            (root / "usage.json").write_text(json.dumps(registry.usage(), default=str))
+            (usage_path or root / "usage.json").write_text(
+                json.dumps(registry.usage(), default=str))
         except Exception:  # noqa: BLE001
             pass
         if on_event:
@@ -475,3 +485,171 @@ def new_generation(cfg: QMineConfig, run_id: str, *, from_generation: int, reaso
     store = ArtifactStore(root, generation=from_generation)
     nxt = store.new_generation(reason)
     return nxt.generation
+
+
+#: State channels a report needs and cannot rebuild from artifacts alone.
+#: `run_summary.json` records `gates` and `completed_phases` but only the COUNT
+#: of decisions and prescriptions, and it records observations not at all.
+_STATE_FROM_CHECKPOINT = ("decisions", "observations", "prescriptions",
+                          "gates", "completed_phases", "metrics")
+
+
+def recover_state(root: Path, generation: int, cfg: QMineConfig,
+                  deps: Any) -> tuple[dict[str, Any], list[str]]:
+    """Rebuild a finished run's pipeline state, and say what could not be found.
+
+    Returns ``(state, missing)``. The second half is the point: a narrative
+    written against a starved state does not come out cautious, it comes out
+    invented — the same failure the fact-sheet work established — so a caller
+    that is about to spend money on agents has to be able to see the hole first.
+
+    Three sources, most complete first:
+
+    1. **The LangGraph checkpoint.** The whole state, including the channels
+       nothing else preserves. `resume_run` reads it the same way.
+    2. **`run_summary.json`** — carries `gates` (24 of them on live40) and
+       `completed_phases`, which covers the gate ledger every report prints.
+    3. **`findings.json`** — run-level, beside `llm_cache`, and therefore intact
+       even when a generation is set aside.
+    """
+    state: dict[str, Any] = {}
+    missing: list[str] = []
+
+    try:
+        from .graph.build import build_graph
+
+        with _checkpointer(root / "checkpoints.sqlite") as saver:
+            graph = build_graph(cfg, deps, checkpointer=saver, human_review=False)
+            snap = graph.get_state(
+                {"configurable": {"thread_id": f"{deps.run_id}-gen{generation}"}})
+            state = dict(getattr(snap, "values", {}) or {})
+    except Exception as exc:  # noqa: BLE001 — a missing checkpoint is recoverable
+        log.warning("checkpoint unreadable (%s); rebuilding state from artifacts", exc)
+
+    summary = root / f"gen{generation:02d}" / "run_summary.json"
+    if summary.exists():
+        try:
+            s = json.loads(summary.read_text(encoding="utf-8"))
+            from .records import GateResult
+
+            if not state.get("gates") and s.get("gates"):
+                # `name` and `phase` are required on GateResult and are NOT in
+                # the serialised value — the name is the dict key, and the phase
+                # is dropped. Validating the value alone raises, which would
+                # lose the whole gate ledger to a `except` two frames up.
+                state["gates"] = {
+                    k: GateResult.model_validate(
+                        {"name": k, "phase": str(v.get("phase") or ""), **v})
+                    for k, v in s["gates"].items() if isinstance(v, dict)}
+            state.setdefault("completed_phases", s.get("completed_phases") or [])
+            state.setdefault("declared_gates_never_evaluated",
+                             s.get("declared_gates_never_evaluated") or [])
+        except Exception as exc:  # noqa: BLE001
+            log.warning("run_summary.json unreadable (%s)", exc)
+
+    state.setdefault("run_id", deps.run_id)
+    state.setdefault("events", [])
+    for ch in _STATE_FROM_CHECKPOINT:
+        if not state.get(ch):
+            missing.append(ch)
+    return state, missing
+
+
+def render_run(cfg: QMineConfig, run_id: str, *, generation: int | None = None,
+               agents: bool = False, on_event: Any = None) -> dict[str, Any]:
+    """Rebuild a finished run's deliverables into a NEW generation.
+
+    Every deliverable is a projection of artifacts that are already on disk, so
+    re-deriving them costs nothing but CPU — and until now there was no way to do
+    it. Every fix to a report generator was therefore unverifiable against a real
+    run without paying for the whole 4-hour pipeline again, which is why a
+    section that had NEVER rendered (`§2.1 L2 子意图`) survived to live42, and why
+    the reference shelf existed in code for a day without a single run producing
+    it.
+
+    Writes into a new generation, never over the source. A delivered document is
+    evidence of what a run said; overwriting it in place would destroy the only
+    record of the defect a re-render is meant to fix.
+
+    With ``agents=False`` this makes NO model calls: the agent-authored steps are
+    switched off at their config gates rather than pointed at a stand-in, so the
+    output contains no invented prose. With ``agents=True`` the narrative writer,
+    the interpreter and the pre-delivery auditor run again — replaying from
+    `llm_cache/` wherever the prompt is byte-identical, which it will be for any
+    section whose evidence did not change.
+    """
+    from .graph.nodes.delivery import p11_report
+
+    root = Path(cfg.run_root) / run_id
+    if not root.exists():
+        raise FileNotFoundError(f"no run at {root}")
+    src_gen = generation or latest_generation(root)
+
+    registry = ModelRegistry(cfg.llm, cache_dir=root / "llm_cache", run_cfg=cfg)
+    # Into the generation this render is about to write, never over the run's own
+    # record of what it spent. See `_wire_events`.
+    # A NEW GENERATION IS THE ONE AFTER THE LATEST, NOT AFTER THE SOURCE.
+    #
+    # `ArtifactStore.new_generation` increments from ITSELF, so a store opened at
+    # the source generation returns `src + 1` — and rendering gen01 twice wrote
+    # both renders into gen02, interleaving a no-agents pass with an agent pass
+    # in one directory. The store resolves artifacts across generations
+    # (`ref.generation <= self.generation`), so reading from gen01 while writing
+    # to the newest is exactly what is wanted.
+    target_gen = latest_generation(root) + 1
+    events, _emit = _wire_events(
+        root, registry, on_event,
+        usage_path=root / f"gen{target_gen:02d}" / "usage.json")
+
+    if not agents:
+        # Off at the gate, not redirected to the offline stand-in: a stand-in
+        # produces complete-looking prose that no model wrote, which is worse in
+        # a deliverable than an honest absence.
+        cfg.final_report = False
+        cfg.interpret_results = False
+        cfg.observe_phases = False
+        cfg.delivery_audit = False
+
+    with _run_log(root), open_memory(Path(cfg.run_root) / "memory.sqlite",
+                                    project="qmine", domain=cfg.domain.key) as memory:
+        src_store = ArtifactStore(root, generation=src_gen)
+        deps_src = Deps(cfg=cfg, store=src_store, registry=registry, memory=memory,
+                        firewall=BlindnessFirewall(), run_id=run_id, on_event=_emit)
+        state, missing = recover_state(root, src_gen, cfg, deps_src)
+        if missing:
+            _emit(f"  ⚠ 这些状态通道没能恢复, 相关章节会相应变短: {', '.join(missing)}")
+
+        store = ArtifactStore(root, generation=target_gen - 1).new_generation(
+            note=f"re-rendered deliverables from gen{src_gen:02d}"
+                 f" ({'with' if agents else 'without'} agents)")
+        deps = Deps(cfg=cfg, store=store, registry=registry, memory=memory,
+                    firewall=BlindnessFirewall(), run_id=run_id, on_event=_emit)
+        _emit(f"重新生成交付物: {run_id} gen{src_gen:02d} → gen{store.generation:02d}"
+              f" ({'含 agent 撰写' if agents else '纯脚本, 不调用模型'})")
+        out = p11_report(state, deps)
+
+        # A RENDERED GENERATION MUST BE AS RE-RENDERABLE AS THE ONE IT CAME FROM.
+        #
+        # `write_summary` runs at the end of a RUN, so a generation produced by
+        # rendering had no `run_summary.json` — and `recover_state` falls back to
+        # that file for the gate ledger. Rendering gen02 from gen01 then
+        # rendering again from gen02 lost `gates` and `completed_phases`
+        # entirely, and the second render's reports quietly shrank. Write the
+        # summary here too, from the state actually used.
+        try:
+            merged = {**state, **{k: v for k, v in (out or {}).items()
+                                  if k in ("gates", "completed_phases")}}
+            write_summary(merged, store, registry, run_id=run_id,
+                          generation=store.generation, elapsed=0.0, resumed=True)
+        except Exception as exc:  # noqa: BLE001 — the documents are the deliverable
+            _emit(f"  run_summary not written for the rendered generation ({exc})")
+
+    written = sorted(p.name for p in Path(store.gen_dir).glob("*.md"))
+    return {
+        "run_id": run_id, "source_generation": src_gen,
+        "generation": store.generation, "agents": agents,
+        "state_channels_missing": missing,
+        "documents": written,
+        "llm": registry.usage() if agents else {"provider": "not used"},
+        "events": len(out.get("events") or []),
+    }

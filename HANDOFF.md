@@ -12,212 +12,151 @@
 
 ---
 
-## 1. Status — last updated 2026-08-27 (night)
+## 1. Status — last updated 2026-08-31
 
-# 552 tests passing. live41 abandoned after a RESUME dropped a branch; live42 relaunched fresh.
+# ~605 tests passing. live42 is the newest completed run; its deliverables can now be rebuilt without re-running it.
 
-**The one thing to know:** the final report (`00_最终报告.md`) is now written by an
-agent rather than assembled by Python, guarded by a fact-sheet check per section
-*and* a coverage check over the run's own warnings. It has run end-to-end offline
-only — the offline stand-in cannot produce a valid outline, so the **agent-planned
-outline path has never executed**, and no section has ever been written by a real
-model. Cheapest possible validation: run `narrate()` alone against live40's
-artifacts (~15 calls) before committing to a full run.
+**The one thing to know:** `qmine render RUN_ID [--agents]` rebuilds a finished
+run's deliverables from artifacts already on disk, into a **new generation**.
+Before it existed, checking a report fix against a real run meant paying for the
+whole pipeline — which is how `§2.1 L2 子意图` reached live42 having *never once
+rendered*. Use it as the first step on any report change.
 
 | | |
 |---|---|
-| Tests | **552** passing; `ruff --select F src/qmine/` clean |
-| `live40` gen01 | 17/17 phases, halted=False, **241.8 min**, `provider=routed` |
-| Verification | **25/26 PASS, 0 FAIL** (live39 control: 19 PASS, **6 FAIL**) |
-| Gates | 24 recorded — 20 passed, 4 warned, 0 failed |
-| Findings ledger | **30 findings, 13 machine-confirmed** |
+| Tests | ~605 passing; `ruff --select F src/qmine/` clean |
+| Newest completed run | `live42` gen01 — 17/17 phases, `provider=routed`, 0 batches lost |
+| `live42` narrative | **3 of 9 sections** delivered (3 lost to a false rejection, 3 to empty model returns) |
+| `live42` gates / findings | 26 gates recorded; findings ledger 43 open — 2 blocking, 21 warn, 20 note |
+| `live42` gen02 | re-rendered — see the caveat below |
+| Narrative, re-rendered with real agents | 9/9 sections passed — but see the correction below |
+| Verification | `verify_run.py` has 28 checks. live40 25 pass / 1 fail; live42 20 / 6, of which **5 are false** |
 
-Every one of the 6 checks that fails on live39 is a mechanism built since it.
+**The five false failures on live42 are all the same cause:** they read
+`run_summary.json`, which that run never wrote because its teardown crashed. The
+crash is fixed; live42 cannot be re-scored because the file cannot be
+reconstructed after the fact.
 
-### The fork delivered exactly what the simulation predicted
+**The first agent re-render passed 9/9 and described an EMPTY RUN.** Do not read
+`live42/gen02/00_最终报告.md` as a report about live42. `build_catalogue` read
+artifacts as `gen_dir / name`, and a rendered generation contains only reports —
+so every fact sheet was empty and the narrative honestly reported `n_named = 0`
+against 58 named leaves and `n_ledger_entries = 0` against 26. Every number it
+cited really was in its sheet, so **no guardrail could fire**. Fixed: artifacts
+now load through the store, which resolves across generations. Re-render to get a
+report that is actually about the run.
 
-    SS1   p2a 68 min  ∥  p3        12 min (then waits)
-    SS2   p2b 79 min  ∥  p4+p5+p6  27 min (then waits)
+**`live42/gen02` is a MIXED generation and should not be read as one render.**
+`ArtifactStore.new_generation` increments from itself, so rendering gen01 twice
+wrote both passes into gen02 — the no-agents pass and the agent pass interleaved.
+Fixed (the target is now `latest + 1`), but gen02 on disk is already mixed: its
+`00_最终报告.md` is the 9/9 agent render, the rest are the earlier scripted pass.
 
-All **39 min** of bottom-up work hidden — the simulation said 39.5. Without the
-fork this run would have taken ~281 min instead of 241.8. It ran longer than
-live39 only because it did two taxonomy redraws live39 never did, one of which
-LOWERED kappa and was correctly reverted.
+**live42's `usage.json` no longer describes live42.** A render used to write the
+run-level file, so its 702 calls / $29.69 were overwritten by a render's 11 calls
+/ $0.78 before the bug was found. The original figures survive only in the session
+log below. Renders now write into their own generation.
 
-### The most important result: confirmed ≠ defective
+### What a new session should read first
 
-13 findings were machine-confirmed. Independent re-verification (16 agents, each
-reading the artifacts, then adversarial refutation) found **only 2 real
-defects**. Eight were arithmetically correct and wrong anyway — almost all
-because the two compared fields measured **different populations**: different
-samples, different id spaces, different pipeline stages.
-
-That is a property of the mechanism, not of this run. A `check` proves an
-**assertion failed**; it says nothing about whether the observer's *conclusion*
-holds. The panel section was headed "**这些不是观点**" — true of the arithmetic,
-false of the conclusion — and a reader counting 12 confirmed blocking findings
-would have been wrong about ten. Both the report framing and the observer prompt
-now carry the measured rate.
-
-### Defects found and fixed
-
-**In what was built this week:**
-
-- **The pre-delivery auditor found 4 real defects and I refused all 4.**
-  - `check` semantics were **inverted for edits**. An observation asserts what
-    *should* hold (failing = defect); an edit asserts what the artifacts *do*
-    say (holding = sourced). The code refused every correctly-sourced edit. A
-    test was *pinning* this bug.
-  - The auditor is handed the gate ledger and told to cite its source, but
-    citations resolved only against artifacts — gates live in `run_summary.json`.
-    3 of 4 refusals were this.
-- **`governance.py`: a merge that changed nothing was recorded as executed.**
-  P011 targeted `[10, 11, 15]` carrying LEAF names while `merge_families` runs in
-  the FAMILY namespace, where only 0..6 existed. Its map entries were no-ops, the
-  §6 table said `executed`, and the three duplicate `pinyin_query` leaves it was
-  meant to collapse are still in the delivered partition. Same leaf-id/family-id
-  confusion that once made every family heading wrong.
-
-**In older code:**
-
-- **`cluster.py`: the falsification probe compared KMeans with itself.**
-  `best_other = ranked[0]` is the best OVERALL, which is the reference whenever
-  KMeans wins. `alternative_beats_reference_by = 0.0` by construction. Now the
-  best *structurally different* arm: −0.0776 against `agglo_average_k15`.
-- **`zh_topdown.py`: 高于 was hardcoded.** live40 shipped "对抗验证 (0.82)
-  高于交叉验证 (0.8625)" — false — plus a causal story that only holds in the
-  other direction. Both readings now written honestly.
-- **`i18n.py`: "审计处方已全部执行"** with 8 of 17 executed. Replaced with what
-  the gate actually guarantees: every prescription settled, executed or declined.
-- 「可执行的触发式」 used for two different counts in one document; a hardcoded
-  `112` beside the artifact's 123; the offline stand-in echoing a **schema field
-  name** into a family heading.
-
-### Not done
-
-- **The two real confirmed findings and the fixes above have not been re-run
-  live.** All verified offline plus by replay against live40's artifacts.
-- The 8 false-positive findings remain in live40's shipped ledger. They are
-  correctly *described* there now, but the run itself is not regenerated.
+1. This section, then §2 — those two describe *now*.
+2. `CLAUDE.md` for the rules that hold everywhere, and `.claude/rules/` for the
+   area you are about to touch (they load automatically on matching paths).
+3. A session section below only when you need the history of a specific decision.
+   They are append-only and dated; older ones are not maintained.
 
 ## 2. Open questions — EDIT THIS SECTION, DO NOT APPEND
 
-**Resolved by live42 and deleted from this list:** "the final report has never met
-a real model" (it has — 3/9 sections, see below), "the bottom-up selection changes
-have never met a real model" (they have — K=18 via `legacy_l2`, split measurement
-7/9, local-k spanning 1-8).
+Resolved items are **deleted** here and their resolution recorded in that
+session's log below. A struck-through entry is a maintenance failure, not a
+record.
 
-### P0 — FIXED 2026-08-28, verified end to end
+### P1 — worth doing next
 
-1. ~~**The run crashes at TEARDOWN and `run_summary.json` is never written.**~~
-   **Root cause was NOT the serializer.** `DecisionRecord` encodes fine; the
-   message naming it was a symptom. `_checkpointer` (and `open_memory`, the same
-   defect) wrapped a single `try/except` around its `yield` — and
-   `@contextmanager` throws a WITH-BODY exception back in at that point, so both
-   caught the ENTIRE pipeline's failures, relabelled them, and fell through to a
-   SECOND `yield`, which a generator may not do. Hence
-   "generator didn't stop after throw()", the original exception lost, and the run
-   dead before `write_summary`.
+0. **The annotator's rule block truncated for the first time on live44, and the
+   test that pins the invariant cannot see it.** At 19:31:33, immediately after
+   guide repair added 133 rules (48 architect + 114 referee + 133 repair ≈ 295
+   rules, 61,203 chars), `budget_text(rules, 60000, tail=10000)` in
+   `agents/roles.py:382` began dropping **1,203 chars from the middle** of every
+   annotator prompt — ~6 rules at ~207 chars each, the *same* ones on all 162
+   calls of the guide-repair round.
 
-   Fixed by building the saver/store inside `try/except` and yielding OUTSIDE it,
-   exactly once, with no `except` around the yield. `write_summary` also moved
-   into a `finally`, so a crash still records how far the run got. Verified: a
-   full offline run writes a 13,370-byte summary with 17 phases and 15 gates, zero
-   teardown errors, and `verify_run.py`'s falsely-failing checks now read real
-   data. Mutation-tested — restoring the `except` reproduces live42's exact
-   message, "SQLite checkpointer unavailable (the pipeline itself failed)".
+   **CORRECTED — the cause is rule COUNT, not verbosity, and not reasoning.** An
+   earlier version of this entry blamed re-enabling referee reasoning for making
+   rules longer. Measured, per-rule density is unchanged: live42 204.7 chars/rule
+   (139 rules → 28,447), live44 207.5 (295 → 61,203). live44 simply produced more
+   rules — round-2 blocks were live42 **251** (60 architect + 100 referee + 91
+   repair) vs live44 **295** (48 + 114 + 133), +17.5% — driven by 30 open
+   boundaries against live42's 21. At ~207 chars/rule the 60,000 budget is about
+   **290 rules**. live42 sat at ~52,000 chars, **86% of the cliff**, and nobody
+   knew. Any corpus with more confused boundaries crosses it. Disabling reasoning
+   would NOT fix this.
 
-   **live42's true verification score remains unknown** — its summary cannot be
-   reconstructed after the fact. The next live run is the first fully verifiable one.
+   This is the live38 failure recurring one layer up — announced this time (the
+   `label=` fix works) and 2% rather than 100%, but in the same round: the one
+   whose whole purpose is to apply the repaired guide.
 
-### P0 — none open
-   live42 completed 17/17 phases and shipped every deliverable, then died:
-   `DecisionRecord` is no longer msgpack-serializable, the SQLite checkpointer
-   fell back to in-memory, and the store's context manager raised
-   `RuntimeError: generator didn't stop after throw()` on exit.
+   `test_every_adjudication_rule_the_architect_writes_reaches_the_annotator` and
+   `test_every_rule_the_referee_drafts_reaches_the_annotator` both exercise
+   `_render_rules()` — the **rendering**. Truncation happens after, in the prompt
+   builder. A gate before the operation that breaks its invariant guarantees
+   nothing; that rule is in CLAUDE.md and this is a fresh instance of it.
 
-   **This is worse than lost metadata: it blinds the verification harness.** Five
-   of `verify_run.py`'s six failures on live42 are FALSE — "no observer gate
-   reached state", "provider=None", "no completed_phases recorded", "0 observers",
-   "the blocking delivery gate absent" — all of them read `run_summary.json`.
-   A run cannot be checked at all without it. Fix the serializer registration and
-   the teardown ordering; then re-verify live42, whose real score is unknown.
+   **It confounded the guide-repair verdict on live44.** Round-2 annotation ran
+   19:31→19:43; truncation began 19:31:33. So the round whose whole purpose is to
+   measure whether the repaired guide helps was annotated with ~6 rules missing,
+   and returned `kappa after repair: 0.875 (-0.005 vs 0.880)` → guide reverted.
+   That delta is inside the pilot's own noise (recoverable slack 0.0049 ± 0.0345),
+   so the verdict was uninformative regardless — but it must NOT be cited as
+   evidence about guide repair. The earlier live38 fix added `label=` and so cured
+   the *silence*, not the truncation.
 
-### P1 — two of four FIXED 2026-08-28
+   Fix (do NOT apply while live44 runs): the rule block must be budgeted by
+   **whole rules**, not characters — drop rules from the tail with a count in the
+   log and an in-band marker naming how many were withheld, so the annotator and
+   the operator both know. Raising 60,000 only moves the cliff. Then extend one of
+   the two tests to assert through the *prompt builder*, not `_render_rules`.
 
-2. ~~**The narrative report shipped 3 of 9 sections.**~~ **The recorded suspicion
-   — truncation — is REFUTED.** Reproduced against the real model: a
-   58,246-char sheet with 18,246 chars dropped still returned 1,784 chars of
-   prose, and a 33,462-char sheet returned 1,933. Size is not the cause either.
+   **The same growth is the run's dominant cost.** live44 at p2b end: 747 calls,
+   $55.11, **15.3M input tokens of which 14.9M (97%) is annotation**. Each
+   annotation call carries ~21,900 input tokens because the rule block rides on
+   every one. `annotator_b` made 432 calls to `annotator_a`'s 267 — 165 extra,
+   all retries at 41% failure — so ~3.9M input tokens bought nothing. One
+   variable (rule-block size) therefore drives the truncation, the token bill and
+   the retry amplification together. Budgeting by whole rules fixes the first;
+   only a smaller or cached rule block fixes the other two.
 
-   The actual defect: the empty-return branch appended a rejection and
-   `continue`d **without setting `rejected`**, so the retry re-sent a
-   byte-identical prompt and got a byte-identical answer. Three attempts were one
-   call's outcome paid for three times. `interpret.py` states the rule this broke
-   — a retry must carry EXTERNAL feedback. Now it names the empty field and says
-   what to return. Mutation-tested.
+   **Same call, and SMALLER than first recorded:** `roles.py:437` gives the
+   referee `budget_text(rules, 9000)` — head-only, **no `tail`, no `label`**. An
+   earlier version of this entry said it "would silently drop 85%"; that applied
+   the wrong density. Measured: the referee is handed the ARCHITECT's rules only,
+   which render at 135.4 chars/rule — live44's 48 rules are **6,497 chars, 72% of
+   budget**; live42's 39 were 5,755. The cliff is ~66 architect rules. Real, not
+   imminent. Still add `label` and `tail`: two arguments, and head-only-with-no-
+   label is the exact shape that hid the live38 loss.
 
-   Context that makes empties plausible at all: `reporter` routes to
-   `deepseek-v4-pro`, which is in plain-JSON mode, so a whole section of Chinese
-   prose must survive as an escaped JSON string. A repro run also returned
-   `covered=[]` where an identical call returned 48 entries, so that path does
-   drop fields.
+   Density varies far more by rule SOURCE than by model, which is why one
+   chars/rule figure misleads: architect **135.4**, referee-drafted **280.6**,
+   guide-repair **170.8**. Any "the budget is about N rules" estimate depends on
+   the mix and must not be written down as a constant.
 
-4. ~~**Two English strings reach three Chinese reports each.**~~ Fixed by
-   `report/translate.py` — see the translation note below.
+1. **Does the narrative writer still return an empty JSON?** live42 lost three
+   sections to `{"markdown": "", "covered": []}` on all three attempts. Today's
+   `render --agents` against the same artifacts returned **9/9 sections**, so it
+   did not recur — but the fact sheets changed too (the sign fix, the widened
+   citable pool), so this is evidence, not a controlled test. Both real repros
+   before it also failed to reproduce a blank. Do NOT add mitigation machinery
+   until one reproduces: the three prior suspicions here (truncation, sheet size,
+   prompt-block truncation) were each refuted by measurement.
 
-### P1 — still open
+2. **Two English strings reach three Chinese reports each (6 lines).** Confirmed
+   still present today by `verify_run.py` on live42. "DIAGNOSTIC ONLY — do not
+   choose a model from this number…" and "Match the two annotators…", both from
+   the annotator-balance work, never routed through `prose()`. The static AST
+   guard covers `deps.decision()` rationales only — it does not see gate messages
+   or remediations, which is where these live.
 
-2. **Why does the writer sometimes return a literally empty JSON?** Not "why did
-   live42 ship 3 of 9" — that is answered below, and the dominant cause is fixed.
-   This is the residue: three sections returned `{"markdown": "", "covered": []}`
-   on attempt 1, a *parseable* object with both fields empty, which is what
-   `SectionDraft` validates from `{}`. `complete()` raises rather than
-   manufacturing such an object, so the model emitted it.
-
-   **Not reproduced.** Two real calls against live42's own bundles
-   (`representation`, `hierarchy`) both returned good prose, 1,790 and 801 chars.
-   The one measurement worth carrying forward: **93-94% of completion tokens were
-   reasoning** (9,937/10,930 and 7,805/8,338). The reporter's cap is 24,000 and
-   shares it with the trace, so a section with more bundles could plausibly spend
-   it all thinking. That is a hypothesis, not a finding.
-
-   The retry now carries feedback naming the empty field, so this costs one
-   attempt rather than three, and the failure notice no longer calls it a
-   validation failure. Do NOT add mitigation machinery until a blank reproduces —
-   the last three suspicions here (truncation, sheet size, prompt-block
-   truncation) were each refuted by measurement.
-
-3. ~~**The narrative door has a numeric guarantee and NO attribution guarantee.**~~
-   **FIXED 2026-08-28 by SUPPLYING the sentence rather than checking it.** A
-   general "is this noun right?" check is not achievable, and pattern-matching
-   Chinese prose for misattributions fails silently — so where attribution is
-   load-bearing, `MustCover.verbatim` carries a sentence the pipeline writes from
-   artifacts and the section must reproduce exactly. The model still writes
-   everything around it.
-
-   Why anchors could never have caught live42's error: the anchor was the
-   deciding reference's NAME, and `legacy_l2` does appear in the wrong sentence.
-   "Which reference is the subject of this claim" is not expressible as a
-   substring. Mutation-tested; the test also asserts the anchor-only check still
-   fails on the same text, so it cannot go stale silently. Applied to the
-   K-locator attribution — extend it wherever a claim's subject matters more than
-   its numbers. Original defect below for context:
-
-   **The narrative door has a numeric guarantee and NO attribution guarantee.**
-   live42's §4 wrote 「交付的 K=18 是参照 phrasing_groups 的粒度锚点」 — the wrong
-   reference, two lines after listing all three correctly. `check_numbers` is
-   precision-only on NUMBERS; a wrong noun is invisible, and the must-cover anchor
-   matched because every reference name appears somewhere. Same class as the
-   `locator_reference` contradiction the p5 observer caught.
-
-4. **Two English strings reach three Chinese reports each (6 lines).**
-   "DIAGNOSTIC ONLY — do not choose a model from this number…" and "Match the two
-   annotators…", both from the annotator-balance work, never routed through
-   `prose()`. The static AST guard covers `deps.decision()` rationales only — it
-   does not see gate messages or remediations, which is where these live.
-
-5. **The resume rewind silently drops a concurrent branch.** Made LOUD (the join
+3. **The resume rewind silently drops a concurrent branch.** Made LOUD (the join
    halts with `p2c_both_branches_arrived`), not fixed. Open: whether
    `update_state(as_node=...)` can restore a multi-superstep fan-out at all, or
    whether a gap in `phase_status` should force a clean re-run of the generation.
@@ -225,16 +164,25 @@ have never met a real model" (they have — K=18 via `legacy_l2`, split measurem
 
 ### P2 — measured, disclosed, not acted on
 
-6. **`challenger_beats_incumbent` has no production call site.** Four docstrings
+5. **The declared per-role token budgets are miscalibrated in both directions,
+   and now quantified.** Measured against live42's own `usage.json`: the
+   annotators are 500 of 702 calls, declared 12,000 output tokens, actual
+   1,612-1,751 — a **7x over-estimate on the roles that dominate the run**.
+   Observers, researchers and the delivery auditor run **2-6x UNDER** their
+   declared budget. The declared number drives the cost estimate, the cap
+   (`3x`) and the timeout, so recalibrating moves truncation risk — it deserves
+   its own pass, not a drive-by edit.
+
+6. **The spend ledger is wrong in both directions.** Provider prompt-cache
+   discounts are not recorded (input is 7.3x output on live42, annotators 94% of
+   it, and the prompt is already ordered for prefix caching), so cost
+   OVER-reports; a pinned model with no published price counts as $0.00, so it
+   UNDER-reports. `_pin_warnings` says so out loud; nothing corrects it.
+
+7. **`challenger_beats_incumbent` has no production call site.** Four docstrings
    and a model-budget decision rested on it; they now say so. Needs a signature
    change (`propose_grid` returns a flat list, so selection cannot tell a proposed
    value from a configured one). Applying it as written flips live40 to a worse K.
-
-7. **The spend ledger is wrong in both directions and neither is measured.**
-   Provider prompt-cache discounts are not recorded (input is 7.3x output — 8.98M
-   vs 1.24M on live42, annotators 94% of it — and the prompt is already ordered
-   for prefix caching), so cost OVER-reports; `qwen3.7-plus` publishes no price so
-   annotator_b counts as $0.00 and it UNDER-reports.
 
 8. **The alpha decision sits inside its own noise.** Winners across 5 seed
    replicates: 0.1, 0.5, 0.1, 0.0, 0.1. `tie_band=0.05` is an unreachable default
@@ -243,39 +191,255 @@ have never met a real model" (they have — K=18 via `legacy_l2`, split measurem
    fragments worse. The fix is replication.
 
 9. **Annotator asymmetry, unattributed.** live42: annotator_a won 34.1% of 270
-   contested rows, z=-5.2. NO baseline exists (the gate postdates live40). The
-   parsimonious reading is the pairing — `deepseek-v4-flash` against
-   `qwen3.7-plus`, flash tier against plus tier. Testing whether disabling
+   contested rows, z=-5.23. NO baseline exists (the gate postdates live40). The
+   parsimonious reading is the pairing — a flash tier against a plus tier. Note
+   the pins have since changed (`annotator_b` is now `qwen:qwen3.8-flash`), so a
+   re-test would not reproduce live42's pairing. Testing whether disabling
    reasoning contributed needs a paired re-run of the same rows.
 
-10. **Observers cost ~2.5 hours of a 4-hour run.** 11 observers, median 809s on
+10. **A ~29-minute client timeout costs p2a half its wall clock and returns
+    `out 0`.** CORRECTED 2026-08-31: the previous headline here — "the two
+    researchers that never retrieve are the two that cost the most" — framed
+    **designed behaviour as a defect**, and that framing reached the root README
+    before it was caught. Only `literature` and `risk_compliance` carry
+    `web: True` (`agents/roles.py` `RESEARCH_ANGLES`); `log_reading`,
+    `legacy_audit` and `pragmatic_intents` are deliberately tool-free, and the
+    docstring says why — a search box invites the log reader to substitute recall
+    for observation. They show no `(web-researched)` marker because they were
+    never given tools. They are also not unproductive: on live44 the three
+    tool-free angles returned **12 candidates each**, against 10 and 11 for the
+    two web angles.
+
+    | researcher | web | live43 | live44 | candidates (live44) |
+    |---|---|---|---|---|
+    | risk_compliance | yes | 10 min | 14 min | 10 |
+    | literature | yes | 18 min | 14 min | 11 |
+    | legacy_audit | no | 18 min | 19 min | 12 |
+    | pragmatic_intents | no | 38 min | **48 min** | 12 |
+    | log_reading | no | 38 min | **48 min** | 12 |
+
+    The real defect is `timeout_seconds`, and the mechanism is now MEASURED
+    (an earlier version of this entry guessed "a shared client-side deadline" —
+    wrong, there is no shared deadline):
+
+    `llm/requirements.py:83` computes `max_output_tokens / THROUGHPUT_TOK_PER_SEC
+    * 1.3`, clamped to [180, 1800]. `THROUGHPUT_TOK_PER_SEC = 40.0`, calibrated on
+    the architect emitting 20,441 tokens in 420s (≈49 tok/s) — **non-reasoning
+    output**. The researcher's 18,000-token budget therefore yields a **585s**
+    timeout. `config.max_retries = 2` is handed to the provider SDK, so one call
+    is 3 HTTP attempts: **3 × 585 = 1,755s**, against the observed 1,757.0s and
+    1,757.9s. The outer qmine retry then succeeded in 1,107.9s, and
+    1,757.0 + 1,107.9 = **2,864.9s** — exactly the "ok 2864.9s" the log reports.
+    Every number reconciles; nothing is shared.
+
+    Measured throughput on live44 spans **7.4 to 181.7 tok/s across roles** — a
+    25x range against one global constant:
+
+    | role | tok/s | | role | tok/s |
+    |---|---|---|---|---|
+    | researcher_pragmatic_intents | **7.4** | | referee | 37.2 |
+    | researcher_log_reading | **8.2** | | namer_2 | 74.4 |
+    | observer_p8 | 13.6 | | taxonomy_architect | 74.2 |
+    | researcher_legacy_audit | 22.5 | | annotator_a | **181.7** |
+
+    The three TOOL-FREE researchers are the slowest per token, and that is the
+    mechanism: with no tool round-trips their wall time is dominated by *thinking*,
+    and reasoning tokens are not counted in `out` — they sit in the denominator and
+    not the numerator. Re-enabling reasoning on referee/namer pushed more roles
+    into this regime.
+
+    Fix, in order of payoff:
+
+    1. **`THROUGHPUT_TOK_PER_SEC` must not be one global constant.** Make it
+       per-role and seed it from measurement; a reasoning role needs roughly 5x
+       the wall time per emitted token that the constant assumes.
+    2. **`max_retries = 2` triples the cost of every timeout.** A role whose
+       timeout is marginal burns 3 x timeout returning `out 0` before the outer
+       retry even starts — 29 minutes of nothing, twice, on this run. Drop the SDK
+       retries for long-timeout roles and let the outer retry own it.
+    3. The 1800s ceiling only binds `annotator_a`/`annotator_b` (66,000 tokens →
+       clamped). It did NOT cause this; do not "fix" it first.
+
+    Do NOT cap the research to shorten the latency — that shortens the work rather
+    than the waste, and the tool-free angles returned the most candidates.
+
+10c. **`knn_label_scan` shows a human reviewer an ARBITRARY 6 neighbours, not
+    the 6 nearest.** `ops/classify.py:407` stores `neigh[:6]`, but `top` comes
+    from `np.argpartition(-sims, kth=kk-1)[:, :kk]`, which places the top-k in the
+    first k positions **unsorted**. Verified: the slice returns sims
+    [0.95, 0.7, 0.3, 0.8, ...] — not descending. The docstring says these flags
+    are "candidates for human review", so the displayed sample should be the
+    nearest ones. One-line fix: order the top-k by similarity before slicing.
+
+    Found while adjudicating live44's p2d ✔MEASURED observation, which asserted
+    `(disagreement == 1.0) or (label in neighbour_labels)` and FAILED on row 41.
+    **That confirmed check is NOT a defect**: `disagreement` is computed over
+    k=10 while only 6 are stored, so with 0.9 exactly one neighbour agrees and
+    P(it is absent from an arbitrary 6 of 10) = 40%. The same explanation covers
+    the row=461 `neighbour_majority` observation. Textbook case of the rule that
+    a confirmed check proves the assertion failed, never that a defect exists —
+    logged here because the adjudication produced a real finding underneath.
+
+0b. **The delivery auditor reviewed roughly half of what it was auditing, on
+    every one of four calls — and this went unnoticed for two runs.** Found while
+    re-examining item 0. `roles.py:928` gives `DeliveryAuditorAgent`
+    `budget_text(deliverables, 90000, tail=12000, label='deliverables')`. live42's
+    four calls dropped **36%, 42%, 48% and 54%** of the block (up to 106,311 of
+    196,311 chars) out of the MIDDLE. live40 dropped 18%. This is the agent whose
+    entire remit is checking deliverables before they ship, so its blind spot is
+    the middle of the thing it certifies — and a clean delivery audit means
+    "nothing wrong in the half I was shown".
+
+    Strictly worse than item 0 (2% of a rules block) and older: live40 and live42
+    both hit it, neither surfaced it. The `label=` fix from live38 is why the log
+    can now name the block, which is the only reason it was findable at all.
+
+    live44 has not hit it yet — p11/p12 had not reached the delivery auditor at
+    the time of writing. Check when the run lands.
+
+    Fix is the same shape as item 0 and should be done in one pass: budget by
+    whole DOCUMENTS, not characters; name in-band and in the log which documents
+    were withheld and how many; never silently drop the middle of an audit
+    payload. Raising 90,000 only moves the cliff.
+
+10r. **P7's `audit.risk_isolated` is asserted before the isolation happens —
+    and that premature claim generated three machine-confirmed observations whose
+    conclusions are FALSE against the delivered partition.** live44, verified.
+
+    CORRECTED. An earlier version of this entry claimed p7 "drops findings". It
+    does not. Every one of `risk_report`'s ten clusters was isolated by p8:
+    42/43/44/45 → families 19-22, **10** → 23, 19 → 24, **36** → 25, 21/31/33 →
+    26-28. Leaves 47 and 32 were **split**, which is exactly what their findings
+    recommended. The safety outcome is correct.
+
+    The findings travel via the **risk sentinel**, not via `audit.risk_findings`
+    — the p7 log says so plainly ("auditor: 9 prescriptions; risk sentinel: 5
+    findings"). `audit.risk_findings` is the tree AUDITOR's list. So the
+    observer's check (`any([r.leaf_id == 10 for r in audit.risk_findings])`) was
+    factually right and its conclusion ("完全没有承接") wrong: it read the
+    auditor's channel and concluded about the sentinel's. Two fields, two
+    populations — the same shape as 10c, one level up.
+
+    What IS real — and it is NOT what this entry first said. "Compute
+    `risk_isolated` after governance" targets a computation that does not exist.
+    `risk_isolated` appears exactly once in `src/`: `records.py:418`, a field on
+    `TreeAudit` ("The auditor's report") with `default=False`. **Nothing computes
+    it and nothing checks it — it is an agent-authored boolean wearing a
+    measurement's name.** It entered as a schema field rather than through one of
+    the four doors, so it carries no guardrail at all. Fix: verify it mechanically
+    against the delivered partition, or drop the field and let the pipeline answer
+    the question from the partition it already holds.
+
+    **A class, not one field.** Its neighbours on the same agent-filled models
+    default in the UNSAFE direction: `FamilyNaming.coherent: bool = True` and
+    `FamilyNaming.risk: bool = False` (`records.py:408-409`). A tree_auditor call
+    that partially fails therefore yields families asserted coherent and not
+    risky. That is the same permissive-default failure mode as
+    `SectionDraft.markdown=""` and `AnnotationBatch.labels=[]` — the one that cost
+    1,500 gold rows — and it is live on the SAFETY path. Audit every
+    agent-populated model for defaults that assert the reassuring answer; a
+    missing field must not read as "fine".
+
+    Lesson recorded because I got this wrong first: I evaluated p7's artifacts and
+    concluded a safety defect. **Anything shown as final must come from the
+    DELIVERED partition** — that rule is in CLAUDE.md and it applies to reading
+    the run, not only to writing reports.
+
+10a. **The observation door drops 40% of its rejections for a reason that is not
+    the observer's fault — the same "shown but not citable" defect already fixed
+    on the narrative door.** `agents/observe.py:149` resolves a claim with
+    `resolve_key(o.artifact_key, artifacts)` — **artifacts only**. But the
+    observer's prompt is built at line 202 with `artifacts` PLUS
+    `decisions=_j(decisions, 12000)` and `gates=_j(gates, 8000)`. So the observer
+    is shown decisions and gates, invited to reason over them, and any claim
+    citing them can never resolve.
+
+    Measured on the dropped-observation log lines: live42 4/10, live43 2/4,
+    live44 2/6 — **8 of 20 (40%)** cite `decisions`/`gates`/`findings`.
+
+    The sharp part: the drop at line 149 happens BEFORE `evaluate()` at line 154,
+    so an observation carrying a machine-checkable `check` has its test discarded
+    unrun. That is the one capability the observation door exists to provide.
+    live44's p2c example — "D006 records decided_by='metric' but decisive_metrics
+    is an empty list" — is mechanically checkable and was never evaluated. Whether
+    it is TRUE is unknown and not the point; it was refused for the wrong reason.
+
+    Fix — and it is TWO call sites, not one. `ops/checks.py:305` is
+    `evaluate(expression, artifacts)`: the check evaluator uses the **same
+    artifacts-only namespace**. Widening `resolve_key` alone would let the claim
+    through with a check that cannot run, silently demoting a measurable claim to
+    advisory. Widen both to the same merged namespace. Verified safe: none of
+    `decisions` / `gates` / `findings` / `samples` collides with an artifact name
+    or top-level artifact key on live44. `report-generators.md` already states the
+    rule — "Everything the writer was SHOWN is citable" — applied to one door and
+    not the other. Verify a CORRECT artifact citation still passes afterwards.
+
+10b. **No classifier metric is gated — a 2.8x calibration regression passed
+    silently.** live44 vs live42 on near-identical training sizes (5,812 vs
+    5,791): CV accuracy 0.857 → 0.863, macro-F1 0.763 → **0.820** (+5.7pt, the
+    rare-class metric, plausibly the 162-vs-139 rule set and the better annotator
+    balance), but ECE 0.023 → **0.065**. `p2c_trainable` checks only
+    `n_labelled >= 30` and `n_classes >= 2`; accuracy, macro-F1 and ECE reach the
+    log and the artifact and **no gate reads any of them**. So the model can get
+    better at ranking and materially worse at knowing its own confidence with
+    nothing recording a threshold it crossed.
+
+    **Read the ECE delta as weak evidence, not a proven regression.** The runs
+    differ in class count (21 vs 20 L1), rule set, gold sample and annotator
+    models, so cross-run ECE is not a controlled comparison, and 0.065 is not
+    alarming in absolute terms. The finding is the **absent gate**, not the delta.
+
+    Open: what a defensible gate compares against. NOT a cross-run baseline
+    (imports another corpus's character) and NOT the run's own earlier generation
+    (a render does not retrain — generations share the classifier, so the
+    comparison is vacuous). The form fitting this project's own discipline is a
+    **null computed on this corpus**, as silhouette and K already are: score ECE
+    against a trivially-calibrated predictor on the same folds and gate the lift,
+    not the level. Rare-class gains arriving overconfident is a hypothesis;
+    measure per-class calibration before acting on it.
+
+11. **Observers cost ~2.5 hours of a 4-hour run.** 11 observers, median 809s on
     live41 against 285s on live40 for the SAME output volume — latency, not token
-    inflation. They earn it (three real defects today), but the trade should be a
+    inflation. They earn it (three real defects), but the trade should be a
     decision, not an accident.
 
-11. **Refinement has not converged on any run.** live40, live41, live42 all hit
+12. **Refinement has not converged on any run.** live40, live41, live42 all hit
     the 5-round limit. Honestly disclosed in the report, but it means the
     delivered leaf count depends on which round it stopped at.
 
-12. **Two vacuous rule triggers found live and not repaired.**
+13. **Two vacuous rule triggers found live and not repaired.**
     `academic_knowledge_qa x problem_solving` names 求/解/计算 with 0 of 19
     contested rows carrying any; `navigational x school_info` names 主页/入口/好不好
     with 0 of 8. The detector works; nothing acts on what it finds.
 
-13. **Two of nine governance splits are geometrically unsupported** (leaf 19 -> 54
+14. **Two of nine governance splits are geometrically unsupported** (leaf 19 -> 54
     at ARI 0.0595 with a near-duplicate name; leaf 0 -> 49 at 0.3876). Disclosed
     by design (measure-don't-veto). Nobody has looked at them.
 
-### P3 — frozen debt, deliberately not growing
+### P3 — small, known, deliberately not growing
 
-14. **22 `deps.gate()` messages are English f-strings** printed verbatim into
+15. **22 `deps.gate()` messages are English f-strings** printed verbatim into
     Chinese deliverables. Frozen by gate NAME in `GATE_MESSAGE_DEBT`
     (`tests/test_pipeline.py`); the set may shrink, anything new fails the test.
 
-15. **Three domain profiles are untested on real data:** `finance_zh`,
+16. **Three domain profiles are untested on real data:** `finance_zh`,
     `sports_zh`, `politics_zh`. `generic.yaml` ships 0 template seeds, so a corpus
     without a profile locates K against unvalidated mined groups — now gated by
     `p3_locator_reference_validated`, but never exercised.
+
+17. **`verify_run.py` on a RENDERED generation skips most checks.** It reads one
+    generation directory, and a render writes only reports there — the analytical
+    artifacts stay in the source generation. live42: 20 pass on gen01, 9 pass /
+    13 skip on gen02. Either teach it the store's cross-generation resolution, or
+    document that a rendered generation is scored against its source.
+
+18. **`zh_panel`'s `fixed` and `waived` lists are unsorted** (`entries.values()`),
+    unlike `open_findings`, which sorts blocking-first. Their caps are disclosed
+    now, so nothing hides silently, but the order is arbitrary.
+
+19. **The reference shelf is Chinese-only.** `builder.build_all_reports` emits
+    `类目清单` / `标注规范与裁定规则` / `家族与叶层级` / `00_索引` under `zh` only, so
+    an English run delivers the six reports and none of the reference documents.
 
 ## 3. Durable notes — worth not re-learning
 
@@ -1986,7 +2150,14 @@ AND ran before the discrimination fix.
 
 ---
 
-## The resume rewind silently drops a concurrent branch
+## Session (2026-08-27 night → 08-28) — live41 abandoned, live42 run end to end
+
+> These six subsections were appended as top-level headings, which broke the
+> one-dated-section-per-session contract at the top of this file. Grouped here
+> without editing their content. The exact night/morning boundary is not
+> recoverable, hence the range.
+
+### The resume rewind silently drops a concurrent branch
 
 **The most serious defect of the day, and the hardest to see.** live41 gen03 ran
 for 40 minutes through P4, P5 and P6 emitting healthy gates while the entire
@@ -2024,7 +2195,7 @@ whether a gap in `phase_status` should force a clean re-run of the generation
 instead of a surgical rewind. Until then: **open a new generation and run it once,
 without restarting mid-flight.**
 
-## live42
+### live42
 
 live41 abandoned. Its three generations stay as evidence: gen01 (reasoning
 tokens, 88% referee failure), gen02 (my `model_kwargs` TypeError), gen03 (the
@@ -2033,7 +2204,7 @@ test of every fix at once.
 
 ---
 
-## live42 results as they land (fresh run, all of today's fixes active)
+### live42 results as they land (fresh run, all of today's fixes active)
 
 **Gold set — better than live40 on two of three measures, with reasoning OFF:**
 kappa **0.8928** on n=2999/3000 (live40: 0.8427), adversarial estimated accuracy
@@ -2080,7 +2251,7 @@ sit at k=2, so the small-k attractor is weakened, not gone.
 5-round limit on live40, live41 and live42. Honestly disclosed in the report, but
 a standing weakness: the delivered leaf count depends on which round it stopped at.
 
-## The narrative report's FIRST live run: 3/9 sections, and why
+### The narrative report's FIRST live run: 3/9 sections, and why
 
 The agent-written report ran against a real model for the first time. The
 structural machinery worked: **the agent-authored outline passed on attempt 1**
@@ -2121,7 +2292,7 @@ empty returns is unverified — do not fix it as though it were established.
 **Next step for this: reproduce one empty section offline against the recorded
 sheet.** The section ids and their bundles are in `final_report_meta.json`.
 
-## live42 finished — 17/17 phases, and what the narrative report is really like
+### live42 finished — 17/17 phases, and what the narrative report is really like
 
 All 17 phases completed and every deliverable shipped. **The run then crashed at
 teardown**: `DecisionRecord` is no longer msgpack-serializable, so the SQLite
@@ -2167,7 +2338,7 @@ guarantee** — same class as the `locator_reference` contradiction the p5 obser
 caught. This is the top open item for the report, ahead of the empty-section
 problem.
 
-## Translation: from 34 hardcoded prefixes to a guarded model call
+### Translation: from 34 hardcoded prefixes to a guarded model call
 
 `PROSE_ZH` maps an English PREFIX to fixed Chinese at 20 call sites. Two holes no
 diligence closes: a newly authored string is English until a human notices (three
@@ -2306,7 +2477,7 @@ same shape as the referee's 88% failure rate on live41. Raised to 3,000 (cap
 
 ---
 
-## Session (2026-08-28, evening) — the reference shelf, and a dashboard that was showing the wrong call
+## Session (2026-08-28, later) — the reference shelf, and a dashboard that was showing the wrong call
 
 ### Budgets for the two roles that now reason — measured, and my first sizing was wrong
 
@@ -2459,3 +2630,330 @@ All five verified here before acting; all five fixed.
 - **Not yet exercised by a live run.** `live42/gen01` was deliberately left
   byte-identical to what it delivered; the new documents were built into
   `/tmp/qmine_refs` instead.
+
+---
+
+## Session (2026-08-31) — `qmine render`, and the five deferred items
+
+### 1. Are the reference documents produced by a run? YES — verified end to end
+
+`make demo` now emits all of them: 类目清单.md, 标注规范与裁定规则.md,
+家族与叶层级.md, 00_索引.md and the three CSV twins, alongside the six original
+documents. They were absent from `runs/live42/gen01` only because that generation
+was deliberately left byte-identical to what it delivered.
+
+**`qmine demo` was itself broken** and had to be fixed to check this. It calls
+`run()` as a plain function while naming only 13 of its 16 parameters, so
+`reuse_taxonomy`, `resume` and `dashboard` arrived as `typer.models.OptionInfo`
+sentinels and one reached a Pydantic model:
+`PydanticSerializationError: Unable to serialize unknown type`. `make demo` is
+what CLAUDE.md points at to check wiring and it could not run. It now reads the
+declared defaults out of `run`'s signature, so a new option arrives with its own
+default instead of reintroducing the bug silently.
+
+### 2. The five deferred items — all done
+
+- **`fig_gates.png`** paired the FIRST numeric in `observed` against the FIRST in
+  `threshold` with nothing tying them together, so a gate observing
+  `{"n": 600, "kappa": 0.8928}` against `{"min_kappa": 0.70}` was drawn as 600
+  versus 0.70. And `isinstance(True, int)` is True, so a boolean assertion
+  contributed a value of 1. Both now go through `records.paired_gate_metric`,
+  one definition shared with `_passed_below_threshold` so a figure and a table
+  cannot disagree; gates with no numeric bar are counted under the axis instead
+  of vanishing (live42: 7 of 26 plotted, all green, none of the four warned).
+- **Panel findings** were capped at `[:12]`/`[:8]` with no "showing N of M" and
+  claims cut mid-token. Both fixed. **Correction to the audit that raised it:**
+  it claimed the cap hides two blocking findings — it does not.
+  `FindingsLedger.open_findings` sorts blocking-first, so they survive the cut.
+- **Two broken cross-references**: the panel link named `Report_Uniform_Panel.md`,
+  the English build's filename, in every Chinese delivery; and `§9 失败史` pointed
+  at the decision chain (the failure history is §12). The section is now cited by
+  NAME, which is correct in both documents that share the helper.
+- **The two `<details>` blocks** in the top-down report are gone. The class table
+  and the referee's rules now link to 类目清单.md and 标注规范与裁定规则.md, which
+  carry them un-truncated.
+
+### 3. `qmine render RUN_ID [--agents]`
+
+Rebuilds a finished run's deliverables into a NEW generation. Verified on live42:
+gen01 → gen02, nine documents, gen01 byte-identical afterwards. Every fix above
+is visible in the re-rendered output — 0 `?` rows (was 6), 0 `<details>` (was 2),
+§2.1 L2 子意图 rendering for the first time, the findings cap disclosed.
+
+Four defects found and fixed while building it, each recorded in
+`report-generators.md`: the auditor had no config gate so `--no-agents` still ran
+it against the offline stand-in and wrote `[offline-heuristic] file` into a
+deliverable; `render` did not call `_load_env()` so `--agents --provider router`
+silently ran offline and reported "10/10 sections verified" for a report no model
+wrote; a rendered generation had no `run_summary.json` so re-rendering FROM it
+lost the gate ledger; and `GateResult.model_validate(value)` raises because
+`name` is the dict key, which would lose the ledger to an `except` two frames up.
+
+### A regression the suite caught, and it was mine
+
+Unifying the gate pairing put a `break` in `gate_metric_pairs`, so one threshold
+naming several observed values (`min_kappa` matches `kappa` AND
+`self_consistency_kappa`) kept only the first. `_passed_below_threshold` then
+stopped flagging a gate whose LATER number is under its bar — and the Chinese
+「带保留通过」 prefix that flag adds was the only CJK on a line whose message is
+authored in English, so an untranslated gate conclusion reached a Chinese report.
+Caught by `test_every_authored_rationale_reaches_the_reader_in_the_report_language`,
+localised by stashing files one at a time. Now pinned by its own test.
+
+### Still open
+
+- **The checkpointer degrades mid-run.** The clean demo wrote 5 checkpoints for
+  17 phases and ended with `TypeError: Type is not msgpack serializable:
+  DecisionRecord` — with no "SQLite checkpointer unavailable" line, so the sqlite
+  saver WAS in use. Both `_serializer()` and a default `JsonPlusSerializer`
+  round-trip a top-level `DecisionRecord`, all 16 record models are allowlisted,
+  and every model reachable from `PipelineState`'s annotations is declared. NOT
+  isolated. It matters: `render`'s best state source is the checkpoint (live40
+  has 17 rows and recovers everything; live42 has none and loses `observations`
+  and `metrics`).
+- `zh_panel`'s `fixed` / `waived` lists are still unsorted (`entries.values()`).
+- The reference shelf has no English build — `builder` emits it only under `zh`.
+
+### State
+
+- **605 tests passing**, `ruff --select F src/qmine/` clean.
+- `runs/live42/gen01` remains byte-identical to what it delivered.
+
+---
+
+## Session (2026-08-31, later) — CLAUDE.md and HANDOFF audited against the code
+
+Both files were audited claim by claim rather than edited from memory. Every
+command in CLAUDE.md was run, every test name checked against the suite, every
+file path resolved.
+
+### CLAUDE.md — what was wrong
+
+- **`448 tests, ~4 min`** — measured 605 in 3 min. Replaced with `~600`: an exact
+  count rots on every session that adds a test, and a stale number in the file
+  that loads into *every* session is the exact failure it warns about.
+- **`26 mechanical checks` / `live39 18/19, live38 2/19`** — the harness has **28**
+  checks and the denominators were wrong. Re-measured today: live40 25 pass / 1
+  fail / 2 skip, live39 19/7/2, live38 2/9/17. The scores were replaced with the
+  PRINCIPLE (always pass a known-broken control; read PASS/FAIL/SKIP, never PASS
+  alone) because scores rot too.
+- **`live42 lost 6 of 9 report sections to one [grounding false positive]`** —
+  overstated. 3 were lost to a false rejection, **3 to empty model returns**.
+- `make demo ~3 min` — measured 3.7. Now `~4 min`.
+- One over-long line left by an earlier mid-paragraph insertion, and four
+  area-specific invariant rows moved to `measurement.md` to hold 200 lines.
+
+Verified sound and left alone: all 37 test names exist; every file path resolves;
+`run --resume --run-id` is correct; `16 leaves vs 25 on live40` is correct
+(`hierarchy_meta.n_leaves=16`, delivered 25).
+
+### HANDOFF.md — what was wrong
+
+- **§1 was four days stale and 88 lines of session narrative**, contradicting its
+  own contract ("overwritten each session; must describe *now*"). It claimed 552
+  tests, `25/26 PASS 0 FAIL`, and that no narrative section had ever been written
+  by a real model — all false. Rewritten to 38 lines that describe now, plus a
+  reading order for a new session. Its fork and confirmed-≠-defective narrative
+  was already duplicated in the session log, so it was dropped rather than moved.
+- **§2 kept resolved items struck through** where the contract says delete them,
+  left orphaned prose under a `### P0 — none open` heading, and listed the same
+  English-strings item **twice** — once struck, once open. Rebuilt: 0 struck-through
+  entries, renumbered, and today's measurements folded in (the budget
+  miscalibration is now quantified rather than asserted).
+- **Six top-level headings were undated fragments**, breaking the one-dated-
+  section-per-session contract. Grouped under
+  `## Session (2026-08-27 night → 08-28)` and demoted, content untouched. The
+  exact night/morning boundary is not recoverable, hence the range.
+- `(2026-08-28, late)` sorted *before* `(2026-08-28, evening)`, contradicting file
+  order. The second is now `later`.
+
+### Two defects the audit surfaced in `render`
+
+1. **A render overwrote the run's own spend record.** `_wire_events` wrote
+   `root/usage.json` unconditionally, so re-rendering live42 replaced 702 calls /
+   $29.69 with 11 calls / $0.78 — unrecoverably, because live42's teardown bug
+   meant no `run_summary.json` held a second copy. `_wire_events` now takes a
+   `usage_path` and a render writes into its own generation.
+2. **A second render overwrote the first.** `new_generation` increments from
+   ITSELF, so rendering gen01 twice both times targeted gen02. Now `latest + 1`.
+
+Both mutation-tested.
+
+### The result that matters
+
+`qmine render live42 -g 1 --agents` re-ran the narrative writer on `glm-5.3`,
+`provider=routed`, 13 calls, **$1.81** against $29.69 for the full run. It
+returned **9 of 9 sections**, against 3 of 9 originally — and then reading the
+output showed the result is not what it looks like.
+
+**The report describes an empty run.** `build_catalogue` read artifacts as
+`gen_dir / name`; a rendered generation contains only reports, so every fact
+sheet was empty. The narrative reported `n_named = 0` against 58 named leaves and
+`n_ledger_entries = 0` against 26 — correctly, given what it was shown, and it
+even warned the reader not to read an empty ledger as a clean audit. But **no
+guardrail could fire**, because every number it cited genuinely was in its sheet.
+A report about nothing is a worse failure than one with a marked hole: nothing
+marks it.
+
+Fixed — artifacts load through the store, which resolves across generations
+(`ref.generation <= self.generation`). Verified: a gen02 store now yields
+`n_named=49`, `n_ledger_entries=26`, identical to gen01. The 9/9 therefore says
+the number checker no longer produces false rejections; it does NOT yet say the
+re-rendered report is good. That needs another `--agents` run.
+
+### The family labels were a diagnostic wearing a name's clothes
+
+Raised by the user reading 叶清单 and 家族与叶层级: what does
+`字词/短语/概念释义查询 等 6 类 (42%)` mean? Traced and measured — it was wrong four
+ways at once, and used as the family's NAME in headings, tables, the Mermaid node
+and a CSV `family_name` column. `等 N 类` reads as "and N others" (it meant 6
+*including* this one); the percentage named no referent; its denominator was the
+named-leaf subset, not the family (5,375/12,844 = 42%, against 14,171 = 38%); and
+the three governance-created leaves in that family — 1,327 rows, 9.4% — were
+absent from the label and from its arithmetic.
+
+Fixing it exposed a second instance: the label branched on the count of NAMED
+contributors, so live42's **family 1** was labelled cleanly `中小学暑假时间查询`
+while 56% of its rows sat in a governance-created leaf with no audit name.
+
+Now: `混合·主要成分「X」N%` with N a share of the family; `树审计未覆盖 (治理新建)`
+where the audit saw none of its leaves; a plain name only when one audit family
+covers every leaf and nothing is unnamed. `family_composition` puts the full
+breakdown in the document, shares summing to 1 across contributors **and** the
+unnamed remainder. The CSV twin splits name / label / provenance. The notebook's
+duplicate implementation — which had already drifted, printing `X 等 6 类` against
+the reports' new form — now imports the shared helper.
+
+`test_a_family_is_named_after_the_leaves_it_actually_contains` fired on the new
+no-coverage label and was right to: it guards against titling a family with an
+audit name belonging to leaves it does not contain. Refined so a label that
+explicitly disclaims any audit name is allowed, and mutation-tested to confirm it
+still catches a borrowed one.
+
+### The checkpointer bug: found, and it was never what the error said
+
+`make demo` reproduces it in four minutes, which is the repro I did not have
+before. Instrumenting `jsonplus._msgpack_default` to print the object before it
+raises found the culprit immediately: **`numpy.float64`**, in
+`DecisionRecord.evidence.locator_reach.<ref>.discrimination`.
+
+The message named the wrong thing. The encoder's pydantic branch calls
+`model_dump()` and re-encodes the result; the numpy scalar inside is what
+ormsgpack refuses, and the OUTER call reports the wrapper's type —
+`Type is not msgpack serializable: DecisionRecord`. `DecisionRecord` encodes
+perfectly well. **Three separate investigations went to the serializer's
+allowlist, which gates DECODING and was never involved.**
+
+`ops.cluster.discrimination` is annotated `-> float` and returned
+`round(np.float64(...))`, which is a numpy scalar. Fixed at the source, and at
+the boundary: records with free-form fields now inherit `records._PlainValues`,
+which coerces numpy to Python natives at construction — the call sites are every
+place that computes a metric, and one miss reintroduces the failure with a
+message that points somewhere else.
+
+**Measured:** `make demo` now writes **17 checkpoints / 156 writes** (was 5/145),
+zero msgpack errors, `run_summary.json` present. That matches live40's healthy
+run. Resume works again, and `qmine render` gets its best state source back.
+
+While writing the test I watched it pass under mutation twice: once because the
+sweep used Python floats, once because a monotonic sweep gives a zero noise floor
+and takes an early `return 0.0` so the line under test never ran. Both fixed.
+
+### `make live` — and a correction to why it exists
+
+`make live RUN=live43` runs the bundled K12 corpus against live models. It is the
+paid sibling of `full`, **not** a privileged entry point: this pipeline's whole
+point is that it runs on any query dataset, so the corpus, domain, text column
+and reference columns are `LIVE_*` variables with K12 defaults. `LIVE_REFS=` is
+valid and passes no flag, which is correct for a corpus with no legacy labels.
+
+**My first version hardcoded them and justified it wrongly.** I wrote that
+omitting `--reference-columns` "silently" locates K against mined groups. It does
+not: `p1_reference_columns_declared` (`graph/nodes/foundation.py:116`) fails
+warn-only when the corpus carries label-like columns the run did not declare, and
+its message names them and tells you to relaunch. A corpus that genuinely has
+none passes it cleanly. The default saves a round trip; it was never the safety
+mechanism, and a Makefile comment claiming otherwise would have misled the next
+session — which is exactly what these files are supposed to prevent.
+
+The flag that IS worth defaulting is `--config configs/live.yaml`: without it the
+router picks on price alone and every pin, excluded lab and capability entry is
+ignored, with nothing gating that.
+
+### Real agents are now the default posture
+
+The stated intent: this pipeline should always run the real agent team, falling
+back to offline only when no key is available or a provider errors — and that
+fallback must be announced. Four things had to change, and two were bugs.
+
+1. **`configs/live.yaml` is the default config** (`cli._load_config`) and it
+   declares `provider: router`. Forgetting the routing policy was the one launch
+   mistake nothing caught: the router then picks on price and discards lab
+   independence, the capability list and every pin.
+2. **`--provider` defaulted to `"auto"` and was assigned UNCONDITIONALLY**, so
+   Typer's default overwrote whatever the config asked for, before the file was
+   read for anything else. A config option the command line always wins is not an
+   option. The default is now `""` — unset means the config decides.
+3. **`auto` asked only `_has_anthropic_credentials()`.** With deepseek, qwen,
+   zhipu and openrouter all configured it still resolved to the OFFLINE stand-in,
+   because none of them was Anthropic — on a project whose own live config
+   EXCLUDES Anthropic. So `auto` could never route at all. It now asks
+   `detect().usable`, and warns loudly when the answer is empty.
+4. **`p0_provider` gate.** A warning in `run.log` is not enough: with the stand-in
+   the pipeline emits a full set of deliverables, every gate passes, and no
+   document says the prose was not written by a model. The question "was this run
+   real?" now has an answer in the artifacts, recorded either way.
+
+Verified end to end: with keys, a bare `qmine run` resolves to `routed`; with
+every key removed, to `offline` with the warning.
+
+**`demo` and `full` are now explicitly offline.** They are the documented ~4-minute
+and ~25-minute checks, and the routing default would have quietly turned them into
+paid runs on 8,000 and 50,000 rows.
+
+### Correction to the previous entry
+
+The `make live` target no longer hardcodes the corpus: `LIVE_INPUT`,
+`LIVE_DOMAIN`, `LIVE_TEXT` and `LIVE_REFS` are overridable, and `LIVE_REFS=`
+emits no flag at all — correct for a corpus with no legacy labels. Calling it
+"the only way to launch" was wrong, and contradicted the project's own first
+line: this runs on **any** query dataset.
+
+### live43 halted at 80 minutes — half the gold set was silently unlabelled
+
+`annotator[b] labelled 1500/3000` with **zero** lost-batch warnings. The cause was
+not a lost batch and not batch size:
+
+    annotator_a  136 cached batches, 3400 labels -> 25.0 per batch  {25: 136}
+    annotator_b  128 cached batches, 1650 labels -> 12.9 per batch  {0: 62, 25: 66}
+
+Bimodal — 0 or 25, never partial. Probing the real model with live43's own prompt
+showed every empty return was byte-identical: `finish_reason=stop`, 309 output
+tokens, 833 characters beginning `{"$defs": {"QueryLabel": {"properties": ...`.
+
+**`qwen3.8-flash` was returning the JSON SCHEMA instead of the data**, and
+`AnnotationBatch.model_validate()` accepted it: pydantic ignores unknown keys and
+`labels` defaults to `[]`, so a schema echo becomes a valid empty batch. No
+exception, so `_one`'s three-attempt retry never ran, and 25 rows disappeared per
+occurrence with nothing logged.
+
+This is the same shape as `SectionDraft.markdown` defaulting to `""` — a
+permissive default turning a failed generation into a successful empty one. It
+cost the narrative report six sections in August; here it cost half the gold set,
+which is the artifact everything in the top-down route rests on.
+
+Fixed in three places: `_is_schema_echo` rejects the echo before validation in
+both `_plain_json_call` and `_salvage`; `_one` raises when a batch returns fewer
+labels than queries so the existing retry fires; and the plain-JSON ask now says
+not to return the schema. **Verified on the real model** — 4/4 complete batches at
+sizes 25, 12 and 6, against 3/4, 3/4 and 1/4 before.
+
+Also fixed while reading the log: the repair message announced "repairing via
+plain-JSON mode" for a model ALREADY in that mode, so six lines claimed a mode
+switch that had happened three days earlier.
+
+**Why a fresh run and not a resume.** `llm_cache/` is run-level and stores parsed
+values, so the 62 empty batches replay on any resume AND on a new generation of
+live43 — the fix would never fire. Independently, p2b sits inside the forked
+region, which is the case §2 warns never to restart mid-flight. live43 stopped at
+$11.75 / 295 calls and stays as evidence.

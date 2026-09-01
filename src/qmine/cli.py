@@ -85,6 +85,29 @@ def _load_config(config: Optional[str], domain: Optional[str], **over) -> QMineC
     A config file that declares its own `domain:` still wins; one that does not
     inherits the profile the user asked for on the command line.
     """
+    # REAL AGENTS ARE THE DEFAULT POSTURE, AND THIS IS WHERE IT IS SET.
+    #
+    # This pipeline IS a team of agents; run on the deterministic stand-in it is
+    # a function wearing their output shape, and it produces a complete set of
+    # deliverables that say nothing anywhere about not having been written by a
+    # model. So the default config both routes AND carries the routing policy —
+    # forgetting the latter is the one launch mistake nothing catches, because
+    # the router then picks on price and discards lab independence (a
+    # requirement for double-blind annotation, not a preference), the capability
+    # list and every pin.
+    #
+    # Falling back to offline stays possible and is never quiet: `router`
+    # degrades when nothing is reachable, `_resolve_provider` warns, and
+    # `p0_provider` records it as a gate so the artifacts answer "was this run
+    # real?". The commands that are meant to be free say so themselves.
+    if not config:
+        default_cfg = Path("configs/live.yaml")
+        if default_cfg.exists():
+            config = str(default_cfg)
+            console.print(f"[dim]no --config given; using {default_cfg} "
+                          f"— real models, pinned roles. --offline for the "
+                          f"stand-in.[/dim]")
+
     if config:
         cfg = QMineConfig.load(config)
         declares_domain = "domain" in (yaml.safe_load(Path(config).read_text()) or {})
@@ -126,7 +149,10 @@ def run(
     run_id: Optional[str] = typer.Option(None, "--run-id"),
     fast: bool = typer.Option(False, "--fast", help="Shrink grids for a wiring smoke test."),
     offline: bool = typer.Option(False, "--offline", help="No network: hashing encoder + heuristic agents."),
-    provider: str = typer.Option("auto", "--provider", help="auto | anthropic | mock."),
+    provider: str = typer.Option(
+        "", "--provider",
+        help="router | auto | offline | mock. Unset means: whatever the config "
+             "says (configs/live.yaml routes to real models)."),
     human_review: bool = typer.Option(False, "--human-review", help="Pause at reviewer sign-off points."),
     reuse_taxonomy: Optional[str] = typer.Option(
         None, "--reuse-taxonomy",
@@ -221,7 +247,15 @@ def run(
         cfg.data.sample_size = sample
     if reuse_taxonomy:
         cfg.taxonomy.reuse_taxonomy_from = reuse_taxonomy
-    cfg.llm.provider = provider  # type: ignore[assignment]
+    # AN UNSET FLAG MUST NOT OVERRULE THE CONFIG.
+    #
+    # This assigned unconditionally, so Typer's default silently replaced
+    # whatever the config asked for — `configs/live.yaml` says `provider: router`
+    # and every `qmine run` overwrote it with `auto` before the file was even
+    # read for anything else. A config option that the command line always wins
+    # is not an option.
+    if provider:
+        cfg.llm.provider = provider  # type: ignore[assignment]
     if offline:
         cfg.llm.provider = "mock"  # type: ignore[assignment]
 
@@ -820,7 +854,6 @@ def models_cmd(
     """Show which providers are reachable and which model each agent role would use."""
     _load_env()
     _setup_logging(False)
-    from .config import QMineConfig
     from .llm.catalog import fetch
     from .llm.providers import detect
     from .llm.router import route, route_label
@@ -830,7 +863,13 @@ def models_cmd(
     # and the pre-flight reported a different plan from the one that would execute
     # — it listed labs the live config excludes and ignored every pinned model.
     # A pre-flight that pre-flights a different configuration is worse than none.
-    cfg = _load_config(config, domain, run_root="runs") if (config or domain) else QMineConfig()
+    # ALWAYS through `_load_config`, including with no flags at all. The guard
+    # here used to be `if (config or domain)`, so a bare `qmine models` built a
+    # stock `QMineConfig()` and pre-flighted a configuration no run would use —
+    # the exact failure the comment above describes, left in place for the one
+    # case where nothing on the command line hints at it. It now also picks up
+    # the defaulted routing policy, so the pre-flight matches the launch.
+    cfg = _load_config(config, domain, run_root="runs")
     if gold:
         cfg.taxonomy.gold_sample_size = gold
 
@@ -956,9 +995,114 @@ def demo(
     if not data.exists():
         console.print(f"[red]bundled dataset not found at {data}[/red]")
         raise typer.Exit(1)
-    run(input=str(data), domain="k12_zh", config=None, text_column="query",
-        reference_columns="legacy_l1,legacy_l2", sample=sample, run_root=run_root,
-        run_id=None, fast=fast, offline=False, provider="auto", human_review=False, verbose=True)
+    # CALLING A TYPER COMMAND AS A FUNCTION LEAVES ITS UNPASSED OPTIONS AS
+    # `OptionInfo` SENTINELS, NOT VALUES.
+    #
+    # This listed thirteen of `run`'s sixteen parameters; the three it forgot
+    # (`reuse_taxonomy`, `resume`, `dashboard`) arrived as `typer.models.
+    # OptionInfo` objects, one of which reached a Pydantic model and killed the
+    # command with `PydanticSerializationError: Unable to serialize unknown type`.
+    # `make demo` is what CLAUDE.md points at to check wiring, and it could not
+    # itself run.
+    #
+    # Enumerating the arguments again would reintroduce the same bug the next
+    # time an option is added to `run`, silently. Read the declared defaults out
+    # of the signature instead, so a new option arrives with its own default.
+    # `inspect` is imported locally: this module defines a COMMAND named
+    # `inspect`, which shadows the stdlib module at module scope.
+    import inspect as _inspect
+
+    kwargs: dict = {}
+    for name, param in _inspect.signature(run).parameters.items():
+        default = param.default
+        kwargs[name] = (default.default
+                        if isinstance(default, (typer.models.OptionInfo,
+                                                typer.models.ArgumentInfo))
+                        else default)
+    # EXPLICITLY OFFLINE. `demo` is the documented ~4-minute wiring check, and
+    # the default config now routes to real models — so without this, `make demo`
+    # would quietly become a paid run on 8,000 rows. What it checks is that the
+    # phases connect, which the stand-in exercises perfectly well.
+    kwargs.update(input=str(data), domain="k12_zh", config=None, text_column="query",
+                  reference_columns="legacy_l1,legacy_l2", sample=sample,
+                  run_root=run_root, run_id=None, fast=fast, offline=True,
+                  provider="mock", human_review=False, verbose=True)
+    run(**kwargs)
+
+
+@app.command()
+def render(
+    run_id: str = typer.Argument(..., help="Finished run to re-render."),
+    run_root: str = typer.Option("runs", "--run-root"),
+    generation: Optional[int] = typer.Option(
+        None, "--generation", "-g",
+        help="Source generation. Defaults to the newest one present."),
+    agents: bool = typer.Option(
+        False, "--agents/--no-agents",
+        help="Also re-run the agent-authored deliverables — the narrative "
+             "report, the per-phase interpretation and the pre-delivery audit. "
+             "Replays from llm_cache wherever the prompt is unchanged, so most "
+             "sections cost nothing; the rest are real calls."),
+    provider: str = typer.Option("auto", "--provider",
+                                 help="Only meaningful with --agents."),
+    config: Optional[str] = typer.Option(None, "--config", "-c"),
+    domain: Optional[str] = typer.Option(None, "--domain", "-d"),
+) -> None:
+    """Rebuild a finished run's deliverables into a NEW generation.
+
+    Every report is a projection of artifacts already on disk, so re-deriving
+    them costs only CPU. Without this there was no way to check a report fix
+    against a real run short of paying for the whole pipeline again — which is
+    how a section that had never once rendered survived to live42, and how the
+    reference shelf sat in code for a day with no run producing it.
+
+    The source generation is never touched. A delivered document is the evidence
+    of what a run said; a re-render that overwrote it would destroy the record of
+    the defect it exists to fix.
+    """
+    from .artifacts import latest_generation
+    from .runner import render_run
+    from .ui.live import LiveDashboard
+
+    # BEFORE provider detection, like every other command that can make calls.
+    # Without it `--agents --provider router` detected no keys and silently ran
+    # the OFFLINE stand-in, which passes every check it is given — so the render
+    # reported "10/10 sections verified" for a report no model had written.
+    _load_env()
+
+    root = Path(run_root) / run_id
+    if not root.exists():
+        console.print(f"[red]no run at {root}[/red]")
+        raise typer.Exit(1)
+
+    cfg = _load_config(config, domain, run_root=run_root)
+    if agents:
+        cfg.llm.provider = provider
+    src = generation or latest_generation(root)
+    console.print(f"[dim]re-rendering {run_id} gen{src:02d} "
+                  f"{'with agents' if agents else '(no model calls)'}[/dim]")
+
+    dash = LiveDashboard(run_id=run_id, domain=cfg.domain.key,
+                         provider=cfg.llm.provider if agents else "none",
+                         language=getattr(cfg, "report_language", "zh"))
+    with dash:
+        out = render_run(cfg, run_id, generation=src, agents=agents,
+                         on_event=dash.handle)
+
+    t = Table("field", "value")
+    t.add_row("source generation", f"gen{out['source_generation']:02d}")
+    t.add_row("written to", f"gen{out['generation']:02d}")
+    t.add_row("documents", str(len(out["documents"])))
+    if out["state_channels_missing"]:
+        t.add_row("[yellow]state not recovered[/yellow]",
+                  ", ".join(out["state_channels_missing"]))
+    if agents:
+        u = out.get("llm") or {}
+        t.add_row("llm", f"{u.get('provider')} · {u.get('calls', 0)} calls · "
+                         f"{u.get('cache_hits', 0)} cached · "
+                         f"${u.get('estimated_cost_usd', 0)}")
+    console.print(t)
+    console.print("\n".join(f"  {d}" for d in out["documents"]))
 
 
 def _print_summary(s: dict) -> None:

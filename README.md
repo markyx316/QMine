@@ -1,442 +1,734 @@
 # QMine — a query-intent mining agent team
 
-A production-grade implementation of the *Universal Query Mining & Clustering
-Playbook*: twelve phases that take a raw query log and return an intent
-taxonomy, a cluster tree, a fully labelled table, a deployable classifier, and a
-report that shows its work — including the parts that failed.
+**Turns a raw search log into a defensible intent taxonomy, a labelled corpus, and the evidence for every choice in it.**
 
-Built on LangGraph. Runs on a laptop. Runs offline.
+QMine is a [LangGraph](https://github.com/langchain-ai/langgraph) agent team that
+runs **two independent routes over the same corpus** — a top-down intent taxonomy
+built by researchers and blind annotators, and a bottom-up cluster tree built from
+embeddings — then measures both under one harness and reports where they agree.
+
+The distinguishing property is not that agents are involved. It is that **no agent
+can decide anything.** Agents research, propose, name, annotate and write; every
+parameter is settled by a measured quantity, and every claim that reaches a
+deliverable is checked against the artifact it cites.
+
+```mermaid
+flowchart LR
+  C["50k query log"] --> A["p1 · audit<br/>templates, language, risk"]
+  A --> TD["TOP-DOWN<br/>researchers → architect →<br/>2 blind annotators + referee →<br/>classifier → adversarial validation"]
+  A --> BU["BOTTOM-UP<br/>encoder bake-off → K location →<br/>hierarchy → blind naming →<br/>governance"]
+  TD --> P["p9 · one measurement panel<br/>both routes, same sub-sample, same seed"]
+  BU --> P
+  P --> D["deliverables<br/>taxonomy · rules · labels · reports"]
+```
+
+### Before you start
+
+- It needs **API keys** for at least one provider (DeepSeek, Zhipu, Qwen,
+  OpenRouter, Anthropic, OpenAI…). Without them it runs a deterministic offline
+  stand-in and says so loudly — useful for checking the wiring, useless as output.
+- A full 50k run takes **about 4–4.5 hours**. Cost depends almost entirely on
+  routing: `live40` spent **$7.01** over 696 calls, `live42` **$29.69** over 702.
+  Nearly the same call count, 4× the bill — one expensive model in the mix.
+  Run `qmine models` for an estimate before you spend anything.
+  `qmine models` prints the routing plan and an estimate before you spend anything.
+- **Deliverables are written in Chinese** by default. `report_language` switches
+  the reports; the machine-readable CSVs are language-neutral.
+- It is a **research pipeline, not a product.** There is no hosted service, no
+  uptime promise, and the open questions are listed in the open rather than
+  smoothed over.
 
 ```bash
-pip install -e ".[all]"
-qmine doctor
-qmine demo                     # bundled 50k K12 corpus, end to end
+make install
+make demo                    # 8k rows, offline, ~4 min — check the wiring
+make live RUN=my-first-run   # the full 50k corpus on real models
 ```
+
+---
+
+## Table of contents
+
+- [What it produces](#what-it-produces)
+- [How it works](#how-it-works)
+- [Why not just prompt a frontier model?](#why-not-just-prompt-a-frontier-model)
+- [What is new here](#what-is-new-here)
+- [What it is for](#what-it-is-for)
+- [Results from a real run](#results-from-a-real-run)
+- [Using it](#using-it)
+- [Persistence, generations and recovery](#persistence-generations-and-recovery)
+- [Reproducibility](#reproducibility)
+- [Known limitations](#known-limitations)
+- [Support](#support)
+- [Repository layout](#repository-layout)
+- [Status and contributing](#status-and-contributing)
 
 ---
 
 ## What it produces
 
-One command over a CSV of queries yields, in `runs/<run-id>/gen01/`:
-
-Deliverables are written in the corpus's own language. On a Chinese corpus:
+One command against a 50,000-query corpus produces a complete, self-describing
+delivery. This is what the current generators emit; the `live42` directories
+predate some of them, so no single generation on disk holds every row:
 
 | deliverable | what it is |
 |---|---|
-| `00_最终报告.md` | **the one document not assembled by Python** — an agent writes the outline and every sentence over the same artifacts; the numbers are checked value-by-value against a per-section fact sheet and the run's own warnings become a must-cover list checked over the whole text |
-| `自下而上聚类最终报告.md` | representation bake-off, tree, governance, deployment — including what was rejected |
-| `自上而下类目体系最终报告.md` | taxonomy, gold set, classifier, adversarial validation, and whether the guide's rules agree with the referee's own verdicts |
-| `统一度量面板.md` | every candidate re-measured by one code path, plus the open-findings ledger |
-| `叶清单.md` | every delivered cluster with a checkable `user_need` sentence; unnamed leaves listed as defects |
-| `交付前审核报告.md` | what the pre-delivery auditor changed, **what it was refused**, and what it read and dismissed |
-| `dashboard.html` | **browsable run view** — pipeline with both concurrent branches, what is running and what is queued, every agent call with its full return, artifacts as they appear, gates, and the event log. Self-contained: no server, opens over `file://`, keeps working after the run |
-| `labels_full.csv` | both label systems side by side (`td_l1`, `td_l2`, `bu_family_final`, `bu_leaf`) plus confidence margins |
-| `自下而上聚类全流程.ipynb` | executed — every number computed in-cell, nothing pasted |
-| `centroid_classifier.joblib` | the deployable model, a few hundred KB |
-| figures | K-sweep, α decision, template spread, panel, refinement, gates, decision chain |
+| `00_索引.md` | the reading order — what to open first, and what each file is for |
+| `00_最终报告.md` | the through-line, **written by an agent**, every number checked against a fact sheet |
+| `类目清单.md` | the 21 top-down intent classes: definition, satisfaction criterion, worked positive/negative examples, delivered row count |
+| `叶清单.md` | every delivered cluster leaf with its blind-assigned name and the sampled queries it was named from |
+| `家族与叶层级.md` | the delivered two-level tree, with each family's true composition |
+| `标注规范与裁定规则.md` | the labeling guide **verbatim** and all 139 adjudication rules — enough to reproduce the annotation |
+| `自上而下类目体系最终报告.md` | the top-down route: taxonomy → gold standard → classifier → adversarial validation |
+| `自下而上聚类最终报告.md` | the bottom-up route: encoder bake-off, K location, hierarchy, governance, and every rejected alternative |
+| `统一度量面板.md` | both routes under one measurement harness |
+| `交付前审核报告.md` | what a final auditing agent changed in the documents, and what it refused to change |
+| `自下而上聚类全流程.ipynb` | an executed notebook — the figures are produced by running it, not drawn separately |
+| `labels_full.csv` | every query with both routes' labels, plus machine-readable CSVs of the classes, rules and tree |
 
-Plus the evidence: `run_manifest.json` (seeds, versions, per-role model and
-spend), `governance.json` (every audit finding and what it changed),
-`battery.json`, `granularity.json`, `metrics_panel.json`,
-`delivery_audit.json` — and, one level up at the **run** root,
-`findings.json`: the open-findings ledger, which a new generation inherits and
-which only closes an entry when that entry's own assertion holds again.
+Deliverables are written in Chinese by default (`report_language`).
 
 ---
 
-## Verified on two domains
+## How it works
 
-| | K12 Chinese (50k real queries, `live40`) | E-commerce English (7.2k, synthetic) |
+Seventeen graph nodes implement the twelve-phase methodology. The two routes fork
+after the corpus audit and run **concurrently** — measured on real runs, the fork
+hid **62 minutes** of bottom-up work inside the top-down critical path on
+`live42`, 23% of that run's wall clock.
+
+```mermaid
+flowchart TB
+  P0["p0 · foundation<br/>seeds, config, provenance"] --> P1["p1 · audit<br/>corpus profile, template mining, risk screen"]
+  P1 --> TD1 & BU1
+
+  subgraph TD["TOP-DOWN — what users are trying to do"]
+    direction TB
+    TD1["p2a · taxonomy design<br/>5 web researchers → architect → critic"]
+    TD2["p2b · gold standard<br/>2 BLIND annotators + referee, κ vs a self-consistency ceiling"]
+    TD3["p2c · classifier"]
+    TD4["p2d · adversarial validation<br/>an agent paid to falsify each label"]
+    TD5["p2e · sub-intents"]
+    TD1 --> TD2 --> TD3 --> TD4 --> TD5
+  end
+
+  subgraph BU["BOTTOM-UP — what the queries look like"]
+    direction TB
+    BU1["p3 · representation<br/>encoder bake-off on THIS corpus, α chosen by measurement"]
+    BU2["p4 · algorithm battery"]
+    BU3["p5 · granularity<br/>K located by intent alignment; stability may only reject"]
+    BU4["p6 · hierarchy"]
+    BU5["p7 · blind naming<br/>namer sees queries only — never an existing label"]
+    BU6["p8 · governance<br/>prescriptions are executed or the run fails"]
+    BU1 --> BU2 --> BU3 --> BU4 --> BU5 --> BU6
+  end
+
+  TD5 --> J["p9 · unified panel<br/>both routes, one ruler"]
+  BU6 --> J
+  J --> P10["p10 · deployment<br/>classifier + both label sets"] --> P11["p11 · reports & notebook"] --> P12["p12 · maintenance"]
+```
+
+Every phase writes artifacts to a generation directory. Generations are
+append-only: a rejected tree is kept, because a rejected artifact is still
+evidence.
+
+---
+
+## Why not just prompt a frontier model?
+
+The honest question, and it deserves measurements rather than adjectives. You
+*can* paste queries into a strong model and ask for a taxonomy. Every claim below
+is a published result about why the answer cannot be trusted, followed by what
+this pipeline does instead.
+
+**A long context is not a read corpus.** Put the relevant material in the middle
+of a long input and accuracy falls *below* the same model given no documents at
+all — the curve is U-shaped, primacy at the front, recency at the end, a trough in
+between ([Liu et al., TACL 2024][lim]). A bigger window does not fix it: GPT-3.5
+and GPT-3.5-16K trace nearly superimposed position curves, and Claude-1.3 scores
+76.1 against Claude-1.3-100K's 76.4. Nor is it a language-understanding problem —
+the same U-shape appears on pure UUID key-value lookup. Under [RULER][ruler],
+*effective* context runs well under the advertised number (GPT-4: 128k claimed,
+64k effective), and degrades fastest on **aggregation** tasks with many
+distractors. A taxonomy over 50,000 queries — roughly 500k tokens — is an
+aggregation query with 49,999 distractors, several times outside the regime
+anyone has validated.
+
+So QMine never asks a model to read the corpus. Phase 3 encodes every row
+numerically, Phases 4–6 cluster them, and agents receive a **card** for one
+cluster at a time — centre, random and edge members — a bounded, position-
+controlled payload. Counts and shares are arithmetic over the full table, never a
+model's impression of it.
+
+**Asking a model to check its own work makes it worse.** Intrinsic
+self-correction — review with no external feedback — is measured net-negative:
+GPT-4 on GSM8K goes 95.5 → 91.5 → 89.0 over two rounds, GPT-3.5 on CommonSenseQA
+75.8 → 38.1 ([Huang et al., ICLR 2024][selfcorr]). The published successes used
+**oracle labels** to decide when to stop; remove the oracle and the gains invert.
+Adding agents does not rescue it either — multi-agent debate loses to plain
+self-consistency at matched inference budget (83.2 vs 85.3 at six responses).
+
+This is why QMine's guardrails are not review agents. Every one is arithmetic
+against an external record: written numbers checked value-by-value against a fact
+sheet, an agent's assertion evaluated as an expression, an edit required to name
+the artifact it came from. And it is the strongest argument for Phase 2b — a
+refereed gold set *is* the oracle those results say you need.
+
+**A model grading its own output is not a neutral instrument.** LLM judges
+recognise their own generations and the strength of that self-preference is
+linearly correlated with the recognition ([Panickssery et al., NeurIPS
+2024][selfpref]). They also carry heavy position bias — asked which of two
+answers is better, then asked again with the order swapped, Claude-v1 was
+consistent 23.8% of the time — and are fooled by verbose restatement 91.3% of the
+time ([Zheng et al., NeurIPS 2023][judge]). The constructive finding in that same
+paper is the one QMine is built on: chain-of-thought only halved a judge's
+grading errors (14/20 → 6/20), but giving it a **reference answer** took them to
+3/20. An answer key beats a better prompt.
+
+QMine's Phase 9 panel is blind, and Phase 7's fan-out makes blindness structural
+rather than an instruction — each naming agent sees only its own payload.
+Anything that decides is a measurement, not a judgement.
+
+**A labelling scheme already has an acceptance test, and it is strict.**
+Computational linguistics reads κ > 0.8 as reliable and 0.67–0.8 as supporting
+only tentative conclusions; Krippendorff's own preconditions include a guide
+**fixed in advance**, coders working **independently**, and no discussion or
+voting — "any of these practices make the resulting data unusable for measuring
+reproducibility" ([Artstein & Poesio, CL 2008][kappa]). A single prompt produces
+a scheme for which no such number exists, or can exist.
+
+Each of those preconditions is a test here: the guide is frozen before annotation
+and every rule the architect *and* the referee write must reach the annotator;
+each annotator's labels come back as its own; a row nobody labelled is missing
+data, not agreement; guide repair runs on a fresh sample so refereed rows survive.
+And because an annotator disagrees with **itself** about a quarter of the time
+([Abercrombie et al.][intra]), κ is read against a self-consistency ceiling —
+which is what separates a fixable guide gap from irreducible ambiguity.
+
+**The convenient clustering scores do not mean what they look like.** Silhouette
+is defined on the dissimilarity you hand it ([Rousseeuw 1987][sil]), so comparing
+one embedding's silhouette to another's compares two different measurements that
+share a name — and embedding geometry makes the absolute values untrustworthy
+across spaces anyway ([Ethayarajh, EMNLP 2019][aniso]; [Steck et al., WWW
+2024][cosine]). Stability is asymmetric for a deeper reason: high instability is
+provably informative, but the converse **is not a theorem** — counter-examples
+exist, and in the large-*n* K-means limit stability tracks the symmetry of the
+distribution rather than whether K is right ([von Luxburg 2010][stab]).
+
+Hence the rule that K is *located* by intent alignment and stability may only
+*reject*; hence silhouette is reported with no voting rights; hence a null test,
+because a model asked for a taxonomy will always return one ([Ben-Hur et
+al. 2002][benhur]).
+
+![The unified panel — silhouette is reported in hatched bars marked "no voting rights"](docs/img/fig6_panel.png)
+
+Measured on this corpus, that exclusion changes the answer. The same intent, in
+the three candidate spaces — the α silhouette would have picked (0.8) scatters it
+across 2.37 families where the chosen α=0.1 keeps it in 1.86:
+
+![The same intent, split across three embedding spaces](docs/img/fig5_intent_split.png)
+
+**There is no single true taxonomy to find.** What counts as correct is set by
+the aim, so clustering becomes scientific through open communication of the aims
+and choices, not through uniqueness of the solution ([Hennig 2015][hennig]).
+That makes the record the deliverable. A dataset others build on is expected to
+document its motivation, composition and collection process
+([Datasheets][datasheets]); a model shipped for use is expected to report
+disaggregated performance, not one aggregate ([Model Cards][cards]); and
+provenance — which entity was generated by which activity, derived from what — is
+a [W3C Recommendation][prov] with a data model, not a vibe. A run directory here
+answers those by construction: which rows, which sampling, which encoder, which
+guide version, which annotators, what *n*, what was excluded and why.
+
+![Decision chain — every choice, its candidates, and the metric that settled it](docs/img/fig_decision_chain.png)
+
+**The fair comparison, stated honestly.** Reported self-correction gains have
+turned out to be artefacts of a weak starting prompt — on CommonGen-Hard, one
+well-written prompt beat seven rounds of refinement, 81.8 to 67.0
+([Huang et al.][selfcorr] §5). The same standard applies to us: a pipeline
+costing *N* model calls should be compared against the best *N*-call baseline,
+not against one lazy call, and any advantage that a better prompt would also
+supply is not an advantage of the architecture. What is left after that test is
+the part a prompt cannot produce at any length: a labelled gold set with a κ and
+an *n*, a K chosen against a null, an adversary paid to falsify the labels, and a
+partition re-measured *after* governance rewrote it.
+
+[lim]: https://aclanthology.org/2024.tacl-1.9/
+[ruler]: https://arxiv.org/abs/2404.06654
+[selfcorr]: https://arxiv.org/abs/2310.01798
+[selfpref]: https://arxiv.org/abs/2404.13076
+[judge]: https://arxiv.org/abs/2306.05685
+[kappa]: https://aclanthology.org/J08-4004/
+[intra]: https://arxiv.org/abs/2301.10684
+[sil]: https://doi.org/10.1016/0377-0427(87)90125-7
+[aniso]: https://aclanthology.org/D19-1006/
+[cosine]: https://arxiv.org/abs/2403.05440
+[stab]: https://arxiv.org/abs/1007.1075
+[benhur]: https://psb.stanford.edu/psb-online/proceedings/psb02/benhur.pdf
+[hennig]: https://doi.org/10.1016/j.patrec.2015.04.009
+[datasheets]: https://arxiv.org/abs/1803.09010
+[cards]: https://arxiv.org/abs/1810.03993
+[prov]: https://www.w3.org/TR/prov-overview/
+
+---
+
+## What is new here
+
+Five things this project does that a scripted pipeline or a prompt does not.
+
+**1. Two routes, one ruler — and the comparison is the point.**
+A cluster tree answers "what do these queries look like?"; an intent taxonomy
+answers "what is the user trying to do?". They are different questions, and
+merging them loses both answers. QMine delivers both label sets side by side and
+measures them on the same sub-sample with the same seed. Some intents are
+*structurally invisible* to clustering — on `live42`, 6 of 21 classes fell below
+the kNN-agreement bar, among them `navigational`, `inappropriate_content` and
+`interpret_figurative_meaning`. Their meaning lives in pragmatics rather than
+wording, so no amount of clustering will find them and they must draw their
+accuracy from the rule layer. That is the measured justification for running the
+expensive route at all.
+
+**2. Blindness is enforced, not requested.**
+The cluster namer sees member queries and nothing else. Prompt instructions are
+not enough, so a firewall scans every payload for the forbidden vocabulary and
+raises if a label leaks (`memory/context.py`). The annotators are independent
+models from different labs, so agreement is not one model agreeing with itself.
+
+**3. Agent output enters through doors, each with a mechanical guardrail.**
+An agent may never change a parameter. What it *can* do is bounded per channel:
+
+| channel | what it may do | the guardrail |
 |---|---|---|
-| phases completed | 17/17 | 17/17 |
-| wall clock | 241.8 min, 696 agent calls, `provider=routed` | offline |
-| held-out reproduction | 0.989 (95% CI 0.987-0.991, n=10,000) | 0.991 (95% CI 0.985-0.995) |
-| classifier | CV 0.863, macro-F1 0.797, ECE 0.037 | — |
-| gates | 24 recorded — 20 passed, 4 warned, 0 failed | — |
-| mechanical verification | **25/26 checks pass** (`tools/verify_run.py`) | — |
-| notebook | executed, 0 errors | executed, 0 errors |
+| prose (`agents/verify.py`) | write a report section | every number must appear in that section's fact sheet, checked value by value |
+| observation (`agents/observe.py`) | flag a problem | must cite a resolving artifact key, and may carry an assertion the pipeline evaluates itself |
+| grid proposal (`ops/propose.py`) | suggest a value to sweep | proposed **blind to scores**, so it is pre-registered; capped, additions only, graded every run |
+| deliverable edit (`ops/edits.py`) | fix a document | anchored replacement, anchor must be unique, numbers must come from the artifact it cites |
+| prescription | change the tree | settled or the run fails before reports are written |
 
-The English corpus is synthetic and labelled as such — it exists to exercise the
-paths that differ by language (whitespace tokenisation, char 3-5 grams,
-prefix-style templates, Latin-script profiling, no CJK fonts), which is the part
-of portability that code can get wrong. The K12 corpus is real.
+**4. Findings cannot quietly disappear.**
+A critic once found a real defect before the run that shipped it, and nothing
+read the critic. Findings now live in a run-level ledger and close only when
+their own assertion passes — not when someone decides they are fine.
 
-## The twelve phases
-
-The two routes run **concurrently**. P3 consumes only P1's output, so nothing in
-the bottom-up branch waits on the taxonomy or the gold set; they rejoin at P2c,
-which needs the gold set *and* the encoder the α sweep picked.
-
-```
-P0  foundation ── seeds, manifest, environment pinned
-P1  audit ─────── corpus profile, phrasing families, risk pre-screen
-     │
-     ├─────────────── FORK ───────────────┐
-     ▼                                    ▼
- P2a taxonomy                         P3  representation
-   5 researchers → architect → critic    encoder bake-off · char TF-IDF+SVD · α sweep
-   → pilot → redraw-until-stable            │
-     ▼                                    ▼
- P2b gold                             P4  battery ─ is the structure an artefact
-   2 blind annotators (different labs)     of KMeans? a falsification probe
-   → κ → referee (a third lab)          P5  granularity ─ K located by intent
-   → rules → guide repair                   alignment; stability only VETOES
-     │                                  P6  hierarchy ─ refine to convergence
-     └─────────────── JOIN ───────────────┘
-                      ▼
-P2c classifier ── rules + linear head on dense ⊕ sparse ⊕ flags
-P2d validation ── agents instructed to *disprove* the labels
-P2e sub-intents ─ L2 where the embedding can see it
-P7  naming ─────── 5 blind agents via Send + auditor + independent risk sweep
-P8  governance ─── every prescription executed against the data, or declined
-P9  panel ──────── everything re-measured by one code path
-P10 deployment ─── centroid classifier, margin routing, delivered table
-P11 reports ────── markdown + executed notebook + pre-delivery audit
-P12 maintenance ── drift baseline, novelty sentinel, rerun contract
-```
-
-Measured on `live40`: 39 minutes of bottom-up compute disappear entirely into the
-107 minutes of taxonomy design and gold annotation in front of it. `qmine run
---config` with `concurrent_branches: false` restores the strict chain.
+**5. "Confirmed" is not "defective", and the pipeline says so.**
+Machine-checked findings are re-verified independently. On one run, 13 findings
+were machine-confirmed and only **2** were real defects — most of the rest
+compared two fields that measure different populations. A check proves an
+assertion failed; it says nothing about whether the conclusion holds. Both the
+report framing and the observer prompt carry that measured rate.
 
 ---
 
-## What makes it different from a pipeline that does the same steps
+## What it is for
 
-Four of the playbook's principles are the kind that erode silently. Here they are
-enforced by code rather than by discipline.
+An intent taxonomy is not a report you file. It is a control surface, an
+analytics substrate, and — increasingly — a compliance artifact.
 
-**Silhouette cannot decide anything.** Every metric carries an `authority`, and
-`decisive_ranking()` raises when handed an advisory one.
+**It decides which retrieval path runs.** This was the point from the beginning:
+Broder introduced the navigational/informational/transactional split because "each
+type is best satisfied by very different results" ([SIGIR Forum 2002][broder]),
+and Rose & Levinson spelled out the mechanism — advice-seeking queries lean on
+usage- and connectivity-based relevance, open-ended research on term-frequency
+signals ([WWW 2004][rose]). It is still how it works. Google's rater guidelines
+make intent **step one** of relevance measurement, before any rating is given
+([SQRG][sqrg]). And LinkedIn's production query-understanding model routes every
+query into four types — extract structured constraints, rewrite with member
+context, fall back to high-recall lexical retrieval when intent is unclear, or
+block — cutting request failures 17.13% in an online A/B, with relevance up 57% on
+navigational and 75% on exploratory queries ([KDD '26][linkedin]). Note the shape:
+four classes, one of them a **risk** class, one an explicit **unclear-intent
+fallback**.
 
-```python
->>> panel.decisive_ranking("silhouette")
-ValueError: 'silhouette' has authority 'advisory' and cannot decide anything.
-```
+**A borrowed taxonomy collapses, measurably.** Three studies of the *same* three
+Broder classes report navigational at 20%, at 11.7–15.3%, and at ~10%, and
+informational at 48%, 61–63%, and >80% ([Broder][broder]; [Rose &
+Levinson][rose]; [Jansen et al. 2008][jansen]) — a factor of four on identical
+labels. Worse, when Rose & Levinson's taxonomy was applied to real Bing question
+queries, **86.7% of them fell into a single category**; a purpose-built 16-class
+taxonomy spread them out *and* achieved higher inter-assessor agreement
+([Cambazoglu et al., CHIIR 2021][cambazoglu]). Finer was not harder to agree on.
+That is the case for mining the taxonomy from the corpus you actually have, and
+it is the same lesson this repo learned the expensive way when K12 thresholds were
+imported into gates meant to be corpus-independent.
 
-The reason is specific: silhouette rewards tight clusters, and identically-phrased
-queries form the tightest cluster there is. Optimise it and you reliably select a
-representation that splits one intent into several phrasing-shaped families —
-exactly the failure the α sweep exists to prevent. Every sweep records what
-silhouette *would* have chosen, because the disagreement is itself evidence.
+**Once labelled, the log becomes an instrument.** Microsoft Research applied a
+product-intent classifier to Bing logs and could then report, per class, success
+rate (navigational 77.28%, comparison 61.31%), volume share, relative user effort
+(navigational costs 2.63× comparison), and session position — 56% of transactional
+queries are preceded by a comparison query ([Rao et al.][rao]). Applying the same
+taxonomy to corpora a decade apart measured a demand shift: 15–17% of web queries
+are product-related, against 5–7% before. Two of their five classes — Comparison
+and Support — appear in no prior taxonomy and came from the data, which is the
+argument for this pipeline's bottom-up route in one sentence.
 
-**Blind naming is structural, not promised.** The five naming agents fan out via
-`Send`, so a worker's state contains only its own payload — parent state is
-unreachable. On top of that, a firewall enforces the card contract: a namer sees
-member queries, n-grams, and size, and *no other field*. A smuggled
-`legacy_label` cannot pass, and any label vocabulary in a non-corpus field
-raises.
+Every query in a QMine run carries both labels, so intent volume is a `group by`
+and the demand/supply gap is a diff against your catalogue or content inventory
+([Goswami et al., WWW '19][goswami] — abstract-level only; the method detail is
+unverified).
 
-Notably, member queries themselves are exempt from the lexical scan — the first
-version was not, and on the real corpus it dropped ten clusters because the
-legacy label `作文` appears inside the genuine query `我的自画像作文350字`. A
-member query cannot anchor a namer; it is the thing being judged. That is what
-makes one finding credible: when an agent that was never told about gambling
-flags the gambling cluster anyway, it is evidence rather than bookkeeping.
+**It is the guardrail on query rewriting.** eBay's null/low-result rewriter treats
+the shopping-category distribution as the check that a rewrite has not destroyed
+intent: "a sufficiently strong signal that the alternative query distorts user's
+search intent if the inferred level-2 categories are changed", with top-1 rewrites
+preserving category 71.5% of the time ([SIGIR eCom 2017][ebay] — offline on 3,000
+sampled queries; no online A/B, despite what secondary sources say). Zero-results
+rate is a first-class tracked KPI at least at [Wikimedia][wmf].
 
-**Governance reaches the data or the run fails.** An audit prescription is a
-state machine — `proposed → executed` (with the artifact and column it changed,
-and the metric deltas it caused) or `→ declined` (with a reason). Anything left
-`proposed` raises, *before* the reports are written. A report cannot claim a fix
-the CSV does not contain.
+**The risk class is not optional, and for this corpus it is regulatory.** NAVER
+ships a 12-class sensitive-query taxonomy as a runtime classifier in front of
+generation, grouped Legal / Ethical / Service-sensitive, with **Age-restricted
+contents** as a first-class category ([arXiv 2404.08672][naver]). Their data also
+shows why a taxonomy is re-run rather than written once: self-harm queries average
+1.6% of sensitive traffic and hit **17.2% in a single day** against a news event.
+For a Chinese K12 corpus this is law, not practice — the
+《[未成年人网络保护条例][minors]》 took effect 1 January 2024, and the CAC's
+《[移动互联网未成年人模式建设指南][cac]》 (Nov 2024) prescribes five age bands
+(<3, 3–8, 8–12, 12–16, 16–18) each with its own content prescriptions.
 
-**Rejected options are kept.** Every decision records what it beat and why, and
-the reports' failure-history sections are projections of those records rather
-than recollections. Generations are append-only, so a rejected tree stays on
-disk — in the source project, a discarded 107-leaf tree later became the
-phrasing-pattern library.
+QMine's taxonomy carries an explicit risk class and the screen runs on **every
+row**, not the sample. On `live42` it hit 1,499 rows across 30 leaves, and the leaf
+catalogue reports each leaf's own count — because the blind namer's risk flag sees
+a *sample* and the screen sees *everything*, and conflating them hides most of the
+exposure. What a mined risk class is **not** is a shipped safety system: NAVER's
+live harm-class precision was 74.7% with ~50 queries reviewed by humans daily.
+
+**It replaces the most expensive part of an annotation programme.** The published
+cost of building one taxonomy by hand: 1,000 queries, five assessors, **50–70
+hours each** — roughly 250–350 person-hours of labelling alone — through a nine-
+phase loop of draft, pilot, feedback, guideline revision, relabel, adjudicate
+([Cambazoglu et al.][cambazoglu]). At product scale it never ends: Google works
+with ~16,000 raters against a ~180-page guideline revised roughly twice a year
+([SQRG][sqrg]), NIST budgets six contractors for two to four weeks per track
+([Soboroff][nist]), and LinkedIn labelled ~14K production queries while noting that
+"query understanding labels are expensive: correctness depends not only on semantic
+plausibility but also on product policy" ([KDD '26][linkedin]). And the labels do
+not amortise — "whenever a new vertical is introduced, a costly new set of
+editorial data must be gathered" ([Arguello et al., SIGIR 2010][arguello]).
+
+The most reusable thing QMine emits is therefore not the labels but
+`标注规范与裁定规则.md`: the labeling guide plus 139 adjudication rules, each with
+its trigger, target class, rationale and worked examples, marked by whether the
+architect predicted it or the referee earned it against a real disagreement. That
+is the artifact those 250–350 hours produce.
+
+**Migrating to another domain.** Nothing above is K12-specific. Point it at a
+different corpus and override the defaults; domain profiles carry the phrasing
+seeds and risk vocabulary, and the pipeline gates whether a corpus has the
+reference labels it would otherwise silently do without.
+
+[amazon]: https://www.amazon.science/blog/from-structured-search-to-learning-to-rank-and-retrieve
+[broder]: https://sigir.org/files/forum/F2002/broder.pdf
+[rose]: https://www.ambuehler.ethz.ch/CDstore/www2004/docs/1p13.pdf
+[jansen]: https://eprints.qut.edu.au/30951/
+[cambazoglu]: https://marksanderson.org/files/papers/CHIIR21b.pdf
+[sqrg]: https://services.google.com/fh/files/misc/hsw-sqrg.pdf
+[linkedin]: https://arxiv.org/abs/2605.27441
+[rao]: https://arxiv.org/pdf/2005.08591
+[goswami]: https://dl.acm.org/doi/10.1145/3308560.3316605
+[ebay]: https://ceur-ws.org/Vol-2311/paper_8.pdf
+[wmf]: https://www.mediawiki.org/wiki/Wikimedia_Discovery/FAQ
+[naver]: https://arxiv.org/abs/2404.08672
+[minors]: https://www.moj.gov.cn/pub/sfbgw/zcjd/202310/t20231024_488321.html
+[cac]: https://www.cac.gov.cn/2024-11/15/c_1733364304749288.htm
+[nist]: https://arxiv.org/abs/2409.15133
+[arguello]: https://ils.unc.edu/~jarguell/ArguelloSIGIR10.pdf
 
 ---
 
-## Agents describe; measured quantities decide
+## Results from a real run
 
-Agents now touch nearly every phase, which forces the question: *on what basis
-may anything an agent says reach the deliverable?* The answer is not "trust it"
-but **give it a way to prove itself** — an agent may supply the measurement that
-settles its own claim, and only the measurement carries authority.
+`live42`, 49,999 Chinese K12 search queries, four providers, roughly 4.5 hours.
 
-Four doors, each with a mechanical guardrail. **None of them can change a
-parameter.**
-
-| door | guardrail | on failure |
-|---|---|---|
-| **prose** | the author gets a fact sheet; every number it writes must be in it | rejected and re-asked, with the offending values quoted |
-| **narrative** | the same fact-sheet check per section, **plus** a coverage check: the run's warned gates, ties and open findings become a must-cover list verified against the agent's own prose | a section that cannot pass ships as a marked hole; an uncovered point is disclosed in the document |
-| **observation** | must cite a *resolving* artifact path; may carry a machine-evaluable assertion | an unresolvable citation is dropped before anyone reads it |
-| **grid proposal** | proposed *blind to every score*, so additions are pre-registered; capped, additions-only, graded each run | a score-shaped token in the payload aborts the call |
-| **deliverable edit** | anchored replacement: anchor unique, every number sourced from the artifact the edit **cites**, language checked, reason required | refused — and refusals are printed beside the applied edits |
-
-An observation's assertion is three-valued, and the asymmetry is the point:
-
-- **confirmed** (the assertion fails) — now a *measurement*, and the only kind
-  that may fail a gate
-- **refuted** (it holds) — dropped; the agent's own false-positive filter
-- **unverifiable** — advisory, as before
-
-> **Confirmed is not the same as defective, and the report says so.** Measured on
-> `live40`: of 13 machine-confirmed findings, independent re-verification found
-> **2 real defects**. Eight were arithmetically correct and wrong anyway — almost
-> all because the two compared fields measured *different populations*. A check
-> proves an assertion failed; which fields to compare and what a difference means
-> are still unguarded judgement.
-
-**A finding nobody acts on must at least be unable to disappear.** The ledger
-lives at the run root beside the LLM cache, so a new generation inherits it, and
-an entry closes only when its own assertion holds again. This exists because the
-opposite already happened: a critic agent identified a κ defect *before* the run
-that shipped it, wrote the finding to an artifact, and nothing read it.
-
-**One agent may write.** The pre-delivery auditor reads every gate, the ledger,
-the artifacts and the finished documents together, and edits the reports. It is
-bounded to `.md` files — a report *describes* a measurement; an artifact *is*
-one — and every edit it makes, and every one it is refused, appears in
-`交付前审核报告.md`.
-
----
-
-## Running it
-
-```bash
-qmine run \
-  --input queries.csv \
-  --domain k12_zh \
-  --text-column query \
-  --reference-columns legacy_l1,legacy_l2
-```
-
-| flag | effect |
+| | |
 |---|---|
-| `--sample N` | first pass on an unfamiliar corpus |
-| `--fast` | shrink every grid; wiring check in minutes |
-| `--offline` | no network, no key — see below |
-| `--human-review` | pause for sign-off after taxonomy, tree, and panel |
+| top-down | **21** L1 intent classes, **139** adjudication rules |
+| bottom-up | **24** families / **58** leaves over all 49,999 rows |
+| gold standard | κ **0.8928** on **n=2,999** double-annotated rows (raw agreement 0.902) |
+| adversarial validation | **93.3%** of 150 attacked labels survived falsification |
+| quality gates | **26** recorded — 15 measured (observed value + threshold), 11 advisory observer gates |
 
-Everything checkpoints after every node. `qmine resume <run-id>` picks up where a
-crash left off; `qmine inspect <run-id> --what panel` reads a finished run
-without recomputing anything.
+**How to read that κ.** Published multi-annotator query-intent work lands around
+κ 0.79–0.82: ORCAS-I reports Cohen's 0.82 on 1,000 queries with two annotators,
+Product Insights Fleiss 0.79 on 1,500 with three. So 0.8928 is in band — but read
+it with three caveats. It is agreement between two **LLM** annotators from
+different labs, not between humans. It is measured against the annotator's own
+self-consistency ceiling, which is the number that makes it interpretable at all.
+And agreement degrades with depth everywhere it has been measured: ORCAS-I's
+labeller scores 90.2% on three top-level classes and 78.3% on five, and the
+residual "abstain" class scores κ 0.303 where the real classes score 0.68–0.81.
+A pipeline reporting near-perfect leaf-level agreement should be suspected, not
+celebrated. Roughly 3–5% of queries have no single recoverable intent even for
+careful human assessors.
 
-### Deliverables are written in Chinese
+For contrast on why the gate exists at all: Rose & Levinson (2004), the
+second-most-cited taxonomy in the field, was labelled by "one of the authors" and
+reports no agreement statistic — its own Future Work section concedes the
+framework still needed testing by judges other than the authors.
 
-`report_language` defaults to `zh`. The bottom-up report and the walkthrough
-notebook follow the structure of the reference K12 deliverables: an executive
-summary whose table is the argument, every metric **derived on screen** rather
-than quoted (`① 模板群 → ② 家族分布 p → ③ H = −Σp·ln p → ④ exp(H)`), the full
-family→leaf tree, real queries traced through it, `user_need` definition
-sentences with ★ coherence ratings, and a mandatory 「这些数字不代表什么」 section.
+Three of the source methodology's counter-intuitive findings were reproduced
+independently, as measurements rather than restatements: a smaller encoder beat a
+larger one on clustering stability; silhouette would have chosen the α that
+fragments intents worst; and HDBSCAN produced overwhelming noise at every
+`min_cluster_size` tried.
 
-A `user_need` sentence is simultaneously the annotation guideline, the acceptance
-criterion and the downstream product spec — it can only do those jobs in the
-language the team that owns the corpus works in. Set `report_language: en` to
-switch.
-
-### Agents can research the web
-
-The Phase 2a literature and risk-compliance researchers get `web_search` and
-`fetch_url` tools and run a real tool loop. Without them, "ground this taxonomy
-in published work" produces citations the agent cannot have checked.
-
-DuckDuckGo is the default and needs **no key**; `TAVILY_API_KEY` or
-`BRAVE_API_KEY` are used when present. The log-reading and pragmatic-intent
-angles deliberately get *no* tools — their value is direct observation of the
-rows, and a search box invites recall to replace it.
-
-### Live dashboard
-
-`qmine run` shows a Rich panel: phase list with elapsed times, current agent
-activity, metrics as they land, gates as they fire, and running spend. Falls back
-to plain lines with `--plain`, `--quiet`, or no TTY.
-
-### Multi-provider model routing
-
-Supply whatever API keys you have; the system picks a model per agent role from a
-**live catalogue** (1,917 callable models across 18 providers, refreshed from
-LiteLLM and OpenRouter, no key needed to read) and balances capability against
-cost. Nothing is hardcoded, so it does not go stale.
-
-```bash
-# keys go in QMine/.env (see .env.example) or the environment
-# DEEPSEEK_API_KEY=...  ZHIPU_API_KEY=...  QWEN_API_KEY=...
-qmine models --prefer-chinese-native --budget 5    # inspect before spending
-qmine run -i queries.csv -d k12_zh --provider router
-```
-
-High-volume roles get cheap-but-capable models, fallbacks span **labs**, and the
-two gold annotators and the referee are routed to three *different labs* — not
-merely different providers, since two labs reach you through one gateway and look
-identical in a provider column. κ is supposed to measure the labelling guide; if
-the annotators share an architecture it measures a shared prior instead, and if
-the referee shares one with an annotator it sides with that annotator in a
-direction nobody would think to check.
-
-**The router cannot judge capability, and says so.** Tier is derived from a
-**price percentile**, which works only while price tracks capability. It does not
-across the Chinese labs: after excluding the Western ones, *not one* model rates
-`frontier`, so asking for that tier silently relaxes and buys nothing — and
-within a tier the cheapest always wins. That handed the referee a lightweight
-model whose adjudication was measurably near chance.
-
-So capability is **stated, not inferred**. `capable_models` in the config is a
-human judgement — a curated list of ids — and it gates the candidate pool for
-roles whose errors are expensive; price only breaks ties *inside* it, and still
-governs the high-volume contained roles where cheap-and-adequate is right. The
-plan is printed **before the first call**, with each role's model, its lab, its
-estimated calls and spend, and every warning the router attached.
-
-Full design and its known limits: [docs/MODEL_ROUTING.md](docs/MODEL_ROUTING.md).
-
-### Mixed languages and unknown domains
-
-A minority language is the dangerous case: measured on a real corpus, at 2%
-English **97% of all English queries collapse into one cluster** — and swapping
-in a multilingual encoder does not fix it. Phase 1 measures the script mix and
-warns; Phase 6 resolves minority intents in a script-appropriate space and ships
-them as a column rather than faking tree leaves the deployed classifier cannot
-represent.
-
-For an unknown vertical, `--domain generic` carries universal risk categories and
-zero template seeds — the phrasing families are mined from the corpus and must
-each earn trust by being measurably tighter than random. On the K12 corpus with
-all seeds removed, that rediscovered five of the six hand-written families and
-correctly rejected "是什么", which attaches to every topic.
-Details: [docs/LANGUAGE_AND_DOMAIN.md](docs/LANGUAGE_AND_DOMAIN.md).
-
-### Command reference
-
-| command | what it does |
-|---|---|
-| `qmine run -i data.csv -d <profile>` | the full twelve-phase pipeline |
-| `qmine run … --resume` | continue an interrupted run from its last checkpoint |
-| `qmine inspect <run> --what panel\|gates\|leaves\|governance` | read a finished run without recomputing |
-| `qmine export-cards <run>` / `qmine import-namings <run> f.json` | run blind naming with an external panel |
-| `qmine promote --old A.csv --new B.csv` | referee protocol: let a challenger label set earn its place |
-| `qmine diff <run-a> <run-b>` | drift vs method change between two quarters |
-| `qmine models` | reachable providers, per-role model choice, estimated run cost — spends nothing |
-| `qmine new-generation <run> --reason '…'` | re-run an id and reuse its paid work; the old generation stays as evidence |
-| `qmine watch <run>` | attach the dashboard to a run, live or finished |
-| `qmine run … --plain` | disable the live dashboard (CI, pipes) |
-| `qmine doctor` | environment, credentials, models, fonts |
-| `python tools/verify_run.py runs/ID/genNN [runs/OLD/genNN]` | 26 mechanical checks over a finished run; pass an older run as a **control** — a harness that passes on a known-broken run proves nothing |
-
-### Handing Phase 7 to a stronger reviewer
-
-Naming is the one step where a better judge is worth the cost — a mis-named
-family propagates into the catalogue, the report, and everything downstream. The
-protocol is therefore exportable, and the blindness guarantee travels with it:
-
-```bash
-qmine export-cards <run-id> --shards 5    # firewall-checked briefs, one per reviewer
-# hand the shard_*.md files to any agent panel, or to real humans
-qmine import-namings <run-id> verdicts.json --named-by "your panel"
-```
-
-On the bundled K12 corpus this was run with five independent Claude agents plus a
-tree auditor. They recovered the phrasing-driven split of three pinyin clusters
-from the `user_need` sentences alone, explicitly forbade merging the lottery-probe
-riddle cluster into the idiom cluster on topical similarity, and surfaced four
-risk categories the domain profile had never heard of — which were then written
-back into the profile. See `Report_Naming_Panel_Comparison.md` in the run.
-
-### Long runs on a laptop
-
-A full 50k run takes tens of minutes, and laptops sleep. Two things make that
-survivable:
-
-```bash
-caffeinate -i qmine run -i queries.csv --run-id q3 ...   # no idle sleep
-qmine run -i queries.csv --run-id q3 --resume            # continue after any interruption
-```
-
-`caffeinate -i` blocks *idle* sleep; closing the lid on battery still suspends
-the machine, and losing the network still kills a foreground process. That is
-what the checkpoints are for — `--resume` restarts at the node that was running,
-restores the run's own resolved config, and replays nothing that already
-finished. Encoding and clustering results additionally come back from the
-content-addressed cache, so a resumed run skips the expensive parts even when
-the node itself re-executes.
-
-### Promoting a new model's labels
-
-A model change is not evidence of improvement, so replacing labels requires
-winning an argument:
-
-```bash
-qmine promote --old runs/q1/gen01/labels_full.csv --new runs/q2/gen01/labels_full.csv
-```
-
-It judges only the rows where the two systems **disagree** — agreements carry no
-information about which is better — presents each to a referee blind and with
-randomised side order (LLM judges have documented position bias), and promotes
-only on a statistically significant win. The old labels move to a `_v1` column
-either way, and every overturned row is stamped `label_source='referee'`.
-
-### Domains
-
-Five profiles ship — `k12_zh`, `finance_zh`, `sports_zh`, `politics_zh`,
-`ecommerce_en` — each carrying the settings the playbook says must be re-derived
-per vertical: phrasing seeds, risk categories, tokenizer, n-gram ranges, encoder
-candidates. **α is not among them.** It is re-derived by sweep on every run,
-because the K12 value is a fact about K12's phrasing ecology rather than a
-constant.
-
-### Offline mode
-
-With no `ANTHROPIC_API_KEY`, the provider resolves to `offline` and every agent
-is replaced by a deterministic heuristic that actually computes something —
-cluster names from the card's own top n-grams, labels from regex evidence.
-
-The clustering, embeddings, and metrics are **entirely real**. The judgments are
-not model judgments, every record they produce is stamped `offline-heuristic`,
-and a paragraph saying so appears at the top of every report. This is what lets
-the whole twelve-phase graph run in CI with no credentials, so wiring bugs
-surface in a two-minute test rather than a two-hour run.
+> **Read `n` before believing any metric.** That rule is in this repository
+> because a κ of 0.813 was once computed on 199 of 600 rows after an outage and
+> shipped as a methodology result. Coverage is now reported beside every score,
+> and a row nobody labelled counts as missing data, not as agreement.
 
 ---
 
-## Layout
-
-```
-src/qmine/
-  determinism.py     seeds, content hashing, the anti-cherry-pick exemplar rule
-  artifacts.py       generation store + content-addressed memo cache
-  records.py         typed records; METRIC_AUTHORITY lives here
-  state.py           graph state (pointers only) and its reducers
-  config.py          invariants vs the per-domain pile
-  llm/               two-tier routing, response cache, offline stand-in, budget
-  memory/            three-tier memory; the blindness firewall
-  ops/               the science — audit, templates, represent, cluster, panel,
-                     governance, classify, cards, promotion, viz, and the
-                     agent-authority mechanics: checks, findings, edits,
-                     propose, select, rule_conflict, annotator_balance
-  agents/            18 roles + versioned prompt files; observe/verify/interpret/
-                     propose_grid/audit_delivery carry the authority contracts
-  graph/             nodes per phase, gates, human review, assembly
-  report/            markdown builders + programmatic notebook
-configs/domains/     5 vertical profiles
-skills/              5 Claude Code Agent Skills
-docs/                architecture, playbook mapping, 9 research dossiers
-tests/               508 tests — principles, ops, durability, concurrency,
-                     agent authority, routing, end-to-end
-```
-
-## Documentation
-
-- [Architecture](docs/ARCHITECTURE.md) — the three planes and why each guarantee holds
-- [Playbook → code](docs/PLAYBOOK_MAPPING.md) — every principle, phase and trap, mapped
-- [Implementation plan](docs/IMPLEMENTATION_PLAN.md) — the plan this was built from
-- [Research dossiers](docs/research/) — the nine-agent study that preceded the code
-- [Skills](skills/) — driving QMine from Claude Code
-
-## Tests
+## Using it
 
 ```bash
-pytest tests/ -q          # 508 tests, fully offline, ~3.5 minutes
+make install                 # encoders, notebook tooling, tests
+cp .env.example .env         # DEEPSEEK_API_KEY / ZHIPU_API_KEY / QWEN_API_KEY
+                             # optional: TAVILY_API_KEY or BRAVE_API_KEY for web research
+
+qmine models                 # the routing plan and cost estimate — spends nothing
+make demo                    # 8k rows, offline stand-in, ~4 min
+make live RUN=live45         # the full corpus on real models
+qmine watch live45           # attach the dashboard to a run, live or finished
+qmine render live45          # rebuild the deliverables from a finished run's artifacts
 ```
 
-`tests/test_principles.py` is the set worth reading first: each test names the
-playbook principle it guards. A clustering bug produces worse numbers; a failure
-there produces numbers that look fine and are not trustworthy.
+**Real models are the default.** With provider keys present the pipeline routes
+to them; with none it falls back to a deterministic stand-in and says so loudly —
+in the log, in a `p0_provider` gate, and in the run summary. Stand-in output looks
+complete and is not a model's, so the question "was this run real?" is answerable
+from the artifacts.
 
-`tests/test_durability.py` covers the defects that only appeared on the real
-corpus — chiefly state that lived in a process's memory rather than in an
-artifact, which looked correct in a single run and silently degraded across a
-resume.
+**A run in progress.** Every phase announces its gates with the observed value and
+the threshold it was judged against, so a watcher can see what was decided and on
+what evidence — not just that something happened:
+
+```
+16:19:17  gate p1_template_coverage: PASSED — 12 phrasing families cover 18,298 rows (36.6%)
+16:19:17  ✔ p1_audit completed in 0.6s
+16:34:26  gate p3_observer: PASSED — observer found nothing blocking in p3
+16:34:26  ✔ p3_represent completed in 908.8s
+17:28:25  gate p2a_pilot_agreement: PASSED — pilot: kappa 0.875 (95% upper 0.915) on 200 queries
+17:28:25  gate p2a_taxonomy_shape: PASSED — 20 L1 intents, 48 adjudication rules the annotator can cite
+17:33:58  ✔ p2a_taxonomy completed in 4481.3s
+```
+
+`qmine watch <run>` renders the same stream as a browsable dashboard — the phase
+tree with both branches, every agent call with what it returned, the gate ledger,
+spend, and a faceted event log. It attaches to a live run or replays a finished
+one from `run.log`.
+
+**Another corpus:**
+
+```bash
+make live RUN=x LIVE_INPUT=data/queries.csv LIVE_DOMAIN=finance_zh \
+                LIVE_TEXT=query LIVE_REFS=          # empty if you have no legacy labels
+```
+
+Deeper references live in [`docs/`](docs/): [`ARCHITECTURE.md`](docs/ARCHITECTURE.md)
+for the graph and state model, [`MODEL_ROUTING.md`](docs/MODEL_ROUTING.md) for how
+roles are assigned to providers and priced, [`LANGUAGE_AND_DOMAIN.md`](docs/LANGUAGE_AND_DOMAIN.md)
+for domain profiles and the report language, and [`PLAYBOOK_MAPPING.md`](docs/PLAYBOOK_MAPPING.md)
+for how each phase maps to the source methodology. [`docs/research/`](docs/research/)
+holds the dossiers behind the design decisions.
+
+---
+
+## Persistence, generations and recovery
+
+A four-hour run must survive an outage, and a rejected result must survive a
+decision to reject it.
+
+**Generations are append-only.** Re-deriving anything opens `gen02` beside
+`gen01`; the old one is never touched. That is not politeness about disk — the
+source project's discarded 107-leaf tree later became its phrasing-pattern
+library. `qmine new-generation <run> --reason '...'` records why the last one was
+set aside.
+
+**Paid work is cached at the run level.** `llm_cache/` is keyed by prompt content
+and shared across generations, so re-running a corrected phase replays every call
+whose inputs did not change instead of buying them again.
+
+**The graph is checkpointed.** A run killed in phase 9 resumes at phase 9 rather
+than re-encoding 50,000 rows. One caveat, honestly stated: the two routes run
+concurrently, and restarting *into* the forked region is not yet reliable — open a
+new generation and run it once instead.
+
+**Deliverables can be rebuilt without re-running anything.**
+`qmine render <run>` regenerates every report from artifacts already on disk, into
+a new generation, with no model calls. `--agents` additionally re-runs the
+agent-authored parts, replaying from cache wherever the prompt is unchanged. This
+is how a report fix gets verified against a real run for about a dollar instead of
+thirty.
+
+---
+
+## Reproducibility
+
+**What is deterministic.** Seeds are declared in the config and recorded in the
+run manifest (`seed_metric`, `seed_viz`, and a replay pair used for stability
+measurement). Clustering, sweeps, sub-sampling and the exemplars shown in reports
+are pure functions of the data and those seeds. Every run writes
+`config.resolved.yaml` and a manifest carrying the config hash, package versions,
+platform, and a SHA for every prompt file — so two runs can be compared on
+whether they were even asking the same question.
+
+**What is not, and cannot be.** Model sampling is not reproducible across
+providers or over time, and the web-using researchers see a changing internet: the
+same phase can return different candidates on two runs, which changes the
+architect's prompt and cascades a cache miss through everything below it. When
+comparing runs, reuse the taxonomy rather than expecting the research to repeat.
+
+**What is checked rather than assumed.** `run_summary.json` records
+`llm_usage.provider`, and a `p0_provider` gate records whether real models ran at
+all — because offline stand-in output is complete-looking and is not a model's.
+`tools/verify_run.py` runs 28 mechanical checks over a finished run and is meant
+to be pointed at an older, known-broken run as a control: a harness that passes on
+one proves nothing.
+
+---
+
+## Known limitations
+
+Measured, unresolved, and listed here rather than in an issue tracker nobody
+reads. The full log is in [`HANDOFF.md`](HANDOFF.md).
+
+**The request timeout assumes one throughput for every role, and it is wrong by
+5x in both directions.** `timeout_seconds` derives from a single constant of 40
+output tokens/sec. Measured across roles on `live44`, real throughput runs from
+**7.4 tok/s** (a tool-free researcher) to **181.7** (an annotator). The slow end
+is reasoning: with no tool round-trips, wall time is dominated by thinking, and
+thinking tokens are not counted in the output total — so they land in the
+denominator and not the numerator.
+
+The consequence compounds, because the provider SDK is given `max_retries=2`. A
+role whose timeout is marginal spends *three* attempts reaching it before the
+pipeline's own retry begins: on `live44` two researchers each burned
+3 × 585s = **1,757 seconds returning zero tokens**, then succeeded on the retry.
+Two angles cost ~48 minutes apiece instead of ~14, and roughly a third of the
+design phase bought nothing.
+
+Note what is **not** wrong here, since an earlier draft of this file said it was:
+only `literature` and `risk_compliance` are given web tools. `log_reading`,
+`legacy_audit` and `pragmatic_intents` are deliberately tool-free — the whole
+value of the log reader is that it forms its view from the rows and nothing else,
+and a search box invites it to substitute recall for observation. The tool-free
+angles returned **12** candidates each on `live44`, more than either web angle's
+10 and 11.
+
+**The α decision sits inside its own noise.** Across five seed replicates the
+winner was 0.1, 0.5, 0.1, 0.0, 0.1. The tie band is roughly 4.5× narrower than the
+metric's own spread. Widening the band makes it worse — at a measured 2-sd band
+the run elects an α its own panel shows fragments intents more. The fix is
+replication, which has not been done.
+
+**Refinement has never converged.** Every run so far hits the iteration limit, so
+the delivered leaf count depends partly on which round it stopped at. Disclosed in
+the reports; not fixed.
+
+**Restarting into the concurrent region is unreliable.** The two routes fork, and
+a resume that lands inside the fork has silently dropped a branch. The join now
+halts loudly instead, but the underlying question — whether a multi-superstep
+fan-out can be restored at all — is open. Open a new generation and run it once.
+
+**Model behaviour is a live variable.** One provider returned the JSON *schema*
+instead of data on 69 of 197 `annotator_b` calls on `live44` (35%), against 1 of
+137 for the other annotator; because every field on the response
+model had a default, that validated into a valid-but-empty result and silently
+lost half a gold set before it was caught. It is now rejected before validation
+and retried — but the class of failure is general, and a permissive default
+anywhere is a place it can recur.
+
+**An intent taxonomy may not be the right primitive at all.** Amazon argues the
+opposite case directly: mapping query tokens to entity categories and attributes
+yields "static query plans that cannot incorporate feedback in the retrieval
+stage" and "compounding errors due to incorrect query understanding and/or content
+understanding", and they favour learning to rank and retrieve instead
+([Amazon Science][amazon]). The defensible claim for this project is that a
+taxonomy is an *interpretable control surface and an analytics substrate* — not
+that it is state of the art in retrieval.
+
+**The annotated distribution is not the corpus distribution.** Gold rows are drawn
+by cluster-stratified sampling precisely so rare intents survive selection
+([Rao et al.][rao] avoid random sampling for the same reason), which means class
+shares on the gold set are *not* an estimate of class shares in the corpus. Those
+come from the delivered labels over all rows. Anywhere the two are printed near
+each other is a place to check the denominator.
+
+**Three of the shipped domain profiles have never been run on real data.**
+`finance_zh`, `sports_zh` and `politics_zh` are untested; a corpus with no profile
+falls back to mined phrasing groups, which is gated but not validated.
+
+---
+
+## Support
+
+Open an issue. Before filing, [`HANDOFF.md`](HANDOFF.md) §2 lists what is already
+known to be broken or unresolved — it is kept current, and an item there is a
+known gap rather than a surprise.
+
+`qmine doctor` reports installed packages and whether matplotlib can find a CJK
+font (without one the figures render boxes). Note that it currently checks only
+`ANTHROPIC_API_KEY` and probes no model, so it will **not** tell you whether your
+DeepSeek / Zhipu / Qwen keys work — use `qmine models`, which resolves the routing
+plan and prices it without spending anything.
+
+**Licence:** none is declared yet. Until one is added, treat this as
+all-rights-reserved and ask before redistributing.
+
+---
+
+## Repository layout
+
+```
+src/qmine/graph/      the twelve phases as LangGraph nodes
+src/qmine/agents/     the agent roles, and the guardrail on each one
+src/qmine/ops/        the measured operations no agent can override
+src/qmine/report/     report, reference-shelf and notebook generators
+src/qmine/llm/        provider routing, the fetched model catalogue, budgets
+configs/              run configs; live.yaml is the default and routes to real models
+docs/                 architecture, routing, domain profiles, playbook mapping
+docs/research/        the dossiers behind the design decisions
+tests/                one test per defect — the docstring names which
+tools/verify_run.py   mechanical checks over a finished run
+HANDOFF.md            dated log of state, findings and open questions
+runs/<id>/gen01/      artifacts and deliverables (git-ignored — runs stay local)
+```
+
+**625 tests.** Each one records the defect it was written after, and its docstring
+names that defect — `tests/` is the real index of the invariants this pipeline
+holds.
+
+```bash
+HF_HOME=$(pwd)/.hf .venv/bin/python -m pytest tests/ -q
+```
+
+---
+
+## Status and contributing
+
+**What this is.** A working research pipeline, exercised end to end on a 50,000-row
+corpus across several live runs. It is not a hosted product and makes no
+uptime promise.
+
+**What it is honest about.** [`HANDOFF.md`](HANDOFF.md) carries a dated log of
+every open question, including the measured and unresolved ones — an alpha
+decision that sits inside its own noise, a refinement loop that has not converged
+on any run, and a client timeout that can burn half the design phase and return
+nothing. Findings that cannot yet be acted on are kept where they cannot quietly
+disappear rather than being written out of the record, and entries there are
+corrected when they turn out to be wrong.
+
+**If you are extending it**, two habits save the most time here, and both were
+learned expensively:
+
+- **Execute and look — never infer a result you could measure.** Read figures back
+  after generating them; run notebooks rather than trusting that cells compile.
+  Nearly every real defect in this repository was found by running, and several
+  *false* findings came from reasoning that looked sound.
+- **Read `n` before believing any metric.** A κ of 0.813 was once computed on 199
+  of 600 rows after an outage and shipped as a methodology result.
+
+Start from `tests/` — each test's docstring names the defect it was written
+after, which is faster than reading the module it guards.
+
+**Contributions** that come with a test recording the defect they fix are the ones
+that will land fastest — that is the convention the whole suite follows.

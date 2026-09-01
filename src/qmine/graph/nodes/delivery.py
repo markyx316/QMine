@@ -524,13 +524,15 @@ def p11_report(state: PipelineState, deps: Deps) -> dict[str, Any]:
     # over — and it is the only agent allowed to fix one. Its authority is
     # bounded to an anchored replacement whose numbers must come from the
     # artifact it cites; `ops/edits.py` holds each rule and the failure behind it.
-    from ...agents.audit_delivery import audit_deliverables
+    audit: dict[str, Any] = {"ran": False, "skipped": "disabled"}
+    if getattr(deps.cfg, "delivery_audit", True):
+        from ...agents.audit_delivery import audit_deliverables
 
-    try:
-        audit = audit_deliverables(state, deps)
-    except Exception as exc:  # noqa: BLE001
-        deps.emit(f"  pre-delivery audit skipped ({type(exc).__name__}: {exc})")
-        audit = {"ran": False, "skipped": f"{type(exc).__name__}: {exc}"}
+        try:
+            audit = audit_deliverables(state, deps)
+        except Exception as exc:  # noqa: BLE001
+            deps.emit(f"  pre-delivery audit skipped ({type(exc).__name__}: {exc})")
+            audit = {"ran": False, "skipped": f"{type(exc).__name__}: {exc}"}
 
     # An edited file no longer matches the hash the index recorded when it was
     # written. Re-registering keeps provenance honest: the manifest must describe

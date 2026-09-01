@@ -636,3 +636,74 @@ def test_the_memory_store_does_not_swallow_a_pipeline_exception(tmp_path):
     with open_memory(tmp_path / "m2.sqlite", project="t", domain="d") as mem:
         seen.append(mem)
     assert len(seen) == 1 and seen[0] is not None
+
+
+def test_a_numpy_scalar_in_a_record_cannot_break_checkpointing():
+    """A single `numpy.float64` anywhere in a record's free-form fields broke
+    LangGraph's checkpoint write — and the error named the pydantic wrapper it
+    was nested in, not the scalar:
+
+        TypeError: Type is not msgpack serializable: DecisionRecord
+
+    `DecisionRecord` encodes perfectly well. The encoder's pydantic branch calls
+    `model_dump()` and re-encodes the result, and the numpy scalar inside
+    `evidence.locator_reach.<ref>.discrimination` is what ormsgpack refuses; the
+    OUTER call reports the wrapper's type. That misdirection cost three separate
+    investigations, all aimed at the serializer's allowlist — which gates
+    DECODING and was never involved.
+
+    Measured: `make demo` wrote 5 checkpoints for 17 phases before this, and 17
+    after. A run that cannot checkpoint cannot be resumed, and `qmine render`
+    loses its best source of state.
+
+    Nearly every number in this pipeline is computed with numpy, so the guard
+    lives at record construction rather than at each call site: one missed
+    conversion reintroduces the whole failure with a message pointing elsewhere.
+    """
+    import numpy as np
+
+    from qmine.records import DecisionRecord, GateResult, MetricRecord
+    from qmine.runner import _serializer
+
+    rec = DecisionRecord(
+        id="d", phase="p5", question="q", choice="c", rationale="r",
+        evidence={"locator_reach": {"legacy_l2": {"discrimination": np.float64(2.72)}},
+                  "sweep": np.array([1.5, 2.5]), "k": np.int64(18),
+                  "ok": np.bool_(True)},
+    )
+    ev = rec.evidence
+    assert type(ev["locator_reach"]["legacy_l2"]["discrimination"]) is float
+    assert type(ev["k"]) is int and type(ev["ok"]) is bool
+    assert isinstance(ev["sweep"], list) and type(ev["sweep"][0]) is float
+
+    gate = GateResult(name="g", phase="p", observed={"kappa": np.float64(0.89)},
+                      threshold={"min_kappa": np.float64(0.7)})
+    assert type(gate.observed["kappa"]) is float
+
+    metric = MetricRecord(name="m", value=1.0, detail={"se": np.float64(0.01)})
+    assert type(metric.detail["se"]) is float
+
+    # The whole point: this must encode.
+    kind, blob = _serializer().dumps_typed(
+        {"decisions": [rec], "gates": {"g": gate}, "metrics": [metric]})
+    assert kind == "msgpack" and blob
+
+
+def test_the_k_locator_returns_a_python_float():
+    """`discrimination` is annotated `-> float` and returned a numpy scalar; the
+    annotation was the thing that made the leak invisible."""
+    import numpy as np
+
+    from qmine.ops.cluster import discrimination
+
+    # The real sweep holds numpy scalars — every metric here is computed with
+    # numpy — and `round()` on one returns a numpy scalar. Two things this test
+    # needs, both learned by watching it pass under mutation: the values must BE
+    # numpy, and the curve must be jagged enough that `noise_floor` is non-zero.
+    # A monotonic sweep gives a zero noise floor and takes the `return 0.0`
+    # early exit, so the line under test never runs.
+    jagged = [0.30, 0.52, 0.34, 0.61, 0.38, 0.66, 0.41, 0.70]
+    sweep = [{"k": i + 2, "ami": np.float64(v)} for i, v in enumerate(jagged)]
+    out = discrimination(sweep, "ami")
+    assert out > 0, "the early zero-noise exit was taken; the test proves nothing"
+    assert type(out) is float, f"returned {type(out).__name__}, not float"

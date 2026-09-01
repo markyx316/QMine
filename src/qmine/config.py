@@ -473,6 +473,14 @@ class QMineConfig(BaseModel):
     #: run's own warnings become a must-cover list checked over the whole text.
     #: Off means the run delivers the scripted documents alone.
     final_report: bool = True
+    #: The pre-delivery auditor — the only agent allowed to EDIT a deliverable.
+    #: Gated because a re-render that wants no model calls must be able to say so
+    #: and mean it: with the offline stand-in this role produced three refused
+    #: edits against a file called "[offline-heuristic] file" and three findings
+    #: whose claim was the empty string, all written into 交付前审核报告.md. A
+    #: stand-in's output is complete-looking prose that no model wrote, which in
+    #: a deliverable is worse than an honest absence.
+    delivery_audit: bool = True
     #: Machine-translate authored prose the curated `PROSE_ZH` mapping does not
     #: cover. Guarded: a translation that alters a number or an identifier is
     #: refused and the English kept, and results are cached by content hash so a

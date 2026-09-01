@@ -49,20 +49,30 @@ def family_names(naming: dict[str, Any], leaf_family: Any, sizes: Any) -> dict[i
     if not by_leaf or leaf_family is None:
         return {}
 
-    weight: dict[int, dict[str, int]] = {}
-    for lid, name in by_leaf.items():
-        if lid >= len(leaf_family) or not name:
-            continue
-        fam = int(leaf_family[lid])
-        n = int(sizes[lid]) if sizes is not None and lid < len(sizes) else 1
-        weight.setdefault(fam, {})
-        weight[fam][name] = weight[fam].get(name, 0) + n
-
+    # ONE COMPUTATION, ONE TRUTH. The label is a projection of the composition,
+    # not a second parallel tally — the two disagreed: a family whose single
+    # audit contributor covered only 44% of its rows was labelled with that name
+    # plainly, because the old branch counted only NAMED contributors and live42's
+    # family 1 has 56% of its rows in a governance-created leaf with no audit
+    # name at all. `exact` is the honest test: one contributor AND nothing
+    # unnamed.
+    comp = family_composition(naming, leaf_family, sizes)
     out: dict[int, str] = {}
-    for fam, names in weight.items():
-        ranked = sorted(names.items(), key=lambda kv: -kv[1])
-        best, share = ranked[0][0], ranked[0][1] / max(1, sum(names.values()))
-        out[fam] = best if len(ranked) == 1 else f"{best} 等 {len(ranked)} 类 ({share:.0%})"
+    for fam, rec in comp.items():
+        contributors = rec["contributors"]
+        if not contributors:
+            # EVERY DELIVERED FAMILY GETS A LABEL, including one the audit never
+            # saw. Returning nothing left the caller to fall back to a bare id,
+            # which reads as "unnamed" — but "governance built this entirely out
+            # of leaves the audit did not cover" is a different and more useful
+            # fact than "nobody named it".
+            out[fam] = "树审计未覆盖 (治理新建)"
+            continue
+        if rec["exact"]:
+            out[fam] = contributors[0][0]
+        else:
+            name, _rows, share = contributors[0]
+            out[fam] = f"混合·主要成分「{name}」{share:.0%}"
 
     # One audit family can be spread over several partition families — on live38
     # "汉语字词释义查询" is the dominant name for three of them at once. Three
@@ -85,4 +95,58 @@ def family_names(naming: dict[str, Any], leaf_family: Any, sizes: Any) -> dict[i
                 continue
             biggest = max(mine, key=lambda lid: int(sizes[lid]) if sizes is not None else 0)
             out[fam] = f"{name} · 主要叶「{leaf_name[biggest]}」"
+    return out
+
+
+def family_composition(naming: dict[str, Any], leaf_family: Any,
+                       sizes: Any) -> dict[int, dict[str, Any]]:
+    """What each DELIVERED family is actually made of, with honest denominators.
+
+    `family_names` has to fit a table cell, so it can only say which component is
+    largest. This is the rest of the story, and it exists because compressing it
+    into a label produced a percentage whose denominator was neither the family
+    nor the corpus.
+
+    Per delivered family:
+
+    * ``exact`` — one audit family covers every named leaf, so its name really is
+      this family's name.
+    * ``contributors`` — ``[(audit_name, rows, share_of_family)]``, largest
+      first. The share is **of the family**, so the numbers on one family sum to
+      the named fraction rather than to 1.
+    * ``unnamed_leaves`` / ``unnamed_rows`` — leaves p8 governance created after
+      p7 named the tree. They belong to the family and to no audit family, and
+      the old label left them out of its own denominator.
+    """
+    fams = ((naming or {}).get("audit", {}) or {}).get("families", []) or []
+    by_leaf: dict[int, str] = {}
+    for f in fams:
+        for lid in (f.get("leaf_ids") or []):
+            by_leaf[int(lid)] = str(f.get("name_zh") or "")
+    if leaf_family is None:
+        return {}
+
+    out: dict[int, dict[str, Any]] = {}
+    for lid in range(len(leaf_family)):
+        fam = int(leaf_family[lid])
+        n = int(sizes[lid]) if sizes is not None and lid < len(sizes) else 0
+        if not n:                     # a leaf with no rows is not in the delivery
+            continue
+        rec = out.setdefault(fam, {"rows": 0, "weight": {},
+                                   "unnamed_leaves": 0, "unnamed_rows": 0})
+        rec["rows"] += n
+        nm = by_leaf.get(lid, "")
+        if nm:
+            rec["weight"][nm] = rec["weight"].get(nm, 0) + n
+        else:
+            rec["unnamed_leaves"] += 1
+            rec["unnamed_rows"] += n
+
+    for fam, rec in out.items():
+        total = max(1, rec["rows"])
+        rec["contributors"] = [
+            (nm, n, n / total)
+            for nm, n in sorted(rec["weight"].items(), key=lambda kv: -kv[1])]
+        rec["exact"] = len(rec["contributors"]) == 1 and not rec["unnamed_leaves"]
+        rec.pop("weight")
     return out

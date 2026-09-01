@@ -359,3 +359,109 @@ def test_the_L2_sub_intents_section_is_not_silently_empty(tmp_path):
     seg = md[md.index("### 2.1"):]
     assert "navigational" not in seg.split("silhouette 是否反对")[1][:400], (
         "a class that was not split has no sub-intents to list")
+
+
+def _fam_fixture():
+    """Two delivered families: one clean, one merged from three sources with a
+    governance-created leaf that no audit family covers."""
+    naming = {
+        "namings": [{"leaf_id": i, "name_zh": f"叶{i}", "user_need": "u"}
+                    for i in range(5)],
+        "audit": {"families": [
+            {"family_id": 0, "name_zh": "释义类", "definition": "d", "leaf_ids": [0]},
+            {"family_id": 1, "name_zh": "读音类", "definition": "d", "leaf_ids": [1]},
+            {"family_id": 2, "name_zh": "笔顺类", "definition": "d", "leaf_ids": [2]},
+            {"family_id": 3, "name_zh": "诗文类", "definition": "d", "leaf_ids": [4]},
+        ]},
+    }
+    # leaves 0,1,2 -> family 0 ; leaf 3 (governance-created, no audit) -> family 0
+    # leaf 4 -> family 1
+    leaf_family = np.array([0, 0, 0, 0, 1])
+    sizes = np.array([50, 30, 10, 10, 100])   # family 0 = 100 rows, family 1 = 100
+    return naming, leaf_family, sizes
+
+
+def test_a_family_label_never_hides_its_denominator():
+    """The label read `字词/短语/概念释义查询 等 6 类 (42%)` and was used AS the
+    family's name — in headings, table cells, a Mermaid node and a CSV `name`
+    column. Four things were wrong at once:
+
+    * `等 N 类` reads in Chinese as "and N others", so 6 was read as 7;
+    * the percentage named no referent;
+    * its denominator was the NAMED subset, not the family — 42% of 12,844 rather
+      than 38% of live42's family 8, which has 14,171;
+    * so the three governance-created leaves in that family, 9.4% of it, were
+      absent from both the label and its arithmetic.
+    """
+    from qmine.report._shape import family_names
+
+    naming, leaf_family, sizes = _fam_fixture()
+    names = family_names(naming, leaf_family, sizes)
+
+    assert "等" not in names[0], "the ambiguous 等 N 类 form is back"
+    assert "%" in names[0]
+    # 释义类 is 50 of the family's 100 rows. Against the NAMED subset (90) it
+    # would be 56% — the old, wrong denominator.
+    assert "50%" in names[0], f"share must be of the family, got {names[0]}"
+    assert "56%" not in names[0]
+    # A family whose leaves all come from one audit family keeps a plain name.
+    assert names[1] == "诗文类"
+
+
+def test_a_family_with_an_unnamed_leaf_is_not_called_clean():
+    """`family_names` branched on the count of NAMED contributors alone, so
+    live42's family 1 — 56% of its rows in a governance-created leaf with no
+    audit name — was labelled with the one audit name it had, plainly.
+    """
+    from qmine.report._shape import family_names
+
+    naming = {"namings": [], "audit": {"families": [
+        {"family_id": 0, "name_zh": "唯一来源", "leaf_ids": [0]}]}}
+    leaf_family = np.array([0, 0])          # leaf 1 has no audit family
+    sizes = np.array([44, 56])
+    label = family_names(naming, leaf_family, sizes)[0]
+    assert label != "唯一来源", "a family that is 56% unaccounted for is not that"
+    assert "44%" in label
+
+
+def test_the_composition_accounts_for_every_row_of_the_family():
+    """The shares must sum to 1 across the contributors AND the unnamed
+    remainder — that is what makes the denominator checkable."""
+    from qmine.report._shape import family_composition
+
+    naming, leaf_family, sizes = _fam_fixture()
+    comp = family_composition(naming, leaf_family, sizes)
+    c = comp[0]
+    assert c["rows"] == 100 and c["unnamed_leaves"] == 1 and c["unnamed_rows"] == 10
+    total = sum(sh for _n, _r, sh in c["contributors"]) + c["unnamed_rows"] / c["rows"]
+    assert abs(total - 1.0) < 1e-9, f"shares do not close: {total}"
+    assert not c["exact"] and comp[1]["exact"]
+
+
+def test_the_machine_readable_twin_does_not_put_a_label_in_a_name_column(deps):
+    """`family_name` carried `混合·主要成分「句子语录查询」38%` — a sentence, a
+    percentage and a name in one field. A consumer grouping by it gets a string
+    that changes whenever the composition shifts."""
+    import csv as _csv
+    import io
+
+    rows = list(_csv.DictReader(io.StringIO(R.tree_csv({"run_id": "t"}, deps))))
+    assert rows, "no rows"
+    for r in rows:
+        assert "%" not in r["family_name"], "a label leaked into the name column"
+        if r["family_name_is_exact"] == "False":
+            assert r["family_name"] == "", "a mixed family has no name of its own"
+        assert r["family_label"], "the display label must still be available"
+
+
+def test_the_notebook_does_not_re_implement_the_family_join():
+    """It did, and the two drifted: the notebook printed `X 等 6 类` while the
+    reports printed `混合·主要成分「X」38%`, so one run produced two documents that
+    disagreed about what a family is called."""
+    import inspect
+
+    from qmine.report import zh_notebook
+
+    src = inspect.getsource(zh_notebook)
+    assert "等 {len(_r)} 类" not in src, "the duplicate implementation is back"
+    assert "from qmine.report._shape import family_names" in src
