@@ -229,8 +229,16 @@ class GateResult(_PlainValues):
 # Governance (Phase 8)
 # ==========================================================================
 
+#: What governance can be asked to do. `merge_leaves` is here because the tree
+#: could SPLIT a leaf and MERGE families but never merge two leaves — so the
+#: auditor's `duplicate_leaf_pairs` was a write-only measurement. live44 found
+#: **14 duplicate pairs**, named them precisely ("汉字读音查询重复，任务无法区分"
+#: for leaves 12/14), prescribed nothing on any of them, and shipped a delivered
+#: tree containing two leaves with byte-identical names in the same family.
+#: The asymmetry ran in the damaging direction: every run could only fragment.
 PrescriptionKind = Literal[
-    "merge_families", "isolate_leaf", "split_leaf", "relabel", "flag_risk", "keep_as_is"
+    "merge_families", "merge_leaves", "isolate_leaf", "split_leaf",
+    "relabel", "flag_risk", "keep_as_is"
 ]
 PrescriptionStatus = Literal["proposed", "accepted", "executed", "declined"]
 
@@ -315,11 +323,29 @@ class AdjudicationRule(BaseModel):
 
 class Taxonomy(BaseModel):
     version: str = "v1"
+    #: The axes this taxonomy classifies along. DERIVED from the nodes when the
+    #: agent leaves it empty, which it usually does: on live44 every one of the
+    #: 20 nodes carried `axis="intent"` while this registry was `{}`, so the
+    #: decision record read "across 1 axes" (counted from the nodes) against a
+    #: registry naming none. An observer confirmed the contradiction and it was
+    #: still open at delivery. A registry that cannot disagree with the nodes it
+    #: describes is better than one nothing populates — this was write-only for
+    #: the whole project, exactly like `TaxonomyNode.adjudication_rules` was.
     axes: dict[str, str] = Field(default_factory=dict)
     nodes: list[TaxonomyNode] = Field(default_factory=list)
     rules: list[AdjudicationRule] = Field(default_factory=list)
     labeling_guide: str = ""
     notes: str = ""
+
+    @model_validator(mode="after")
+    def _register_the_axes_the_nodes_actually_use(self) -> "Taxonomy":
+        # An agent-supplied description wins; a missing one still gets an entry,
+        # so `len(axes)` and `len({n.axis for n in nodes})` can never disagree.
+        for node in self.nodes:
+            axis = str(getattr(node, "axis", "") or "").strip()
+            if axis:
+                self.axes.setdefault(axis, "")
+        return self
 
     def l1(self) -> list[TaxonomyNode]:
         return [n for n in self.nodes if n.level == 1]
@@ -399,14 +425,29 @@ class LeafNaming(BaseModel):
 
 
 class FamilyNaming(BaseModel):
+    """One family as the tree auditor describes it.
+
+    **The booleans are TRI-STATE on purpose.** They defaulted to `True`
+    (coherent) and `False` (risk) — the reassuring answer in both cases — so a
+    generation that failed halfway produced families asserted coherent and
+    not-risky rather than families with no verdict. That is the same permissive
+    -default failure mode as `SectionDraft.markdown=""` and
+    `AnnotationBatch.labels=[]`, the one that silently lost 1,500 gold rows, and
+    here it sits on the SAFETY path: live44's F10 and F21 read `risk=false`
+    while containing members the audit had itself flagged for isolation.
+
+    `None` means the auditor did not say. A reader — or a check — can tell that
+    apart from an assertion; `False` cannot.
+    """
+
     family_id: int
     name_zh: str
     code: str
     definition: str
     leaf_ids: list[int] = Field(default_factory=list)
-    coherent: bool = True
+    coherent: bool | None = None
     audit_notes: str = ""
-    risk: bool = False
+    risk: bool | None = None
 
 
 class TreeAudit(_PlainValues):
@@ -415,7 +456,15 @@ class TreeAudit(_PlainValues):
     families: list[FamilyNaming] = Field(default_factory=list)
     cross_family_twins: list[dict[str, Any]] = Field(default_factory=list)
     duplicate_leaf_pairs: list[dict[str, Any]] = Field(default_factory=list)
-    risk_isolated: bool = False
+    #: The auditor's CLAIM that risk leaves are isolated — not a measurement.
+    #: Nothing in `src/` computes or checks it, so it entered as a schema field
+    #: rather than through one of the four agent doors and carries no guardrail.
+    #: On live44 it read `true` while leaf 47's gambling member still shared
+    #: family F10 with benign leaves 8 and 9, and its recorded action was only
+    #: "建议拆分/隔离该成员" — governance had not run yet. Three separate
+    #: observers reached confirmed-but-wrong conclusions from it.
+    #: `None` = the auditor did not assert isolation.
+    risk_isolated: bool | None = None
     risk_findings: list[dict[str, Any]] = Field(default_factory=list)
     incoherent_families: list[int] = Field(default_factory=list)
     prescriptions: list[Prescription] = Field(default_factory=list)

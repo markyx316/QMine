@@ -876,9 +876,22 @@ def test_the_annotator_prompt_keeps_the_newest_rules_not_just_the_oldest():
     src = inspect.getsource(AnnotatorAgent.build_user)
     assert "budget_text(rules, 9000)" not in src, \
         "a head-only trim on an appended block discards the referee's own rules"
-    for block in ("rules", "guide", "classes"):
-        assert f"budget_text({block}," in src and "tail=" in src, \
-            f"the {block} block must retain its tail"
+
+    # RULES are the exception, and only because `_render_rules` now SORTS them
+    # newest-first: the head IS the freshest content, so a head limit keeps
+    # exactly what a tail was protecting, and a tail would instead preserve the
+    # oldest. It must still drop WHOLE rules — live44 severed ~6 mid-rule.
+    assert "budget_units(rules" in src, \
+        "rules must be budgeted by whole rules, not characters"
+    assert "budget_text(rules" not in src, \
+        "a character cut severs a rule and hides the count"
+
+    # GUIDE and CLASSES are appended-to and NOT reordered, so the newest content
+    # genuinely sits last and the tail is the only thing protecting it.
+    for block in ("guide", "classes"):
+        assert f"budget_text({block}," in src, f"{block} must still be budgeted"
+        seg = src.split(f"budget_text({block},")[1].split(")")[0]
+        assert "tail=" in seg, f"the {block} block must retain its tail"
 
     # And the helper must actually keep both ends when asked.
     text = "HEAD" + ("x" * 5000) + "TAIL"
@@ -970,8 +983,12 @@ def _annotator_budget(block: str) -> tuple[int, int]:
     from qmine.agents import roles
 
     src = inspect.getsource(roles.AnnotatorAgent.build_user)
-    m = re.search(rf"budget_text\({block},\s*(\d+)(?:,\s*tail=(\d+))?", src)
-    assert m, f"no budget_text call found for {block!r}"
+    # Either budgeter: `rules` moved to budget_units (whole rules, newest-first
+    # head) while `guide`/`classes` stay on budget_text with a tail.
+    m = re.search(
+        rf"budget_(?:text|units)\({block}(?:\.splitlines\(\))?,\s*(\d+)"
+        rf"(?:,\s*tail=(\d+))?", src)
+    assert m, f"no budget call found for {block!r}"
     return int(m.group(1)), int(m.group(2) or 0)
 
 
@@ -1037,6 +1054,77 @@ def test_referee_rules_survive_first_when_the_budget_is_exceeded():
     lines = [ln for ln in _render_rules(tax).splitlines() if ln.startswith("- [")]
     assert lines[0].startswith("- [NEW]"), \
         "the freshest, most evidence-driven rule must not be the one truncated"
+
+
+def test_a_budgeted_block_says_how_many_units_it_withheld():
+    """live44's delivery auditor certified "the deliverables" having seen 39%.
+
+    `budget_text` cut 142,957 of 232,957 characters out of the MIDDLE of the
+    joined documents. Its in-band marker gives a CHARACTER count, which no
+    reader can convert into "which documents am I missing", so the agent whose
+    entire remit is checking deliverables before they ship reported a clean
+    audit of a third of them. The count must be in the unit the caller thinks
+    in, and the block must say plainly that it is partial.
+    """
+    from qmine.memory.context import budget_units
+
+    docs = [f"=== FILE: doc{i}.md ===\n" + ("x" * 400) for i in range(20)]
+    out = budget_units(docs, 2000, joiner="\n\n", unit="document",
+                       label="deliverables")
+
+    assert len(out) <= 2000, "the budget must actually bind"
+    # Whole units only — never a severed document.
+    kept = [d for d in docs if d in out]
+    assert kept, "at least one whole document must survive"
+    assert all(d in out for d in kept), "a kept document must be kept ENTIRE"
+    assert "x" * 401 not in out, "no fragment of a dropped document"
+    # And the reader must be told what is missing, in documents.
+    assert f"of {len(docs)} documents withheld" in out, \
+        "the note must count DOCUMENTS, not characters"
+    assert "Do NOT describe this as the complete set" in out, \
+        "a partial block must forbid the 'I audited the deliverables' conclusion"
+
+
+def test_the_rule_block_drops_whole_rules_and_keeps_the_newest():
+    """Two defects in one call, both live.
+
+    live44 cut 1,203 characters out of the MIDDLE of a 61,203-char rule block on
+    every annotation prompt of the guide-repair round — the round whose whole
+    purpose is to apply those rules — severing ~6 of them.
+
+    And `tail=` fought the ordering: `_render_rules` sorts NEWEST FIRST so a head
+    limit keeps the freshest, most evidence-driven rules; keeping a tail
+    preserved the OLDEST and discarded mid-round ones instead.
+    """
+    from qmine.memory.context import budget_units
+
+    rules = [f"- [R{i:03d}] when w{i} → A (because {i})" for i in range(200)]
+    out = budget_units(rules, 1500, unit="rule", label="adjudication rules")
+
+    assert "- [R000]" in out, "head-most (newest) rule must survive"
+    assert "- [R199]" not in out, "the tail must be what is dropped"
+    for line in out.splitlines():
+        if line.startswith("- ["):
+            assert line in rules, f"a severed rule reached the prompt: {line!r}"
+    assert "rules withheld for length" in out
+
+
+def test_every_budgeted_prompt_block_is_labelled():
+    """A block truncated without a `label` cannot be attributed from the log.
+
+    That is the shape that hid live38's loss: the referee's entire contribution
+    was cut from every annotation prompt and the warning named no block.
+    """
+    import inspect
+    import re
+
+    from qmine.agents import roles
+
+    src = inspect.getsource(roles)
+    for call in re.findall(r"budget_(?:text|units)\((.*?)\)\n", src, re.S):
+        head = call.split(",")[0].strip()
+        assert "label=" in call, \
+            f"budget call on {head!r} has no label= — a silent cut cannot be traced"
 
 
 def test_p2b_persists_the_taxonomy_the_referee_produced():
@@ -1380,3 +1468,66 @@ def test_a_replay_clock_is_not_rendered_as_an_epoch():
     # A real epoch still renders as local wall-clock.
     now = time.time()
     assert _clock(now) == time.strftime("%H:%M:%S", time.localtime(now))
+
+
+def test_a_complete_batch_is_not_discarded_over_a_rewritten_key():
+    """med02 logged its own contradiction: "returned 25/25 labels (1 queries
+    unlabelled)" — then threw away all 25 correctly-labelled rows.
+
+    `got` is keyed by the query the MODEL echoes back. A model that labels every
+    row may still return one key with a trimmed space or an NFKC-foldable
+    full-width character. An exact `in` calls that row missing, the batch raises
+    three times, and 25 good rows are lost.
+
+    This regression was introduced by the fix for the OPPOSITE failure — a
+    permissive default silently accepting an empty batch (live43: 62 of 128
+    batches, `annotator[b] labelled 1500/3000`, zero warnings). Both must hold:
+    an empty batch still fails, a complete one survives a rewritten key.
+    """
+    from qmine.graph.nodes.topdown import _norm_query
+
+    # The rewrites actually observed: full-width punctuation and stray spacing.
+    from qmine.graph.nodes.topdown import _norm_query_loose
+
+    # Full-width punctuation folds to ASCII, but the space AFTER it survives —
+    # so the loose key (whitespace removed) is what closes this one.
+    assert _norm_query_loose("血压正常值是多少，范围") == _norm_query_loose("血压正常值是多少, 范围")
+    assert _norm_query(" 甲钴胺片的功效 ") == _norm_query("甲钴胺片的功效")
+    assert _norm_query("ＢＭＩ") == _norm_query("BMI")
+    # And neither key may collapse genuinely different queries.
+    assert _norm_query("高血压怎么办") != _norm_query("低血压怎么办")
+    assert _norm_query_loose("高血压怎么办") != _norm_query_loose("低血压怎么办")
+
+
+def test_the_empty_batch_check_still_fires():
+    """The guard this regression came from must not be weakened.
+
+    A model returning zero labels — or labels for rows nobody asked about — is
+    still a failed call, and treating it as success is what lost half a gold set.
+    """
+    import inspect
+
+    from qmine.graph.nodes import topdown
+
+    src = inspect.getsource(topdown._annotate)
+    assert "queries unlabelled" in src, "a genuinely short batch must still raise"
+    assert "_norm_query" in src, "and matching must tolerate an echoed rewrite"
+
+
+def test_loose_key_matching_is_refused_when_it_would_collide():
+    """Handing one query another's label is worse than losing the batch.
+
+    The whitespace-stripped key exists to rescue a batch whose only fault is an
+    echoed rewrite. If two DIFFERENT queries in one batch collapse to the same
+    loose key, using it would assign one of them the other's label — silent
+    corruption. So it is admitted only when injective on both sides, the same
+    "repair only when unambiguous" rule the rule-target repair follows.
+    """
+    import inspect
+
+    from qmine.graph.nodes import topdown
+
+    src = inspect.getsource(topdown._annotate)
+    assert "loose_ok" in src, "the loose key must be gated on injectivity"
+    assert "len(set(loose_q)) == len(loose_q)" in src, "queries must map uniquely"
+    assert "len(set(loose_g)) == len(loose_g)" in src, "and so must the returned keys"

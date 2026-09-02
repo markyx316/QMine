@@ -151,6 +151,14 @@ llm:
     # live39 hit a 400 at step 0 (tools never used) and both logged "2 tool loop
     # failures". glm-5.2 is what live38 actually searched the web with.
     researcher: zhipu:glm-5.3-flash
+    # `log_reading` fails DETERMINISTICALLY on glm-5.3-flash: 903.5s (med01),
+    # 902.9s (med02), 903.7s + a failed retry at 1806.6s (med03) — HTML 500,
+    # zero output tokens, reproduced to within 0.8s across three runs. NOT a
+    # duration ceiling: risk_compliance completed a single 1,024.8s call on the
+    # same model. This angle is TOOL-FREE (`web: False`), so the tool_choice
+    # objection above does not apply to it — but deepseek-v4-pro is still the
+    # wrong target for a researcher role, so use moonshot instead.
+    researcher_log_reading: moonshotai/kimi-k3
     # THE CRITIC ROLES, ON A LAB USED NOWHERE ELSE.
     #
     # These three exist to find what the rest of the pipeline got wrong, and all

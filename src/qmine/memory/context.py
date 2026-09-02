@@ -205,6 +205,10 @@ def render_card(card: Any, *, firewall: BlindnessFirewall | None = None) -> str:
     return "\n".join(lines)
 
 
+#: Characters reserved so the withheld-count note itself always fits.
+_WITHHELD_NOTE_ROOM = 220
+
+
 def budget_text(text: str, max_chars: int, *, tail: int = 0, label: str = "") -> str:
     """Trim a long block to a character budget, keeping head and optionally tail.
 
@@ -237,4 +241,66 @@ def budget_text(text: str, max_chars: int, *, tail: int = 0, label: str = "") ->
         text[:head]
         + f"\n… [truncated {lost} chars] …\n"
         + text[-tail:]
+    )
+
+
+def budget_units(
+    units: Sequence[str],
+    max_chars: int,
+    *,
+    joiner: str = "\n",
+    unit: str = "item",
+    label: str = "",
+) -> str:
+    """Trim to a budget by whole UNITS, and say how many were withheld.
+
+    `budget_text` cuts mid-string, which fails in two ways this one does not.
+
+    It severs a unit. A rule, a document or a table row is cut in half, so the
+    reader — human or model — gets a fragment that looks whole.
+
+    And it is silent about COUNT. On `live44` the delivery auditor was handed
+    `budget_text(deliverables, 90000, tail=12000)`, was shown **39%** of the
+    documents (142,957 of 232,957 characters dropped out of the MIDDLE), and
+    returned an audit of "the deliverables" — it had no way to know it had seen
+    a third of them. The in-band marker `budget_text` writes gives a character
+    count, which no reader can convert into "which documents am I missing".
+
+    So this reports the count in the unit the caller actually thinks in, in the
+    log AND in the prompt, and tells the model in words not to generalise from
+    what it was shown. Ordering is the caller's job: units are kept from the
+    HEAD, so pass them most-important-first.
+    """
+    units = list(units)
+    whole = joiner.join(units)
+    if len(whole) <= max_chars:
+        return whole
+
+    room = max_chars - _WITHHELD_NOTE_ROOM
+    kept: list[str] = []
+    used = 0
+    for u in units:
+        cost = len(u) + len(joiner)
+        if used + cost > room:
+            break
+        kept.append(u)
+        used += cost
+
+    # Even one unit does not fit. A character cut is worse than a fragment of
+    # nothing, so fall back rather than return an empty block — but say so.
+    if not kept:
+        log.warning("prompt block%s: not even one %s fits in %d chars — "
+                    "falling back to a character cut",
+                    f" {label!r}" if label else "", unit, max_chars)
+        return budget_text(whole, max_chars, label=label)
+
+    dropped = len(units) - len(kept)
+    log.warning("prompt block%s truncated: %d of %d %s(s) withheld "
+                "(%d of %d chars kept)",
+                f" {label!r}" if label else "", dropped, len(units), unit,
+                used, len(whole))
+    return joiner.join(kept) + (
+        f"{joiner}… [{dropped} of {len(units)} {unit}s withheld for length. "
+        f"You are seeing {len(kept)}. Do NOT describe this as the complete set, "
+        f"and do not conclude anything about the {unit}s you were not shown.]"
     )

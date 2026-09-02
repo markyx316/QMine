@@ -380,6 +380,54 @@ def test_output_budgets_cover_what_the_roles_actually_emit():
             == requirement_for("annotator_b").max_output_tokens)
 
 
+def test_retries_are_not_multiplied_by_a_second_layer():
+    """live44's maintainer burned 44 minutes and returned zero tokens.
+
+    `_call` retries `max_repair + 1 = 3` times. With the SDK also set to
+    `max_retries=2` each of those was 3 HTTP requests, so one logical call was
+    **9 requests**. At the maintainer's 292s deadline that is 9 x 292 = 2,628s
+    against the 2,638s the log recorded — and `p12_maintain` then reported
+    ✔ completed, because the mechanical half of the phase had succeeded.
+
+    A timeout is exactly the case where an SDK retry cannot help: an identical
+    request with an identical deadline fails again by construction, and it does
+    so INSIDE what our own logs count as a single attempt.
+    """
+    from qmine.config import LLMConfig, QMineConfig
+
+    assert LLMConfig().max_retries == 0, \
+        "SDK retries multiply our own; a timeout then costs 9x its deadline"
+    assert QMineConfig().llm.max_retries == 0, "and the default config must carry it"
+
+
+def test_a_reasoning_role_is_not_timed_at_writing_speed():
+    """One global tok/s was wrong by ~5x in both directions.
+
+    Throughput measures how fast a model WRITES; the deadline needs how long it
+    takes to ANSWER. A reasoning model spends most of that thinking, which emits
+    no output tokens — so thinking time lands in the denominator and never in
+    the numerator. Measured on live44: annotator_a 181.7 tok/s against a
+    tool-free researcher at 7.4.
+
+    The old constant of 40 gave the researcher 585s for calls that legitimately
+    take 850-1,150s, so it timed out, retried, and timed out again.
+    """
+    from qmine.llm.requirements import ROLE_REQUIREMENTS as R
+
+    fast, slow = R["annotator_a"], R["researcher"]
+    assert fast.reasoning in {"light", "standard"} and slow.reasoning in {"strong", "frontier"}
+
+    # The measured floor for a reasoning role, with the 1.3 safety factor.
+    assert slow.timeout_seconds >= 1200, \
+        f"a reasoning role needs room to think, got {slow.timeout_seconds}s"
+    # The reporter's 1,446.5s on live44 had no preceding failure line, so it is a
+    # single call and the deadline must clear it. (Elapsed values that FOLLOW a
+    # `!!` line are cumulative across attempts and cannot be read as one call —
+    # the adversary's "658s" is 244 + 244 + ~170, not a 658s request.)
+    assert R["reporter"].timeout_seconds > 1446, \
+        f"reporter deadline {R['reporter'].timeout_seconds}s cuts off a measured 1446.5s call"
+
+
 def test_a_role_is_always_given_time_to_emit_its_own_budget():
     """The timeout used to be a two-step function (180s / 420s) while the caps were
     per-role. Raising the architect's cap to 42,000 tokens to stop it truncating
@@ -866,3 +914,66 @@ def test_the_preflight_routes_against_the_config_a_run_would_use():
         "the pre-flight skips the config when no flag is given, so it "
         "pre-flights a different configuration than the run")
     assert "QMineConfig()" not in call
+
+
+def test_doctor_checks_the_providers_this_project_actually_uses():
+    """`doctor` tested ANTHROPIC_API_KEY alone.
+
+    The project routes to DeepSeek, Zhipu and Qwen, so on a fully-configured
+    machine it reported "absent → will fall back to the deterministic offline
+    stand-in" and said nothing about the keys in use. `_resolve_provider` was
+    fixed to consult `detect()` after the same bug; this is the other half.
+    """
+    import inspect
+
+    from qmine import cli
+
+    src = inspect.getsource(cli.doctor)
+    assert "detect()" in src, "doctor must ask which providers are configured"
+    assert 'os.environ.get("ANTHROPIC_API_KEY")' not in src, \
+        "one vendor's variable is not this project's credential check"
+
+
+def test_an_override_for_a_suffixed_role_is_actually_planned(catalog):
+    """A per-angle override was dead config, and `qmine models` echoed it as live.
+
+    `role_list` came from `ROLE_REQUIREMENTS`, which holds BASE roles only, so
+    `researcher_log_reading` was never planned, `role in prefer` never saw it,
+    and the entry did nothing. It was found only by routing around a
+    deterministic failure and watching three runs use the model it had routed
+    away from.
+
+    `requirement_for` resolves a suffixed role to its base requirement and
+    `route_for` prefers an exact match over the longest prefix, so planning the
+    override's own role makes the specific pin win while unsuffixed siblings keep
+    the base assignment.
+    """
+    from qmine.llm.router import route
+
+    plan = route(catalog, ["zhipu", "deepseek"],
+                 prefer={"researcher": "zhipu:glm-5.3-flash",
+                         "researcher_log_reading": "deepseek:deepseek-v4-pro"})
+
+    assert "researcher_log_reading" in plan.assignments, \
+        "an override must name a role the plan contains, or it is dead config"
+    assert "researcher" in plan.assignments, "the base role must survive alongside it"
+    a = plan.assignments["researcher_log_reading"]
+    assert (a.api_model or a.model) and "deepseek" in f"{a.provider}{a.model}".lower(), \
+        f"the specific pin must win for the suffixed role, got {a.provider}/{a.model}"
+
+
+def test_an_override_naming_no_known_role_warns(catalog, caplog):
+    """A typo'd override key resolves to DEFAULT requirements rather than failing.
+
+    `requirement_for` returns a generic requirement for any unknown string, so a
+    misspelled key would be planned quietly at the wrong tier. An override that
+    resolves to nothing is worse than none, because it looks applied.
+    """
+    import logging
+
+    from qmine.llm.router import route
+
+    with caplog.at_level(logging.WARNING, logger="qmine.router"):
+        route(catalog, ["zhipu"], prefer={"reserchr_typo": "zhipu:glm-5.3-flash"})
+    assert any("matches no known role" in r.getMessage() for r in caplog.records), \
+        "a typo'd override key must warn, not plan silently"

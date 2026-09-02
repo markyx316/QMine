@@ -382,10 +382,19 @@ def build_catalogue(state: Any, deps: Any) -> dict[str, Bundle]:
                                "n_leaves_reported_by_refinement")),
             "leaves_per_family": _dig(hm, "leaves_per_family"),
             "n_refinement_steps": len(_dig(hm, "refinement_history", default=[]) or []),
-            "heldout": _pick(_dig(hm, "heldout_reproduction", default={}) or {},
-                             ("agreement", "n_test", "train_fraction",
-                              "in_sample_ceiling", "effective_threshold",
-                              "statistical_verdict")),
+            # SCOPED, because there are two held-out numbers and they differ.
+            # This one is `hierarchy_meta`: the tree as REFINEMENT left it,
+            # before governance split and isolated anything. The panel measures
+            # the DELIVERED partition and gets a different value — live44 read
+            # 0.9853 here and 0.9748 there, and the reports published both under
+            # the bare name "held-out 结构复现", so one quantity had two values.
+            # The pre-delivery auditor flagged it; its finding was dropped on a
+            # citation technicality and it shipped.
+            "heldout_pre_governance": _pick(
+                _dig(hm, "heldout_reproduction", default={}) or {},
+                ("agreement", "n_test", "train_fraction",
+                 "in_sample_ceiling", "effective_threshold",
+                 "statistical_verdict")),
             "local_k": _pick(_dig(hm, "local_k", default={}) or {},
                              ("n_families_not_split", "n_silhouette_overruled")),
         },

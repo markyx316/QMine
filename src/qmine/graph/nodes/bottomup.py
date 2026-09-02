@@ -313,7 +313,10 @@ def p4_battery(state: PipelineState, deps: Deps) -> dict[str, Any]:
         "warning to read the family layer as provisional, not a reason to switch mid-flight.",
         evidence={"reference": verdict.get("reference_algorithm"),
                   "best_alternative": verdict.get("best_alternative"),
-                  "alternative_beats_reference_by": verdict.get("alternative_beats_reference_by"),
+                  # The PAIRED margin decides; the unpaired cross-k gap is not
+                  # evidence for anything and used to sit here as if it were.
+                  "largest_paired_margin": verdict.get("largest_paired_margin"),
+                  "paired_margins_within_k": verdict.get("paired_margins_within_k"),
                   "kmeans_assumption_contradicted": verdict.get("kmeans_assumption_contradicted")},
         decisive_metrics=[],
         rejected=[{"option": r["algorithm"],

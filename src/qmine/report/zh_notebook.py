@@ -139,22 +139,36 @@ for name, pat in groups.items():
     H = float(-(p * np.log(p)).sum())
     rows.append({'模板群': name, '命中': int(hit.sum()), '香农熵 H': round(H,4),
                  '有效家族数 exp(H)': round(float(np.exp(H)),2), '最大家族占比': f"{p.iloc[0]:.1%}"})
-frag = pd.DataFrame(rows).sort_values('有效家族数 exp(H)', ascending=False)
+# NO ROWS = NO TABLE. `pd.DataFrame([])` has no columns, so sorting by name
+# raises KeyError and the notebook dies at this cell. med04: ALL 12 template
+# groups came back trusted=False, `groups` was empty, and the deliverable ran
+# 3 of 18 cells. A generated cell must survive its own corpus.
+if not rows:
+    _why = (f'{len(_untrusted)} 个模板群都未通过内聚检验' if _untrusted
+            else '所有模板群命中数均 < 30')
+    print(f'⚠ 跳过碎裂度演算 —— {_why}。')
+    print('  碎裂度依赖「已知同意图」的模板群; 一个都没有时这一节无可计算,')
+    print('  报告中的 template_fragmentation 也应连同这一点一起读。')
+    frag = pd.DataFrame(columns=['模板群', '命中', '香农熵 H',
+                                 '有效家族数 exp(H)', '最大家族占比'])
+else:
+    frag = pd.DataFrame(rows).sort_values('有效家族数 exp(H)', ascending=False)
 display(frag)
 
-worst = frag.iloc[0]
-pat = groups[worst['模板群']]
-hit = df['query'].astype(str).str.contains(pat, regex=True, na=False).values
-p = pd.Series(fam_of_row[hit]).value_counts(normalize=True)
-print(f"\\n—— 以碎裂最严重的「{worst['模板群']}」为例, 一步步算 ——")
-print(f"① 模板群 n = {hit.sum():,} 条")
-print("② 它们的家族分布 p:")
-for fid, share in p.head(6).items():
-    print(f"     {share:6.1%}  家族 {int(fid)}")
-H = float(-(p*np.log(p)).sum())
-print(f"③ 香农熵 H = -Σ p·ln p = {H:.4f}")
-print(f"④ 有效家族数 = exp(H) = {np.exp(H):.2f}   ← 这就是该群的碎裂度")
-print(f"⑤ 全部 {len(frag)} 群平均 = {frag['有效家族数 exp(H)'].mean():.2f}   ← 报告中的碎裂度")"""))
+if len(frag):
+    worst = frag.iloc[0]
+    pat = groups[worst['模板群']]
+    hit = df['query'].astype(str).str.contains(pat, regex=True, na=False).values
+    p = pd.Series(fam_of_row[hit]).value_counts(normalize=True)
+    print(f"\\n—— 以碎裂最严重的「{worst['模板群']}」为例, 一步步算 ——")
+    print(f"① 模板群 n = {hit.sum():,} 条")
+    print("② 它们的家族分布 p:")
+    for fid, share in p.head(6).items():
+        print(f"     {share:6.1%}  家族 {int(fid)}")
+    H = float(-(p*np.log(p)).sum())
+    print(f"③ 香农熵 H = -Σ p·ln p = {H:.4f}")
+    print(f"④ 有效家族数 = exp(H) = {np.exp(H):.2f}   ← 这就是该群的碎裂度")
+    print(f"⑤ 全部 {len(frag)} 群平均 = {frag['有效家族数 exp(H)'].mean():.2f}   ← 报告中的碎裂度")"""))
 
     out.append(("md", """## 三、表征选型: bake-off 与 α-sweep
 

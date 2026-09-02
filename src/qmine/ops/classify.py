@@ -248,6 +248,13 @@ def train_classifier(
             method="predict_proba")
         result["ece"] = _ece_from_proba(proba_oof, np.unique(yk), yk)
         result["ece_basis"] = "out-of-fold"
+        # The null this ECE must be read against. Without it the number cannot
+        # be called good or bad, and a cross-run comparison imports the other
+        # corpus's sample size and confidence profile.
+        null_mean, null_sd = ece_noise_floor(proba_oof.max(1))
+        result["ece_null_mean"] = round(null_mean, 4)
+        result["ece_null_sd"] = round(null_sd, 4)
+        result["ece_lift_over_null"] = round(result["ece"] - null_mean, 4)
     except Exception:  # noqa: BLE001 — a fold can lack a class on a tiny gold set
         result["ece"] = expected_calibration_error(model, Xk, yk)
         result["ece_basis"] = "in-sample (out-of-fold unavailable — read as a floor)"
@@ -273,6 +280,40 @@ def _ece_from_proba(proba: np.ndarray, classes: np.ndarray, y: Sequence[str],
             continue
         ece += (m.mean()) * abs(correct[m].mean() - conf[m].mean())
     return round(float(ece), 4)
+
+
+def ece_noise_floor(conf: np.ndarray, *, bins: int = 10, n_sim: int = 200,
+                    seed: int = 0) -> tuple[float, float]:
+    """The ECE a PERFECTLY calibrated model of this size would still show.
+
+    ECE is biased away from zero by finite samples: with `bins` buckets and this
+    many rows, even a model whose stated confidence is exactly right lands above
+    0. So a bare ECE cannot be read as good or bad, and comparing one run's ECE
+    to another's imports the other corpus's sample size and confidence profile.
+
+    live44 vs live42 was exactly that comparison — 0.065 against 0.023 across
+    different class counts, gold samples and annotator models — and no gate read
+    either number, so a 2.8x move passed unremarked in both directions.
+
+    Under perfect calibration a prediction at confidence c is correct with
+    probability c, so simulating Bernoulli(c) at the OBSERVED confidences gives
+    the null for THIS run. Returns (mean, sd); gate the lift over it, never the
+    level. Same discipline as `noise_floor` for K and the silhouette null.
+    """
+    rng = np.random.default_rng(seed)
+    conf = np.asarray(conf, dtype=float)
+    edges = np.linspace(0, 1, bins + 1)
+    out = []
+    for _ in range(int(n_sim)):
+        correct = (rng.random(conf.size) < conf).astype(float)
+        e = 0.0
+        for i in range(bins):
+            m = (conf > edges[i]) & (conf <= edges[i + 1])
+            if m.sum() == 0:
+                continue
+            e += m.mean() * abs(correct[m].mean() - conf[m].mean())
+        out.append(e)
+    return float(np.mean(out)), float(np.std(out))
 
 
 def expected_calibration_error(model: Any, X: np.ndarray, y: Sequence[str], *, bins: int = 10) -> float:
@@ -393,7 +434,14 @@ def knn_label_scan(
 
     flags: list[dict[str, Any]] = []
     for i in range(len(idx)):
-        neigh = y[top[i]]
+        # NEAREST-FIRST. `np.argpartition` places the top-k in the first k slots
+        # but does NOT order them, so `top[i]` is an arbitrary permutation and
+        # `neigh[:6]` showed a human reviewer six ARBITRARY neighbours rather
+        # than the six most similar. These flags exist to be reviewed by hand
+        # ("candidates for human review, never automatic relabels"), so the
+        # sample must be the nearest ones.
+        order = top[i][np.argsort(-sims[i, top[i]])]
+        neigh = y[order]
         disagree = float((neigh != y[i]).mean())
         if disagree < disagreement_threshold:
             continue
@@ -404,7 +452,15 @@ def knn_label_scan(
             "label": str(y[i]),
             "neighbour_majority": majority,
             "disagreement": round(disagree, 3),
-            "neighbour_labels": [str(v) for v in neigh[:6]],
+            # The FULL neighbourhood `disagreement` was computed over. Storing a
+            # 6-of-k sample invited a comparison between two different
+            # populations: live44's observer asserted
+            # `disagreement == 1.0 or label in neighbour_labels`, the check
+            # FAILED, and it was not a defect — with k=10 and disagreement 0.9
+            # exactly one neighbour agrees, and P(it is absent from an arbitrary
+            # 6 of 10) = 40%. Publishing all k makes the two commensurable.
+            "neighbour_labels": [str(v) for v in neigh],
+            "k": int(len(neigh)),
         })
 
     flags.sort(key=lambda f: -f["disagreement"])

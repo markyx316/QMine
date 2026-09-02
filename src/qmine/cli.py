@@ -950,7 +950,11 @@ def models_cmd(
 
 @app.command()
 def doctor() -> None:
-    """Check the environment: packages, credentials, models, fonts."""
+    """Check the environment: packages, provider credentials, fonts, profiles.
+
+    It does NOT probe models — `qmine models` resolves the routing plan and
+    prices it, which is the check worth running before spending anything.
+    """
     _load_env()
     _setup_logging(False)
     t = Table("check", "status", "detail")
@@ -964,11 +968,20 @@ def doctor() -> None:
         except Exception as exc:  # noqa: BLE001
             t.add_row(mod, "[yellow]missing[/yellow]", str(exc)[:60])
 
-    import os
+    # EVERY provider, not one vendor's variable. This checked
+    # `ANTHROPIC_API_KEY` alone while the project routes to DeepSeek, Zhipu and
+    # Qwen, so `doctor` reported "absent → will fall back to offline" on a
+    # machine whose keys were all present and working, and reported nothing at
+    # all about the keys actually in use. `_resolve_provider` has consulted
+    # `detect()` since the same bug was fixed there; this is the other half.
+    from .llm.providers import detect
 
-    has_key = bool(os.environ.get("ANTHROPIC_API_KEY") or os.environ.get("ANTHROPIC_AUTH_TOKEN"))
-    t.add_row("ANTHROPIC_API_KEY", "[green]set[/green]" if has_key else "[yellow]absent[/yellow]",
-              "real agents" if has_key else "will fall back to the deterministic offline stand-in")
+    av = detect()
+    configured = list(getattr(av, "configured", []) or [])
+    t.add_row("provider credentials",
+              "[green]ok[/green]" if configured else "[yellow]none[/yellow]",
+              ", ".join(f"{k} ({av.env_seen.get(k, '?')})" for k in configured)
+              or "no provider keys found — runs fall back to the offline stand-in")
 
     try:
         from matplotlib import font_manager

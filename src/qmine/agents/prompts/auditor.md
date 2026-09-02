@@ -20,6 +20,12 @@ are disjoint. Any template group you were given that lands in several families
 is direct evidence.
 
 **Duplicate leaves.** Two clusters in one family that no user could tell apart.
+**Every pair you list in `duplicate_leaf_pairs` must also get a disposition** —
+either a `merge_leaves` prescription naming both ids, or a `keep_as_is` saying
+what distinction the domain actually cares about. A pair listed with neither is
+a finding nobody can act on: on one run 14 duplicate pairs were listed, none was
+prescribed, and the delivered tree shipped two leaves with byte-identical names
+in the same family (`汉字读音查询`, leaves 12 and 14).
 
 **Risk isolation.** Did any namer flag risk? Risk content must sit in its *own*
 family, never blended into a topically similar one — gambling probes phrased as
@@ -41,3 +47,6 @@ Two things to keep in mind:
   by a distinction the domain actually cares about — say so explicitly as
   `keep_as_is` with your reasoning. An unexplained non-merge reads as an
   oversight; a documented one reads as a decision.
+- `merge_leaves` folds every target into the smallest id. Use it when two leaves
+  answer the same user need; prefer it over leaving a duplicate in place, because
+  a user choosing between two identically-named leaves cannot choose at all.

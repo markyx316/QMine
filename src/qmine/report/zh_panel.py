@@ -33,7 +33,7 @@ _METRIC_ZH = {
     "template_fragmentation": "模板碎裂度 ↓",
     "stability_ari": "重播稳定性 ARI ↑",
     "kmeans_refit_stability": "重拟合稳定性 ↑",
-    "heldout_reproduction": "held-out 结构复现 ↑",
+    "heldout_reproduction": "held-out 结构复现 (交付分区) ↑",
     "nmi_reference": "NMI vs 参照体系 ↑",
     "purity_reference": "纯度 vs 参照体系 ↑",
     "silhouette": "silhouette (无投票权)",

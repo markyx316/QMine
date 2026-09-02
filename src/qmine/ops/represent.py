@@ -238,6 +238,17 @@ def alpha_sweep(
         sil = _silhouette(H, labels, sample=silhouette_sample)
         row: dict[str, Any] = {
             "alpha": a,
+            # THE BASIS THIS ROW WAS MEASURED ON. Without it, two rows that
+            # SHOULD be identical cannot be compared: `alpha_algebra` reduces to
+            # `cos_semantic` at a=0, so a=0 is exactly the base encoder, yet
+            # med01 read template_fragmentation 2.4868 here against the
+            # bake-off's 2.4511 for the same encoder. The p3 observer flagged the
+            # contradiction and no one could resolve it, because neither row said
+            # what it was measured on — the bake-off scores a SUBSAMPLE, this
+            # scores the full corpus. Same representation, different rows.
+            "k": int(k),
+            "n_rows": int(H.shape[0]),
+            "seed": int(seeds[0]),
             "surface_vote_share": round(surface_vote_share(a), 4),
             "template_fragmentation": frag["mean_fragmentation"],
             "stability_ari": stab,
@@ -283,9 +294,42 @@ def alpha_sweep(
     contenders = [r for r in rows if r["template_fragmentation"] <= band]
     winner = max(contenders, key=lambda r: (r["stability_ari"], -r["template_fragmentation"]))
     sil_winner = max(rows, key=lambda r: r["silhouette"])
+    # WAS THE OPTIMUM BRACKETED, OR IS IT AT THE EDGE OF WHAT WE SEARCHED?
+    #
+    # med03 chose alpha=1.0 — the largest value in the grid — with template
+    # fragmentation still FALLING at that edge (2.487 -> 1.771 -> 1.481). So the
+    # search never bracketed the optimum and alpha > 1.0 may be better. At 1.0 the
+    # phrasing block controls 50% of the cosine, which is a large representational
+    # commitment to make at an unexplored boundary.
+    #
+    # Disclosed, never auto-extended: `ops/propose.py` is blind to scores ON
+    # PURPOSE so its additions are pre-registered, and widening the grid BECAUSE
+    # the winner sits at its edge would use exactly the scores it must not see.
+    _alphas = sorted(r["alpha"] for r in rows)
+    _at_edge = winner["alpha"] in (_alphas[0], _alphas[-1]) if _alphas else False
+    _still_improving = False
+    if _at_edge and len(_alphas) >= 2:
+        by_a = {r["alpha"]: r["template_fragmentation"] for r in rows}
+        if winner["alpha"] == _alphas[-1]:
+            _still_improving = by_a[_alphas[-1]] < by_a[_alphas[-2]]
+        else:
+            _still_improving = by_a[_alphas[0]] < by_a[_alphas[1]]
+
     return {
         "rows": rows,
         "chosen_alpha": winner["alpha"],
+        "chosen_alpha_at_grid_edge": _at_edge,
+        "optimum_bracketed": not (_at_edge and _still_improving),
+        "bracketing_note": (
+            f"alpha={winner['alpha']} is the "
+            f"{'largest' if _alphas and winner['alpha'] == _alphas[-1] else 'smallest'} "
+            "value searched and template_fragmentation is still improving in that "
+            "direction — the optimum was NOT bracketed and the true optimum may lie "
+            "outside the searched range. The grid is proposed blind to scores, so it "
+            "is not widened in response to this."
+            if (_at_edge and _still_improving) else
+            "the chosen alpha is interior to the searched grid, or the metric is not "
+            "improving further at the edge — the optimum is bracketed"),
         # Numbers as data, not baked into an English sentence. `prose()` matches a
         # prefix and returns a FIXED translation, so a sentence carrying
         # interpolated values can only be shipped untranslated — which is how the
@@ -379,6 +423,13 @@ def encoder_bakeoff(
             "encoder": name,
             "status": "ok",
             "dim": int(E.shape[1]),
+            # See the note in `alpha_sweep`: this scores a SUBSAMPLE, so its
+            # metrics are not directly comparable with the sweep's even where the
+            # representation is identical. Recording the basis is what makes that
+            # checkable instead of a mystery.
+            "k": int(k),
+            "n_rows": int(E.shape[0]),
+            "seed": int(seeds[0]),
             "stability_ari": replay_stability(E, k, seeds=seeds),
             "template_fragmentation": template_fragmentation(labels, sub_masks)["mean_fragmentation"],
             "silhouette": _silhouette(E, labels),

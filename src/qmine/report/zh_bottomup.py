@@ -268,14 +268,26 @@ def build(state: Any, deps: Any, figs: dict[str, Any]) -> str:
                   "(`build_hierarchy`)。此处跑其他算法, 是为了回答一个不同的问题: "
                   "**结构换一种算法还在不在?** 在, 说明它是语料的性质; 不在, 说明它是 "
                   "KMeans「簇近似球形」这一假设的产物。", ""]
-            alt, mg = verdict.get("best_alternative"), verdict.get("alternative_beats_reference_by")
+            # THE PAIRED MARGIN, and the k it was measured at. The field this
+            # used to print (`alternative_beats_reference_by`) subtracts two rows
+            # that can sit at DIFFERENT k — on med01, agglo@k15 minus kmeans@k20
+            # = 0.1025 while the true within-k margin at the reference's own k
+            # was 0.0531. The verdict never used the cross-k number; the report
+            # printed it anyway, so the reader saw a gap no comparison produced.
+            _per_k = verdict.get("paired_margins_within_k") or {}
+            _best_k = max(_per_k, key=lambda kk: _per_k[kk].get("margin", 0), default=None)
+            mg = verdict.get("largest_paired_margin")
+            alt = (_per_k.get(_best_k, {}).get("alternative")
+                   if _best_k else verdict.get("best_alternative"))
+            _ref_at_k = (_per_k.get(_best_k, {}).get("reference")
+                         if _best_k else verdict.get("reference_algorithm"))
             # A "strongest alternative" that IS the reference makes the gap 0.0 by
             # construction, and the row then reads as a passed falsification test
             # when nothing was actually compared. live38 shipped exactly this:
             # reference kmeans_k15, best_alternative kmeans_k15, gap 0.0.
-            self_cmp = alt is not None and alt == verdict.get("reference_algorithm")
+            self_cmp = alt is not None and alt == _ref_at_k
             L += ["| 参照 (交付所用) | 最强替代算法 | 稳定性差距 | 结论 |", "|---|---|---|---|",
-                  f"| `{verdict.get('reference_algorithm')}` | `{alt}` | "
+                  f"| `{_ref_at_k}` | `{alt}` | "
                   f"{num(mg) if mg is not None else '—'} | "
                   f"{'⚠️ 假设被质疑' if verdict.get('kmeans_assumption_contradicted') else '✅ 未被证伪'} |", ""]
             if self_cmp:
@@ -394,7 +406,14 @@ def build(state: Any, deps: Any, figs: dict[str, Any]) -> str:
     hr = _t(meta, "heldout_reproduction", default={})
     if hr:
         sv = hr.get("statistical_verdict", {})
-        L += [f"**held-out 结构复现检验**: 用 80% 数据重建质心, 分类另外 20%, "
+        # SCOPED. `hierarchy_meta` describes the tree as REFINEMENT left it —
+        # before governance split and isolated anything — while the panel table
+        # above measures the DELIVERED partition. live44 read 0.9853 here and
+        # 0.9748 there, both printed as "held-out 结构复现" in this same
+        # document, so one quantity had two values and neither said which tree
+        # it described.
+        L += [f"**held-out 结构复现检验 (精化后 / 治理前的树)**: "
+              f"用 80% 数据重建质心, 分类另外 20%, "
               f"与全量划分一致率 = **{pct(hr.get('agreement'),1)}** "
               f"(n={hr.get('n_test'):,}", ]
         if sv.get("ci95"):

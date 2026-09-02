@@ -12,58 +12,79 @@
 
 ---
 
-## 1. Status — last updated 2026-08-31
+## 1. Status — last updated 2026-09-01
 
-# ~605 tests passing. live42 is the newest completed run; its deliverables can now be rebuilt without re-running it.
+# 642 tests passing. live44 is the newest completed run — 17/17 phases, and the whole live44 defect queue is FIXED and awaiting a verification run.
 
-**The one thing to know:** `qmine render RUN_ID [--agents]` rebuilds a finished
-run's deliverables from artifacts already on disk, into a **new generation**.
-Before it existed, checking a report fix against a real run meant paying for the
-whole pipeline — which is how `§2.1 L2 子意图` reached live42 having *never once
-rendered*. Use it as the first step on any report change.
+**The one thing to know:** every item found on live44 has a fix and a test. The
+next action is a fresh live run to confirm them end-to-end; nothing in the queue
+is blocked on analysis.
 
 | | |
 |---|---|
-| Tests | ~605 passing; `ruff --select F src/qmine/` clean |
-| Newest completed run | `live42` gen01 — 17/17 phases, `provider=routed`, 0 batches lost |
-| `live42` narrative | **3 of 9 sections** delivered (3 lost to a false rejection, 3 to empty model returns) |
-| `live42` gates / findings | 26 gates recorded; findings ledger 43 open — 2 blocking, 21 warn, 20 note |
-| `live42` gen02 | re-rendered — see the caveat below |
-| Narrative, re-rendered with real agents | 9/9 sections passed — but see the correction below |
-| Verification | `verify_run.py` has 28 checks. live40 25 pass / 1 fail; live42 20 / 6, of which **5 are false** |
+| Tests | **642** passing (was 625); `ruff --select F src/qmine/` clean |
+| Newest completed run | `live44` gen01 — 17/17 phases, `provider=routed`, 841 calls, **$61.09**, 9.81h |
+| `live44` narrative | **9 of 10 sections** verified, 1 marked hole (live42 was 3 of 9) |
+| `live44` gold set | κ **0.880** on **n=3000**, raw 0.891 — both annotators at full coverage in BOTH rounds |
+| `live44` delivered shape | **53 leaves / 23 families** (p6 produced 49/18 — governance rewrote it) |
+| `live44` gates | 26 recorded — 15 measured, 11 advisory observer; 3 WARNED, 0 failed |
+| Verification | `verify_run.py`: live44 **26 PASS / 0 FAIL / 2 SKIP**; control live42 20/6/2 |
 
-**The five false failures on live42 are all the same cause:** they read
-`run_summary.json`, which that run never wrote because its teardown crashed. The
-crash is fixed; live42 cannot be re-scored because the file cannot be
-reconstructed after the fact.
+**live44 cost 2.1x live42 for the same corpus** ($61.09 vs $29.69). Almost all of
+it was p2b: 97% of input tokens are annotation, each call carried the ~20k-token
+rule block, and `annotator_b` (qwen3.8-flash) needed 432 calls to
+`annotator_a`'s 267 because ~35% of its batches came back as a JSON-schema echo.
+The echo is recovered by retry, so it costs money rather than data.
 
-**The first agent re-render passed 9/9 and described an EMPTY RUN.** Do not read
-`live42/gen02/00_最终报告.md` as a report about live42. `build_catalogue` read
-artifacts as `gen_dir / name`, and a rendered generation contains only reports —
-so every fact sheet was empty and the narrative honestly reported `n_named = 0`
-against 58 named leaves and `n_ledger_entries = 0` against 26. Every number it
-cited really was in its sheet, so **no guardrail could fire**. Fixed: artifacts
-now load through the store, which resolves across generations. Re-render to get a
-report that is actually about the run.
+### What the live44 examination found, and where it landed
 
-**`live42/gen02` is a MIXED generation and should not be read as one render.**
-`ArtifactStore.new_generation` increments from itself, so rendering gen01 twice
-wrote both passes into gen02 — the no-agents pass and the agent pass interleaved.
-Fixed (the target is now `latest + 1`), but gen02 on disk is already mixed: its
-`00_最终报告.md` is the 9/9 agent render, the rest are the earlier scripted pass.
+Seven defects, **none of which `verify_run.py` caught** — all came from reading
+the deliverables. All seven are fixed:
 
-**live42's `usage.json` no longer describes live42.** A render used to write the
-run-level file, so its 702 calls / $29.69 were overwritten by a render's 11 calls
-/ $0.78 before the bug was found. The original figures survive only in the session
-log below. Renders now write into their own generation.
+| | defect | fix |
+|---|---|---|
+| D1 | `00_索引.md` claimed 21 L1 classes; the taxonomy has 20 | index counts derive from the taxonomy; `_WHAT_FOR` may not contain a digit |
+| D2 | `heldout_reproduction` published under one name with two values (0.9853 pre-governance / 0.9748 delivered) | both now name their partition |
+| D3 | `20 L1 intents across 1 axes` — an English sentence — on 7 lines of 3 Chinese deliverables | decision choice is symbolic (`L1 = 20, axes = 1`), like `alpha = 0.1` |
+| D4 | `taxonomy.axes` empty while D003 counted 1 axis | registry derives from the nodes |
+| D5 | delivery auditor shown **39%** of the deliverables | `budget_units` — whole documents, count in log and in-band |
+| D6 | 2 of its 3 findings deleted on a citation technicality | `citable_namespace` — resolver AND check evaluator |
+| D7 | maintainer failed 3x (44 min, `out 0`), `✔ completed`, disclosed nowhere | the failure is emitted |
 
-### What a new session should read first
+**D1 and D2 are the sharpest result of the run.** The pre-delivery audit — the
+last check before shipping — found both, and the pipeline discarded both. It did
+that while having been shown 39% of the material. Whatever else is wrong is
+likely in the 61% it never read.
 
-1. This section, then §2 — those two describe *now*.
-2. `CLAUDE.md` for the rules that hold everywhere, and `.claude/rules/` for the
-   area you are about to touch (they load automatically on matching paths).
-3. A session section below only when you need the history of a specific decision.
-   They are append-only and dated; older ones are not maintained.
+### Family names and duplicate leaves (raised 2026-09-01, both fixed)
+
+**Delivered families had no names.** `混合·主要成分「词语含义查询」45%` was being
+used AS a family's title — in headings, table cells, a Mermaid node and a CSV
+column. Cause: the tree auditor names the **Phase 7** tree, governance then
+merged 18 families into 14 and isolated them back out to 23, and a delivered
+family routinely spans several audit families, so no audit name is simply "its"
+name. p8 now names the delivered partition directly (`FamilyNamerAgent`,
+`families_final`), the same way it already re-names the leaves governance
+changed. `_shape.family_names` prefers those; the composition label survives
+only as the fallback when naming fails.
+
+**The tree could only ever fragment.** `PrescriptionKind` had `merge_families`
+but **no `merge_leaves`**, so the auditor's `duplicate_leaf_pairs` was a
+write-only measurement. live44 listed **14 duplicate pairs** with cosines and
+reasons — including leaves 12/14 ("汉字读音查询重复，任务无法区分") and 27/29
+("偏旁部首查询重复，仅提问方向相反") — prescribed nothing on any of them, and
+shipped a tree with **two leaves carrying byte-identical names in the same
+family**. Governance even split leaf 30 into {30, 50} while the auditor had
+flagged {25, 30} as duplicates, and both halves got the same name.
+
+`merge_leaves` now exists with an executor (folds into the smallest id, so
+re-runs are stable), and the auditor prompt requires every listed pair to get a
+disposition — a merge or a documented `keep_as_is`.
+
+**Still open on this:** the duplicate audit runs in p7, *before* p8 creates new
+leaves, so a duplicate governance itself introduces (30/50) is never audited.
+Same shape as every other "gate before the operation that breaks its invariant".
+See §2.
 
 ## 2. Open questions — EDIT THIS SECTION, DO NOT APPEND
 
@@ -73,72 +94,102 @@ record.
 
 ### P1 — worth doing next
 
-0. **The annotator's rule block truncated for the first time on live44, and the
-   test that pins the invariant cannot see it.** At 19:31:33, immediately after
-   guide repair added 133 rules (48 architect + 114 referee + 133 repair ≈ 295
-   rules, 61,203 chars), `budget_text(rules, 60000, tail=10000)` in
-   `agents/roles.py:382` began dropping **1,203 chars from the middle** of every
-   annotator prompt — ~6 rules at ~207 chars each, the *same* ones on all 162
-   calls of the guide-repair round.
+0i. **`model_overrides` silently ignores a suffixed role.** Routing resolves
+   `researcher_log_reading` to its BASE role `researcher` before looking up a
+   model, so only `researcher` is ever consulted. An entry keyed on the suffixed
+   role sits in the config doing nothing — no warning, no log line, and
+   `qmine models` even ECHOES it back ("researcher_log_reading=deepseek-v4-pro"),
+   which makes it look applied.
 
-   **CORRECTED — the cause is rule COUNT, not verbosity, and not reasoning.** An
-   earlier version of this entry blamed re-enabling referee reasoning for making
-   rules longer. Measured, per-rule density is unchanged: live42 204.7 chars/rule
-   (139 rules → 28,447), live44 207.5 (295 → 61,203). live44 simply produced more
-   rules — round-2 blocks were live42 **251** (60 architect + 100 referee + 91
-   repair) vs live44 **295** (48 + 114 + 133), +17.5% — driven by 30 open
-   boundaries against live42's 21. At ~207 chars/rule the 60,000 budget is about
-   **290 rules**. live42 sat at ~52,000 chars, **86% of the cliff**, and nobody
-   knew. Any corpus with more confused boundaries crosses it. Disabling reasoning
-   would NOT fix this.
+   Found by trying to route around 0h and watching med03 fail at 903.7s on the
+   very model the override named away from. Per-angle pinning is not supported
+   and currently cannot be discovered except by a run.
 
-   This is the live38 failure recurring one layer up — announced this time (the
-   `label=` fix works) and 2% rather than 100%, but in the same round: the one
-   whose whole purpose is to apply the repaired guide.
+   Fix: either consult the suffixed role before falling back to the base (the
+   `_prefix_route` longest-match rule already does this for `_routed`, so the two
+   tables disagree), or REFUSE an override whose key resolves to no routable
+   role, so dead config fails loudly at startup instead of being echoed as if
+   live.
 
-   `test_every_adjudication_rule_the_architect_writes_reaches_the_annotator` and
-   `test_every_rule_the_referee_drafts_reaches_the_annotator` both exercise
-   `_render_rules()` — the **rendering**. Truncation happens after, in the prompt
-   builder. A gate before the operation that breaks its invariant guarantees
-   nothing; that rule is in CLAUDE.md and this is a fresh instance of it.
+0h. **`researcher_log_reading` fails deterministically at ~903s — now THREE
+   runs.** med01 903.5s, med02 902.9s, med03 903.7s. All `InternalServerError`
+   with an HTML body and `out 0`, on glm-5.3-flash, reproduced to within 0.8s
+   across three independent runs. Refuted explanation: not a duration ceiling —
+   `risk_compliance` completed a single uninterrupted 1,024.8s call on the same
+   model. Request-specific; `log_reading` reads raw corpus rows, the largest and
+   least structured payload any researcher gets.
 
-   **It confounded the guide-repair verdict on live44.** Round-2 annotation ran
-   19:31→19:43; truncation began 19:31:33. So the round whose whole purpose is to
-   measure whether the repaired guide helps was annotated with ~6 rules missing,
-   and returned `kappa after repair: 0.875 (-0.005 vs 0.880)` → guide reverted.
-   That delta is inside the pilot's own noise (recoverable slack 0.0049 ± 0.0345),
-   so the verdict was uninformative regardless — but it must NOT be cited as
-   evidence about guide repair. The earlier live38 fix added `label=` and so cured
-   the *silence*, not the truncation.
+   The obvious workaround (pin the angle elsewhere) does NOT work — see 0i — and
+   the obvious target is forbidden: the comment above the researcher pin records
+   that deepseek-v4-pro 400s on `tool_choice` for researcher roles, returning
+   parametric-knowledge candidates with zero tool calls. I proposed that target
+   without reading the warning directly above the line I edited.
 
-   Fix (do NOT apply while live44 runs): the rule block must be budgeted by
-   **whole rules**, not characters — drop rules from the tail with a count in the
-   log and an in-band marker naming how many were withheld, so the annotator and
-   the operator both know. Raising 60,000 only moves the cliff. Then extend one of
-   the two tests to assert through the *prompt builder*, not `_render_rules`.
+   Cost: ~15 minutes plus a retry, every run. Not data loss — the retry succeeds.
+   Next step: fix 0i first, then pin this ONE angle to a provider that is neither
+   zhipu (fails) nor deepseek-v4-pro (tool_choice 400) — e.g. the moonshot or
+   qwen tier already in the plan — and confirm from the run log, not from
+   `qmine models`, which echoes overrides it has not applied.
 
-   **The same growth is the run's dominant cost.** live44 at p2b end: 747 calls,
-   $55.11, **15.3M input tokens of which 14.9M (97%) is annotation**. Each
-   annotation call carries ~21,900 input tokens because the rule block rides on
-   every one. `annotator_b` made 432 calls to `annotator_a`'s 267 — 165 extra,
-   all retries at 41% failure — so ~3.9M input tokens bought nothing. One
-   variable (rule-block size) therefore drives the truncation, the token bill and
-   the retry amplification together. Budgeting by whole rules fixes the first;
-   only a smaller or cached rule block fixes the other two.
+0g. **The alpha optimum can sit at the GRID'S EDGE with the metric still
+   improving, and nothing says so.** Machine-confirmed by the p3 observer on
+   med03: `alpha_sweep.chosen_alpha < max(grid_proposal.widened)` FAILED.
 
-   **Same call, and SMALLER than first recorded:** `roles.py:437` gives the
-   referee `budget_text(rules, 9000)` — head-only, **no `tail`, no `label`**. An
-   earlier version of this entry said it "would silently drop 85%"; that applied
-   the wrong density. Measured: the referee is handed the ARCHITECT's rules only,
-   which render at 135.4 chars/rule — live44's 48 rules are **6,497 chars, 72% of
-   budget**; live42's 39 were 5,755. The cliff is ~66 architect rules. Real, not
-   imminent. Still add `label` and `tail`: two arguments, and head-only-with-no-
-   label is the exact shape that hid the live38 loss.
+       alpha  0.0    0.1    0.2    0.3    0.5    0.7    1.0
+       frag   2.487  2.433  2.719  2.623  2.204  1.771  1.481  <- best, at the edge
+       stab   0.841  0.650  0.765  0.642  0.752  0.808  0.642  <- worst, at the edge
 
-   Density varies far more by rule SOURCE than by model, which is why one
-   chars/rule figure misleads: architect **135.4**, referee-drafted **280.6**,
-   guide-repair **170.8**. Any "the budget is about N rules" estimate depends on
-   the mix and must not be written down as a constant.
+   Template fragmentation is still FALLING at alpha=1.0, the largest value
+   searched, so the grid does not bracket the optimum — alpha > 1.0 may be
+   better and nothing looked. At 1.0 the phrasing block controls **50%** of the
+   cosine (`surface_vote_share = a^2/(1+a^2)`), which is a large representational
+   commitment to make at an unexplored boundary.
+
+   The winner is also the LEAST stable point in the sweep (0.642 against 0.841 at
+   alpha=0). That is legitimate under the documented rule — fragmentation
+   locates, stability only vetoes, and 0.642 clears the floor — but "best on the
+   deciding metric, worst on the veto metric, and at the edge of the searched
+   range" is three facts a reader should get together, and currently gets none of.
+
+   NOT a reason to extend the grid automatically: `ops/propose.py` is blind to
+   scores ON PURPOSE so its additions are pre-registered, and widening because
+   the winner sits at the edge would use the scores it must not see.
+
+   Fix (AFTER med03): a boundary DISCLOSURE, not an automatic extension. When the
+   chosen value is the min or max of the swept grid AND the deciding metric is
+   still improving in that direction, say so in the artifact and the report —
+   "the optimum was not bracketed; the true optimum may lie outside the searched
+   range". Same treatment as the singleton-agreement and cross-k fixes: the
+   measurement stands, the overclaim goes.
+
+0. **The duplicate audit runs BEFORE governance creates duplicates — PARTLY
+   ADDRESSED.** p7 audits the tree, p8 then splits it, so a duplicate governance
+   itself introduces was never audited (live44 split leaf 30 into {30, 50} and
+   both halves were named `汉字笔画数查询`).
+
+   `p8_leaves_are_distinguishable` now measures the DELIVERED partition after
+   naming, and `DisambiguatorAgent` either names the difference or prescribes
+   `merge_leaves`. The K12 demo proved it works: it caught `的拼音相关查询` on
+   leaves [15, 16] on its first run.
+
+   STILL OPEN: the gate is deterministic on EXACT name equality only. Semantic
+   near-duplicates (live44's 27/29, 部首 vs 偏旁部首 — different strings, same
+   concept) are caught only by the auditor's cosine list, which returned `null`
+   for 4 of the 14 pairs it reported on that run. A geometric duplicate check on
+   the delivered partition would close it; it needs a threshold, which is exactly
+   what the exact-match gate was designed to avoid. p7 audits
+   the tree, p8 then splits leaves — so a duplicate governance itself introduces
+   is never audited. live44 split leaf 30 into {30, 50} and both halves were
+   named `汉字笔画数查询`, byte-identical, in the same family. The split had real
+   geometric support (lift 0.1565 over null, ARI 0.9887); it was **semantically**
+   empty, and nothing measures that.
+
+   `merge_leaves` (added 2026-09-01) lets the auditor act on duplicates it CAN
+   see. It cannot see these. Options, none yet taken: re-run the duplicate check
+   after governance; or refuse a split whose two halves would receive the same
+   name, which is cheap because p8 already names both halves. Same shape as every
+   other "a gate before the operation that breaks its invariant guarantees
+   nothing".
 
 1. **Does the narrative writer still return an empty JSON?** live42 lost three
    sections to `{"markdown": "", "covered": []}` on all three attempts. Today's
@@ -155,6 +206,12 @@ record.
    the annotator-balance work, never routed through `prose()`. The static AST
    guard covers `deps.decision()` rationales only — it does not see gate messages
    or remediations, which is where these live.
+
+   NOT closed by the 2026-09-01 work. That fixed a THIRD string of the same class
+   (`{n} L1 intents across {m} axes`, `topdown.py`) by making the decision choice
+   symbolic. These two are gate messages and still English. Note `prose()` cannot
+   rescue an f-string: `PROSE_ZH` returns a fixed string, so it cannot carry the
+   numbers. Either author them symbolically as well, or install a translator.
 
 3. **The resume rewind silently drops a concurrent branch.** Made LOUD (the join
    halts with `p2c_both_branches_arrived`), not fixed. Open: whether
@@ -180,15 +237,179 @@ record.
    UNDER-reports. `_pin_warnings` says so out loud; nothing corrects it.
 
 7. **`challenger_beats_incumbent` has no production call site.** Four docstrings
-   and a model-budget decision rested on it; they now say so. Needs a signature
+   and a model-budget decision rested on it; they now say so, and the CLAUDE.md
+   invariant row no longer states it as a live guarantee. Needs a signature
    change (`propose_grid` returns a flat list, so selection cannot tell a proposed
    value from a configured one). Applying it as written flips live40 to a worse K.
+   Still open — only the overclaim was fixed, not the wiring.
 
-8. **The alpha decision sits inside its own noise.** Winners across 5 seed
-   replicates: 0.1, 0.5, 0.1, 0.0, 0.1. `tie_band=0.05` is an unreachable default
-   ~4.5x narrower than the metric's spread. **Do not widen the band** — at a
-   measured 2-sd band live40 elects alpha=0.5, which its own k=7 panel shows
-   fragments worse. The fix is replication.
+0s. **FIXED 2026-09-02 — `merge_leaves` no longer voids a risk isolation.**
+   med04 shipped leaves 14 and 24 merged away AND "isolated", so two risk
+   clusters ([21,10,14] and [43,24,35]) were unisolated and ghost families 42/33
+   held no rows — the artifact said 36 families where 34 had content.
+
+   Two changes, both verified against med04's real conflict:
+   - `execute_prescriptions` reconciles AFTER the prescription loop: a leaf that
+     is both merged and isolated has its MERGE declined with a reason, because
+     isolation is a SAFETY action and merging a QUALITY one. Redirecting the
+     isolation to the survivor was rejected — it would isolate the survivor's
+     other rows on a guess.
+   - `isolate_leaves` now takes `leaf_labels` and REFUSES an empty leaf,
+     recording why. Defence in depth for any other path that empties one.
+
+   The cascade is right: both leaves stay live, the isolation moves real rows, no
+   ghost family, and the surviving duplicate routes to
+   `p8_leaves_are_distinguishable` — the safety action wins and the quality
+   problem goes to the quality mechanism.
+   Tests: `test_a_leaf_merge_never_voids_a_pending_risk_isolation`,
+   `test_declining_a_merge_still_counts_as_settled`.
+
+0n. **The observer's `decisions` channel is per-phase and narrow, so an agent
+   that saw a decision id in an ARTIFACT cannot cite it.** med04 dropped four
+   citations: `granularity.triangulation.k_tie_set`, `D004.decisive_metrics`,
+   `D006.evidence`, `decisions[0].evidence.critic_verdict`.
+
+   Callers pass `decisions=[decision]` (p4, p5) or `decisions=[]` (p6), so the
+   id-indexing added for 10a only covers that phase's own decision. An agent
+   reads D004 inside an artifact, cites it the way the record prints itself, and
+   is refused. Residual of 10a, not a regression of it.
+
+   Fix: index decision ids found in the ARTIFACTS too, or pass the full decision
+   ledger to every observer. Prefer the latter — the ledger is small and an
+   observer reasoning about a decision it can see is the point.
+
+0f. **8 figures on med04 against live44's 11, unexplained.** Not investigated;
+   `test_one_figure_per_quantity` passes, so it is not duplication. Check whether
+   three figures are conditional on artifacts this corpus lacks (the untrusted
+   template groups are the obvious candidate) — a figure that silently does not
+   render is the same class as a section that silently does not ship.
+
+0c2. **The 0c disclosure reaches NO artifact, and the fix is still unverified.**
+   Two separate corrections to what I claimed on med04.
+
+   FIRST: the `1.0344 of ceiling reached` in med04's `p2b_kappa` gate is NOT the
+   0c fix. There are two ratios and two gates:
+   - the PILOT gate prints `share_of_ceiling_reached`, which comes from
+     `headroom` — the variable 0c changed
+   - `p2b_kappa` prints `share_of_ceiling` (topdown.py ~974), a DIFFERENT
+     variable that was never clamped
+   med04's pilot ratio was 0.9603, below 1.0, so the clamp never engaged and the
+   fix was never exercised. Verifying it needs a run whose PILOT kappa exceeds
+   the PILOT ceiling — med01 (0.930 vs 0.9188) and med02 (0.922 vs 0.9033) did;
+   med04 did not.
+
+   SECOND, and larger: **no artifact on disk contains `self_consistency` at
+   all.** The pilot dict lives only in LangGraph state, so
+   `self_consistency_is_lower_bound`, `kappa_exceeds_self_consistency` and the
+   explanatory note are computed and then reach no artifact, no report and no
+   reader. That is the same write-only pattern as `decisions` and
+   `risk_isolated` — a value nothing consumes.
+
+   Fix: persist the pilot block into an artifact (it is the evidence behind the
+   ceiling argument, which the reports already discuss), then verify 0c on a run
+   that reproduces the pilot-level inversion. Until both are done, treat 0c as
+   WRITTEN BUT UNPROVEN — it was nearly recorded as verified on the strength of a
+   number produced by different code.
+
+0d2. **A SECOND batch-loss signature the three-tier key matching does not
+   rescue: ALL keys unmatched, not one.** med04:
+
+       ⚠ annotator[b] batch lost 25 rows after 3 attempts:
+         ValueError: returned 25/25 labels (25 queries unlabelled)
+
+   med02's case was `1 queries unlabelled` — one key with a trimmed space or a
+   full-width comma, which exact -> NFKC -> whitespace-stripped matching now
+   resolves. Here NONE of the 25 matched, so the model applied a SYSTEMATIC
+   transformation to every echoed key (a paraphrase, a truncation, a translation
+   — unknown, because the retry discards the response).
+
+   Not caused by the fix and not made worse by it: this batch would have been
+   lost before it too. The fix rescues per-character noise; it cannot rescue a
+   wholesale rewrite, and it should not try — matching 25 rewritten strings back
+   to 25 queries by similarity would risk assigning labels to the wrong rows,
+   which is worse than losing the batch.
+
+   Impact is bounded and DISCLOSED: 1 batch of 120, `annotator[b] labelled
+   2975/3000` against annotator[a]'s 3000/3000, so 0.83% coverage on one side and
+   the number says so. Contrast live43, where the same underlying failure
+   produced `1500/3000` with zero warnings.
+
+   Worth doing before the next fix attempt: LOG THE FIRST FEW RETURNED KEYS on a
+   total mismatch. The diagnosis needs the actual transformation, and every
+   attempt so far has had to infer it from a count. One `deps.emit` of
+   `sorted(got)[:3]` would settle what the model is doing.
+
+8b. **The TAXONOMY is not stable across runs, and neither is its
+   annotatability.** Same corpus, same method, same five angles:
+
+   | run | classes | rules | pilot kappa | ceiling | ordering |
+   |---|---|---|---|---|---|
+   | med01 | 22 | 51 | 0.930 | 0.9188 | inverted |
+   | med02 | 20 | 28 | 0.922 | 0.9033 | inverted |
+   | med04 | **18** | 47 | **0.835** | 0.869 | correct |
+
+   Kappa spans **0.835-0.930** on identical data. It is NOT explained by:
+   - the 0h fix — `log_reading` contributed 12 candidates in ALL THREE runs (it
+     succeeded on retry in med01/med02), so making it succeed faster changed the
+     wall clock, not the input. Hypothesis checked and refuted.
+   - class count — med04 has the FEWEST classes (18, coarser distinctions) and
+     the LOWEST agreement, which is backwards if granularity drove it.
+
+   What differs is the partition itself: three genuinely different carvings of
+   the same space, each internally coherent, each differently annotatable. This
+   is the top-down analogue of item 8 — there the GRID decided alpha; here the
+   architect's draw decides the taxonomy, and a headline kappa inherits that
+   variance.
+
+   Consequence for reading any single run: kappa is a property of THIS
+   taxonomy-and-annotator pair, not of the corpus or the method. Comparing kappa
+   across runs — or citing one run's kappa as "the" agreement for this corpus —
+   is comparing different objects. n=3, so this is an observation with a
+   direction, not a measured distribution.
+
+   Worth doing before trusting any kappa as a methodology result: replicate the
+   taxonomy draw on one corpus and report the spread, the same way the alpha
+   noise floor was established.
+
+8. **The alpha decision is decided by the GRID, not by the corpus — three
+   answers from identical data.** Stronger evidence than the seed-replicate note
+   this replaces. The medical sweep rows are byte-identical across med01/02/03
+   (alpha=0 is always frag 2.4868, stab 0.8405), yet:
+
+   | run | grid top | tie band | contenders | chosen |
+   |---|---|---|---|---|
+   | med01 | 0.85, 1.0 | 1.5548 | 0.85 (stab .775), 1.0 (stab .642) | **0.85** |
+   | med02 | 0.57 | 2.0239 | 0.57 only | **0.57** |
+   | med03 | 1.0 | 1.5548 | **1.0 only** — 0.85 was not proposed | **1.0** |
+
+   med03 chose 1.0 BY DEFAULT: with 0.85 absent from the blind proposer's grid,
+   only one value cleared the band. Same corpus, same metrics, three answers.
+
+   **The selection rule is NOT the problem and has not been changed**:
+   `contenders = frag <= band` then `max(stability)`. Fragmentation defines the
+   band; stability picks inside it. The problem is that the band is computed from
+   `min(frag)` over WHATEVER the grid contains, so a proposer that omits one
+   value moves the band and changes the winner.
+
+   **Open question worth deciding deliberately** (raised by the user 2026-09-01,
+   and the evidence supports it): alpha=0 has the BEST stability in the whole
+   medical sweep (0.8405) while the chosen alpha=1.0 has the WORST (0.6419), so
+   the delivered tree is the least reproducible option available. At 1.0 the
+   phrasing block controls 50% of the cosine, which on a medical log risks
+   clustering by question form — `黄精的功效` beside `布洛芬的功效` because both
+   are `X的功效与作用`. Alpha=0 never enters contention because fragmentation
+   alone defines the band and alpha=0 has the worst fragmentation.
+
+   Counter-evidence, and it matters: `template_fragmentation` is NOT merely
+   circular with alpha. On K12 it moves the OPPOSITE way — 1.9799 at alpha=0
+   rising to 2.5713 at alpha=1.0 — so higher phrasing weight makes it worse
+   there. The metric responds to corpus structure, not mechanically to alpha.
+
+   Candidate resolutions, none applied: (a) require the winner to clear a
+   stability floor relative to the sweep's best, not just the absolute veto;
+   (b) make the tie band fixed rather than derived from the grid's own minimum;
+   (c) report the alpha decision as a range when the grid is sparse near the
+   optimum. Do NOT let the proposer see scores — that is the pre-registration.
 
 9. **Annotator asymmetry, unattributed.** live42: annotator_a won 34.1% of 270
    contested rows, z=-5.23. NO baseline exists (the gate postdates live40). The
@@ -196,207 +417,6 @@ record.
    the pins have since changed (`annotator_b` is now `qwen:qwen3.8-flash`), so a
    re-test would not reproduce live42's pairing. Testing whether disabling
    reasoning contributed needs a paired re-run of the same rows.
-
-10. **A ~29-minute client timeout costs p2a half its wall clock and returns
-    `out 0`.** CORRECTED 2026-08-31: the previous headline here — "the two
-    researchers that never retrieve are the two that cost the most" — framed
-    **designed behaviour as a defect**, and that framing reached the root README
-    before it was caught. Only `literature` and `risk_compliance` carry
-    `web: True` (`agents/roles.py` `RESEARCH_ANGLES`); `log_reading`,
-    `legacy_audit` and `pragmatic_intents` are deliberately tool-free, and the
-    docstring says why — a search box invites the log reader to substitute recall
-    for observation. They show no `(web-researched)` marker because they were
-    never given tools. They are also not unproductive: on live44 the three
-    tool-free angles returned **12 candidates each**, against 10 and 11 for the
-    two web angles.
-
-    | researcher | web | live43 | live44 | candidates (live44) |
-    |---|---|---|---|---|
-    | risk_compliance | yes | 10 min | 14 min | 10 |
-    | literature | yes | 18 min | 14 min | 11 |
-    | legacy_audit | no | 18 min | 19 min | 12 |
-    | pragmatic_intents | no | 38 min | **48 min** | 12 |
-    | log_reading | no | 38 min | **48 min** | 12 |
-
-    The real defect is `timeout_seconds`, and the mechanism is now MEASURED
-    (an earlier version of this entry guessed "a shared client-side deadline" —
-    wrong, there is no shared deadline):
-
-    `llm/requirements.py:83` computes `max_output_tokens / THROUGHPUT_TOK_PER_SEC
-    * 1.3`, clamped to [180, 1800]. `THROUGHPUT_TOK_PER_SEC = 40.0`, calibrated on
-    the architect emitting 20,441 tokens in 420s (≈49 tok/s) — **non-reasoning
-    output**. The researcher's 18,000-token budget therefore yields a **585s**
-    timeout. `config.max_retries = 2` is handed to the provider SDK, so one call
-    is 3 HTTP attempts: **3 × 585 = 1,755s**, against the observed 1,757.0s and
-    1,757.9s. The outer qmine retry then succeeded in 1,107.9s, and
-    1,757.0 + 1,107.9 = **2,864.9s** — exactly the "ok 2864.9s" the log reports.
-    Every number reconciles; nothing is shared.
-
-    Measured throughput on live44 spans **7.4 to 181.7 tok/s across roles** — a
-    25x range against one global constant:
-
-    | role | tok/s | | role | tok/s |
-    |---|---|---|---|---|
-    | researcher_pragmatic_intents | **7.4** | | referee | 37.2 |
-    | researcher_log_reading | **8.2** | | namer_2 | 74.4 |
-    | observer_p8 | 13.6 | | taxonomy_architect | 74.2 |
-    | researcher_legacy_audit | 22.5 | | annotator_a | **181.7** |
-
-    The three TOOL-FREE researchers are the slowest per token, and that is the
-    mechanism: with no tool round-trips their wall time is dominated by *thinking*,
-    and reasoning tokens are not counted in `out` — they sit in the denominator and
-    not the numerator. Re-enabling reasoning on referee/namer pushed more roles
-    into this regime.
-
-    Fix, in order of payoff:
-
-    1. **`THROUGHPUT_TOK_PER_SEC` must not be one global constant.** Make it
-       per-role and seed it from measurement; a reasoning role needs roughly 5x
-       the wall time per emitted token that the constant assumes.
-    2. **`max_retries = 2` triples the cost of every timeout.** A role whose
-       timeout is marginal burns 3 x timeout returning `out 0` before the outer
-       retry even starts — 29 minutes of nothing, twice, on this run. Drop the SDK
-       retries for long-timeout roles and let the outer retry own it.
-    3. The 1800s ceiling only binds `annotator_a`/`annotator_b` (66,000 tokens →
-       clamped). It did NOT cause this; do not "fix" it first.
-
-    Do NOT cap the research to shorten the latency — that shortens the work rather
-    than the waste, and the tool-free angles returned the most candidates.
-
-10c. **`knn_label_scan` shows a human reviewer an ARBITRARY 6 neighbours, not
-    the 6 nearest.** `ops/classify.py:407` stores `neigh[:6]`, but `top` comes
-    from `np.argpartition(-sims, kth=kk-1)[:, :kk]`, which places the top-k in the
-    first k positions **unsorted**. Verified: the slice returns sims
-    [0.95, 0.7, 0.3, 0.8, ...] — not descending. The docstring says these flags
-    are "candidates for human review", so the displayed sample should be the
-    nearest ones. One-line fix: order the top-k by similarity before slicing.
-
-    Found while adjudicating live44's p2d ✔MEASURED observation, which asserted
-    `(disagreement == 1.0) or (label in neighbour_labels)` and FAILED on row 41.
-    **That confirmed check is NOT a defect**: `disagreement` is computed over
-    k=10 while only 6 are stored, so with 0.9 exactly one neighbour agrees and
-    P(it is absent from an arbitrary 6 of 10) = 40%. The same explanation covers
-    the row=461 `neighbour_majority` observation. Textbook case of the rule that
-    a confirmed check proves the assertion failed, never that a defect exists —
-    logged here because the adjudication produced a real finding underneath.
-
-0b. **The delivery auditor reviewed roughly half of what it was auditing, on
-    every one of four calls — and this went unnoticed for two runs.** Found while
-    re-examining item 0. `roles.py:928` gives `DeliveryAuditorAgent`
-    `budget_text(deliverables, 90000, tail=12000, label='deliverables')`. live42's
-    four calls dropped **36%, 42%, 48% and 54%** of the block (up to 106,311 of
-    196,311 chars) out of the MIDDLE. live40 dropped 18%. This is the agent whose
-    entire remit is checking deliverables before they ship, so its blind spot is
-    the middle of the thing it certifies — and a clean delivery audit means
-    "nothing wrong in the half I was shown".
-
-    Strictly worse than item 0 (2% of a rules block) and older: live40 and live42
-    both hit it, neither surfaced it. The `label=` fix from live38 is why the log
-    can now name the block, which is the only reason it was findable at all.
-
-    live44 has not hit it yet — p11/p12 had not reached the delivery auditor at
-    the time of writing. Check when the run lands.
-
-    Fix is the same shape as item 0 and should be done in one pass: budget by
-    whole DOCUMENTS, not characters; name in-band and in the log which documents
-    were withheld and how many; never silently drop the middle of an audit
-    payload. Raising 90,000 only moves the cliff.
-
-10r. **P7's `audit.risk_isolated` is asserted before the isolation happens —
-    and that premature claim generated three machine-confirmed observations whose
-    conclusions are FALSE against the delivered partition.** live44, verified.
-
-    CORRECTED. An earlier version of this entry claimed p7 "drops findings". It
-    does not. Every one of `risk_report`'s ten clusters was isolated by p8:
-    42/43/44/45 → families 19-22, **10** → 23, 19 → 24, **36** → 25, 21/31/33 →
-    26-28. Leaves 47 and 32 were **split**, which is exactly what their findings
-    recommended. The safety outcome is correct.
-
-    The findings travel via the **risk sentinel**, not via `audit.risk_findings`
-    — the p7 log says so plainly ("auditor: 9 prescriptions; risk sentinel: 5
-    findings"). `audit.risk_findings` is the tree AUDITOR's list. So the
-    observer's check (`any([r.leaf_id == 10 for r in audit.risk_findings])`) was
-    factually right and its conclusion ("完全没有承接") wrong: it read the
-    auditor's channel and concluded about the sentinel's. Two fields, two
-    populations — the same shape as 10c, one level up.
-
-    What IS real — and it is NOT what this entry first said. "Compute
-    `risk_isolated` after governance" targets a computation that does not exist.
-    `risk_isolated` appears exactly once in `src/`: `records.py:418`, a field on
-    `TreeAudit` ("The auditor's report") with `default=False`. **Nothing computes
-    it and nothing checks it — it is an agent-authored boolean wearing a
-    measurement's name.** It entered as a schema field rather than through one of
-    the four doors, so it carries no guardrail at all. Fix: verify it mechanically
-    against the delivered partition, or drop the field and let the pipeline answer
-    the question from the partition it already holds.
-
-    **A class, not one field.** Its neighbours on the same agent-filled models
-    default in the UNSAFE direction: `FamilyNaming.coherent: bool = True` and
-    `FamilyNaming.risk: bool = False` (`records.py:408-409`). A tree_auditor call
-    that partially fails therefore yields families asserted coherent and not
-    risky. That is the same permissive-default failure mode as
-    `SectionDraft.markdown=""` and `AnnotationBatch.labels=[]` — the one that cost
-    1,500 gold rows — and it is live on the SAFETY path. Audit every
-    agent-populated model for defaults that assert the reassuring answer; a
-    missing field must not read as "fine".
-
-    Lesson recorded because I got this wrong first: I evaluated p7's artifacts and
-    concluded a safety defect. **Anything shown as final must come from the
-    DELIVERED partition** — that rule is in CLAUDE.md and it applies to reading
-    the run, not only to writing reports.
-
-10a. **The observation door drops 40% of its rejections for a reason that is not
-    the observer's fault — the same "shown but not citable" defect already fixed
-    on the narrative door.** `agents/observe.py:149` resolves a claim with
-    `resolve_key(o.artifact_key, artifacts)` — **artifacts only**. But the
-    observer's prompt is built at line 202 with `artifacts` PLUS
-    `decisions=_j(decisions, 12000)` and `gates=_j(gates, 8000)`. So the observer
-    is shown decisions and gates, invited to reason over them, and any claim
-    citing them can never resolve.
-
-    Measured on the dropped-observation log lines: live42 4/10, live43 2/4,
-    live44 2/6 — **8 of 20 (40%)** cite `decisions`/`gates`/`findings`.
-
-    The sharp part: the drop at line 149 happens BEFORE `evaluate()` at line 154,
-    so an observation carrying a machine-checkable `check` has its test discarded
-    unrun. That is the one capability the observation door exists to provide.
-    live44's p2c example — "D006 records decided_by='metric' but decisive_metrics
-    is an empty list" — is mechanically checkable and was never evaluated. Whether
-    it is TRUE is unknown and not the point; it was refused for the wrong reason.
-
-    Fix — and it is TWO call sites, not one. `ops/checks.py:305` is
-    `evaluate(expression, artifacts)`: the check evaluator uses the **same
-    artifacts-only namespace**. Widening `resolve_key` alone would let the claim
-    through with a check that cannot run, silently demoting a measurable claim to
-    advisory. Widen both to the same merged namespace. Verified safe: none of
-    `decisions` / `gates` / `findings` / `samples` collides with an artifact name
-    or top-level artifact key on live44. `report-generators.md` already states the
-    rule — "Everything the writer was SHOWN is citable" — applied to one door and
-    not the other. Verify a CORRECT artifact citation still passes afterwards.
-
-10b. **No classifier metric is gated — a 2.8x calibration regression passed
-    silently.** live44 vs live42 on near-identical training sizes (5,812 vs
-    5,791): CV accuracy 0.857 → 0.863, macro-F1 0.763 → **0.820** (+5.7pt, the
-    rare-class metric, plausibly the 162-vs-139 rule set and the better annotator
-    balance), but ECE 0.023 → **0.065**. `p2c_trainable` checks only
-    `n_labelled >= 30` and `n_classes >= 2`; accuracy, macro-F1 and ECE reach the
-    log and the artifact and **no gate reads any of them**. So the model can get
-    better at ranking and materially worse at knowing its own confidence with
-    nothing recording a threshold it crossed.
-
-    **Read the ECE delta as weak evidence, not a proven regression.** The runs
-    differ in class count (21 vs 20 L1), rule set, gold sample and annotator
-    models, so cross-run ECE is not a controlled comparison, and 0.065 is not
-    alarming in absolute terms. The finding is the **absent gate**, not the delta.
-
-    Open: what a defensible gate compares against. NOT a cross-run baseline
-    (imports another corpus's character) and NOT the run's own earlier generation
-    (a render does not retrain — generations share the classifier, so the
-    comparison is vacuous). The form fitting this project's own discipline is a
-    **null computed on this corpus**, as silhouette and K already are: score ECE
-    against a trivially-calibrated predictor on the same folds and gate the lift,
-    not the level. Rare-class gains arriving overconfident is a hypothesis;
-    measure per-class calibration before acting on it.
 
 11. **Observers cost ~2.5 hours of a 4-hour run.** 11 observers, median 809s on
     live41 against 285s on live40 for the SAME output volume — latency, not token
@@ -458,6 +478,70 @@ record.
   `llm_usage.provider` must read `routed`, not `offline`.
 
 ---
+
+## 4. Session (2026-09-01) — live44, and the queue cleared
+
+`live44` completed: 17/17 phases, `provider=routed`, 841 calls, $61.09, 9.81h,
+κ 0.880 on n=3000, 53 leaves / 23 families delivered, `verify_run` 26/0/2 against
+live42's 20/6/2. Then the whole defect queue was fixed. **625 → 642 tests.**
+
+**Every defect was found by reading, not by the harness.** `verify_run.py` scored
+live44 clean on all 26 applicable checks while seven real defects sat in the
+deliverables. Two of them the pipeline had already found and thrown away.
+
+### The compounding failure
+
+The delivery auditor was shown **39%** of the deliverables (`budget_text` cut
+142,957 of 232,957 chars out of the MIDDLE), found 3 defects in that third, and
+had **2 of the 3 deleted** because the citation resolver only knew `artifacts`
+while the auditor had also been handed `gates` and `findings`. The two deleted
+were both real: the index claiming 21 L1 classes against a taxonomy of 20, and
+one quantity published with two values. A last line of defence reading a third
+of the evidence and losing two thirds of its conclusions.
+
+### Five of my own diagnoses were wrong before they were fixed
+
+Recorded because the pattern repeated: **measure one thing, assert a cause about
+another.** Each was checkable in under a minute.
+
+1. "Researchers cost most and retrieve least" — they are *deliberately tool-free*
+   (`RESEARCH_ANGLES`, `web: False`), and returned the MOST candidates (12 each).
+2. "P7 drops risk findings" — all ten `risk_report` clusters were isolated by p8.
+   They travel via the risk sentinel, not `audit.risk_findings`. The log said so.
+3. "A shared client-side deadline" — no shared deadline. `max_repair+1 = 3` outer
+   attempts x SDK `max_retries=2` = **9 HTTP requests**, and 9 x 292s = 2,628s
+   against the 2,638s observed.
+4. "Reasoning made rules verbose" — density is identical (204.7 vs 207.5
+   chars/rule). live44 simply produced more rules, and live42 sat at 86% of the
+   budget unnoticed.
+5. "The referee block would drop 85%" — wrong density applied. It is at 72%.
+
+The ECE null landed the same lesson: a perfectly calibrated model at n≈5,800
+still shows ECE ≈ 0.0074 ± 0.0028, so live42's 0.023 was ~5 sd out and was never
+the clean baseline I had been comparing live44's 0.065 against.
+
+### Fixed
+
+| area | change |
+|---|---|
+| truncation | `budget_units` — whole rules/documents, count in log AND in-band, plus an explicit "do not describe this as the complete set" |
+| attribution | the `label=` test found **9** unlabelled budget calls, incl. the narrator's fact sheet and the observer's own decisions/gates |
+| observation door | `citable_namespace` feeds resolver AND check evaluator — widening one alone would demote a measurable claim to advisory |
+| retries | SDK `max_retries` 2 → 0; per-tier throughput (researcher 585s → 1560s, maintainer 292s → 780s) |
+| calibration | `ece_noise_floor` + `p2c_calibration` gate, against the run's own null, never a constant |
+| kNN flags | nearest-first, full neighbourhood published — the 6-of-k sample manufactured false confirmations |
+| safety booleans | `coherent` / `risk` / `risk_isolated` tri-state; they defaulted to the reassuring answer |
+| family names | `FamilyNamerAgent` names the DELIVERED partition; `混合·主要成分「X」N%` is now only a fallback |
+| duplicates | `merge_leaves` prescription + executor; the auditor must give every listed pair a disposition |
+| `doctor` | `detect()` across all providers — it checked `ANTHROPIC_API_KEY` while the project routes to DeepSeek/Zhipu/Qwen |
+
+### Deliberately not done
+
+- **Did not loosen the English-prose detector** for the third English string. Its
+  table-row and code-span exclusions are deliberate; widening it would flag every
+  identifier — the documented grounding-false-positive trap. Fixed the source.
+- **`p2c_calibration` is warn-only.** A new blocking gate on a metric nothing has
+  ever gated would halt the next run on a pre-existing condition.
 
 ## 4. Session 1 (2026-08-18) — deliverables, providers, guide repair
 
@@ -1068,15 +1152,6 @@ a paid run.
    24,000,000. The pre-run estimate moved $6.34 → $17.15, against ~$14
    extrapolated from live38's actual spend — the old figure understated by half.
 
-2. **Phase 7 naming could end a run on one blip.** `_name` returned `None` on the
-   first exception while `_annotate` retries 3x with backoff, and a single
-   unnamed leaf fails `p7_all_leaves_named`, which is BLOCKING and which resume
-   refuses to overturn. Nothing anywhere re-names a lost leaf. Compounding it,
-   the pool was a hard-coded `min(4, …)` while the shards run concurrently — 5 x
-   4 = 20 calls on one provider against `max_concurrency: 8`, which made that
-   knob inert in exactly the phase that cannot recover. Now retries, and 5 in
-   flight.
-
 3. **Guide repair discarded the referee's entire output.** With
    `repair_on_fresh_sample` (the default) round 2 annotates DISJOINT queries, and
    `rows = repair_meta["rows"]` swapped the list — throwing away ~3,000 round-1
@@ -1107,103 +1182,9 @@ a paid run.
    renamed to `n_in_subsample`/`share_in_subsample` — they were subsample counts
    printed beside population-scale numbers.
 
-7. **Calibration was in-sample, printed beside out-of-fold accuracy.** The report
-   states phase 10 ROUTES on confidence, so a flattered ECE loosens a live
-   threshold. Now out-of-fold, with `ece_basis` naming which path ran.
-
-**The pattern across all seven: a number that stayed silent about its own
-denominator or its own basis.** That is the same shape as the referee dropping
-its hardest rows and as the stale budgets — and it is why "read `n` before
-believing any metric" is the rule it is. Worth running this audit again against
-any phase before trusting its output.
-
-**Refuted, do not re-raise:** the adversary's 2,500-token budget. The claim's
-premise ("attempt 0 truncates at 7,500") is false — the 4x floor and the
-plain-JSON fallback both cover it.
-
-### RESOLVED same session — the referee no longer bottlenecks the pipeline
-
-Batching by row POSITION forced the phase to run strictly sequentially, for a
-sound reason: the referee settles *boundaries*, and the same boundary appearing
-in two batches gets decided twice, leaving the rule set with two rules that fire
-on the same trigger and disagree. But that argument constrains ordering WITHIN a
-boundary only, never across boundaries.
-
-Now grouped so that **no class pair spans two groups**: groups are independent by
-construction and run concurrently; a pair too big for one call is split into
-sequential chunks that stay inside one group and thread their own earlier ruling
-forward. `decided` is no longer threaded ACROSS groups — under concurrency that
-would make each prompt depend on which siblings finished first, so a replay would
-send different prompts and miss its own cache: the resume cascade, recreated
-inside one phase.
-
-Measured on live38's own 519 disagreements over 87 class pairs:
-
-| | before | after |
-|---|---|---|
-| calls | 21 x 25 rows | 44 x ≤15 rows |
-| largest call | 25 rows | 15 rows |
-| critical path | 21 sequential | 4 sequential |
-| wall clock | ~5-8h | **~1.0h** |
-
-The smaller chunk also attacks the parse failure directly: live38's first 25-row
-call emitted 34,099 tokens and failed to parse *with 144,000 tokens of room
-available* — `_length_bump` is keyed by MODEL, and a researcher had already
-escalated glm-5.2 to 4x, so the cap was never the constraint. Response SIZE was.
-Cost is ~23 extra calls re-sending classes and rules, about +460k input tokens
-(~$0.64) to save seven hours.
-
-**A trap worth remembering:** the first version of this refused to split any pair,
-which produced a 52-row group — LARGER than the 25-row calls already failing —
-and on failure `bisect` would have halved it, splitting the pair anyway and
-without the prior ruling. The measurement caught it; the synthetic tests had not.
-
-### Can the top-down and bottom-up paths run concurrently? Yes — and the state layer already assumes it
-
-Asked on 2026-08-24. Derived the real dependency DAG by extracting every
-`deps.load/recover/embedding/has` and `state.get` in each phase node:
-
-| phase | reads |
-|---|---|
-| p2a | data_audit, risk_screen, template_groups *(all p1)* |
-| p2b | the taxonomy *(p2a)* |
-| **p3** | **template_groups only — nothing from p2** |
-| p2c | emb_base *(p3)*, gold *(p2b)* ← **the join** |
-| p4/p5/p6 | emb_hybrid *(p3)* |
-| p7 | emb_hybrid, leaf_centroids, leaf_labels *(p6)* |
-| p8 | leaf_* *(p6)* + the TREE AUDITOR's prescriptions, not p2a's |
-| p9 | gold_agreement *(p2b)* + leaf_family *(p6)* ← second join |
-
-```
-p1 ─┬─→ p2a → p2b ───────────────────────┐
-    │                                     ├→ p2c → p2d → p2e ─┐
-    └─→ p3 → p4 → p5 → p6 → p7 → p8 ──────┴───────────────────┴→ p9 → p10 → p11 → p12
-```
-
-**`p3` through `p8` — six phases, including p7's ~60 naming calls — have NO
-dependency on p2 whatsoever.** The current order is already dependency-ordered
-rather than path-ordered (which is why p3 sits between p2b and p2c), but
-`build_graph` still wires one strict linear chain, so the two branches serialise
-for no reason the data requires.
-
-**The state layer already supports the fork.** Every field carries a
-commutative reducer — `merge_artifacts`, `merge_prescriptions`, `merge_dict`,
-`operator.add` — and `state.py`'s own docstring says the reducers are merges
-"which matters because Phase 7" fans out. Only the edges are missing.
-
-**Honest size of the win.** The bottom-up branch is CPU-bound and the top-down
-branch is I/O-bound on provider latency, so they overlap almost perfectly. But
-the magnitudes differ: `make full` does all 17 phases offline on 50k in ~25 min,
-essentially all of it p3-p6 compute, while a live p2a+p2b+referee is ~3-3.5h.
-So parallelising saves roughly **25-35 min of a ~3.5h run, about 10-15%** — real,
-not transformative. Three things make it worth more than the percentage:
-
 1. **Fail-fast.** An encoder download, an OOM, or a clustering bug currently
    surfaces at hour three. Concurrently it surfaces at minute twenty-five, before
    the expensive half is paid for.
-2. **Blindness for free.** p3-p7 must be blind to the taxonomy (anti-anchoring).
-   Running them alongside p2 rather than after it means the taxonomy does not yet
-   exist while they run — the strongest form of that guarantee.
 3. **It scales the right way.** Embedding and clustering cost grow with corpus
    size; the gold set is capped by config. On a 500k corpus the bottom-up branch
    dominates, and the saving grows with it.
@@ -1253,10 +1234,6 @@ from the prompts meant to apply it:
    is lost first. The in-band `… [truncated N chars]` marker told the MODEL it
    was reading an excerpt and told the operator nothing, because nobody reads the
    prompt. Every instance of this class hid behind that.
-2. **Rules render newest-round-first.** A defence that does not depend on
-   guessing the right budget: if the block is ever exceeded again, the rules lost
-   are the oldest rather than the ones just written in response to observed
-   disagreement.
 3. **Rules budget 9,000 → 20,000**, sized against the 18,496 the pipeline
    actually produces. Verified 83/83 referee rules now survive, against 0 under
    the old budget and 29 under an intermediate 12,000.
@@ -1568,11 +1545,6 @@ literature says fails. Repurposed into `StoryPlannerAgent` + `StoryWriterAgent`.
    document, the provenance banner — which names `自下而上聚类最终报告.md` —
    marked "both routes must be explained" covered on a run where no section
    explained either. Now scoped to authored, accepted sections only.
-2. **The worked examples were empty.** `deployment.deterministic_exemplars` are
-   phrasing-pattern samples carrying no labels; the bundle built to zero facts.
-   Rebuilt from `labels_full.csv`, the only place a query carries both routes'
-   labels — median-index row per family **plus the lowest-margin rows**, so the
-   hard cases are in by construction rather than by the author's generosity.
 3. **The panel bundle was 783 facts** — the artifact under a different name.
    Flattened to subject × metric.
 
@@ -1765,8 +1737,6 @@ Measured on live40's full corpus before deciding:
    evidence ONLY because the tree was built without seeing the taxonomy. Locate K
    against `td_l1` and family-layer AMI moves 0.5748 -> 0.6308; that +0.056 is the
    fit, not agreement.
-2. **The two-layer design collapses.** `td_l1` locates **K=18** while the delivered
-   leaf layer is 25 — families and leaves at the same scale.
 3. **`BlindnessFirewall.add_taxonomy` already forbids it.**
 4. **It is unnecessary.** `ref_legacy_l1` — the corpus's own labelling, 9 classes,
    complete, external to BOTH routes, available at **p1** — locates **K=18 too**.
@@ -1872,11 +1842,6 @@ run finishes, plus a daemon heartbeat every 10s.
    started", which cannot be right for a forked graph. A branch phase never closes
    the other branch; a spine phase closes both, because reaching the spine means
    the join happened.
-2. **`qmine watch` on a finished run showed every phase as 0s.** Timings used
-   `time.time()`, and a replay reads 1000 lines in under a second — the follower
-   built for re-watching timed nothing. `parse_log_clock` reads the log's own
-   timestamp (midnight-safe). Replaying live40 now reproduces **241.8 min**,
-   matching `run_summary.json` exactly, with p2a 72m / p2b 79m.
 3. **Inferred durations were inflated** — live40's p3 rendered as 72 min when its
    work took ~12; the rest was the branch waiting at the superstep boundary.
    live41 measured it directly: **p3 = 1548.6s**.
@@ -2005,12 +1970,6 @@ all three.
 1. **Cost.** annotator_a went from 202 to 1,030 output tokens per label. Not the
    prompt — input HALVED (14,714 → 7,836/call) while output rose 5x, so the
    out/in ratio moved 0.35 → 3.25.
-2. **The ValueError failures.** Reasoning consumed the output budget before the
-   JSON was written, so responses truncated and surfaced as "no parseable
-   structured output". **Plain-JSON mode could not fix this** — both models were
-   ALREADY flagged `no_native_schema: true` in `.cache/model_quirks.json` from a
-   previous run and failing anyway, which is why no switch message ever appeared.
-   The schema wrapper was never the problem.
 3. **The APIConnectionErrors.** Not the operator's network — proven by temporal
    segregation: qwen failed alone 20:15-21:15 while zhipu was clean, zhipu failed
    alone from 21:30 (the moment the referee fired 30 calls), and only **1** of 48
@@ -2515,8 +2474,6 @@ Four defects, all verified in code AND against the user's screenshots:
    screenshot proves it: the row headed `reporter … 04:42:11` (attempt 1 at
    `audit_and_limits`) opened onto the top-down taxonomy section. Both streams
    now carry `cache_key`.
-2. **`qmine watch` never set `transcript_fn`**, so on a FINISHED run every row
-   read "full return not captured" — the exact thing the user was looking at.
 3. **The detail was `str(dict)`** — a Python repr of Chinese prose.
 4. **`agent_transcript.json` never existed for live42** (killed by the teardown
    bug, since fixed), so the fallback pointed at a missing file.
@@ -2588,13 +2545,6 @@ All five verified here before acting; all five fixed.
    when the family's leaves come from ONE audit family AND that audit family
    backs no other delivered family; the other 16 are told plainly whose
    definition it is and which delivered families share it.
-2. **The branch grouping rendered as nothing.** `close_br` was initialised to
-   `""` at `web.py:278` and never reassigned — two UNCLOSED `<div>`s emitted
-   between `</tr>` and `<tr>`, which the HTML5 parser foster-parents out of the
-   table. The two concurrent branches read as sequential and the elapsed column
-   summed past the total with no explanation. A wrapper could not express the
-   shape anyway (`PHASES` interleaves branch and spine phases); it is now a row
-   class plus a real column, with a note about the overlap.
 3. **§2.1 L2 子意图 had never rendered.** It read a LIST from `subintents` or
    `groups`; the artifact carries a DICT under `subdivision`, keyed by L1 code.
    Neither key has ever existed. 54 sub-intents across 19 of 21 classes, and the
@@ -2774,126 +2724,10 @@ Verified sound and left alone: all 37 test names exist; every file path resolves
    $29.69 with 11 calls / $0.78 — unrecoverably, because live42's teardown bug
    meant no `run_summary.json` held a second copy. `_wire_events` now takes a
    `usage_path` and a render writes into its own generation.
-2. **A second render overwrote the first.** `new_generation` increments from
-   ITSELF, so rendering gen01 twice both times targeted gen02. Now `latest + 1`.
-
-Both mutation-tested.
-
-### The result that matters
-
-`qmine render live42 -g 1 --agents` re-ran the narrative writer on `glm-5.3`,
-`provider=routed`, 13 calls, **$1.81** against $29.69 for the full run. It
-returned **9 of 9 sections**, against 3 of 9 originally — and then reading the
-output showed the result is not what it looks like.
-
-**The report describes an empty run.** `build_catalogue` read artifacts as
-`gen_dir / name`; a rendered generation contains only reports, so every fact
-sheet was empty. The narrative reported `n_named = 0` against 58 named leaves and
-`n_ledger_entries = 0` against 26 — correctly, given what it was shown, and it
-even warned the reader not to read an empty ledger as a clean audit. But **no
-guardrail could fire**, because every number it cited genuinely was in its sheet.
-A report about nothing is a worse failure than one with a marked hole: nothing
-marks it.
-
-Fixed — artifacts load through the store, which resolves across generations
-(`ref.generation <= self.generation`). Verified: a gen02 store now yields
-`n_named=49`, `n_ledger_entries=26`, identical to gen01. The 9/9 therefore says
-the number checker no longer produces false rejections; it does NOT yet say the
-re-rendered report is good. That needs another `--agents` run.
-
-### The family labels were a diagnostic wearing a name's clothes
-
-Raised by the user reading 叶清单 and 家族与叶层级: what does
-`字词/短语/概念释义查询 等 6 类 (42%)` mean? Traced and measured — it was wrong four
-ways at once, and used as the family's NAME in headings, tables, the Mermaid node
-and a CSV `family_name` column. `等 N 类` reads as "and N others" (it meant 6
-*including* this one); the percentage named no referent; its denominator was the
-named-leaf subset, not the family (5,375/12,844 = 42%, against 14,171 = 38%); and
-the three governance-created leaves in that family — 1,327 rows, 9.4% — were
-absent from the label and from its arithmetic.
-
-Fixing it exposed a second instance: the label branched on the count of NAMED
-contributors, so live42's **family 1** was labelled cleanly `中小学暑假时间查询`
-while 56% of its rows sat in a governance-created leaf with no audit name.
-
-Now: `混合·主要成分「X」N%` with N a share of the family; `树审计未覆盖 (治理新建)`
-where the audit saw none of its leaves; a plain name only when one audit family
-covers every leaf and nothing is unnamed. `family_composition` puts the full
-breakdown in the document, shares summing to 1 across contributors **and** the
-unnamed remainder. The CSV twin splits name / label / provenance. The notebook's
-duplicate implementation — which had already drifted, printing `X 等 6 类` against
-the reports' new form — now imports the shared helper.
-
-`test_a_family_is_named_after_the_leaves_it_actually_contains` fired on the new
-no-coverage label and was right to: it guards against titling a family with an
-audit name belonging to leaves it does not contain. Refined so a label that
-explicitly disclaims any audit name is allowed, and mutation-tested to confirm it
-still catches a borrowed one.
-
-### The checkpointer bug: found, and it was never what the error said
-
-`make demo` reproduces it in four minutes, which is the repro I did not have
-before. Instrumenting `jsonplus._msgpack_default` to print the object before it
-raises found the culprit immediately: **`numpy.float64`**, in
-`DecisionRecord.evidence.locator_reach.<ref>.discrimination`.
-
-The message named the wrong thing. The encoder's pydantic branch calls
-`model_dump()` and re-encodes the result; the numpy scalar inside is what
-ormsgpack refuses, and the OUTER call reports the wrapper's type —
-`Type is not msgpack serializable: DecisionRecord`. `DecisionRecord` encodes
-perfectly well. **Three separate investigations went to the serializer's
-allowlist, which gates DECODING and was never involved.**
-
-`ops.cluster.discrimination` is annotated `-> float` and returned
-`round(np.float64(...))`, which is a numpy scalar. Fixed at the source, and at
-the boundary: records with free-form fields now inherit `records._PlainValues`,
-which coerces numpy to Python natives at construction — the call sites are every
-place that computes a metric, and one miss reintroduces the failure with a
-message that points somewhere else.
-
-**Measured:** `make demo` now writes **17 checkpoints / 156 writes** (was 5/145),
-zero msgpack errors, `run_summary.json` present. That matches live40's healthy
-run. Resume works again, and `qmine render` gets its best state source back.
-
-While writing the test I watched it pass under mutation twice: once because the
-sweep used Python floats, once because a monotonic sweep gives a zero noise floor
-and takes an early `return 0.0` so the line under test never ran. Both fixed.
-
-### `make live` — and a correction to why it exists
-
-`make live RUN=live43` runs the bundled K12 corpus against live models. It is the
-paid sibling of `full`, **not** a privileged entry point: this pipeline's whole
-point is that it runs on any query dataset, so the corpus, domain, text column
-and reference columns are `LIVE_*` variables with K12 defaults. `LIVE_REFS=` is
-valid and passes no flag, which is correct for a corpus with no legacy labels.
-
-**My first version hardcoded them and justified it wrongly.** I wrote that
-omitting `--reference-columns` "silently" locates K against mined groups. It does
-not: `p1_reference_columns_declared` (`graph/nodes/foundation.py:116`) fails
-warn-only when the corpus carries label-like columns the run did not declare, and
-its message names them and tells you to relaunch. A corpus that genuinely has
-none passes it cleanly. The default saves a round trip; it was never the safety
-mechanism, and a Makefile comment claiming otherwise would have misled the next
-session — which is exactly what these files are supposed to prevent.
-
-The flag that IS worth defaulting is `--config configs/live.yaml`: without it the
-router picks on price alone and every pin, excluded lab and capability entry is
-ignored, with nothing gating that.
-
-### Real agents are now the default posture
-
-The stated intent: this pipeline should always run the real agent team, falling
-back to offline only when no key is available or a provider errors — and that
-fallback must be announced. Four things had to change, and two were bugs.
-
 1. **`configs/live.yaml` is the default config** (`cli._load_config`) and it
    declares `provider: router`. Forgetting the routing policy was the one launch
    mistake nothing caught: the router then picks on price and discards lab
    independence, the capability list and every pin.
-2. **`--provider` defaulted to `"auto"` and was assigned UNCONDITIONALLY**, so
-   Typer's default overwrote whatever the config asked for, before the file was
-   read for anything else. A config option the command line always wins is not an
-   option. The default is now `""` — unset means the config decides.
 3. **`auto` asked only `_has_anthropic_credentials()`.** With deepseek, qwen,
    zhipu and openrouter all configured it still resolved to the OFFLINE stand-in,
    because none of them was Anthropic — on a project whose own live config

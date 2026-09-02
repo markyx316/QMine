@@ -427,8 +427,17 @@ def _battery_verdict(rows: list[dict[str, Any]]) -> dict[str, Any]:
     # assumption. Paired within k on live40 the sign even flips - k=15 -0.078,
     # k=20 +0.060 (gmm_diag ahead), k=30 -0.157.
     per_k = _paired_margins(ranked)
-    margin = (round(best_other["stability_ari"] - reference["stability_ari"], 4)
-              if reference and best_other else None)
+    # PAIRED AT THE REFERENCE'S OWN k. This used to subtract the best alternative
+    # from the reference wherever each happened to sit, so on med01 it read
+    # 0.1025 (agglo@k15 minus kmeans@k20) while the honest within-k margin at the
+    # reference's k was 0.0531 — and both the report and the p4 decision evidence
+    # printed the cross-k number as if it were the gap. The verdict never used
+    # it; the reader always did. Where every row shares one k the two are
+    # identical, which is why this was invisible until a corpus produced a best
+    # alternative at a different k.
+    _ref_k = str(reference.get("k")) if reference and reference.get("k") is not None else None
+    margin = (round(float(per_k[_ref_k]["margin"]), 4)
+              if _ref_k and _ref_k in per_k else None)
     worst_paired = max((m["margin"] for m in per_k.values()), default=None)
     # The verdict is now taken from the paired comparison, which is the weaker and
     # the only valid statement. A single unpaired maximum could clear 0.10 purely
@@ -444,7 +453,12 @@ def _battery_verdict(rows: list[dict[str, Any]]) -> dict[str, Any]:
         # reader could not check "no alternative is MATERIALLY more reproducible"
         # against anything — live41's p4 observer flagged exactly that.
         "materiality_threshold_ari": CONTRADICTION_MARGIN,
+        # The gap at the REFERENCE'S OWN k — never across k. `contradicted`
+        # itself is taken from `largest_paired_margin`, which is stated here so a
+        # reader never has to guess which number decided.
         "alternative_beats_reference_by": margin,
+        "alternative_beats_reference_at_k": _ref_k,
+        "decided_by": "largest_paired_margin",
         "kmeans_assumption_contradicted": contradicted,
         "probe_note": (
             "A structurally different algorithm is more than 0.10 ARI more reproducible "
@@ -1007,7 +1021,17 @@ def reference_sensitivity(sweep: list[dict[str, Any]], chosen_k: int) -> dict[st
             "decides": key == "intent_alignment_ami",
         }
     out["located_k_values"] = located
-    out["references_agree"] = len(set(located.values())) <= 1 if located else None
+    out["n_references"] = len(located)
+    # AGREEMENT NEEDS TWO THINGS TO AGREE. `len(set(...)) <= 1` is vacuously
+    # true for a singleton, so a corpus with no legacy labels — where mined
+    # phrasing groups are the ONLY reference — published `references_agree:
+    # true` and a delivered summary reading "full". med01 did exactly that, and
+    # its one reference had located K=18 against a chosen K=12.
+    #
+    # `None` = "not established", which is the honest answer and is distinct
+    # from `False` (= references were compared and disagreed).
+    out["references_agree"] = (
+        len(set(located.values())) <= 1 if len(located) >= 2 else None)
     if located and len(set(located.values())) > 1:
         deciding = [n for n, v in out["by_reference"].items() if v["decides"]]
         out["note"] = (

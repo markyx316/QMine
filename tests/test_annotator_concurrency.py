@@ -182,10 +182,14 @@ def test_an_empty_batch_is_a_failure_not_a_labelled_batch():
 
     from qmine.graph.nodes import topdown
 
+    # STRIP COMMENTS FIRST, THEN SLICE. Slicing a fixed byte window and stripping
+    # afterwards makes the assertion depend on how much PROSE the function
+    # carries: adding a comment block pushed the completeness check past the
+    # window and failed a test whose subject had not changed.
     src = inspect.getsource(topdown)
+    src = "\n".join(ln for ln in src.splitlines() if not ln.strip().startswith("#"))
     i = src.index("def _one(chunk")
-    body = src[i:i + 2200]
-    code = "\n".join(ln for ln in body.splitlines() if not ln.strip().startswith("#"))
+    code = src[i:i + 2200]
     assert "missing" in code and "raise ValueError" in code, (
         "an incomplete batch must raise so the existing retry can run")
     # The check must come BEFORE the success return, or it cannot prevent one.

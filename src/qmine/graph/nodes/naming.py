@@ -440,6 +440,167 @@ def _name_leaves_governance_created(
     deps.emit(f"  named {named}/{len(missing)} leaves affected by governance")
 
 
+def _resolve_indistinguishable_leaves(deps: Any, naming: dict, leaf_labels: Any,
+                                      leaf_family: Any, cents: Any) -> list[dict]:
+    """Re-name delivered leaves that share a name, or record a merge.
+
+    Runs on the DELIVERED partition, which is the only place it can run: p7
+    audits the tree and p8 then splits it, so leaf 50 did not exist when the
+    duplicate audit looked. live44 shipped two `汉字读音查询` and two
+    `汉字笔画数查询`, and the split that produced the second pair was
+    geometrically sound — lift 0.1565 over null, ARI 0.9887 — with no nameable
+    difference.
+
+    So this asks rather than assumes. One agent sees every colliding cluster's
+    queries at once (never a peer's NAME — the firewall bans peer namings so the
+    Phase 7 fan-out stays independent) and either names the difference or says
+    there is none. `same_need` produces a `merge_leaves` prescription, which
+    Phase 8 can now execute.
+
+    Returns whatever is STILL colliding, so the caller gates on a re-measurement
+    rather than on the attempt.
+    """
+    from ...ops.governance import indistinguishable_leaves
+
+    groups = indistinguishable_leaves(leaf_labels, leaf_family, naming.get("namings", []))
+    if not groups:
+        return []
+
+    deps.emit(f"  {len(groups)} name collision(s) among delivered leaves: "
+              + "; ".join(f"{g['name']} = leaves {g['leaf_ids']}" for g in groups[:4]))
+
+    from ...agents.roles import DisambiguatorAgent
+    from ...ops.cards import build_naming_cards
+
+    cfg = deps.cfg
+    cards = {c.leaf_id: c for c in build_naming_cards(
+        deps.df, leaf_labels, deps.embedding("emb_hybrid"), cents,
+        text_col=cfg.data.text_column, n_center=cfg.naming.card_center,
+        n_random=cfg.naming.card_random, n_edge=cfg.naming.card_edge,
+        n_ngrams=cfg.naming.card_top_ngrams, seed=cfg.seed_metric,
+    )}
+    agent = DisambiguatorAgent(deps.agent_ctx(), suffix="_disambig")
+    by_id = {int(n["leaf_id"]): n for n in naming.get("namings", [])}
+    merges: list[dict] = []
+
+    for g in groups:
+        picked = [cards[i] for i in g["leaf_ids"] if i in cards]
+        if len(picked) < 2:
+            continue
+        try:
+            out = agent.run(cards=picked, collided_on=g["name"])
+        except Exception as exc:  # noqa: BLE001
+            deps.emit(f"  ⚠ could not disambiguate {g['name']!r} "
+                      f"({type(exc).__name__}) — the collision stands")
+            continue
+
+        if getattr(out, "same_need", False):
+            # An honest merge beats a laboured name nobody would use.
+            merges.append({"leaf_ids": g["leaf_ids"], "name": g["name"],
+                           "rationale": str(getattr(out, "rationale", ""))[:300]})
+            deps.emit(f"  {g['name']!r}: one user need — merge prescribed for {g['leaf_ids']}")
+            continue
+
+        fresh = {int(n.leaf_id): str(n.name_zh or "").strip()
+                 for n in (getattr(out, "namings", None) or []) if n.name_zh}
+        # Only accept names that are actually DISTINCT — an agent that returns
+        # the same string twice has not disambiguated anything, and accepting it
+        # would let the gate below pass on a promise.
+        if len(set(fresh.values())) == len(g["leaf_ids"]) and len(fresh) == len(g["leaf_ids"]):
+            for lid, nm in fresh.items():
+                if lid in by_id:
+                    by_id[lid]["name_zh"] = nm
+                    by_id[lid]["named_by"] = "namer_disambig@routed"
+            deps.emit(f"  {g['name']!r} → " + " / ".join(fresh[i] for i in g["leaf_ids"]))
+        else:
+            deps.emit(f"  ⚠ {g['name']!r}: disambiguation returned "
+                      f"{len(set(fresh.values()))} distinct name(s) for "
+                      f"{len(g['leaf_ids'])} leaves — the collision stands")
+
+    if merges:
+        naming["indistinguishable_merges"] = merges
+    naming["namings"] = sorted(by_id.values(), key=lambda n: int(n["leaf_id"]))
+    # RE-MEASURE. The gate must not read the attempt.
+    return indistinguishable_leaves(leaf_labels, leaf_family, naming["namings"])
+
+
+def _name_delivered_families(deps: Any, naming: dict, leaf_labels: Any,
+                             leaf_family: Any) -> None:
+    """Give every DELIVERED family its own name, from the leaves it now holds.
+
+    The tree auditor names families, but it names the Phase 7 tree — before
+    governance merged 18 into 14 and isolated them back out to 23. Those id
+    spaces differ and a delivered family routinely spans several audit families,
+    so `report/_shape.family_names` could only emit a composition label:
+    `混合·主要成分「词语含义查询」45%`. That is a diagnostic wearing a name's
+    clothes, and it is what a reader sees as the family's title in headings,
+    tables and a CSV column.
+
+    Named here rather than in Phase 7 for the same reason the leaves are: this
+    is the first point at which the delivered partition exists.
+    """
+    import numpy as np
+
+    if leaf_labels is None or leaf_family is None:
+        return
+    lab = np.asarray(leaf_labels)
+    fam = np.asarray(leaf_family)
+    by_leaf = {int(n["leaf_id"]): n for n in naming.get("namings", [])}
+    sizes = dict(zip(*[x.tolist() for x in np.unique(lab, return_counts=True)]))
+
+    members: dict[int, list[dict]] = {}
+    for leaf_id in sorted(sizes):
+        if int(leaf_id) >= len(fam):
+            continue
+        f = int(fam[int(leaf_id)])
+        n = by_leaf.get(int(leaf_id), {})
+        members.setdefault(f, []).append({
+            "leaf_id": int(leaf_id),
+            "name_zh": n.get("name_zh", ""),
+            "user_need": n.get("user_need", ""),
+            "n_rows": int(sizes[leaf_id]),
+        })
+    if not members:
+        return
+
+    from ...agents.roles import FamilyNamerAgent
+
+    agent = FamilyNamerAgent(deps.agent_ctx(), suffix="_family")
+    out, failed = [], []
+    for fid, leaves in sorted(members.items()):
+        sibs = [ (by_leaf.get(l[0]["leaf_id"], {}) or {}).get("name_zh", "")
+                 for f2, l in sorted(members.items()) if f2 != fid and l ]
+        try:
+            rec = agent.run(family_id=fid, leaves=leaves, siblings=sibs[:12]).model_dump()
+        except Exception:  # noqa: BLE001
+            failed.append(fid)
+            continue
+        rec["family_id"] = int(fid)
+        rec["leaf_ids"] = [l["leaf_id"] for l in leaves]
+        rec["named_by"] = "namer_family@routed"
+        out.append(rec)
+
+    # A STAND-IN NAME IS NOT A NAME. The offline heuristic returns
+    # "[offline-heuristic] 未命名分组" for every family; persisting that would put
+    # a placeholder in the title position and, worse, SUPPRESS the disclosure the
+    # audit-derived path makes — a family the tree audit never covered is
+    # supposed to read "树审计未覆盖 (治理新建)", and a stand-in name hides that.
+    # Same rule as `render --no-agents`: complete-looking prose no model wrote is
+    # worse than a marked hole.
+    provider = str(getattr(getattr(agent, "ctx", None), "registry", None)
+                   and getattr(agent.ctx.registry, "provider", "") or "")
+    if out and provider and provider != "offline":
+        naming["families_final"] = out
+    elif out:
+        deps.emit(f"  delivered-family names NOT recorded — provider is "
+                  f"{provider or 'unknown'}; families keep their audit-derived label")
+    # A family that could not be named must be visible, not silently absent:
+    # `_shape.family_names` falls back to the composition label for it, and a
+    # reader deserves to know which of the two they are looking at.
+    deps.emit(f"  named {len(out)}/{len(members)} delivered families"
+              + (f" — {len(failed)} failed: {failed}" if failed else ""))
+
+
 def p8_governance(state: PipelineState, deps: Deps) -> dict[str, Any]:
     """Execute every prescription against the data, then prove none were left open."""
     prescriptions: list[Prescription] = list(state.get("prescriptions", []))
@@ -503,6 +664,56 @@ def p8_governance(state: PipelineState, deps: Deps) -> dict[str, Any]:
         deps.cache_put("leaf_labels_final", new_labels)
         deps.cache_put("leaf_centroids_final", cents)
         _name_leaves_governance_created(deps, new_labels, cents, n_new, old_labels=labels)
+    # DELIVERED-PARTITION CHECKS. Both of these can only run here: p7 audits the
+    # tree and p8 then splits it, so a leaf governance created was never audited.
+    still_colliding: list[dict] = []
+    try:
+        _nm = deps.load("tree_naming")
+        still_colliding = _resolve_indistinguishable_leaves(
+            deps, _nm, new_labels, new_family, cents)
+        deps.store.put_json("tree_naming", _nm, producer="p8",
+                            summary="namings after disambiguation")
+        deps.cache_put("tree_naming", _nm)
+    except Exception as exc:  # noqa: BLE001
+        deps.emit(f"  ⚠ leaf disambiguation unavailable ({type(exc).__name__}) — "
+                  "name collisions, if any, are unresolved and the gate below says so")
+
+    deps.gate(
+        "p8_leaves_are_distinguishable", "p8",
+        passed=not still_colliding,
+        observed={"n_collisions": len(still_colliding),
+                  "collisions": [{"family_id": g["family_id"], "name": g["name"],
+                                  "leaf_ids": g["leaf_ids"]} for g in still_colliding]},
+        threshold={"n_collisions": 0},
+        message=(f"{len(still_colliding)} delivered leaf name(s) are shared by two or "
+                 f"more leaves in the same family: "
+                 + "; ".join(f"{g['name']} = {g['leaf_ids']}" for g in still_colliding)
+                 if still_colliding else
+                 "every delivered leaf is distinguishable from its siblings by name"),
+        remediation="A reader choosing between two identically-named leaves cannot "
+                    "choose. Either the namer must name the difference, or the leaves "
+                    "must merge (`merge_leaves`).",
+        warn_only=True,
+    )
+
+    # The delivered partition exists only now, so this is the first point at
+    # which a family can be named after the leaves it actually contains.
+    if getattr(deps.cfg.naming, 'name_delivered_families', True):
+        try:
+            # PERSIST IT. `_name_delivered_families` mutates the dict it is
+            # given, and this used to hand it a throwaway `deps.load(...)` — so
+            # the K12 demo logged "named 32/32 delivered families" and shipped
+            # `families_final: []`, with the reports still carrying
+            # `混合·主要成分「X」N%`. A naming that is not written back is a
+            # naming that did not happen.
+            _fam_nm = deps.load("tree_naming")
+            _name_delivered_families(deps, _fam_nm, new_labels, new_family)
+            deps.store.put_json("tree_naming", _fam_nm, producer="p8",
+                                summary=f"{len(_fam_nm.get('families_final') or [])} "
+                                        "delivered families named")
+            deps.cache_put("tree_naming", _fam_nm)
+        except Exception as exc:  # noqa: BLE001
+            deps.emit(f'  ⚠ delivered-family naming unavailable ({type(exc).__name__}) — families fall back to the composition label')
     fam_ref = deps.store.put_matrix("leaf_family_final", new_family, producer="p8",
                                     summary=f"post-governance families ({len(np.unique(new_family))})")
     ledger_ref = deps.store.put_json(

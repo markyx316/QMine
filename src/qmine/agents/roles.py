@@ -20,9 +20,14 @@ from typing import Any, Literal, Sequence
 
 from pydantic import BaseModel, Field, PrivateAttr
 
-from ..memory.context import budget_text, render_card
+from ..memory.context import budget_text, budget_units, render_card
+
+#: Document separator for the delivery auditor's block (an f-string may not
+#: contain a backslash, so this cannot be inlined).
+_BLANK_LINE = "\n\n"
 from ..records import (
     AdjudicationRule,
+    FamilyNaming,
     LeafNaming,
     NamingCard,
     Taxonomy,
@@ -148,7 +153,7 @@ class ResearcherAgent(ToolAgent):
     def build_user(self, *, evidence: str = "", domain_notes: str = "", **kw: Any) -> str:
         return (
             f"## Domain\n{domain_notes}\n\n"
-            f"## Evidence for your angle\n{budget_text(evidence, 24000, tail=2000)}\n\n"
+            f"## Evidence for your angle\n{budget_text(evidence, 24000, tail=2000, label='researcher evidence')}\n\n"
             "Return your submission."
         )
 
@@ -379,7 +384,8 @@ class AnnotatorAgent(Agent):
             # the classes should be truncated loudly rather than silently blow a
             # context window, and `_render_rules` orders newest-first so what
             # goes is the oldest.
-            f"## Adjudication rules\n{budget_text(rules, 60000, tail=10000, label='adjudication rules')}\n\n"
+            f"## Adjudication rules\n"
+            f"{budget_units(rules.splitlines(), 60000, unit='rule', label='adjudication rules')}\n\n"
             f"## Labelling guide\n{budget_text(guide, 20000, tail=4000, label='labelling guide')}\n\n"
             f"## Queries to label ({len(queries)})\n"
             + "\n".join(f"{i + 1}. {q}" for i, q in enumerate(queries))
@@ -426,16 +432,96 @@ class RefereeAgent(Agent):
             )
             prior = (
                 f"\n\n## Boundaries you have ALREADY decided in this session ({len(decided)})\n"
-                f"{budget_text(lines, 6000)}\n\n"
+                f"{budget_text(lines, 6000, label='prior referee rulings')}\n\n"
                 "These are binding. Rule the same way on the same boundary, and do not "
                 "propose a rule that contradicts one of them. If you believe an earlier "
                 "ruling was wrong, follow it anyway and say so in your rationale — "
                 "consistency across the gold set matters more than any single row."
             )
         return (
-            f"## Classes\n{budget_text(classes, 14000)}\n\n"
-            f"## Adjudication rules\n{budget_text(rules, 9000)}{prior}\n\n"
+            f"## Classes\n{budget_text(classes, 14000, label='referee classes')}\n\n"
+            f"## Adjudication rules\n"
+            f"{budget_units(rules.splitlines(), 9000, unit='rule', label='referee rules')}"
+            f"{prior}\n\n"
             f"## Disagreements ({len(disagreements)})\n{rows}\n\nAdjudicate every one."
+        )
+
+
+class Disambiguation(BaseModel):
+    """Either distinct names for every colliding leaf, or an honest merge."""
+
+    same_need: bool = Field(
+        default=False,
+        description="True when the clusters answer one user need and should merge.",
+    )
+    namings: list[LeafNaming] = Field(default_factory=list)
+    rationale: str = ""
+
+
+class DisambiguatorAgent(Agent):
+    """Re-names leaves that independent blind namers gave the SAME name.
+
+    live44 delivered two leaves called `汉字读音查询` in family 7 and two called
+    `汉字笔画数查询` in family 8. A reader choosing a label cannot choose.
+
+    It sees every colliding cluster AT ONCE and never a peer's output, which is
+    what keeps it inside the blindness contract: the firewall bans peer namings
+    precisely so the Phase 7 fan-out stays independent, so "make your name differ
+    from X" is not available. Naming both from their queries is.
+
+    `same_need=True` is a first-class answer. The split that produced leaves
+    30/50 had real geometric support (lift 0.1565 over null, ARI 0.9887) and no
+    nameable difference — forcing a name there would let vocabulary overrule a
+    measurement in one direction, and a laboured name nobody would use is worse
+    than the merge the pipeline can now execute.
+    """
+
+    role = "namer"
+    prompt_name = "disambiguator"
+    schema = Disambiguation
+
+    def build_user(self, *, cards: Sequence[NamingCard] = (), collided_on: str = "",
+                   **kw: Any) -> str:
+        # Every card through the firewall, same as the blind namer.
+        blocks = [render_card(c, firewall=self.ctx.firewall) for c in cards]
+        return (
+            f"## {len(cards)} clusters, all named the same thing\n\n"
+            + "\n\n---\n\n".join(blocks)
+            + "\n\nName each so they can be told apart, or set `same_need`."
+        )
+
+
+class FamilyNamerAgent(Agent):
+    """Names one DELIVERED family, from the leaves it actually contains.
+
+    The tree auditor names families too, but it names the tree as it stood in
+    Phase 7 — before governance merged 18 into 14 and isolated them back out to
+    23. Those id spaces are not the same, and a delivered family routinely draws
+    leaves from several audit families, so `report/_shape.family_names` could
+    only fall back to a composition label: `混合·主要成分「词语含义查询」45%`.
+
+    That string is a diagnostic wearing a name's clothes, and it is what a
+    reader sees as the family's title in headings, tables and a CSV column. This
+    agent gives the delivered partition its own names, the same way p8 already
+    re-names the leaves governance changed.
+    """
+
+    role = "namer"
+    prompt_name = "family_namer"
+    schema = FamilyNaming
+
+    def build_user(self, *, family_id: int = 0, leaves: Sequence[dict[str, Any]] = (),
+                   siblings: Sequence[str] = (), **kw: Any) -> str:
+        rows = "\n".join(
+            f"- {l.get('name_zh', '?')} ({l.get('n_rows', 0):,} 行)"
+            f"{': ' + str(l['user_need']) if l.get('user_need') else ''}"
+            for l in leaves
+        )
+        sib = ", ".join(str(x) for x in siblings if x) or "(none)"
+        return (
+            f"## The family to name (id {family_id}, {len(leaves)} leaves)\n{rows}\n\n"
+            f"## The other families' names, so yours is distinguishable\n{sib}\n\n"
+            "Name this family."
         )
 
 
@@ -463,7 +549,7 @@ class AdversaryAgent(Agent):
     def build_user(self, *, rows: Sequence[dict[str, str]] = (), classes: str = "", **kw: Any) -> str:
         listing = "\n".join(f"{i + 1}. {r['query']}  →  labelled {r['label']}" for i, r in enumerate(rows))
         return (
-            f"## Available classes\n{budget_text(classes, 12000)}\n\n"
+            f"## Available classes\n{budget_text(classes, 12000, label='adversary classes')}\n\n"
             f"## Labelled queries to attack ({len(rows)})\n{listing}\n\nAttack every one."
         )
 
@@ -671,9 +757,9 @@ class ObserverAgent(Agent):
                  "## Artifacts it produced\n"
                  f"{budget_text(artifacts, 60000, tail=8000, label='artifacts')}\n"]
         if decisions:
-            parts.append(f"## Decisions it recorded\n{budget_text(decisions, 12000, tail=2000)}\n")
+            parts.append(f"## Decisions it recorded\n{budget_text(decisions, 12000, tail=2000, label='observer decisions')}\n")
         if gates:
-            parts.append(f"## Gates it evaluated\n{budget_text(gates, 8000, tail=1500)}\n")
+            parts.append(f"## Gates it evaluated\n{budget_text(gates, 8000, tail=1500, label='observer gates')}\n")
         return "\n".join(parts)
 
 
@@ -758,7 +844,7 @@ class StoryWriterAgent(Agent):
             f"## 报告语言\n{language}", "",
             f"## 全文大纲 (你自己写的)\n{outline}", "",
             f"## 现在要写的这一节\n{section}", "",
-            f"## 可用事实 — 文中每一个数字都必须出自这里\n{budget_text(facts, 40000, tail=4000)}",
+            f"## 可用事实 — 文中每一个数字都必须出自这里\n{budget_text(facts, 40000, tail=4000, label='fact sheet')}",
         ]
         if figures:
             parts += ["", f"## 本节可以插入的图 (只能用这些)\n{figures}"]
@@ -790,8 +876,8 @@ class MaintainerAgent(Agent):
 
     def build_user(self, *, previous: str = "", current: str = "", novel: Sequence[str] = (), **kw: Any) -> str:
         return (
-            f"## Previous run\n{budget_text(previous, 20000)}\n\n"
-            f"## Current run\n{budget_text(current, 20000)}\n\n"
+            f"## Previous run\n{budget_text(previous, 20000, label='previous run')}\n\n"
+            f"## Current run\n{budget_text(current, 20000, label='current run')}\n\n"
             f"## Queries far from every centroid\n" + "\n".join(f"- {q}" for q in novel[:60])
         )
 
@@ -912,8 +998,14 @@ class DeliveryAuditorAgent(Agent):
     prompt_name = "delivery_auditor"
     schema = DeliveryAudit
 
-    def build_user(self, *, deliverables: str = "", gates: str = "", findings: str = "",
-                   artifacts: str = "", language: str = "zh", **kw: Any) -> str:
+    def build_user(self, *, deliverables: Sequence[str] = (), gates: str = "",
+                   findings: str = "", artifacts: str = "", language: str = "zh",
+                   **kw: Any) -> str:
+        # `deliverables` is a SEQUENCE of whole documents, not a joined blob.
+        # Joined, a character budget cut the middle out and the auditor certified
+        # "the deliverables" having seen 39% of them (live44).
+        if isinstance(deliverables, str):                       # tolerate old callers
+            deliverables = [d for d in deliverables.split("\n\n=== FILE: ") if d]
         return "\n".join([
             f"## Report language\nEvery `replacement` you write must be in: {language}\n",
             "## The warnings this run accumulated\n"
@@ -925,5 +1017,5 @@ class DeliveryAuditorAgent(Agent):
             "## The artifacts — THE ONLY SOURCE OF TRUTH FOR ANY NUMBER\n"
             f"{budget_text(artifacts, 60000, tail=8000, label='artifacts')}\n",
             "## The deliverables, as they will ship\n"
-            f"{budget_text(deliverables, 90000, tail=12000, label='deliverables')}\n",
+            f"{budget_units(deliverables, 90000, joiner=_BLANK_LINE, unit='document', label='deliverables')}\n",
         ])

@@ -631,7 +631,16 @@ def p12_maintain(state: PipelineState, deps: Deps) -> dict[str, Any]:
             )
             drift = {"comparison": comparison, "analyst": report.model_dump()}
         except Exception as exc:  # noqa: BLE001
+            # SAY SO. This was recorded in `maintenance.json` and nowhere else,
+            # so on live44 the maintainer failed every attempt — 44 minutes,
+            # zero output tokens — and the only thing an operator saw was
+            # "✔ p12_maintain completed". The mechanical half of the phase had
+            # genuinely succeeded, which is why the phase completes; the missing
+            # half must still be visible without opening an artifact.
             drift = {"comparison": comparison, "analyst_error": str(exc)[:200]}
+            deps.emit(f"  ⚠ maintenance analyst unavailable ({type(exc).__name__}) — "
+                      "the baseline, novelty sentinel and drift comparison are "
+                      "recorded, but nothing interprets them this run")
     else:
         drift = {"note": "no earlier run of this project found; this baseline is the first"}
 

@@ -163,13 +163,27 @@ def _(r):
     heads = [h.strip() for h in heads if re.search(r"[一-鿿]", h)]
     if not heads:
         return "SKIP", "no family headings found in the report"
-    legit = set(by_leaf.values())
+    # A heading is legitimate if it comes from EITHER naming source:
+    #   families_final — p8 names the DELIVERED partition directly (the audit
+    #     describes the PHASE 7 tree, a different id space, and a delivered
+    #     family routinely spans several audit families)
+    #   the audit — still the source when delivered naming is off or unavailable
+    # Checking only the audit failed med04, whose four headings came from
+    # `families_final` and were correct: 药品与食物功效与作用查询 and siblings.
+    #
+    # The defect this still catches is the live38 one: a heading that traces to
+    # NEITHER source — a family of classical-poetry leaves titled
+    # 中考录取分数与学校排名查询 because the name was matched by integer id.
+    final = [str(f.get("name_zh") or "") for f in (nm.get("families_final") or [])]
+    legit = {x for x in set(by_leaf.values()) | set(final) if x}
+    if not legit:
+        return "SKIP", "no family names from either the audit or families_final"
     unknown = [h for h in heads
                if not any(nmz and nmz in h for nmz in legit)]
-    # A heading naming a real audit family is fine; one naming none is suspect.
     bad = [h for h in unknown if len(h) > 3][:4]
-    return ("PASS", f"{len(heads)} headings, all trace to an audit family") if not bad else \
-           ("FAIL", f"{len(bad)} heading(s) match no audit family: {bad}")
+    src = "families_final + audit" if final else "audit"
+    return ("PASS", f"{len(heads)} headings, all trace to {src}") if not bad else \
+           ("FAIL", f"{len(bad)} heading(s) match no family name: {bad}")
 
 
 @check("gate messages reach the reader", "reports")

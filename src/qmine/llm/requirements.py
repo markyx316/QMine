@@ -73,11 +73,31 @@ class RoleRequirement(BaseModel):
         return max(2000, (self.peak_output_tokens_per_call
                           or self.output_tokens_per_call) * 3)
 
-    #: Output tokens per second, measured on this project's providers: the taxonomy
-    #: architect emitted 20,441 tokens inside a 420s window on a live run.
-    #: Deliberately conservative — the cost of underestimating it is a timeout and
-    #: a full retry, the cost of overestimating is waiting longer for a hung call.
+    #: Output tokens per second. One global constant was wrong by ~5x in BOTH
+    #: directions, because it is calibrated on how fast a model WRITES while the
+    #: quantity that matters is how long it takes to ANSWER — and a reasoning
+    #: model spends most of that time thinking, which produces no output tokens
+    #: at all. Thinking time lands in the denominator and never in the numerator.
+    #:
+    #: Measured per role on live44 (median tok/s over its own calls):
+    #:   annotator_a 181.7 · annotator_b 55.1 · namer_2 74.4 · architect 74.2
+    #:   referee 37.2 · risk_sentinel 46.8 · adversary 34.2
+    #:   observer 13.6-86.1 · researcher(web) 29.8-32.7
+    #:   researcher(tool-free) 7.4-8.2   <- the floor, and pure reasoning
+    #:
+    #: So the tiers that reason get a conservative floor rather than the writing
+    #: speed. The cost of underestimating is a timeout whose retries produce
+    #: nothing; the cost of overestimating is waiting longer on a call that was
+    #: going to fail anyway. Those are not symmetric, and the old value bet the
+    #: wrong way: at 40 tok/s the researcher's deadline was 585s against calls
+    #: that legitimately take 850-1,150s.
     THROUGHPUT_TOK_PER_SEC: ClassVar[float] = 40.0
+    THROUGHPUT_BY_TIER: ClassVar[dict[str, float]] = {
+        "light": 40.0,
+        "standard": 40.0,
+        "strong": 15.0,
+        "frontier": 15.0,
+    }
 
     @property
     def timeout_seconds(self) -> float:
@@ -92,7 +112,8 @@ class RoleRequirement(BaseModel):
         Derived from the role's own generation cap instead, so raising a budget can
         never again leave a timeout that cannot accommodate it.
         """
-        needed = self.max_output_tokens / self.THROUGHPUT_TOK_PER_SEC
+        rate = self.THROUGHPUT_BY_TIER.get(self.reasoning, self.THROUGHPUT_TOK_PER_SEC)
+        needed = self.max_output_tokens / rate
         return float(min(1800.0, max(180.0, round(needed * 1.3))))
 
     @property

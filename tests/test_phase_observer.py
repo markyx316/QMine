@@ -63,6 +63,69 @@ def test_an_uncited_observation_is_dropped_before_anyone_reads_it():
     assert any("not in this phase's artifacts" in why for _, why in res.dropped)
 
 
+def test_a_claim_about_something_the_observer_was_SHOWN_can_be_cited():
+    """The observer is handed decisions and gates, then forbidden to cite them.
+
+    `observe()` builds the prompt with `artifacts` AND `decisions` AND `gates`,
+    but resolution used `artifacts` alone. Measured across three runs, 8 of 20
+    dropped observations (40%) cited exactly those side channels — content the
+    agent was shown and invited to reason about.
+
+    On live44 this deleted the pre-delivery audit's finding that `00_索引.md`
+    claims 21 L1 意图类目 where the taxonomy has 20. It was correct, and it was
+    the last check before the deliverables shipped.
+    """
+    from qmine.agents.observe import citable_namespace
+
+    decisions = [{"id": "D003", "choice": "20 L1 intents", "decisive_metrics": []}]
+    ns = citable_namespace(ARTIFACTS, decisions=decisions, gates={"p2b_kappa": {"passed": True}})
+
+    res = verified_observations(_raw(
+        _obs("warn", "D003 says decided_by=metric but lists no decisive metric",
+             "decisions.0.decisive_metrics"),
+        _obs("note", "the kappa gate passed", "gates.p2b_kappa.passed"),
+    ), ns)
+
+    assert len(res.kept) == 2, [why for _, why in res.dropped]
+    # And the SAME claims must still be dropped when the channel was not shown.
+    bare = verified_observations(_raw(
+        _obs("warn", "D003 says decided_by=metric but lists no decisive metric",
+             "decisions.0.decisive_metrics"),
+    ), ARTIFACTS)
+    assert len(bare.dropped) == 1, "an unshown channel is still uncitable"
+
+
+def test_widening_the_citation_pool_also_widens_the_CHECK_evaluator():
+    """Half this fix is worse than none.
+
+    `verified_observations` passes one mapping to BOTH `resolve_key` and
+    `ops.checks.evaluate`. Widening only the citation side would admit a claim
+    whose check cannot run — silently demoting a measurable claim to advisory,
+    which is the one capability this door exists to provide.
+    """
+    from qmine.agents.observe import citable_namespace
+
+    ns = citable_namespace(ARTIFACTS, decisions=[{"id": "D003", "decisive_metrics": []}])
+    res = verified_observations(_raw(
+        _obs("warn", "D003 records no decisive metric",
+             "decisions.0.decisive_metrics",
+             check="len(decisions[0].decisive_metrics) > 0"),
+    ), ns)
+
+    assert res.kept, "the claim must survive citation"
+    assert res.check_results, "and its check must have been EVALUATED, not skipped"
+    assert res.check_results[0].verdict in {"confirmed", "refuted"}, \
+        f"a check over a shown channel must actually run, got {res.check_results[0].verdict!r}"
+
+
+def test_a_side_channel_never_shadows_a_real_artifact():
+    """An artifact named `gates` keeps its meaning."""
+    from qmine.agents.observe import citable_namespace
+
+    ns = citable_namespace({"gates": {"real": 1}}, gates={"side": 2})
+    assert ns["gates"] == {"real": 1}, "the artifact wins; the side channel is dropped"
+
+
 def test_a_made_up_severity_is_dropped_rather_than_coerced():
     """Coercing 'critical' to 'blocking' would let the agent invent a halt level."""
     res = verified_observations(_raw(
@@ -284,3 +347,73 @@ def test_a_dead_observer_hands_back_nothing_to_register(monkeypatch):
     deps, ev, gates = _deps()
 
     assert observe_phase(deps, "p5", ARTIFACTS).as_state_gates() == {}
+
+
+def test_a_decision_can_be_cited_by_its_id_not_only_its_position():
+    """med01 dropped two real observations citing `D003.evidence.critic_verdict`.
+
+    `decisions` is a list, so widening the namespace to include it made only
+    `decisions.2.evidence...` resolvable — while the id is how the decision
+    record prints itself and how an agent naturally refers to one. Position is an
+    implementation detail; the id is the name.
+    """
+    from qmine.agents.observe import citable_namespace
+
+    decisions = [
+        {"id": "D001", "question": "encoder?", "choice": "bge-base"},
+        {"id": "D003", "choice": "L1 = 22", "evidence": {"critic_verdict": "revise"}},
+    ]
+    ns = citable_namespace({"panel": {}}, decisions=decisions)
+
+    res = verified_observations(_raw(
+        _obs("warn", "D003 records critic_verdict=revise and nothing acted on it",
+             "D003.evidence.critic_verdict"),
+    ), ns)
+    assert res.kept, [why for _, why in res.dropped]
+
+    # Positional citation must keep working — this widens, never replaces.
+    res2 = verified_observations(_raw(
+        _obs("note", "same claim, positional", "decisions.1.evidence.critic_verdict"),
+    ), ns)
+    assert res2.kept, [why for _, why in res2.dropped]
+
+    # And an id that does not exist is still uncitable.
+    res3 = verified_observations(_raw(
+        _obs("warn", "invented decision", "D999.evidence.anything"),
+    ), ns)
+    assert res3.dropped and not res3.kept
+
+
+def test_the_observer_is_never_handed_unparseable_json():
+    """`json.dumps(x)[:60000]` cut JSON mid-token and logged nothing.
+
+    Measured on med02: the taxonomy artifact alone serialises to 59,959 chars
+    against a 60,000 limit, and the payload carries more than the taxonomy — so
+    the observer received a fragment on every phase. Its p2a observer reported
+    the key cut at `self_consistency_ka…`, and that observation was then DROPPED
+    for citing a key the truncation had mangled, which reads as the agent's
+    fault rather than ours.
+
+    Whole entries must go, the payload must still parse, and what was withheld
+    must be named so the agent does not cite it.
+    """
+    import inspect
+    import json
+
+    from qmine.agents import observe
+
+    src = inspect.getsource(observe.observe_phase)
+    assert "__withheld__" in src, "the payload must name what it dropped"
+    assert "json.dumps(x, ensure_ascii=False, default=str)[:limit]" not in src, \
+        "a raw slice cuts JSON mid-token"
+
+    # Behavioural: rebuild the nested helper and check it holds the contract.
+    whole = inspect.getsource(observe.observe_phase)
+    i = whole.index("    def _j(x: Any")
+    body = "\n".join(l[4:] for l in whole[i:whole.index("\n    try:", i)].splitlines())
+    ns = {"json": json, "Any": object}
+    exec(body, ns)  # noqa: S102
+    out = ns["_j"]({"big": "x" * 40000, "small": {"k": 1}, "other": "y" * 30000}, 20000)
+    parsed = json.loads(out)          # must not raise
+    assert "small" in parsed, "small artifacts should survive so more keys resolve"
+    assert parsed["__withheld__"]["keys"], "and the dropped ones must be named"

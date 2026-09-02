@@ -424,7 +424,14 @@ def p2a_taxonomy(state: PipelineState, deps: Deps) -> dict[str, Any]:
     decision = deps.decision(
         "p2a",
         "What is the intent taxonomy?",
-        f"{n_l1} L1 intents across {len({n.axis for n in taxonomy.nodes})} axes",
+        # SYMBOLIC, like `alpha = 0.1` and `K = 6` elsewhere. This was
+        # "{n} L1 intents across {m} axes" — an English SENTENCE, and a decision
+        # CHOICE is rendered verbatim to the reader. It reached 7 lines across 3
+        # Chinese deliverables on live44. `prose()` cannot rescue it: PROSE_ZH
+        # returns a fixed string so it cannot carry the numbers, which is why an
+        # f-string "can never be mapped at all". The fix is to stop authoring
+        # prose here, not to translate it.
+        f"L1 = {n_l1}, axes = {len({n.axis for n in taxonomy.nodes})}",
         f"Synthesised from {len(submissions)} independent research angles; "
         f"critic returned {len(critique.findings)} findings ({critique.verdict}).",
         decided_by="agent",
@@ -1551,6 +1558,31 @@ def _pilot_agreement(deps: Deps, ctx: Any, df: Any, taxonomy: Taxonomy) -> dict[
     for pos, i in enumerate(order):
         back[i] = la2_raw[pos]["label"]
     self_agree = agreement([x["label"] for x in la], [str(v) for v in back])
+    # THE CEILING IS A LOWER BOUND, NOT THE ANNOTATOR'S TRUE RELIABILITY.
+    #
+    # The shuffle above is REQUIRED — the LLM cache is keyed on the rendered
+    # prompt, so re-asking the identical batches would replay the identical
+    # answer and report a ceiling of 1.0 for any guide at all. But batch
+    # composition is part of an LLM's prompt: the other rows in a batch anchor
+    # the judgement. So this number carries variance that kappa(A,B) does not,
+    # because both annotators see the SAME batches.
+    #
+    # Measured consequence: on med01 and med02 the inter-annotator kappa EXCEEDED
+    # this ceiling (0.930 vs 0.9188; 0.922 vs 0.9033), which is backwards and
+    # reproduced with the gap widening. K12 did not invert — its queries are
+    # short and templated, so composition matters less.
+    #
+    # It is still the best available bound and it still separates a fixable guide
+    # from an annotator limit. It must NOT be read as a hard ceiling, and "at
+    # ceiling" must not be taken as proof that redrafting cannot help.
+    self_consistency_note = (
+        "lower bound: measured by re-asking annotator A on a RESHUFFLED batch "
+        "composition (required — an identical prompt would replay from cache), "
+        "so it includes composition sensitivity that inter-annotator kappa does "
+        "not. Inter-annotator kappa exceeding it is a known artefact, not a "
+        "paradox; treat 'at ceiling' as suggestive, never as proof that the "
+        "guide is unfixable."
+    )
 
     # Which pairs drove the disagreement — this is what a redraft needs to act on.
     conf = Counter(
@@ -1583,8 +1615,21 @@ def _pilot_agreement(deps: Deps, ctx: Any, df: Any, taxonomy: Taxonomy) -> dict[
     # How much of the gap to the ceiling the guide is responsible for. Near 1.0 the
     # guide is already extracting everything this annotator can give.
     headroom = None
+    exceeds_ceiling = False
     if ceiling and ceiling > 0:
-        headroom = round(min(1.0, kp / ceiling), 4)
+        raw_share = kp / ceiling
+        # REPORT THE INVERSION, DO NOT CLAMP IT AWAY. `min(1.0, ...)` turned
+        # "kappa is ABOVE the ceiling" — which is backwards and worth knowing —
+        # into a reassuring "1.0 of ceiling reached". It happened on med01
+        # (0.930 vs 0.9188) and again on med02 (0.922 vs 0.9033), and the clamp
+        # is why it took two runs to notice.
+        #
+        # It is an artefact, not a paradox: the ceiling is measured on RESHUFFLED
+        # batches (required, or the cache replays the answer) so it carries
+        # composition variance that kappa(A,B) does not. Saying so beats hiding
+        # it, because "at ceiling" is what stops the pipeline redrafting a guide.
+        exceeds_ceiling = raw_share > 1.0
+        headroom = round(min(1.0, raw_share), 4)
 
     # Is the remaining slack big enough to be worth a redraft, or is it noise?
     #
@@ -1636,6 +1681,9 @@ def _pilot_agreement(deps: Deps, ctx: Any, df: Any, taxonomy: Taxonomy) -> dict[
     return {
         "n": agree["n"],
         "self_consistency_kappa": ceiling,
+        "self_consistency_is_lower_bound": True,
+        "kappa_exceeds_self_consistency": exceeds_ceiling,
+        "self_consistency_note": self_consistency_note,
         "self_consistency_raw": self_agree.get("raw_agreement"),
         "share_of_ceiling_reached": headroom,
         "structural_confusions": top_structural,
@@ -1925,6 +1973,31 @@ def _annotate_both(ctx: Any, queries: list[str], classes: str, rules: str,
         ) from next(iter(errs.values()))
     return out["a"], out["b"]
 
+def _norm_query(q: str) -> str:
+    """A query key robust to the rewriting a model does when echoing it back.
+
+    NFKC folds full-width punctuation onto ASCII, and whitespace is collapsed —
+    the two ways a correctly-labelled row came back under a key that failed an
+    exact match and cost the whole batch.
+    """
+    import unicodedata
+
+    return " ".join(unicodedata.normalize("NFKC", str(q)).split())
+
+
+def _norm_query_loose(q: str) -> str:
+    """Whitespace removed entirely — for CJK, spacing around punctuation is noise.
+
+    Used ONLY when it maps every query in the batch uniquely. Collapsing two
+    genuinely different queries onto one key would hand one of them the other's
+    label, which is worse than losing the batch; so this is applied the way rule
+    repair is, only when the resolution is unambiguous.
+    """
+    import unicodedata
+
+    return "".join(unicodedata.normalize("NFKC", str(q)).split())
+
+
 def _annotate(ctx: Any, which: str, queries: list[str], classes: str, rules: str, guide: str, deps: Deps) -> list[dict]:
     """Label every query, in independent batches.
 
@@ -1963,11 +2036,45 @@ def _annotate(ctx: Any, which: str, queries: list[str], classes: str, rules: str
                 # Same shape as `SectionDraft.markdown` defaulting to "": a
                 # permissive default turns a failed generation into a successful
                 # empty one. Treat short as failed and let the retry work.
-                missing = [q for q in chunk if q not in got]
+                # MATCH ON A NORMALISED KEY, NOT THE RAW STRING.
+                #
+                # `got` is keyed by the query the MODEL echoed back, and a model
+                # that relabels every row correctly may still return one key with
+                # a trimmed space, NFKC-folded punctuation or a full-width comma
+                # normalised. An exact `in` then reports it missing, the batch
+                # raises three times, and **25 correctly-labelled rows are
+                # discarded**. med02 did exactly that and logged the contradiction
+                # in its own message: "returned 25/25 labels (1 queries
+                # unlabelled)".
+                #
+                # The check still catches what it was written for — the bimodal
+                # 0-or-25 empty batch that a permissive default turns into a
+                # "successful" empty one. It no longer throws away a full batch
+                # over a character.
+                by_norm = {_norm_query(k): v for k, v in got.items()}
+                # The looser key is admitted only if it is INJECTIVE over this
+                # batch on both sides; otherwise a collision would silently give
+                # one query another's label.
+                loose_q = [_norm_query_loose(q) for q in chunk]
+                loose_g = [_norm_query_loose(k) for k in got]
+                loose_ok = (len(set(loose_q)) == len(loose_q)
+                            and len(set(loose_g)) == len(loose_g))
+                by_loose = ({_norm_query_loose(k): v for k, v in got.items()}
+                            if loose_ok else {})
+                resolved: dict[str, dict] = {}
+                missing = []
+                for q in chunk:
+                    hit = (got.get(q) or by_norm.get(_norm_query(q))
+                           or by_loose.get(_norm_query_loose(q)))
+                    if hit is None:
+                        missing.append(q)
+                    else:
+                        resolved[q] = hit
                 if missing:
                     raise ValueError(
                         f"returned {len(got)}/{len(chunk)} labels "
                         f"({len(missing)} queries unlabelled)")
+                got = resolved
                 if attempt:
                     deps.emit(f"  annotator[{which}] batch recovered on retry {attempt}")
                 return got
@@ -2373,6 +2480,35 @@ def p2c_classifier(state: PipelineState, deps: Deps) -> dict[str, Any]:
     )
     deps.emit(f"  CV accuracy {result['cv_accuracy']:.3f}, macro-F1 {result['macro_f1']:.3f}, "
               f"ECE {result['ece']:.3f}")
+
+    # CALIBRATION AGAINST ITS OWN NULL. No classifier metric was gated at all —
+    # `p2c_trainable` only asks whether there was enough gold to fit anything —
+    # so ECE moved 0.023 → 0.065 between runs with nothing recording that a
+    # threshold had been crossed. A bare ECE cannot be read: finite samples push
+    # it off zero, so the reference has to be computed on THIS run. Against its
+    # own null, live42's 0.023 (n=5,791) was already ~5 sd out; the number that
+    # looked like a clean baseline never was.
+    #
+    # warn_only: miscalibration makes Phase 10's confidence routing meaningless,
+    # which is worth saying loudly and is not worth halting a finished taxonomy.
+    null_mean = result.get("ece_null_mean")
+    null_sd = result.get("ece_null_sd")
+    if null_mean is not None and null_sd is not None:
+        z = (result["ece"] - null_mean) / max(float(null_sd), 1e-9)
+        deps.gate(
+            "p2c_calibration", "p2c",
+            passed=bool(z <= 3.0),
+            observed={"ece": result["ece"], "ece_null_mean": null_mean,
+                      "ece_null_sd": null_sd, "z": round(float(z), 2),
+                      "basis": result.get("ece_basis")},
+            threshold={"z_max": 3.0},
+            message=(f"ECE {result['ece']:.4f} sits {z:.1f} sd above the "
+                     f"perfectly-calibrated null for this run "
+                     f"({null_mean:.4f} ± {null_sd:.4f})"),
+            remediation="Phase 10 routes on confidence; recalibrate or stop "
+                        "treating the probability as a routing signal.",
+            warn_only=True,
+        )
 
     model_ref = deps.store.put_model(
         "topdown_model", {"model": result["model"], "scaler": scaler, "engine": engine},

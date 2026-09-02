@@ -465,3 +465,42 @@ def test_the_notebook_does_not_re_implement_the_family_join():
     src = inspect.getsource(zh_notebook)
     assert "等 {len(_r)} 类" not in src, "the duplicate implementation is back"
     assert "from qmine.report._shape import family_names" in src
+
+
+def test_the_index_never_hardcodes_a_corpus_number():
+    """`00_索引.md` shipped "21 个 L1 意图类目" against a taxonomy with 20.
+
+    The count was a literal in `_WHAT_FOR`. live42 happened to have 21 classes,
+    so it read correctly once and was wrong on the next corpus — the index
+    contradicted every other deliverable AND the taxonomy it indexes. The
+    pre-delivery auditor caught it; its finding was dropped on a citation
+    technicality, so it shipped.
+
+    A number describing THIS run must be computed from the artifact. The
+    template may carry a placeholder, never a digit.
+    """
+    import re
+
+    from qmine.report.zh_reference import _WHAT_FOR
+
+    for key, (fname, when, what) in _WHAT_FOR.items():
+        # A digit inside a filename or a `.csv` suffix is fine; a digit in the
+        # PROSE is a claim about this corpus.
+        prose = re.sub(r"`[^`]*`", " ", f"{when} {what}")
+        bad = re.findall(r"(?<![{\w])\d+(?![}\w])", prose)
+        assert not bad, (
+            f"{key} ({fname}) hardcodes {bad} in its description — "
+            "counts must come from state, e.g. '{n_l1}'")
+
+
+def test_the_index_fills_its_placeholders_from_the_taxonomy():
+    """A placeholder nobody fills ships as a literal '{n_l1}' — worse than a
+    stale number, because it looks like a bug to the reader rather than a fact.
+    """
+    import inspect
+
+    from qmine.report import zh_reference
+
+    src = inspect.getsource(zh_reference.build_index)
+    assert ".format(**counts)" in src, "the description must be formatted"
+    assert '"n_l1"' in src or "'n_l1'" in src, "and n_l1 must be supplied"

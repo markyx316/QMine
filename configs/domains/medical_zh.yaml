@@ -1,0 +1,111 @@
+# Chinese consumer health / medical search.
+#
+# Written after a pre-flight on a real 10,000-row 医疗 log: the `generic` risk
+# screen flagged **1 row (0.01%)**. That is not generic failing — its own note
+# says the list is "a floor to be extended per vertical and per jurisdiction" —
+# but a medical taxonomy whose risk axis fires on 0.01% of a medical corpus is
+# reporting nothing. Health queries carry risk through what the ANSWER would be,
+# not through taboo vocabulary: "血压正常值是多少范围" is a self-assessment and
+# "甲钴胺片的功效和作用" is drug information, and neither contains a red-flag word.
+#
+# NOT medical advice and not a compliance artifact. This is a screening floor for
+# a query taxonomy; a deployed health surface needs clinical and legal review.
+key: medical_zh
+display_name: "Chinese consumer health / medical query log"
+
+language: zh
+tokenizer: jieba
+char_ngram_range: [1, 3]
+word_ngram_range: [1, 2]
+
+# Same Chinese encoders the K12 bake-off ranked; the bake-off still decides.
+embedding_candidates:
+  - BAAI/bge-small-zh-v1.5
+  - BAAI/bge-base-zh-v1.5
+  - BAAI/bge-large-zh-v1.5
+  - shibing624/text2vec-base-chinese
+
+# ZERO template seeds, deliberately, as `generic` argues: a phrasing family is
+# exactly what differs between verticals, Phase 1 mines them from the corpus,
+# and Phase 3 makes each earn its place against random rows. Seeding them here
+# would import this one log's phrasing into every future medical corpus.
+template_seeds: []
+
+# Extends generic's universal floor with the hazards specific to health search.
+# Patterns stay deliberately lexical and recall-oriented: this screen FLAGS for
+# review, it does not classify, and a false positive costs a look while a false
+# negative ships.
+risk_categories:
+  - name: self_medication_and_dosage
+    policy: "Never state a dose. Route to a pharmacist or the package insert."
+    patterns:
+      - '(吃多少|服用多少|一次几片|一天几次|剂量|加量|减量|停药|自己吃|自行服用)'
+      - '(?i)(what dose|how many pills|how much .* should i take)'
+  - name: self_diagnosis
+    policy: "Never diagnose. Describe what the symptom can indicate and route to care."
+    patterns:
+      - '(我这是不是|是什么病|什么原因引起|症状对照|自测|测一测|严重吗|要紧吗)'
+      - '(?i)(do i have|is it serious|what disease|self.?diagnos)'
+  - name: unproven_or_dangerous_remedy
+    policy: "Do not present as effective. Say what the evidence is."
+    patterns:
+      - '(偏方|秘方|祖传|根治|特效药|包治|不用去医院|自己在家治|排毒|以毒攻毒)'
+      - '(?i)(miracle cure|cure .* permanently|home remedy for)'
+  - name: vulnerable_population_dosing
+    policy: "Highest-caution routing: pregnancy, infants, elderly, chronic conditions."
+    patterns:
+      - '(孕妇能|哺乳期能|怀孕能|小孩能|儿童能|婴儿能|老人能|宝宝能)(不能)?(吃|喝|用)'
+      - '(?i)(safe (during|in) pregnancy|for (infants|toddlers|children))'
+  - name: drug_interaction
+    policy: "Never assert safety of a combination."
+    patterns:
+      - '(能一起吃吗|同服|一起服用|冲突吗|相克|忌口|禁忌)'
+      - '(?i)(take .* together|interaction between|contraindicat)'
+  - name: prescription_and_controlled
+    policy: "Do not explain how to obtain without a prescription."
+    patterns:
+      - '(处方药|不用处方|怎么开到|哪里能买到.*药|抗生素|安眠药|止痛药|激素)'
+      - '(?i)(without a prescription|where to buy .* (pills|medication))'
+  - name: self_harm_and_crisis
+    policy: "Crisis routing takes precedence over every other intent."
+    patterns:
+      - '(自杀|不想活了|怎么死|自残|安乐死|一次吃多少片能)'
+      - '(?i)(kill myself|suicide method|want to die|self harm|overdose on)'
+  - name: reproductive_and_sensitive
+    policy: "Age-appropriate and jurisdiction-aware routing."
+    patterns:
+      - '(打胎|流产|避孕|人流|性病|艾滋|hiv|梅毒|阳痿|早泄)'
+      - '(?i)(abortion|contracepti|std|hiv|erectile)'
+  - name: personal_data_exposure
+    policy: "Never surface identifiable patient or record data."
+    patterns:
+      - '(病历|检查报告|化验单|身份证号|就诊记录)'
+      - '(?i)(medical record of|patient file|lab report of)'
+
+# Wider than K12: a health log spans drug information, symptom lookup, procedure
+# and cost questions, institution lookup, and TCM alongside biomedicine. Left
+# generous on purpose — the K locator decides, this only bounds the search.
+expected_l1_range: [12, 30]
+expected_family_range: [8, 28]
+
+pragmatic_intents_hint:
+  - "A drug-efficacy query (X的功效与作用) is an information lookup, not a request to take X."
+  - "A normal-range query (X正常值) is self-assessment: the user is comparing their own number."
+  - "A symptom query may be about the asker, someone they care for, or pure curiosity, and the wording rarely says which."
+  - "TCM (中药材, 方剂, 穴位) and biomedicine (西药, 检查, 手术) are different answer surfaces even when the intent verb is identical."
+  - "'能不能' and '可以吗' on a health topic are permission-seeking, which is where advice risk concentrates."
+  - "A cost or institution query (多少钱, 哪家医院, 挂什么科) is navigational/transactional, not informational."
+
+domain_notes: >
+  Chinese consumer health search. Queries are short (median ~10 characters) and
+  dominated by drug and herb efficacy lookups (X的功效与作用), normal-value
+  self-assessment (X正常值是多少), symptom explanation, and department/institution
+  routing (挂什么科, 哪家医院). Traditional Chinese medicine and biomedicine
+  coexist in the same log and often in the same phrasing, and they need different
+  answer surfaces — treat that as an axis, not as noise.
+
+  Risk here is carried by what a correct-looking answer would DO, not by taboo
+  vocabulary: a dosage number, a diagnosis, or an unproven remedy presented as
+  effective. A generic screen keyed to red-flag words fires on almost none of it.
+  This profile is a screening floor for taxonomy work, not clinical or legal
+  guidance.

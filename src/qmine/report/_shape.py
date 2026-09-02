@@ -41,6 +41,20 @@ def family_names(naming: dict[str, Any], leaf_family: Any, sizes: Any) -> dict[i
     named after whichever audit family covers the most of its rows, and the caller
     is told when the name is a partial description via the returned suffix.
     """
+    # DELIVERED names win. `families_final` is written in p8 against the
+    # partition that actually ships, so it needs no leaf-join and no composition
+    # label. The audit's families describe the Phase 7 tree — a different id
+    # space, and routinely several of them per delivered family, which is why
+    # the fallback below can only say `混合·主要成分「X」N%`. That string is a
+    # diagnostic, and it was being used AS the family's name in headings, table
+    # cells, a Mermaid node and a CSV column.
+    final = (naming or {}).get("families_final") or []
+    if final:
+        out = {int(f["family_id"]): str(f.get("name_zh") or "").strip()
+               for f in final if f.get("name_zh")}
+        if out:
+            return out
+
     fams = ((naming or {}).get("audit", {}) or {}).get("families", []) or []
     by_leaf: dict[int, str] = {}
     for f in fams:

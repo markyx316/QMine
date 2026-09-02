@@ -123,6 +123,22 @@ def p1_audit(state: PipelineState, deps: Deps) -> dict[str, Any]:
     weights = raw[cfg.data.weight_column].tolist() if cfg.data.weight_column in raw.columns else None
     df = build_frame(raw[cfg.data.text_column].astype(str).tolist(), reference_labels=ref_labels, weights=weights)
 
+    # THE TEXT COLUMN IS NOW `query`, AND THE CONFIG MUST SAY SO.
+    #
+    # `build_frame` is documented as "the canonical dataframe every later phase
+    # reads" and it always names the text column `query`. `cfg.data.text_column`
+    # is the name in the SOURCE FILE — it stops being true the moment this line
+    # runs, and 44 downstream call sites read it, starting with the
+    # `audit_corpus` call twenty lines below.
+    #
+    # Invisible until a corpus arrived whose column was not already called
+    # `query`: on the K12 log the two names coincide. The first real medical run
+    # halted at `p1_audit: KeyError: 'original_query'` — correctly, and for $0,
+    # but every non-default `--text-column` was unusable before this.
+    if cfg.data.text_column != "query":
+        deps.emit(f"  text column {cfg.data.text_column!r} canonicalised to 'query'")
+        cfg.data.text_column = "query"
+
     if cfg.data.sample_size and cfg.data.sample_size < len(df):
         from ...determinism import deterministic_subsample
 
@@ -180,8 +196,22 @@ def p1_audit(state: PipelineState, deps: Deps) -> dict[str, Any]:
 
     masks = group_masks(groups, df, text_col=cfg.data.text_column)
     trusted = group_masks(groups, df, text_col=cfg.data.text_column, trusted_only=True)
-    if not trusted:                     # no seeds survived: fall back, and say so
+    n_trusted = len(trusted)
+    if not trusted:
+        # SAY SO — the second half of "fall back, and say so" was never written.
+        # `template_masks` is what JUDGES REPRESENTATIONS: template_fragmentation
+        # is the metric that locates alpha. Falling back to untrusted groups means
+        # alpha is decided by anchors that failed their own cohesion test, and on
+        # med04 every one of 12 groups failed. The final report disclosed it
+        # (n_trusted_template_groups = 0) but the GATE said only "12 phrasing
+        # families cover 32.6%" and PASSED, so an operator watching the run had no
+        # way to know for the seven hours before the report existed.
         trusted = masks
+        deps.emit(
+            f"  ⚠ NO template group passed the cohesion check (0/{len(masks)}) — "
+            "falling back to the untrusted masks. template_fragmentation, and "
+            "therefore the alpha decision, rests on anchors that are not known to "
+            "be same-intent. Read every fragmentation number with that caveat.")
     deps.cache_put("template_masks", trusted)      # judges representations
     deps.cache_put("template_masks_all", masks)    # coverage and display
 
@@ -289,12 +319,15 @@ def p1_audit(state: PipelineState, deps: Deps) -> dict[str, Any]:
         "p1",
         passed=covered_rows >= min_rows and len(groups) >= 2,
         observed={"covered_rows": covered_rows, "union_coverage": cov["union_coverage"],
-                  "n_groups": len(groups)},
+                  "n_groups": len(groups), "n_trusted_groups": n_trusted},
         threshold={"min_covered_rows": min_rows, "min_groups": 2},
         message=(
             f"{len(groups)} phrasing families cover {covered_rows:,} rows "
             f"({cov['union_coverage'] * 100:.1f}% of the corpus; the share is reported, "
             "not gated — it is a property of the corpus)"
+            + ("" if n_trusted else
+               f" — ⚠ NONE of the {len(groups)} passed the cohesion check, so the "
+               "masks that judge representations (and locate alpha) are UNTRUSTED")
             + (f" — {selection['diagnosis']}" if selection.get("diagnosis") else "")
         ),
         remediation=(

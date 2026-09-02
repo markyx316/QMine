@@ -63,7 +63,8 @@ def apply_merges(
 
 
 def isolate_leaves(
-    leaf_family: np.ndarray, leaf_ids: Sequence[int]
+    leaf_family: np.ndarray, leaf_ids: Sequence[int],
+    leaf_labels: np.ndarray | None = None,
 ) -> tuple[np.ndarray, dict[str, Any]]:
     """Pull leaves out into families of their own (Principle 10).
 
@@ -72,13 +73,29 @@ def isolate_leaves(
     """
     out = leaf_family.copy()
     next_family = int(out.max()) + 1 if len(out) else 0
-    moved = {}
+    live = None if leaf_labels is None else {int(x) for x in np.unique(np.asarray(leaf_labels))}
+    moved, skipped = {}, {}
     for lid in leaf_ids:
-        if 0 <= int(lid) < len(out):
-            moved[int(lid)] = {"from": int(out[int(lid)]), "to": next_family}
-            out[int(lid)] = next_family
-            next_family += 1
-    return out, {"isolated": moved, "n_families_after": int(len(np.unique(out)))}
+        lid = int(lid)
+        if not (0 <= lid < len(out)):
+            skipped[lid] = "leaf id outside the partition"
+            continue
+        # ISOLATING AN EMPTY LEAF CREATES A GHOST FAMILY AND PROTECTS NOTHING.
+        # med04: leaves 14 and 24 were merged away, then isolated — producing
+        # families 42 and 33 that contain no rows at all, while the risk content
+        # those leaves carried stayed in the merge survivors, UNISOLATED. The
+        # artifact then reported 36 families where only 34 had content.
+        if live is not None and lid not in live:
+            skipped[lid] = "leaf carries no rows (merged away or emptied); "\
+                           "isolating it would create an empty family and move nothing"
+            continue
+        moved[lid] = {"from": int(out[lid]), "to": next_family}
+        out[lid] = next_family
+        next_family += 1
+    det = {"isolated": moved, "n_families_after": int(len(np.unique(out)))}
+    if skipped:
+        det["skipped"] = skipped
+    return out, det
 
 
 def split_leaves(
@@ -175,6 +192,57 @@ def _measure_split(Xs: np.ndarray, sub: np.ndarray, *, seed: int = 0) -> dict[st
     return out
 
 
+def indistinguishable_leaves(
+    leaf_labels: Any, leaf_family: Any, namings: Sequence[dict[str, Any]],
+) -> list[dict[str, Any]]:
+    """Delivered leaves in one family that carry the SAME name.
+
+    Deterministic on purpose. Every other duplicate check here is a cosine with
+    a threshold, and on live44 the auditor's `duplicate_leaf_pairs` returned
+    `cosine: null` for 4 of the 14 pairs it reported — so the geometric test
+    could not even score a third of its own findings. An exact name collision
+    needs no threshold, no embedding and no corpus constant: if two leaves in one
+    family are called the same thing, a reader choosing between them cannot
+    choose, and that is true regardless of how far apart their centroids are.
+
+    live44 shipped two `汉字读音查询` (leaves 12/14, family 7) and two
+    `汉字笔画数查询` (leaves 30/50, family 8). Nothing looked.
+
+    Measured on the DELIVERED partition, because p8 splits leaves after p7
+    audits them — 50 did not exist when the audit ran.
+    """
+    import numpy as np
+
+    if leaf_labels is None or leaf_family is None:
+        return []
+    lab = np.asarray(leaf_labels)
+    fam = np.asarray(leaf_family)
+    name_of = {int(n["leaf_id"]): str(n.get("name_zh") or "").strip()
+               for n in (namings or []) if n.get("leaf_id") is not None}
+    live = {int(x) for x in np.unique(lab).tolist()}
+
+    groups: dict[tuple[int, str], list[int]] = {}
+    for leaf_id in sorted(live):
+        if leaf_id >= len(fam):
+            continue
+        name = name_of.get(leaf_id, "")
+        if not name:                      # an unnamed leaf is a different defect
+            continue
+        groups.setdefault((int(fam[leaf_id]), name), []).append(leaf_id)
+
+    out = []
+    for (family_id, name), leaves in sorted(groups.items()):
+        if len(leaves) < 2:
+            continue
+        out.append({
+            "family_id": int(family_id),
+            "name": name,
+            "leaf_ids": leaves,
+            "n_rows": {int(i): int((lab == i).sum()) for i in leaves},
+        })
+    return out
+
+
 def execute_prescriptions(
     prescriptions: Sequence[Prescription],
     leaf_family: np.ndarray,
@@ -195,6 +263,12 @@ def execute_prescriptions(
     merge_map: dict[int, int] = {}
     isolate: list[int] = []
     to_split: list[int] = []
+    #: Duplicate leaf -> the leaf it folds into. The tree could split a leaf and
+    #: merge families but never merge two leaves, so `duplicate_leaf_pairs` was
+    #: a measurement nothing could act on and every run could only fragment.
+    merge_leaf: dict[int, int] = {}
+    #: which prescription asked for each leaf merge, so a refusal names its source
+    merge_leaf_by: dict[int, Any] = {}
     relabel: dict[int, str] = {}
     handled: list[Prescription] = []
     can_split = X is not None and leaf_labels is not None
@@ -241,6 +315,15 @@ def execute_prescriptions(
                 if int(t) != keep:
                     merge_map[int(t)] = keep
             handled.append(p)
+        elif p.kind == "merge_leaves" and len(p.targets) >= 2:
+            # Fold every target into the SMALLEST id, so the surviving leaf is
+            # stable across re-runs rather than depending on prescription order.
+            keep = min(int(t) for t in p.targets)
+            for t in p.targets:
+                if int(t) != keep:
+                    merge_leaf[int(t)] = keep
+                    merge_leaf_by[int(t)] = p
+            handled.append(p)
         elif p.kind in ("isolate_leaf", "flag_risk") and p.targets:
             isolate.extend(int(t) for t in p.targets)
             handled.append(p)
@@ -286,6 +369,36 @@ def execute_prescriptions(
             )
             handled.append(p)
 
+    # SAFETY BEATS QUALITY: a merge must never void a pending isolation.
+    #
+    # `merge_leaves` rewrites `new_labels`; `isolate_leaves` indexes `new_family`
+    # by LEAF ID. Merging a leaf away therefore empties it, and the isolation
+    # that follows moves an EMPTY leaf into a new family while the rows it
+    # carried sit in the survivor, unisolated. med04 did exactly this to leaves
+    # 14 and 24 — both risk clusters — and left ghost families 42 and 33 behind.
+    #
+    # My original comment claimed "the survivor carries the merged rows into
+    # whatever family isolation then puts it in". It does not: isolation names a
+    # leaf, not a row set.
+    #
+    # Isolation is a SAFETY action and merging is a QUALITY one, so the merge
+    # yields. Redirecting the isolation to the survivor is the tempting
+    # alternative and is worse — it would isolate the survivor's OTHER rows too,
+    # over-isolating on a guess. A surviving duplicate leaf is a cosmetic cost;
+    # unisolated risk content is not.
+    _iso = {int(t) for t in isolate}
+    for src in sorted(set(merge_leaf) & _iso):
+        merge_leaf.pop(src, None)
+        pres = merge_leaf_by.get(src)
+        if pres is not None and getattr(pres, "status", "") != "declined":
+            pres.status = "declined"
+            pres.decline_reason = (
+                f"leaf {src} is also prescribed for isolation; merging it would "
+                "empty the leaf and leave the isolation moving nothing, so the "
+                "merge yields to the safety action"
+            )
+    _merges_refused_for_isolation = sorted(set(merge_leaf_by) & _iso)
+
     new_family = leaf_family.copy()
     new_labels = leaf_labels.copy() if leaf_labels is not None else None
     detail: dict[str, Any] = {}
@@ -299,8 +412,35 @@ def execute_prescriptions(
         # than averaging into a delta that reads as complete.
         detail["merges"]["targets_that_named_no_family"] = {
             k: v for k, v in unresolvable.items()}
+    if merge_leaf and new_labels is not None:
+        # AFTER splits, so a leaf created by a split can still be folded away,
+        # and BEFORE isolation, so the survivor carries the merged rows into
+        # whatever family isolation then puts it in.
+        moved, applied, absent = 0, {}, []
+        for src_id, dst_id in sorted(merge_leaf.items()):
+            m = new_labels == src_id
+            n = int(m.sum())
+            if not n:
+                # A target in the wrong namespace, or a leaf a split already
+                # consumed. Recorded, never silently counted as executed —
+                # `merge_families` learned this the expensive way on live40.
+                absent.append(src_id)
+                continue
+            new_labels[m] = dst_id
+            moved += n
+            applied[src_id] = dst_id
+        detail["leaf_merges"] = {
+            "map": {str(k): int(v) for k, v in sorted(applied.items())},
+            "n_rows_moved": moved,
+            "n_leaves_removed": len(applied),
+            "targets_that_matched_no_leaf": absent,
+        }
+
     if isolate:
-        new_family, detail["isolations"] = isolate_leaves(new_family, isolate)
+        new_family, detail["isolations"] = isolate_leaves(new_family, isolate, new_labels)
+    if _merges_refused_for_isolation:
+        detail.setdefault("leaf_merges", {})["refused_because_isolated"] = \
+            _merges_refused_for_isolation
 
     metrics_after = recompute(new_family) if recompute else {}
     deltas = {

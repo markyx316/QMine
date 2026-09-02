@@ -235,6 +235,11 @@ class TaxonomyConfig(BaseModel):
 
 class NamingConfig(BaseModel):
     n_naming_agents: int = 5
+    #: Name each DELIVERED family after governance, from the leaves it actually
+    #: holds. Off, the reports fall back to `混合·主要成分「X」N%` — a composition
+    #: diagnostic that was being used as the family's title in headings, table
+    #: cells, a Mermaid node and a CSV column.
+    name_delivered_families: bool = True
     card_center: int = 15
     card_random: int = 10
     card_edge: int = 5
@@ -351,10 +356,25 @@ class LLMConfig(BaseModel):
     #: `2 x max_concurrency` while p2b runs, because splitting one budget between
     #: them is worse than sequential. Turn off if a provider rate-limits.
     annotators_concurrent: bool = True
-    #: Kept low on purpose: the provider SDK already retries, and LangGraph node
-    #: policies retry on top of that. Three layers at 3 attempts each is 27 calls
-    #: for one logical request.
-    max_retries: int = 2
+    #: SDK-level retries, and the answer is NONE — this layer is redundant with
+    #: ours and multiplies every timeout.
+    #:
+    #: The warning that used to stand here ("three layers at 3 attempts each is
+    #: 27 calls") was describing something that was actually happening. `_call`
+    #: retries `max_repair + 1 = 3` times, and each of those was 3 HTTP requests
+    #: at this setting: **9 requests per logical call**. On live44 the maintainer
+    #: timed out at its 292s deadline nine times in a row — 9 x 292 = 2,628s
+    #: against the 2,638s the log recorded — then `p12_maintain` reported
+    #: ✔ completed having produced nothing, because the mechanical half of the
+    #: phase had succeeded. 44 minutes, zero tokens.
+    #:
+    #: A timeout is the case that makes SDK retries actively harmful: re-issuing
+    #: an identical request with an identical deadline fails again by
+    #: construction, and it does so silently, INSIDE what our logs count as one
+    #: attempt. Our own layer already catches transport blips ("transient
+    #: transport error — retrying the same call"), logs them per role, and can
+    #: escalate the budget between tries, which the SDK cannot.
+    max_retries: int = 0
     #: Per-request timeout. Without one, a slow or wedged provider blocks a
     #: twelve-phase run indefinitely at 0% CPU, which looks exactly like a hang.
     request_timeout: float = 180.0

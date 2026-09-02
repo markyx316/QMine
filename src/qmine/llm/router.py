@@ -415,6 +415,31 @@ def route(
 
     reqs = requirements or ROLE_REQUIREMENTS
     role_list = list(roles or reqs.keys())
+
+    # AN OVERRIDE MUST NAME A ROLE THE PLAN CONTAINS, OR IT IS DEAD CONFIG.
+    #
+    # `reqs` holds BASE roles only (`researcher`, `annotator_a`, ...), so a
+    # per-angle key like `researcher_log_reading` was never in `role_list`, the
+    # `role in prefer` test below never saw it, and the entry sat in the config
+    # doing nothing. Worse, `qmine models` ECHOED it back — "researcher_log_reading
+    # =deepseek-v4-pro" — so it read as applied. Found by routing around a
+    # deterministic failure and watching the run use the model it had routed away
+    # from.
+    #
+    # Planning the override's own role makes it real: `requirement_for` resolves a
+    # suffixed role to its base requirement, and `route_for` prefers an exact
+    # match over the longest prefix, so the specific pin wins at call time while
+    # every unsuffixed sibling keeps the base assignment.
+    if prefer:
+        for r in prefer:
+            if r not in role_list:
+                role_list.append(r)
+                if not any(r.startswith(b) or b.startswith(r) for b in reqs):
+                    log.warning(
+                        "model_overrides names %r, which matches no known role — "
+                        "it will be planned with DEFAULT requirements. Check for a "
+                        "typo; an override that resolves to nothing is worse than "
+                        "no override, because it looks applied.", r)
     # A `capable_models` NAME THAT MATCHES NO CARD IS A TYPO, AND IT WAS SILENT.
     #
     # The gate builds an allow-set and filters the catalogue by it, so an id that

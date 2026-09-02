@@ -159,9 +159,24 @@ def build_classes(state: Any, deps: Any) -> str:
             f"{exp} | {r['n_rules']} | {'✓' if r['cluster_invisible'] else ''} | "
             f"{'⚠' if r['risk'] else ''} |")
 
+    # THE PREDICTIONS MUST SUM TO 1, AND WHEN THEY DO NOT THE READER MUST BE TOLD.
+    # med02's architect predicted shares totalling **112.5%** across 20 classes.
+    # Every printed `expected_share` is then inflated relative to a coherent set,
+    # and this document invites the reader to compare it against the DELIVERED
+    # share — so the gap it calls "evidence" is partly just the overcount.
+    # Disclosed rather than renormalised: the prediction is the architect's claim
+    # and rewriting it would hide that the claim was incoherent.
+    _exp = [r["expected_share"] for r in rows if r.get("expected_share") is not None]
+    _sum = sum(float(x) for x in _exp) if _exp else None
+    _caveat = ""
+    if _sum is not None and abs(_sum - 1.0) > 0.05:
+        _caveat = (f" ⚠ **本次运行的 `expected_share` 合计为 {_sum:.1%}, 不是 100%** —— "
+                   "架构师的预估本身不自洽, 因此下面每一个预估值都相对于一个不合规的总量, "
+                   "与实际交付占比的差距不能全部算作类目定义或分类器的问题。")
+
     L += ["", "> **预估与实际的差距本身是证据。** 架构师的 `expected_share` 是在看到语料"
           "分布之前写下的; 差得远的类目要么是类目定义偏了, 要么是分类器学偏了, 两种都值得"
-          "单独复核。", "",
+          "单独复核。" + _caveat, "",
           "## 2. 每一类的完整定义与判例", "",
           "每一类下面的**正例**来自架构师的类目设计, **反例**同时写出它实际该归到哪一类 —— "
           "反例才是边界, 正例只是中心。", ""]
@@ -583,6 +598,14 @@ def tree_csv(state: Any, deps: Any) -> str:
 #: What each delivered document is FOR, and who should open it. Keyed by the
 #: `refs` key the builder uses, so a document that stops being produced stops
 #: being listed rather than becoming a dead link.
+#:
+#: **No corpus-specific NUMBER may be hardcoded here.** `class_catalogue` read
+#: "21 个 L1 意图类目" as a literal; live42 happened to have 21, live44 had 20,
+#: and the index shipped contradicting every other document AND the taxonomy it
+#: indexes. The pre-delivery auditor caught it and its finding was discarded on
+#: a citation technicality, so it shipped anyway. Placeholders are filled from
+#: state in `build_index`; `test_the_index_never_hardcodes_a_corpus_number`
+#: fails on a bare digit in this table.
 _WHAT_FOR: dict[str, tuple[str, str, str]] = {
     "report_final":    ("00_最终报告.md", "先读这一份",
                         "由 agent 撰写的贯通全文: 两条路线为什么都要跑, 各自得到什么, "
@@ -590,7 +613,7 @@ _WHAT_FOR: dict[str, tuple[str, str, str]] = {
     "report_panel":    ("统一度量面板.md", "要比较两条路线时读",
                         "同一套度量下的横向对照, 以及本次运行的全部质量门与未关闭问题。"),
     "class_catalogue": ("类目清单.md", "要用自上而下的标签时读",
-                        "21 个 L1 意图类目: 定义、user_need、正反例、实际交付行数、"
+                        "{n_l1} 个 L1 意图类目: 定义、user_need、正反例、实际交付行数、"
                         "以及有多少条裁定规则指向它。"),
     "leaf_catalogue":  ("叶清单.md", "要用自下而上的标签时读",
                         "每一个已交付的叶子: 名称、user_need、规模、风险命中。"),
@@ -627,6 +650,14 @@ def build_index(state: Any, deps: Any, refs: dict[str, Any] | None = None) -> st
         "> 这一份是**目录**。下面按「你想做什么」排序, 不是按流水线的产出顺序。", "",
         "## 按用途", "", "| 文件 | 什么时候读 | 内容 |", "|---|---|---|",
     ]
+    # Counts come from the artifact, never from the template. See _WHAT_FOR.
+    try:
+        tax = deps.taxonomy()
+        n_l1 = sum(1 for n in getattr(tax, "nodes", []) if getattr(n, "level", 1) == 1)
+    except Exception:  # noqa: BLE001
+        n_l1 = 0
+    counts = {"n_l1": n_l1 or "—"}
+
     present = []
     for key, (fname, when, what) in _WHAT_FOR.items():
         if refs is not None and key not in refs and not (gen_dir / fname).exists():
@@ -634,7 +665,7 @@ def build_index(state: Any, deps: Any, refs: dict[str, Any] | None = None) -> st
         if refs is None and not (gen_dir / fname).exists():
             continue
         present.append(fname)
-        L.append(f"| [`{fname}`]({fname}) | {when} | {what} |")
+        L.append(f"| [`{fname}`]({fname}) | {when} | {what.format(**counts)} |")
     if not present:
         L.append("| _(本次运行没有产出可索引的交付物)_ | | |")
 

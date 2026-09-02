@@ -115,8 +115,9 @@ def audit_deliverables(state: Any, deps: Any) -> dict[str, Any]:
                  "findings": {f.id: f.as_record() for f in led.open_findings}}
     lang = getattr(deps.cfg, "report_language", "zh")
 
-    deliverables = "\n\n".join(
-        f"=== FILE: {name} ===\n{text}" for name, text in docs.items())
+    # A LIST of whole documents. Joined into one blob, the budget cut the middle
+    # and the auditor could not tell it had been shown a third of them.
+    deliverables = [f"=== FILE: {name} ===\n{text}" for name, text in docs.items()]
 
     try:
         out = DeliveryAuditorAgent(deps.agent_ctx()).run(
@@ -156,13 +157,22 @@ def audit_deliverables(state: Any, deps: Any) -> dict[str, Any]:
     # raw put three empty-claim rows into the ledger on the first end-to-end run:
     # a ledger that accumulates blanks is a ledger nobody reads, which is the
     # failure this whole mechanism exists to end.
-    from .observe import verified_observations
+    from .observe import citable_namespace, verified_observations
 
     seen_at = f"{getattr(deps, 'run_id', '')}/{gen.name}"
+    # The auditor is SHOWN gates and the open findings ledger alongside the
+    # artifacts, so a claim citing either is a claim about something it was
+    # handed. Resolving against `artifacts` alone deleted its two real
+    # cross-document contradictions on live44 — including that `00_索引.md`
+    # claims 21 L1 classes where the taxonomy has 20.
     ver = verified_observations(
         type("_Raw", (), {"observations": list(getattr(out, "unfixable", None) or []),
                           "checked": []})(),
-        artifacts)
+        citable_namespace(
+            artifacts,
+            gates=_gate_bundle(state),
+            findings={f.id: f.as_record() for f in led.open_findings},
+        ))
     for o, why in ver.dropped:
         deps.emit(f"    ⚠ unfixable finding dropped — {why}: {str(getattr(o, 'claim', ''))[:70]}")
     for o, chk in zip(ver.kept, ver.check_results):

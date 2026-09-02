@@ -728,7 +728,36 @@ def normalise_then(then: Any, codes: Sequence[str]) -> ThenResult:
         return ThenResult(None, [], raw, "empty")
     if raw in set(codes):
         return ThenResult(raw, [raw], raw)
+
+    # CASE-INSENSITIVE, RESOLVING BACK TO THE CANONICAL CODE.
+    #
+    # The architect chooses the casing of `TaxonomyNode.code` and the rule writer
+    # independently chooses the casing it emits in `then`. They are separate
+    # calls with separate prompts, so nothing makes them agree — and when they
+    # disagree the exact match fails and the rule is DROPPED as naming no class.
+    #
+    # Measured on med02: node codes came back lowercase
+    # (`substance_condition_matching`) while every rule target was uppercase
+    # (`SUBSTANCE_CONDITION_MATCHING`), and **14 of 42 rules — 29% of the
+    # adjudication set — were discarded**, including every rule addressing that
+    # corpus's own top confusions. live44 and med01 happened to agree on casing,
+    # which is why this survived until a corpus where they did not.
+    #
+    # A case difference is not ambiguity: `X` and `x` cannot be two different
+    # classes, because `code` is the identity. So this resolves rather than
+    # refuses — and genuine ambiguity (two DISTINCT codes named) still refuses
+    # below, unchanged.
+    canon = {str(c).casefold(): c for c in codes if c}
+    if raw.casefold() in canon:
+        c = canon[raw.casefold()]
+        return ThenResult(c, [c], raw,
+                          "the field named the class in a different case")
     hits = [c for c in codes if c and _code_pattern(c).search(raw)]
+    if not hits:
+        # Same resolution one level down: find the code inside a SENTENCE
+        # regardless of case, then hand back the canonical spelling.
+        folded = raw.casefold()
+        hits = [c for c in codes if c and _code_pattern(str(c).casefold()).search(folded)]
     # Keep only maximal matches, so a code that is a strict substring of another
     # match is not counted twice.
     maximal = [c for c in hits if not any(c != o and c in o for o in hits)]

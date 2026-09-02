@@ -128,6 +128,46 @@ def resolve_key(key: str, artifacts: dict[str, Any]) -> tuple[bool, Any]:
     return True, cur
 
 
+def citable_namespace(artifacts: dict[str, Any], **shown: Any) -> dict[str, Any]:
+    """Everything the agent was SHOWN — which is exactly what it may cite.
+
+    `observe()` hands the observer `artifacts` AND `decisions` AND `gates`; the
+    delivery auditor is also handed `findings`. Resolution used `artifacts`
+    alone, so a claim about a decision record or an open finding could never
+    resolve no matter how true it was. Measured across three runs, **8 of 20
+    dropped observations (40%)** cited exactly these side channels.
+
+    It is not only the citation. `verified_observations` passes the same mapping
+    to `ops.checks.evaluate`, so widening one without the other would admit the
+    claim with a check that cannot run — silently demoting a measurable claim to
+    advisory. One namespace feeds both.
+
+    On live44 this deleted the pre-delivery audit's finding that `00_索引.md`
+    claims 21 L1 classes where the taxonomy has 20. It was correct, and it was
+    the last check before delivery.
+
+    A side channel never shadows a real artifact: an artifact named `gates`
+    keeps its meaning, and the side channel is dropped rather than overwriting
+    it. (Verified on live44: none of these names collides.)
+    """
+    ns = dict(artifacts)
+    for name, value in shown.items():
+        if value is None or name in ns:
+            continue
+        ns[name] = value
+
+    # DECISIONS ARE ALSO ADDRESSABLE BY THEIR ID, because that is how an agent
+    # naturally cites one. `decisions` is a LIST, so only `decisions.2.evidence`
+    # resolved — and on med01 two real observations were dropped citing
+    # `D003.evidence.critic_verdict`, which is the form the decision record
+    # itself prints. Position is an implementation detail; the id is the name.
+    for d in (shown.get("decisions") or []):
+        did = str((d.get("id") if isinstance(d, dict) else getattr(d, "id", "")) or "")
+        if did and did not in ns:
+            ns[did] = d
+    return ns
+
+
 def verified_observations(raw: Any, artifacts: dict[str, Any]) -> ObserverResult:
     """Keep observations that cite a real artifact and survive their own check.
 
@@ -191,10 +231,48 @@ def observe_phase(
     from .roles import ObserverAgent
 
     def _j(x: Any, limit: int = 60000) -> str:
+        """Serialise for the prompt, dropping WHOLE entries rather than bytes.
+
+        This was `json.dumps(x)[:limit]` — a raw string slice that cuts JSON
+        mid-token and logs nothing. Measured on med02: the taxonomy artifact
+        alone serialises to **59,959 characters against a 60,000 limit**, and the
+        artifacts payload carries more than the taxonomy, so the observer was
+        handed unparseable JSON on every phase. Its p2a observer reported exactly
+        that — the key cut at `self_consistency_ka…` — and the observation was
+        then DROPPED for citing a key the truncation had mangled, which reads as
+        the agent's fault.
+
+        So: drop whole top-level entries, say which, and never hand an agent
+        JSON that does not parse.
+        """
         try:
-            return json.dumps(x, ensure_ascii=False, default=str)[:limit]
+            whole = json.dumps(x, ensure_ascii=False, default=str)
         except Exception:  # noqa: BLE001
             return str(x)[:limit]
+        if len(whole) <= limit:
+            return whole
+        if not isinstance(x, dict):
+            # A list or scalar has no entries to drop; say it was cut rather
+            # than pretending the fragment is the whole.
+            return whole[:limit] + f'\n… [TRUNCATED at {limit} chars — not valid JSON]'
+
+        kept: dict[str, Any] = {}
+        withheld: list[str] = []
+        used = 2
+        for key, val in sorted(x.items(), key=lambda kv: len(str(kv[1]))):
+            piece = json.dumps({key: val}, ensure_ascii=False, default=str)[1:-1]
+            if used + len(piece) + 1 > limit - 220:
+                withheld.append(str(key))
+                continue
+            kept[key] = val
+            used += len(piece) + 1
+        out = json.dumps(kept, ensure_ascii=False, default=str)
+        if withheld:
+            out = out[:-1] + ', "__withheld__": ' + json.dumps(
+                {"note": "these artifacts did not fit and are NOT shown; "
+                         "do not cite or conclude anything about them",
+                 "keys": sorted(withheld)}, ensure_ascii=False) + "}"
+        return out
 
     try:
         raw = ObserverAgent(deps.agent_ctx(), suffix=f"_{phase}").run(
@@ -207,7 +285,8 @@ def observe_phase(
                   "continuing without a second opinion on this phase")
         return ObserverResult()
 
-    res = verified_observations(raw, artifacts)
+    res = verified_observations(
+        raw, citable_namespace(artifacts, decisions=decisions, gates=gates))
     for o, why in res.dropped:
         deps.emit(f"  ⚠ observation dropped — {why}: {str(getattr(o, 'claim', ''))[:90]}")
     if res.kept:
