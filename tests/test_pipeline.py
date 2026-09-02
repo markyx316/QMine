@@ -38,7 +38,7 @@ pytestmark = pytest.mark.skipif(not DATA.exists(), reason="bundled dataset absen
 def completed_run(tmp_path_factory):
     """One offline run, shared by every assertion below."""
     root = tmp_path_factory.mktemp("runs")
-    cfg = QMineConfig(fast_mode=True, offline=True, run_root=str(root))
+    cfg = QMineConfig(smoke_mode=True, offline=True, run_root=str(root))
     from qmine.config import DomainProfile
 
     cfg.domain = DomainProfile.load(Path(__file__).resolve().parents[1] / "configs" / "domains" / "k12_zh.yaml")
@@ -180,7 +180,7 @@ def test_a_failed_blocking_gate_halts_the_run_and_says_why(tmp_path):
     *and* leave a legible reason — a silent stop is worse than a crash."""
     from qmine.config import DomainProfile
 
-    cfg = QMineConfig(fast_mode=True, offline=True, run_root=str(tmp_path))
+    cfg = QMineConfig(smoke_mode=True, offline=True, run_root=str(tmp_path))
     cfg.domain = DomainProfile.load(
         Path(__file__).resolve().parents[1] / "configs" / "domains" / "k12_zh.yaml")
     cfg.llm.provider = "mock"
@@ -207,7 +207,7 @@ def test_offline_run_is_reproducible(tmp_path):
     from qmine.config import DomainProfile
 
     def _run(rid):
-        cfg = QMineConfig(fast_mode=True, offline=True, run_root=str(tmp_path))
+        cfg = QMineConfig(smoke_mode=True, offline=True, run_root=str(tmp_path))
         cfg.domain = DomainProfile.load(
             Path(__file__).resolve().parents[1] / "configs" / "domains" / "k12_zh.yaml")
         cfg.llm.provider = "mock"
@@ -252,7 +252,7 @@ def test_notebook_executes_and_draws_its_figures(completed_run):
 
     from qmine.report.builder import NOTEBOOK_FIGURES
 
-    # fig4/fig5 project the embedding space, which fast_mode skips; the rest are
+    # fig4/fig5 project the embedding space, which smoke_mode skips; the rest are
     # computed from JSON artifacts and must be present on every run.
     always = {n for n in NOTEBOOK_FIGURES if n not in ("fig4_spaces", "fig5_intent_split")}
     missing = [n for n in always if not (gen / f"{n}.png").exists()]

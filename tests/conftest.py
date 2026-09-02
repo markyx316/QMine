@@ -44,7 +44,7 @@ def frame(k12_queries) -> pd.DataFrame:
 
 @pytest.fixture
 def cfg(tmp_path) -> QMineConfig:
-    c = QMineConfig(fast_mode=True, offline=True, run_root=str(tmp_path / "runs"))
+    c = QMineConfig(smoke_mode=True, offline=True, run_root=str(tmp_path / "runs"))
     c.domain = DomainProfile.load(CONFIGS / "domains" / "k12_zh.yaml")
     c.llm.provider = "mock"
     return c

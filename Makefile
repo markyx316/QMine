@@ -47,6 +47,15 @@ live:  ## a PAID live run — `make live RUN=live43` (~4h, ~$30). K12 by default
 	         $(if $(strip $(LIVE_REFS)),--reference-columns $(LIVE_REFS),) \
 	         --run-id $(RUN)
 
+fast:  ## a PAID live run, FAST mode — same analysis, no second-opinion layer; 3 deliverables
+	@test -n "$(RUN)" || (echo "usage: make fast RUN=live45" && exit 1)
+	@test -f .env || (echo "no .env — live runs need provider keys" && exit 1)
+	$(QM) run --input $(LIVE_INPUT) --domain $(LIVE_DOMAIN) \
+	         --config configs/live.yaml --provider router --fast \
+	         --text-column $(LIVE_TEXT) \
+	         $(if $(strip $(LIVE_REFS)),--reference-columns $(LIVE_REFS),) \
+	         --run-id $(RUN)
+
 # WHAT THIS TARGET IS, AND WHAT IT IS NOT.
 #
 # It is the K12 reproduction with live models — the paid sibling of `full`. It is

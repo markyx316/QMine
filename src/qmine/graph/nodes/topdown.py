@@ -219,9 +219,25 @@ def p2a_taxonomy(state: PipelineState, deps: Deps) -> dict[str, Any]:
     # A round costs one redraw plus one pilot against a 3,000-row gold set, so
     # spending two of them to avoid annotating against a broken taxonomy is
     # straightforwardly cheaper than not.
-    pilot = _pilot_agreement(deps, ctx, df, taxonomy)
-    taxonomy, pilot, redraw_history = _redraw_until_stable(
-        deps, ctx, df, taxonomy, pilot)
+    if cfg.taxonomy.annotators == 1:
+        # THE PILOT IS ENTIRELY A SECOND OPINION, so with one annotator there is
+        # nothing for it to do. It measures three things and every one of them
+        # needs two readings of the same row: inter-annotator kappa, the
+        # annotator's self-consistency CEILING (a re-ask on a reshuffled batch),
+        # and the split of confusions into structural-vs-guide. Its output feeds
+        # only the redraw loop and the p2b gate's ceiling reasoning, both of
+        # which fast mode has already turned off.
+        #
+        # Returning `None` for every measurement — never 0.0, never 1.0 — so any
+        # reader that formats one has to decide what to print for an absent
+        # number instead of silently rendering a plausible one.
+        pilot = _pilot_not_measured(cfg)
+        redraw_history = []
+        deps.emit("  pilot skipped — fast 模式单标注员, 无第二判读可比对")
+    else:
+        pilot = _pilot_agreement(deps, ctx, df, taxonomy)
+        taxonomy, pilot, redraw_history = _redraw_until_stable(
+            deps, ctx, df, taxonomy, pilot)
 
     # Capture it. `deps.gate` builds and returns a GateResult but does not write to
     # state, so a gate that is not put in this node's returned `gates` dict is
@@ -259,7 +275,8 @@ def p2a_taxonomy(state: PipelineState, deps: Deps) -> dict[str, Any]:
         and pilot.get("self_consistency_kappa") is not None
         and not pilot.get("slack_is_significant", False)
     )
-    reaches_target = pilot["kappa_upper"] >= cfg.gates.kappa
+    piloted = pilot.get("measured", True)
+    reaches_target = piloted and pilot["kappa_upper"] >= cfg.gates.kappa
 
     # The slack test exists to TRIGGER a remedy, and the pipeline has one: redraw
     # the boundaries the annotator cannot reproduce, then re-pilot. Once that has
@@ -278,7 +295,8 @@ def p2a_taxonomy(state: PipelineState, deps: Deps) -> dict[str, Any]:
     remedy_exhausted = _remedy_is_exhausted(
         redraw_history, cfg.taxonomy.max_taxonomy_redraws)
     usable_despite_slack = (
-        remedy_exhausted and pilot["kappa"] >= cfg.gates.annotator_fitness_kappa
+        piloted and remedy_exhausted
+        and pilot["kappa"] >= cfg.gates.annotator_fitness_kappa
     )
 
     # Is the ANNOTATOR fit to apply this taxonomy at all? That is the question an
@@ -295,6 +313,11 @@ def p2a_taxonomy(state: PipelineState, deps: Deps) -> dict[str, Any]:
     )
     pilot_gate = deps.gate(
         "p2a_pilot_agreement", "p2a",
+        # NOT MEASURED is not PASSED. With one annotator this gate has no
+        # observation at all, and `skipped` is the only status that says so —
+        # `passed=True` here would leave a ledger entry identical to a full run's,
+        # which is the one thing fast mode must never be able to produce.
+        skipped=not piloted,
         # Two independent conditions, each answering a different question.
         # Fitness: can this annotator apply this taxonomy reproducibly? If not, no
         # guide work helps and the run must stop. Slack: is the guide extracting
@@ -318,31 +341,35 @@ def p2a_taxonomy(state: PipelineState, deps: Deps) -> dict[str, Any]:
         threshold={"annotator_fitness_kappa": cfg.gates.annotator_fitness_kappa,
                    "playbook_aspiration_kappa": cfg.gates.kappa,
                    "playbook_raw_agreement_floor": cfg.taxonomy.pilot_agreement_threshold},
-        message=(f"pilot: kappa {pilot['kappa']:.3f} (95% upper {pilot['kappa_upper']:.3f}) "
-                 f"on {pilot['n']} queries; raw agreement {pilot['raw_agreement']:.1%}, "
-                 f"but kappa {cfg.gates.kappa} needs about "
-                 f"{pilot['raw_needed_for_target']:.1%}"
-                 + (f"; annotator self-consistency kappa {pilot['self_consistency_kappa']} "
-                    f"({pilot.get('share_of_ceiling_reached')} of ceiling reached)"
-                    if pilot.get("self_consistency_kappa") is not None else "")
-                 + (" — AT THE ANNOTATOR CEILING: this is the achievable bar on this "
-                    "corpus with this annotator, not a fixable guide defect"
-                    if at_ceiling and not reaches_target else "")
-                 + (f" — NOTE the target {cfg.gates.kappa} is ABOVE this annotator's own "
-                    f"ceiling of {pilot['self_consistency_kappa']}, so it is unreachable "
-                    f"by any guide; the recoverable slack is "
-                    f"{pilot.get('recoverable_slack')} ± {pilot.get('recoverable_slack_se')}"
-                    if pilot.get("target_above_ceiling") else "")
-                 + (f" — PROCEEDING WITH RESIDUAL SLACK of "
-                    f"{pilot.get('recoverable_slack')}: the redraw ran "
-                    + ("and improved agreement but could not close the slack"
-                       if redraw_helped else "and did not improve agreement")
-                    + f", so this pipeline has no remaining move; "
-                    f"kappa {pilot['kappa']:.3f} is above the "
-                    f"{cfg.gates.annotator_fitness_kappa} reliability floor, and every "
-                    f"downstream number must be read against this gap"
-                    if usable_despite_slack else "")
-                 + (f" — top confusions {pilot['top_confusions']}" if pilot["top_confusions"] else "")),
+        message=("标注一致性试点未运行 —— fast 模式单标注员 "
+                 f"({cfg.taxonomy.primary_annotator}), 没有第二判读可比对; "
+                 "kappa、自洽上限与结构性/指南性混淆的拆分本次均未测量"
+                 if not piloted else
+                 (f"pilot: kappa {pilot['kappa']:.3f} (95% upper {pilot['kappa_upper']:.3f}) "
+                  f"on {pilot['n']} queries; raw agreement {pilot['raw_agreement']:.1%}, "
+                  f"but kappa {cfg.gates.kappa} needs about "
+                  f"{pilot['raw_needed_for_target']:.1%}"
+                  + (f"; annotator self-consistency kappa {pilot['self_consistency_kappa']} "
+                     f"({pilot.get('share_of_ceiling_reached')} of ceiling reached)"
+                     if pilot.get("self_consistency_kappa") is not None else "")
+                  + (" — AT THE ANNOTATOR CEILING: this is the achievable bar on this "
+                     "corpus with this annotator, not a fixable guide defect"
+                     if at_ceiling and not reaches_target else "")
+                  + (f" — NOTE the target {cfg.gates.kappa} is ABOVE this annotator's own "
+                     f"ceiling of {pilot['self_consistency_kappa']}, so it is unreachable "
+                     f"by any guide; the recoverable slack is "
+                     f"{pilot.get('recoverable_slack')} ± {pilot.get('recoverable_slack_se')}"
+                     if pilot.get("target_above_ceiling") else "")
+                  + (f" — PROCEEDING WITH RESIDUAL SLACK of "
+                     f"{pilot.get('recoverable_slack')}: the redraw ran "
+                     + ("and improved agreement but could not close the slack"
+                        if redraw_helped else "and did not improve agreement")
+                     + f", so this pipeline has no remaining move; "
+                     f"kappa {pilot['kappa']:.3f} is above the "
+                     f"{cfg.gates.annotator_fitness_kappa} reliability floor, and every "
+                     f"downstream number must be read against this gap"
+                     if usable_despite_slack else "")
+                  + (f" — top confusions {pilot['top_confusions']}" if pilot["top_confusions"] else ""))),
         remediation=(
             # STATIC per branch. This used to be `ceiling_verdict + ". The guide
             # is ambiguous…"`, and `prose()` matches with `startswith`, so a
@@ -625,14 +652,50 @@ def p2b_gold(state: PipelineState, deps: Deps) -> dict[str, Any]:
     labels_a, labels_b = _annotate_both(
         ctx, queries, classes_txt, rules_txt, taxonomy.labeling_guide, deps)
 
-    agree = agreement([l["label"] for l in labels_a], [l["label"] for l in labels_b])
-    deps.emit(f"  raw agreement {agree['raw_agreement']:.3f}, kappa {agree['kappa']:.3f}, "
-              f"{agree['n_disagreements']} disagreements")
+    solo = labels_b is None
+    if solo:
+        # NOT `{"kappa": 1.0}`, and not a zero either — an ABSENT measurement.
+        # Every downstream reader (`gold_agreement.json`, the gate, the report)
+        # gets `None` and has to render "未测量", which is the true statement.
+        # A 0.0 would read as catastrophic disagreement and a 1.0 as perfect
+        # agreement; both are claims about a comparison nobody made.
+        agree = {"kappa": None, "raw_agreement": None, "n_disagreements": None,
+                 "n": len(labels_a), "n_annotators": 1,
+                 "why_absent": ("mode=fast labelled with a single annotator "
+                                f"({getattr(cfg.taxonomy, 'primary_annotator', 'a')}); "
+                                "agreement needs two independent readings")}
+        deps.emit(f"  {len(labels_a)} rows labelled by one annotator — "
+                  "kappa undefined, no referee, no disagreements")
+    else:
+        agree = agreement([l["label"] for l in labels_a], [l["label"] for l in labels_b])
+        deps.emit(f"  raw agreement {agree['raw_agreement']:.3f}, kappa {agree['kappa']:.3f}, "
+                  f"{agree['n_disagreements']} disagreements")
 
     rows: list[GoldRow] = []
     n_missing = 0
+    # ONE ANNOTATOR HAS NO SECOND READING TO CONTRADICT IT, so a class it invents
+    # is never contested and never reaches the referee's `_snap_label_to_taxonomy`
+    # check. On `fin01` the query `2246` came back as `UNKNOWN` — not a class in
+    # this taxonomy — and went straight into the gold set as `final="UNKNOWN"`,
+    # a one-row phantom class the classifier then drops as "too rare", which is
+    # the wrong explanation for a malformed label. With two annotators this is
+    # mostly self-correcting: an invented code rarely matches the other reading,
+    # so the row becomes a disagreement and the referee's verdict is snapped.
+    # Solo mode has to do that check itself.
+    _valid_codes = {n.code for n in taxonomy.nodes if getattr(n, "code", None)}
+    n_offschema = 0
     for i, q in enumerate(queries):
-        la, lb = labels_a[i]["label"], labels_b[i]["label"]
+        la = labels_a[i]["label"]
+        if solo and la != UNLABELED and _valid_codes and la not in _valid_codes:
+            snapped, _note = _snap_label_to_taxonomy(la, _valid_codes)
+            if snapped:
+                la = snapped
+            else:
+                # Unresolvable: leave it out of the gold set rather than teach a
+                # class that does not exist. Counted and reported, never silent.
+                n_offschema += 1
+                la = UNLABELED
+        lb = la if solo else labels_b[i]["label"]
         # A row NOBODY LABELLED is missing data, not agreement. `agreement()`
         # already excludes UNLABELED from kappa, but this construction did not:
         # when both annotators omitted the same row, `la == lb == UNLABELED`
@@ -644,14 +707,23 @@ def p2b_gold(state: PipelineState, deps: Deps) -> dict[str, Any]:
         if missing:
             n_missing += 1
         rows.append(GoldRow(
-            query=q, idx=int(idx[i]), label_a=la, label_b=lb,
+            query=q, idx=int(idx[i]), label_a=la, label_b="" if solo else lb,
             final="" if missing else (la if la == lb else ""),
+            # At `solo`, `la == lb` by construction above, so this is True for
+            # every labelled row — "nothing to adjudicate", not "they agreed".
+            # `n_annotators=1` is what makes the two readings distinguishable.
             agreed=(not missing) and la == lb,
-            rationale_a=labels_a[i].get("rationale", ""), rationale_b=labels_b[i].get("rationale", ""),
+            n_annotators=1 if solo else 2,
+            rationale_a=labels_a[i].get("rationale", ""),
+            rationale_b="" if solo else labels_b[i].get("rationale", ""),
         ))
     if n_missing:
         deps.emit(f"  ⚠ {n_missing}/{len(queries)} rows missing a label from at least "
                   f"one annotator — excluded from the gold set, not counted as agreement")
+    if n_offschema:
+        deps.emit(f"  ⚠ {n_offschema}/{len(queries)} row(s) carried a label that is not a "
+                  f"class in this taxonomy and could not be repaired — excluded from the "
+                  f"gold set rather than shipped as a phantom class")
 
     new_rules: list[AdjudicationRule] = []
     # A row one annotator never labelled is not a disagreement either — there is
@@ -829,8 +901,9 @@ def p2b_gold(state: PipelineState, deps: Deps) -> dict[str, Any]:
         deps.memory.remember_rule(rule)
     taxonomy.rules.extend(new_rules)
 
-    kappa_trace.append({"round": 1, "kappa": agree["kappa"], "n": agree["n"],
-                        "raw_agreement": agree["raw_agreement"], "sample": "initial"})
+    if not solo:
+        kappa_trace.append({"round": 1, "kappa": agree["kappa"], "n": agree["n"],
+                            "raw_agreement": agree["raw_agreement"], "sample": "initial"})
 
     # --- guide repair: the playbook's 达不到先修指南再重标 ---------------------
     # Measuring kappa once, before the referee's rules exist, can only ever score
@@ -842,7 +915,8 @@ def p2b_gold(state: PipelineState, deps: Deps) -> dict[str, Any]:
     # agreement worse can be undone rather than merely regretted.
     guide_before_repair = taxonomy.labeling_guide
     rules_before_repair = list(taxonomy.rules)
-    if rounds > 0 and agree["kappa"] < cfg.gates.kappa and not deps.registry.is_offline:
+    if (rounds > 0 and not solo and agree["kappa"] < cfg.gates.kappa
+            and not deps.registry.is_offline):
         repair_meta = _repair_guide_and_reannotate(
             deps, ctx, cfg, df, taxonomy, rows, idx, strata, kappa_trace, rounds
         )
@@ -931,13 +1005,14 @@ def p2b_gold(state: PipelineState, deps: Deps) -> dict[str, Any]:
 
     gold_df = pd.DataFrame([r.model_dump() for r in rows])
     gold_ref = deps.store.put_table("gold", gold_df, fmt="csv", producer="p2b",
-                                    summary=f"{len(rows)} gold rows, kappa {agree['kappa']:.3f}")
+                                    summary=f"{len(rows)} gold rows, "
+                                            + (_kappa_str(agree)))
     agree_ref = deps.store.put_json(
         "gold_agreement",
         {"agreement": agree, "new_rules": [r.model_dump() for r in new_rules],
          "n_adjudicated": len(disagreements), "active_learning": al_meta,
          "kappa_trace": kappa_trace, "guide_repair": repair_meta.get("summary", {})},
-        producer="p2b", summary=f"kappa {agree['kappa']:.3f}",
+        producer="p2b", summary=_kappa_str(agree),
     )
     deps.store.put_json("taxonomy_v2", {"taxonomy": taxonomy.model_dump()}, producer="p2b",
                         summary="taxonomy with referee-drafted rules folded in")
@@ -954,85 +1029,118 @@ def p2b_gold(state: PipelineState, deps: Deps) -> dict[str, Any]:
     coverage = agree["n"] / n_sub
     unsound = coverage < cfg.gates.min_annotation_coverage
 
-    # THE SAME QUESTION p2a ALREADY LEARNED TO ASK. This gate was
-    # `kappa >= cfg.gates.kappa`, a flat bar, while p2a — on the same corpus and
-    # the same annotators — reasons about the annotator's own ceiling. On
-    # `live38` that produced an incoherent pair: p2a PASSED at kappa 0.824
-    # (89.3% of a 0.9228 ceiling) and p2b HALTED at 0.832 (90.2%). The HIGHER
-    # number blocked. A 0.90 bar there demands 97.5% of what one annotator
-    # manages against ITSELF, which is the condition p2a's own comment describes
-    # as making a gate unpassable by a perfect guide.
+    # ONE ANNOTATOR: the gate is SKIPPED, not passed.
     #
-    # So ask p2a's three questions here too: did we reach the target, is the
-    # target above the ceiling, or is the remedy spent with agreement still above
-    # the reliability floor? And keep failing when the annotator itself is unfit,
-    # which no amount of guide work can repair.
-    pilot_gate = (state.get("gates") or {}).get("p2a_pilot_agreement")
-    pilot_obs = getattr(pilot_gate, "observed", {}) or {}
-    pilot_ceiling = pilot_obs.get("annotator_self_consistency_kappa")
+    # Everything below reasons about a number that does not exist here — the
+    # ceiling, the share of it, the residual slack, the repair budget. Feeding
+    # them a placeholder would produce a gate whose ledger entry is
+    # indistinguishable from a full run's, which is precisely what `mode="fast"`
+    # must never be able to do. `status="skipped"` says the check did not run,
+    # and `GateResult.ok` already lets the pipeline continue past it.
+    #
+    # `coverage` IS still measured and still reported: how many rows came back
+    # labelled is a property of one annotator, not of two, so an outage during a
+    # fast run is caught here exactly as it is in a full one.
+    if solo:
+        gate = deps.gate(
+            "p2b_kappa", "p2b",
+            passed=not unsound,
+            skipped=True,
+            observed={"kappa": None, "raw_agreement": None,
+                      "n": agree["n"], "n_annotators": 1,
+                      "annotator": cfg.taxonomy.primary_annotator,
+                      "annotation_coverage": round(coverage, 4),
+                      "why_absent": agree.get("why_absent", "")},
+            threshold={"kappa": cfg.gates.kappa},
+            message=(f"标注一致性未测量 —— fast 模式由单个标注员 "
+                     f"({cfg.taxonomy.primary_annotator}) 标注 {agree['n']} 行, "
+                     f"没有第二份独立判读可供比较; 覆盖率 {coverage:.0%}"
+                     + ("  ⚠ 覆盖率低于门槛, 说明标注过程本身有缺口" if unsound else "")),
+            remediation=("这不是一次失败的检验, 而是一次没有做的检验。金标签的可靠性"
+                         "在本次运行中没有独立证据; 需要该证据时用 `mode=full` 重跑, "
+                         "两名标注员会给出 kappa 与裁决记录。"),
+        )
+    else:
 
-    share_of_ceiling = (round(agree["kappa"] / pilot_ceiling, 4)
-                        if pilot_ceiling else None)
-    target_above_ceiling = bool(pilot_ceiling and cfg.gates.kappa > pilot_ceiling)
-    # The remedy here is the guide repair, not the redraw. It is spent when every
-    # configured round has run; `kappa_trace` holds the initial round plus one
-    # entry per repair.
-    repair_exhausted = (max(0, len(kappa_trace) - 1) >= cfg.taxonomy.kappa_repair_rounds
-                        and not deps.registry.is_offline)
-    usable_despite_slack = (repair_exhausted
-                            and agree["kappa"] >= cfg.gates.annotator_fitness_kappa)
-    annotator_fit = (deps.registry.is_offline or pilot_ceiling is None
-                     or pilot_ceiling >= cfg.gates.annotator_fitness_kappa)
-    p2b_pass = annotator_fit and (
-        agree["kappa"] >= cfg.gates.kappa or target_above_ceiling or usable_despite_slack)
+        # THE SAME QUESTION p2a ALREADY LEARNED TO ASK. This gate was
+        # `kappa >= cfg.gates.kappa`, a flat bar, while p2a — on the same corpus and
+        # the same annotators — reasons about the annotator's own ceiling. On
+        # `live38` that produced an incoherent pair: p2a PASSED at kappa 0.824
+        # (89.3% of a 0.9228 ceiling) and p2b HALTED at 0.832 (90.2%). The HIGHER
+        # number blocked. A 0.90 bar there demands 97.5% of what one annotator
+        # manages against ITSELF, which is the condition p2a's own comment describes
+        # as making a gate unpassable by a perfect guide.
+        #
+        # So ask p2a's three questions here too: did we reach the target, is the
+        # target above the ceiling, or is the remedy spent with agreement still above
+        # the reliability floor? And keep failing when the annotator itself is unfit,
+        # which no amount of guide work can repair.
+        pilot_gate = (state.get("gates") or {}).get("p2a_pilot_agreement")
+        pilot_obs = getattr(pilot_gate, "observed", {}) or {}
+        pilot_ceiling = pilot_obs.get("annotator_self_consistency_kappa")
+
+        share_of_ceiling = (round(agree["kappa"] / pilot_ceiling, 4)
+                            if pilot_ceiling else None)
+        target_above_ceiling = bool(pilot_ceiling and cfg.gates.kappa > pilot_ceiling)
+        # The remedy here is the guide repair, not the redraw. It is spent when every
+        # configured round has run; `kappa_trace` holds the initial round plus one
+        # entry per repair.
+        repair_exhausted = (max(0, len(kappa_trace) - 1) >= cfg.taxonomy.kappa_repair_rounds
+                            and not deps.registry.is_offline)
+        usable_despite_slack = (repair_exhausted
+                                and agree["kappa"] >= cfg.gates.annotator_fitness_kappa)
+        annotator_fit = (deps.registry.is_offline or pilot_ceiling is None
+                         or pilot_ceiling >= cfg.gates.annotator_fitness_kappa)
+        p2b_pass = annotator_fit and (
+            agree["kappa"] >= cfg.gates.kappa or target_above_ceiling or usable_despite_slack)
 
 
-    gate = deps.gate(
-        "p2b_kappa", "p2b",
-        passed=(not unsound) and p2b_pass,
-        observed={"kappa": agree["kappa"], "raw_agreement": agree["raw_agreement"], "n": agree["n"],
-                  "kappa_trace": [round(k["kappa"], 4) for k in kappa_trace],
-                  "n_unscored_unlabelled": agree.get("n_unscored_unlabelled", 0),
-                  "annotation_coverage": round(coverage, 4),
-                  "annotator_self_consistency_kappa": pilot_ceiling,
-                  "share_of_ceiling_reached": share_of_ceiling,
-                  "target_above_ceiling": target_above_ceiling,
-                  "repair_rounds_run": max(0, len(kappa_trace) - 1),
-                  "repair_exhausted": repair_exhausted,
-                  "proceeded_with_residual_slack": usable_despite_slack},
-        threshold={"kappa": cfg.gates.kappa},
-        message=(
-            (f"MEASUREMENT UNSOUND — only {agree['n']}/{n_sub} rows ({coverage:.0%}) were "
-             f"labelled by both annotators; kappa {agree['kappa']:.3f} describes the "
-             "rows that survived, not the guide. "
-             if unsound else "")
-            + f"kappa {agree['kappa']:.3f} on {agree['n']} double-annotated queries"
-            + (f"; annotator self-consistency {pilot_ceiling} "
-               f"({share_of_ceiling} of ceiling reached)" if pilot_ceiling else "")
-            + (f" — NOTE the target {cfg.gates.kappa} is ABOVE this annotator's own "
-               f"ceiling of {pilot_ceiling}, so no guide can reach it"
-               if target_above_ceiling else "")
-            + (f" — PROCEEDING WITH RESIDUAL SLACK: the guide repair ran its "
-               f"{cfg.taxonomy.kappa_repair_rounds} configured round(s) and agreement "
-               f"is {agree['kappa']:.3f}, above the "
-               f"{cfg.gates.annotator_fitness_kappa} reliability floor but short of "
-               f"{cfg.gates.kappa}; every downstream number must be read against "
-               f"that gap" if usable_despite_slack and agree["kappa"] < cfg.gates.kappa
-               else "")
-            + (" — NOTE: offline stand-ins are deterministic functions, so this number "
-               "measures the stand-in, not annotator agreement" if deps.registry.is_offline else "")
-        ),
-        remediation=(
-            ("Annotator coverage collapsed — check the run log for provider errors "
-             "(auth, rate limits, timeouts) before reading anything into this number. "
-             "Re-run the phase once the provider is healthy. "
-             if unsound else "")
-            + "Low kappa means the guide is ambiguous, not that the annotators are careless. "
-            "Fold the referee's drafted rules into the guide and re-annotate before "
-            "training anything on this gold set."
-        ),
-        warn_only=deps.registry.is_offline,
-    )
+        gate = deps.gate(
+            "p2b_kappa", "p2b",
+            passed=(not unsound) and p2b_pass,
+            observed={"kappa": agree["kappa"], "raw_agreement": agree["raw_agreement"], "n": agree["n"],
+                      "kappa_trace": [round(k["kappa"], 4) for k in kappa_trace],
+                      "n_unscored_unlabelled": agree.get("n_unscored_unlabelled", 0),
+                      "annotation_coverage": round(coverage, 4),
+                      "annotator_self_consistency_kappa": pilot_ceiling,
+                      "share_of_ceiling_reached": share_of_ceiling,
+                      "target_above_ceiling": target_above_ceiling,
+                      "repair_rounds_run": max(0, len(kappa_trace) - 1),
+                      "repair_exhausted": repair_exhausted,
+                      "proceeded_with_residual_slack": usable_despite_slack},
+            threshold={"kappa": cfg.gates.kappa},
+            message=(
+                (f"MEASUREMENT UNSOUND — only {agree['n']}/{n_sub} rows ({coverage:.0%}) were "
+                 f"labelled by both annotators; kappa {agree['kappa']:.3f} describes the "
+                 "rows that survived, not the guide. "
+                 if unsound else "")
+                + f"kappa {agree['kappa']:.3f} on {agree['n']} double-annotated queries"
+                + (f"; annotator self-consistency {pilot_ceiling} "
+                   f"({share_of_ceiling} of ceiling reached)" if pilot_ceiling else "")
+                + (f" — NOTE the target {cfg.gates.kappa} is ABOVE this annotator's own "
+                   f"ceiling of {pilot_ceiling}, so no guide can reach it"
+                   if target_above_ceiling else "")
+                + (f" — PROCEEDING WITH RESIDUAL SLACK: the guide repair ran its "
+                   f"{cfg.taxonomy.kappa_repair_rounds} configured round(s) and agreement "
+                   f"is {agree['kappa']:.3f}, above the "
+                   f"{cfg.gates.annotator_fitness_kappa} reliability floor but short of "
+                   f"{cfg.gates.kappa}; every downstream number must be read against "
+                   f"that gap" if usable_despite_slack and agree["kappa"] < cfg.gates.kappa
+                   else "")
+                + (" — NOTE: offline stand-ins are deterministic functions, so this number "
+                   "measures the stand-in, not annotator agreement" if deps.registry.is_offline else "")
+            ),
+            remediation=(
+                ("Annotator coverage collapsed — check the run log for provider errors "
+                 "(auth, rate limits, timeouts) before reading anything into this number. "
+                 "Re-run the phase once the provider is healthy. "
+                 if unsound else "")
+                + "Low kappa means the guide is ambiguous, not that the annotators are careless. "
+                "Fold the referee's drafted rules into the guide and re-annotate before "
+                "training anything on this gold set."
+            ),
+            warn_only=deps.registry.is_offline,
+        )
 
     # PERSIST THE TAXONOMY THE REFEREE AND THE REPAIR ACTUALLY PRODUCED.
     # `taxonomy.rules.extend(new_rules)` and the repaired `labeling_guide` were
@@ -1125,6 +1233,13 @@ def p2b_gold(state: PipelineState, deps: Deps) -> dict[str, Any]:
                   + (" — LOPSIDED" if bal.lopsided else ""))
     bal_gate = deps.gate(
         "p2b_annotator_symmetry", "p2b",
+        # There is no symmetry between one annotator and nobody. `bal` is honest
+        # about it on its own — zero contested rows makes it `undecidable` — but
+        # `passed=not bal.lopsided` reads `undecidable` as `not lopsided` and
+        # emits PASSED, a clean bill of health for a comparison that never
+        # happened. That is the same failure shape as a kappa of 1.0 from one
+        # reading, and it must not survive into the ledger.
+        skipped=solo,
         passed=not bal.lopsided,
         observed=bal.as_record(),
         threshold={"rule": "|z| <= 3 for annotator_a's win-rate against an even split",
@@ -1166,6 +1281,20 @@ def p2b_gold(state: PipelineState, deps: Deps) -> dict[str, Any]:
                   f"(rules: {', '.join(gr.rules_citing[:5])})")
     ev_gate = deps.gate(
         "p2b_rules_match_their_evidence", "p2b",
+        # NOTHING TESTED IS NOT NOTHING WRONG.
+        #
+        # This measures whether each boundary's stated discriminator actually
+        # divides the rows the REFEREE adjudicated. With one annotator nothing is
+        # contested, so nothing is adjudicated, so `stated_grounds` is empty and
+        # `vac` — the vacuous boundaries — is empty too. `passed=not vac` then
+        # reports PASSED, and the message says "every boundary's stated
+        # discriminator actually divides its adjudicated rows (0 tested)": a
+        # clean bill of health for zero rows. Observed on `fin01`.
+        #
+        # Same shape as the p8 collision gate: an empty result set reads as an
+        # empty problem set. `skipped` is the honest status when there was no
+        # evidence to test against.
+        skipped=not ev_report.stated_grounds,
         passed=not vac,
         observed=ev_report.as_record(),
         threshold={"rule": ("a boundary fails when the discriminator its own rules "
@@ -1175,6 +1304,10 @@ def p2b_gold(state: PipelineState, deps: Deps) -> dict[str, Any]:
                  # ONE contiguous literal: `prose()` matches a literal prefix, and
                  # `test_no_translation_key_is_dead` scans the source for it — a key
                  # split across two f-string lines exists in neither place.
+                 "规则与证据的比对未运行 —— 本次没有任何被裁定的行可供检验 "
+                 f"(单标注员时无争议行; 已写入 {ev_report.n_lexical} 条词面规则 / "
+                 f"{ev_report.n_semantic} 条语义规则, 但都没有被检验过)"
+                 if not ev_report.stated_grounds else
                  "every boundary's stated discriminator actually divides its adjudicated rows"
                  f" ({len(ev_report.stated_grounds)} tested; {ev_report.n_lexical} "
                  f"lexical / {ev_report.n_semantic} semantic rules)"
@@ -1232,7 +1365,8 @@ def p2b_gold(state: PipelineState, deps: Deps) -> dict[str, Any]:
                       "rule_conflicts": conflicts.as_record(),
                   })},
         "completed_phases": ["p2b"],
-        "events": [f"P2b: kappa {agree['kappa']:.3f}, {len(new_rules)} rules drafted from disagreements"],
+        "events": [f"P2b: {_kappa_str(agree)}, "
+                   f"{len(new_rules)} rules drafted from disagreements"],
     }
 
 
@@ -1513,6 +1647,40 @@ def _redraw_until_stable(
         pilot = candidate
 
     return taxonomy, pilot, redraw_history
+
+
+def _pilot_not_measured(cfg: Any) -> dict[str, Any]:
+    """The pilot record for a run that never piloted — every number `None`.
+
+    Same keys as `_pilot_agreement`, because the gate and the reports index into
+    it positionally by name and a missing key would read as a code bug rather
+    than an absent measurement. The VALUES are `None` and the lists are empty:
+    a reader that formats `kappa` gets a `TypeError` it must handle rather than
+    a number that looks measured, and `structural_confusions == []` says "no
+    confusions were found" only in the company of `measured: False`.
+    """
+    return {
+        "measured": False,
+        "why_absent": (f"mode=fast piloted with one annotator "
+                       f"({cfg.taxonomy.primary_annotator}); every pilot statistic "
+                       "compares two independent readings of the same rows"),
+        "n": 0,
+        "kappa": None, "kappa_se": None, "kappa_upper": None,
+        "raw_agreement": None, "chance_agreement": None,
+        "raw_needed_for_target": None,
+        "self_consistency_kappa": None, "self_consistency_raw": None,
+        "self_consistency_is_lower_bound": None,
+        "kappa_exceeds_self_consistency": None,
+        "self_consistency_note": "",
+        "share_of_ceiling_reached": None,
+        "recoverable_slack": None, "recoverable_slack_se": None,
+        "slack_is_significant": None,
+        "target_above_ceiling": None,
+        "ceiling_measured_on_real_annotator": False,
+        "ceiling_verdict": "",
+        "top_confusions": [], "structural_confusions": [],
+        "guide_confusions": [], "confusions_below_noise_floor": [],
+    }
 
 
 def _pilot_agreement(deps: Deps, ctx: Any, df: Any, taxonomy: Taxonomy) -> dict[str, Any]:
@@ -1908,9 +2076,20 @@ def _guide_with_decisions(guide: str, decisions: list[dict[str, Any]],
 
 
 
+def _kappa_str(agree: dict[str, Any]) -> str:
+    """Render kappa for a summary line, or say it was not measured.
+
+    `f"kappa {agree['kappa']:.3f}"` raises `TypeError` on `None`, and every
+    escape from that — `or 0.0`, `or -1` — writes a NUMBER into an artifact
+    summary for a measurement that was never taken. Say so in words instead.
+    """
+    k = agree.get("kappa")
+    return f"kappa {k:.3f}" if isinstance(k, (int, float)) else "kappa 未测量 (单标注员)"
+
+
 def _annotate_both(ctx: Any, queries: list[str], classes: str, rules: str,
-                   guide: str, deps: Deps) -> tuple[list[dict], list[dict]]:
-    """Run the two annotators AT THE SAME TIME.
+                   guide: str, deps: Deps) -> tuple[list[dict], list[dict] | None]:
+    """Run the two annotators AT THE SAME TIME — or one, returning `None` for the other.
 
     They are independent by design — that independence is the whole
     methodological point of having two — so there was never an ordering
@@ -1942,6 +2121,20 @@ def _annotate_both(ctx: Any, queries: list[str], classes: str, rules: str,
     however the batches interleave.
     """
     args = (queries, classes, rules, guide, deps)
+    # ONE ANNOTATOR: return the labels and `None`, never the same list twice.
+    #
+    # Returning `(labels, labels)` would let every call site below run unchanged
+    # and would put kappa = 1.000 into `gold_agreement.json` — a perfect score
+    # for a measurement that was not taken. The `None` forces each caller to say
+    # what it does without a second reading, which is the point.
+    # `cfg.taxonomy` itself is fetched defensively, not just the field on it:
+    # this function is called with a stub config in the concurrency tests, and a
+    # hard `ctx.cfg.taxonomy` raised `AttributeError` in all seven of them.
+    _tax = getattr(ctx.cfg, "taxonomy", None)
+    if getattr(_tax, "annotators", 2) == 1:
+        which = getattr(_tax, "primary_annotator", "a")
+        deps.emit(f"  single annotator ({which}) — no agreement measured")
+        return _annotate(ctx, which, *args), None
     if ctx.registry.is_offline or not getattr(ctx.cfg.llm, "annotators_concurrent", True):
         # Offline is deterministic and near-instant; there is no latency to hide,
         # and keeping it sequential keeps the stand-in's logs readable.
@@ -2579,6 +2772,23 @@ def p2d_validate(state: PipelineState, deps: Deps) -> dict[str, Any]:
     """
     cfg = deps.cfg
     df = deps.df
+    if not getattr(cfg, "validate_adversarial", True):
+        # A pure second opinion: it re-scores predictions the classifier has
+        # already made and changes none of them. Skipping it removes EVIDENCE
+        # about the labels, never a label — so the artifact says exactly that
+        # rather than being absent, which a reader would have to interpret.
+        deps.emit("P2d 对抗验证 —— fast 模式跳过 (纯复核, 不改变任何标签)")
+        ref = deps.store.put_json(
+            "adversarial_validation",
+            {"ran": False, "skipped": "mode=fast",
+             "why": ("对抗验证只重新审视分类器已经给出的预测, 不修改任何一个标签。"
+                     "跳过它减少的是证据, 不是结果: 本次运行没有独立估计过这些标签"
+                     "在被主动挑错时的稳健性。"),
+             "adversarial_accuracy": None, "n_attacked": 0, "n_verdicts": 0},
+            producer="p2d", summary="not run: mode=fast")
+        return {"phase": "p3", "completed_phases": ["p2d"],
+                "artifacts": {"adversarial_validation": ref},
+                "events": ["P2d: skipped (mode=fast)"]}
     preds = deps.recover(
         "topdown_preds", "topdown_labels",
         rebuild=lambda df: df["l1_pred"].to_numpy(),
@@ -2841,13 +3051,17 @@ def _active_learning_round(
     queries = [str(df[cfg.data.text_column].iloc[i]) for i in picks]
     la, lb = _annotate_both(
         ctx, queries, classes_txt, rules_txt, taxonomy.labeling_guide, deps)
+    solo = lb is None
     out: list[GoldRow] = []
     for j, q in enumerate(queries):
-        a2, b2 = la[j]["label"], lb[j]["label"]
+        a2 = la[j]["label"]
+        b2 = a2 if solo else lb[j]["label"]
         out.append(GoldRow(
-            query=q, idx=int(picks[j]), label_a=a2, label_b=b2,
+            query=q, idx=int(picks[j]), label_a=a2, label_b="" if solo else b2,
             final=a2 if a2 == b2 else "", agreed=a2 == b2,
-            rationale_a=la[j].get("rationale", ""), rationale_b=lb[j].get("rationale", ""),
+            n_annotators=1 if solo else 2,
+            rationale_a=la[j].get("rationale", ""),
+            rationale_b="" if solo else lb[j].get("rationale", ""),
             round=2, source="active_learning",
         ))
     return out

@@ -93,7 +93,7 @@ def propose_grid(
 ) -> tuple[list[Any], dict[str, Any]]:
     """Return (grid_to_sweep, record). The incumbent grid on any failure."""
     idle = ProposalOutcome(incumbent=list(incumbent))
-    if not getattr(deps.cfg, "propose_grids", False) or deps.cfg.fast_mode:
+    if not getattr(deps.cfg, "propose_grids", False) or deps.cfg.smoke_mode:
         return list(incumbent), {**idle.as_record(), "skipped": "disabled"}
 
     from .roles import ProposerAgent

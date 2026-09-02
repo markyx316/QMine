@@ -780,7 +780,17 @@ def normalise_then(then: Any, codes: Sequence[str]) -> ThenResult:
 #: `无明确意图标记（如'什么意思'、'寓意'、'翻译'等）`. 31 of live39's 80
 #: trigger-less rules do this — nearly four times the number that carry a
 #: trigger, so this reaches rules no regex ever could.
-_QUOTED = re.compile(r"[‘'“\"「]([^’'”\"」]{1,12})[’'”\"」]")
+#: CORNER BRACKETS 『』 COUNT TOO. The class listed 「」 and not 『』, while
+#: `usable_markers` twenty lines down already strips both — so the codebase
+#: half-knew. A model that quotes its discriminators as 『走势图/k线』 instead of
+#: 「走势图/k线」 had every span dropped before extraction and its rules recorded
+#: as having no executable trigger. Measured on `fin02`: 4 rules gain usable
+#: markers (『净值』, 『主连/合约/期货/连续』, 『k线图/图表/走势图』, 『净值/基金』).
+#:
+#: It does NOT explain that run's 52 rejected triggers — those were rejected for
+#: describing a category (`裸数字代码`, `主观/推荐词`) rather than naming a
+#: string, which is the check working correctly. Two separate things.
+_QUOTED = re.compile(r"[‘'“\"「『]([^’'”\"」』]{1,12})[’'”\"」』]")
 #: Negation immediately governing the marker list: the rule fires on ABSENCE.
 _NEGATED = re.compile(r"(无|没有|不含|不包含|未|缺(?:少|乏)?)[^，。；]{0,8}$")
 

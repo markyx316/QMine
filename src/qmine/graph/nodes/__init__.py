@@ -9,7 +9,7 @@ def observe(deps: Any, phase: str, artifacts: dict[str, Any],
     """Run the phase observer if it is enabled, and hand back gates to register.
 
     One helper rather than the guard repeated at every call site, because the
-    guard has three parts — the flag, fast_mode, and `as_state_gates()` — and the
+    guard has three parts — the flag, smoke_mode, and `as_state_gates()` — and the
     third is the one that silently does nothing when it is forgotten. `deps.gate`
     returns a GateResult and registers nothing, so an observer whose gate is not
     merged into the node's return reaches the log and no operator: that failure
@@ -17,7 +17,7 @@ def observe(deps: Any, phase: str, artifacts: dict[str, Any],
 
     Returns `{}` when observation is off, so a call site can always spread it.
     """
-    if not getattr(deps.cfg, "observe_phases", False) or deps.cfg.fast_mode:
+    if not getattr(deps.cfg, "observe_phases", False) or deps.cfg.smoke_mode:
         return {}
     from ...agents.observe import observe_phase
 

@@ -298,5 +298,5 @@ seed_viz: 42
 seed_replay:
 - 0
 - 1
-fast_mode: false
+smoke_mode: false
 offline: false

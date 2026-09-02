@@ -116,6 +116,42 @@ llm:
     # measured. What the evidence supports is that the two annotators must MATCH,
     # not that both must be maximal, so annotator_b is matched to this instead.
     annotator_a: deepseek-v4-flash
+    # THE NAMER, PINNED FOR ITS TAIL — measured over 440 real namer calls.
+    #
+    #   model              n    p50     p90     p95     max      failed
+    #   deepseek-v4-pro    67   38.0s   86.6s   95.9s   127.6s   1.5%
+    #   glm-5.3           261   53.5s  122.5s  171.0s  1701.6s   3.7%
+    #   deepseek-v4-flash 112   27.7s   61.6s   82.7s   384.3s   7.4%
+    #
+    # `pro` wins on every measure that matters here EXCEPT p50, and p50 is not what
+    # hurts: ~60 namer calls run sharded and concurrent, so the phase clock is set
+    # by the slowest call, not the median. glm-5.3's tail is the problem — 1701.6s
+    # for one successful call, and on `fin02` one leaf burned 585s + 585s of
+    # APITimeoutError before recovering, ~19.5 minutes for a single cluster.
+    # `flash` has the best p50 and the WORST failure rate (7.4%), which buys a
+    # faster median with more retries; `pro` is 1.5%.
+    #
+    # glm-5.3 was never "too verbose" — namer output is p50 2,147 tokens whatever
+    # the model. glm-5.3 is slow PER TOKEN (53.0 tok/s against deepseek-v4-flash's
+    # 170.1). Diagnosis matters here because the obvious remedy for verbosity
+    # (a smaller cap) would have done nothing.
+    #
+    # `glm-5.3-flash` was considered and rejected: 37.7 tok/s measured, SLOWER than
+    # the glm-5.3 it would replace. The name promises what the numbers do not.
+    #
+    # ACCEPTED TRADE-OFF — `tree_auditor` is also deepseek-v4-pro, and it is the
+    # role that SCORES namer coherence. This file warns elsewhere that an LLM judge
+    # marking its own lab's homework is kinder by 10-25%, so the namer's coherence
+    # is now the one number here whose independence is not structurally guaranteed.
+    # The maintainer weighed this and took the trade. The direct check is
+    # reassuring rather than conclusive: `live42` ran namer AND tree_auditor both
+    # on deepseek-v4-pro and scored 3.90, slightly BELOW glm-5.3 runs (3.96, 4.06)
+    # — no inflation visible, n=1. If coherence ever becomes load-bearing rather
+    # than advisory, move `tree_auditor` to a lab the namer does not use.
+    #
+    # Tool-free role, so the `tool_choice` 400 that bars deepseek-v4-pro from the
+    # researchers does not apply.
+    namer: deepseek-v4-pro
     # PINNED, and it was the most consequential unpinned role in the file.
     #
     # The comment below says the referee stays on Zhipu for independence, and it

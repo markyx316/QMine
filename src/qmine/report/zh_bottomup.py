@@ -593,7 +593,7 @@ def _agent_reading(deps: Any, question: str, facts: dict[str, Any],
         from ..agents.interpret import interpret
     except Exception:  # noqa: BLE001
         return []
-    if not getattr(deps.cfg, "interpret_results", True) or deps.cfg.fast_mode:
+    if not getattr(deps.cfg, "interpret_results", True) or deps.cfg.smoke_mode:
         return []
     try:
         got = interpret(deps, question, facts, context=context,
@@ -734,14 +734,32 @@ def _tree_listing(deps: Any, naming: dict, meta: dict) -> list[str]:
     # final). Matching by integer id mismatched 19 of 19 and shipped a family of
     # four classical-poetry leaves titled "中考录取分数与学校排名查询".
     fam_names = family_names(naming, fam, sizes)
+    # LIST THE DELIVERED LEAVES, NOT p7'S.
+    #
+    # `sizes` was already switched to the delivered partition, but MEMBERSHIP
+    # still came from `namings` — p7's leaves, before governance merged any of
+    # them. A merged-away leaf has zero delivered rows, so it rendered as
+    # `├─ <name>  n=0`, and a family whose leaves were all merged rendered as
+    # `■ 家族 7  (n=0, 3叶, 0.0%)` — an unnamed heading, because a family with no
+    # delivered leaf is not in `families_final` and has nothing to be named
+    # after. Observed on `fin01`: four such headings (families 7, 9, 14, 15).
+    #
+    # Dropped LOUDLY, not silently: governance merging ten leaves is a result,
+    # and a listing that just gets shorter hides it.
+    live = [n for n in namings
+            if int(n["leaf_id"]) < len(sizes) and int(sizes[int(n["leaf_id"])]) > 0]
+    merged_away = len(namings) - len(live)
     by_fam: dict[int, list[dict]] = {}
-    for n in namings:
+    for n in live:
         lid = n["leaf_id"]
         f = int(fam[lid]) if lid < len(fam) else 0
         by_fam.setdefault(f, []).append(n)
 
     out = ["```"]
-    out.append(f"════ {deps.cfg.domain.key} — {len(by_fam)} 家族 / {len(namings)} 叶 ════")
+    out.append(f"════ {deps.cfg.domain.key} — {len(by_fam)} 家族 / {len(live)} 叶 ════")
+    if merged_away:
+        out.append(f"（治理阶段合并掉 {merged_away} 个叶, 已不在交付分区中; "
+                   f"合并记录见 governance.json）")
     out.append("")
     for f in sorted(by_fam, key=lambda k: -sum(int(sizes[x['leaf_id']]) for x in by_fam[k])):
         members = sorted(by_fam[f], key=lambda x: -int(sizes[x["leaf_id"]]))
@@ -776,11 +794,23 @@ def _leaf_catalogue(deps: Any, naming: dict, meta: dict) -> list[str]:
     # final). Matching by integer id mismatched 19 of 19 and shipped a family of
     # four classical-poetry leaves titled "中考录取分数与学校排名查询".
     fam_names = family_names(naming, fam, sizes)
+    # Same delivered-partition filter as `_tree_listing`: a leaf governance
+    # merged away has no delivered rows, and listing it here as `n=0` under an
+    # unnamed `家族 N` describes a tree that no longer exists.
     by_fam: dict[int, list[dict]] = {}
+    n_merged = 0
     for n in namings:
-        by_fam.setdefault(int(fam[n["leaf_id"]]) if n["leaf_id"] < len(fam) else 0, []).append(n)
+        lid = int(n["leaf_id"])
+        if lid >= len(sizes) or int(sizes[lid]) == 0:
+            n_merged += 1
+            continue
+        by_fam.setdefault(int(fam[lid]) if lid < len(fam) else 0, []).append(n)
 
     out: list[str] = []
+    if n_merged:
+        out.append(f"> 治理阶段合并掉 {n_merged} 个叶, 下面只列出**实际交付**的叶。"
+                   f"被合并的叶及其去向记录在 `governance.json`。")
+        out.append("")
     for f in sorted(by_fam):
         out.append(f"**■ {fam_names.get(f, f'家族 {f}')}**")
         for n in sorted(by_fam[f], key=lambda x: -int(sizes[x["leaf_id"]])):

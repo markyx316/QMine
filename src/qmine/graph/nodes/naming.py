@@ -261,10 +261,14 @@ def p7_audit(state: PipelineState, deps: Deps) -> dict[str, Any]:
     gates = {}
     g0 = deps.gate(
         "p7_all_leaves_named", "p7",
-        passed=not unnamed,
+        # Same as p10: with zero leaves there is nothing unnamed, and this would
+        # report "all 0 leaves named".
+        passed=n_leaves > 0 and not unnamed,
         observed={"n_leaves": n_leaves, "n_named": len(named), "unnamed": unnamed[:20]},
         threshold={"unnamed": 0},
-        message=(f"all {n_leaves} leaves named" if not unnamed
+        message=("树里一个叶都没有 —— 没有可命名的东西, 这不是通过"
+                 if not n_leaves else
+                 f"all {n_leaves} leaves named" if not unnamed
                  else f"{len(unnamed)} leaves came back unnamed: {unnamed[:10]}"),
         remediation="A naming shard failed. Check the run log for the exception — an unnamed "
                     "cluster ships with no name, no user_need, and no coherence score.",
@@ -647,9 +651,25 @@ def p8_governance(state: PipelineState, deps: Deps) -> dict[str, Any]:
         msg = str(exc)[:200]
 
     artifacts_out = {}
-    if new_labels is not None and not np.array_equal(new_labels, labels):
-        from ...ops.cluster import _centroids
+    from ...ops.cluster import _centroids
 
+    # BIND `cents` WHATEVER GOVERNANCE DID.
+    #
+    # It used to be assigned only inside the branch below — the one that runs
+    # when governance actually rewrote the partition. On every run where
+    # governance changed nothing, the delivered-leaf collision check three
+    # statements down raised `UnboundLocalError`, was swallowed by its own
+    # `except`, and left `still_colliding == []` — so
+    # `p8_leaves_are_distinguishable` reported "PASSED — every delivered leaf is
+    # distinguishable from its siblings by name" having never compared a single
+    # pair. A gate that passes because its check crashed is worse than no gate:
+    # it is a positive claim manufactured by a bug.
+    #
+    # When governance is a no-op the delivered partition IS the pre-governance
+    # one, so its centroids are the right input — the check is over names on the
+    # partition that ships, and that partition is `labels` here.
+    cents = _centroids(deps.embedding("emb_hybrid"), labels, int(labels.max()) + 1)
+    if new_labels is not None and not np.array_equal(new_labels, labels):
         n_new = int(new_labels.max()) + 1
         cents = _centroids(deps.embedding("emb_hybrid"), new_labels, n_new)
         # Written under NEW names. Overwriting `leaf_labels` would destroy the
@@ -667,6 +687,8 @@ def p8_governance(state: PipelineState, deps: Deps) -> dict[str, Any]:
     # DELIVERED-PARTITION CHECKS. Both of these can only run here: p7 audits the
     # tree and p8 then splits it, so a leaf governance created was never audited.
     still_colliding: list[dict] = []
+    collision_check_ran = True
+    collision_error = ""
     try:
         _nm = deps.load("tree_naming")
         still_colliding = _resolve_indistinguishable_leaves(
@@ -675,24 +697,50 @@ def p8_governance(state: PipelineState, deps: Deps) -> dict[str, Any]:
                             summary="namings after disambiguation")
         deps.cache_put("tree_naming", _nm)
     except Exception as exc:  # noqa: BLE001
-        deps.emit(f"  ⚠ leaf disambiguation unavailable ({type(exc).__name__}) — "
-                  "name collisions, if any, are unresolved and the gate below says so")
+        # NAME THE FRAME, not just the type. This printed
+        # "unavailable (UnboundLocalError)" on every offline run — an exception
+        # type with no file, no line and no message, which is the least
+        # actionable form a swallowed error can take. The collision gate below
+        # still reports honestly either way; this only makes the cause findable.
+        import traceback
 
-    deps.gate(
+        _tb = traceback.extract_tb(exc.__traceback__)
+        _where = (f"{_tb[-1].filename.split('/')[-1]}:{_tb[-1].lineno} in "
+                  f"{_tb[-1].name}") if _tb else "unknown frame"
+        collision_check_ran = False
+        collision_error = f"{type(exc).__name__}: {exc} — at {_where}"
+        deps.emit(f"  ⚠ leaf disambiguation unavailable ({collision_error}) — "
+                  "name collisions, if any, are UNMEASURED and the gate below says so")
+
+    # CAPTURED, because `deps.gate` BUILDS a gate — it does not register one.
+    # A gate left unassigned here is emitted to the log and then dropped: it
+    # never reaches `run_summary.json`, never reaches the router, and can never
+    # halt anything. Verified on `/tmp/demochk3/d3`: the log printed
+    # "gate p8_leaves_are_distinguishable: PASSED" and the summary's gate list
+    # did not contain it. topdown.py carries the same comment about the same
+    # mistake, made once before and found five runs later.
+    distinguishable_gate = deps.gate(
         "p8_leaves_are_distinguishable", "p8",
-        passed=not still_colliding,
-        observed={"n_collisions": len(still_colliding),
+        # `not still_colliding` is True both when nothing collided and when
+        # nothing was compared. Only the first is a pass; the second is a check
+        # that did not run, and `skipped` is what says so. This is how the
+        # `UnboundLocalError` above shipped as a green gate.
+        skipped=not collision_check_ran,
+        passed=collision_check_ran and not still_colliding,
+        observed={"check_ran": collision_check_ran,
+                  "check_error": collision_error,
+                  "n_collisions": len(still_colliding),
                   "collisions": [{"family_id": g["family_id"], "name": g["name"],
                                   "leaf_ids": g["leaf_ids"]} for g in still_colliding]},
         threshold={"n_collisions": 0},
-        message=(f"{len(still_colliding)} delivered leaf name(s) are shared by two or "
-                 f"more leaves in the same family: "
-                 + "; ".join(f"{g['name']} = {g['leaf_ids']}" for g in still_colliding)
-                 if still_colliding else
-                 "every delivered leaf is distinguishable from its siblings by name"),
-        remediation="A reader choosing between two identically-named leaves cannot "
-                    "choose. Either the namer must name the difference, or the leaves "
-                    "must merge (`merge_leaves`).",
+        message=("名称重复检查未能运行, 交付叶之间是否重名本次没有测量 —— "
+                 f"{collision_error}" if not collision_check_ran else
+                 (f"{len(still_colliding)} 个交付叶的名称与同一家族内的其他叶重复: "
+                  + "; ".join(f"{g['name']} = {g['leaf_ids']}" for g in still_colliding)
+                  if still_colliding else
+                  "每个交付叶都能凭名称与同家族的兄弟叶区分开")),
+        remediation="读者面对两个同名的叶无法作出选择。要么由命名 agent 说清两者的"
+                    "差别, 要么这两个叶本就该合并 (`merge_leaves`)。",
         warn_only=True,
     )
 
@@ -745,6 +793,7 @@ def p8_governance(state: PipelineState, deps: Deps) -> dict[str, Any]:
         # tree that no longer exists — the single richest defect family in this
         # project's history. It is the phase most worth a second pair of eyes.
         "gates": {gate.name: gate,
+                  distinguishable_gate.name: distinguishable_gate,
                   **_observe(deps, "p8", {"governance": deps.load("governance")
                                           if deps.has("governance") else detail})},
         "prescriptions": prescriptions,

@@ -128,7 +128,7 @@ def _load_config(config: Optional[str], domain: Optional[str], **over) -> QMineC
             setattr(getattr(cfg, section), field, v)
         else:
             setattr(cfg, k, v)
-    # Re-validate: `fast_mode` is applied by a model validator, and assigning it
+    # Re-validate: `smoke_mode` is applied by a model validator, and assigning it
     # after construction would leave the full-size grids in place while the flag
     # claimed otherwise — a silent, expensive discrepancy.
     return QMineConfig.model_validate(cfg.model_dump())
@@ -142,12 +142,21 @@ def run(
              "run restores its own input path from its saved config."),
     domain: str = typer.Option("k12_zh", "--domain", "-d", help="Domain profile name or path."),
     config: Optional[str] = typer.Option(None, "--config", "-c", help="Full config YAML."),
-    text_column: str = typer.Option("query", "--text-column"),
+    text_column: Optional[str] = typer.Option(
+        None, "--text-column",
+        help="Source-file text column. Unset means: whatever the config says "
+             "(default `query`)."),
     reference_columns: str = typer.Option("", "--reference-columns", help="Comma-separated legacy label columns."),
     sample: Optional[int] = typer.Option(None, "--sample", help="Subsample N rows."),
     run_root: str = typer.Option("runs", "--run-root"),
     run_id: Optional[str] = typer.Option(None, "--run-id"),
-    fast: bool = typer.Option(False, "--fast", help="Shrink grids for a wiring smoke test."),
+    smoke: bool = typer.Option(False, "--smoke", help="Shrink grids for a wiring smoke test."),
+    fast: bool = typer.Option(
+        False, "--fast",
+        help="Fast mode: same analysis, no second-opinion layer. One annotator "
+             "(no kappa), no phase observers, no adversarial validation, no "
+             "agent-written report or pre-delivery audit; three deliverables "
+             "instead of thirteen. Every intermediate artifact is still written."),
     offline: bool = typer.Option(False, "--offline", help="No network: hashing encoder + heuristic agents."),
     provider: str = typer.Option(
         "", "--provider",
@@ -239,10 +248,26 @@ def run(
                       "(it is restored automatically when you --resume one).")
         raise typer.Exit(2)
 
-    cfg = _load_config(config, domain, run_root=run_root, fast_mode=fast, offline=offline)
+    cfg = _load_config(config, domain, run_root=run_root, smoke_mode=smoke,
+                       mode="fast" if fast else "full", offline=offline)
     cfg.data.input_path = input
-    cfg.data.text_column = text_column
-    cfg.data.reference_label_columns = [c.strip() for c in reference_columns.split(",") if c.strip()]
+    # AN UNSET FLAG MUST NOT OVERRULE THE CONFIG — the same defect as `provider`
+    # below, which was fixed there and left standing here.
+    #
+    # These assigned unconditionally, so Typer's defaults ("query" and "") beat
+    # whatever a config file asked for. A corpus config saying
+    # `text_column: original_query` was overwritten with `query` before p1 ran,
+    # and p1 halted with `KeyError: 'query'` — caught on an offline dry run of
+    # the finance corpus, one phase into what would otherwise have been a paid
+    # run. `reference_label_columns` had it too, and its failure is quieter: the
+    # declared columns silently become none, and
+    # `p1_reference_columns_declared` then reports the corpus as having
+    # undeclared label-like columns.
+    if text_column:
+        cfg.data.text_column = text_column
+    if reference_columns.strip():
+        cfg.data.reference_label_columns = [
+            c.strip() for c in reference_columns.split(",") if c.strip()]
     if sample:
         cfg.data.sample_size = sample
     if reuse_taxonomy:
@@ -850,6 +875,8 @@ def models_cmd(
                                          help="Price against this domain profile's settings."),
     gold: Optional[int] = typer.Option(None, "--gold-sample-size",
                                        help="Price against this gold-set size."),
+    fast: bool = typer.Option(False, "--fast",
+                              help="Price a FAST run: the second-opinion roles are silent."),
 ) -> None:
     """Show which providers are reachable and which model each agent role would use."""
     _load_env()
@@ -869,7 +896,8 @@ def models_cmd(
     # the exact failure the comment above describes, left in place for the one
     # case where nothing on the command line hints at it. It now also picks up
     # the defaulted routing policy, so the pre-flight matches the launch.
-    cfg = _load_config(config, domain, run_root="runs")
+    cfg = _load_config(config, domain, run_root="runs",
+                       mode="fast" if fast else "full")
     if gold:
         cfg.taxonomy.gold_sample_size = gold
 
@@ -916,6 +944,12 @@ def models_cmd(
     console.print(f"[dim]volumes scaled to this config: gold set "
                   f"{cfg.taxonomy.gold_sample_size or 'derived from corpus size'}, "
                   f"{cfg.taxonomy.kappa_repair_rounds} repair round(s)[/dim]")
+    if cfg.mode == "fast":
+        console.print(
+            "[yellow]FAST MODE — this price is for a run with no second-opinion "
+            "layer.[/yellow] [dim]The roles showing 0 calls are not routed: "
+            f"{', '.join(cfg.fast_skipped)}. A full run costs more because it "
+            "checks the result.[/dim]")
     r = Table("role", "model", "tier", "calls", "est. $", "fallback")
     for role, a in sorted(plan.assignments.items(), key=lambda kv: -kv[1].estimated_cost_usd):
         r.add_row(role, route_label(a) if a.model else "[red]none[/red]",
@@ -1000,7 +1034,7 @@ def doctor() -> None:
 @app.command()
 def demo(
     run_root: str = typer.Option("runs", "--run-root"),
-    fast: bool = typer.Option(True, "--fast/--full"),
+    smoke: bool = typer.Option(True, "--smoke/--full"),
     sample: int = typer.Option(8000, "--sample"),
 ) -> None:
     """Run the bundled K12 dataset end to end — the fastest way to see the whole thing."""
@@ -1038,7 +1072,7 @@ def demo(
     # phases connect, which the stand-in exercises perfectly well.
     kwargs.update(input=str(data), domain="k12_zh", config=None, text_column="query",
                   reference_columns="legacy_l1,legacy_l2", sample=sample,
-                  run_root=run_root, run_id=None, fast=fast, offline=True,
+                  run_root=run_root, run_id=None, smoke=smoke, fast=False, offline=True,
                   provider="mock", human_review=False, verbose=True)
     run(**kwargs)
 

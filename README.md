@@ -487,9 +487,41 @@ cp .env.example .env         # DEEPSEEK_API_KEY / ZHIPU_API_KEY / QWEN_API_KEY
 qmine models                 # the routing plan and cost estimate — spends nothing
 make demo                    # 8k rows, offline stand-in, ~4 min
 make live RUN=live45         # the full corpus on real models
+make fast RUN=live46         # same analysis, no second-opinion layer, 3 documents
 qmine watch live45           # attach the dashboard to a run, live or finished
 qmine render live45          # rebuild the deliverables from a finished run's artifacts
 ```
+
+### Two speeds, and what the fast one gives up
+
+`--fast` is for when you want the clustering and the labels now and can do
+without the evidence that they were checked. It runs **the same analysis** — the
+same corpus in full, the same α and K grids, the same gold-set size, the same
+twelve phases — and removes only the layer that second-guesses it:
+
+| | `make live` (full) | `make fast` |
+|---|---|---|
+| annotators on the gold set | 2, independent | **1** |
+| inter-annotator κ | measured | **absent** — not 1.0, not 0.0 |
+| pilot, guide repair, boundary redraw | run | not run |
+| per-phase observers | run | not run |
+| adversarial validation | run | not run |
+| agent-written report, pre-delivery audit | run | not run |
+| **grids, corpus, gold size, researchers** | full | **identical** |
+| **intermediate artifacts** | all | **all** |
+| deliverables | 13 documents + notebook | 3 reference documents |
+
+The three fast deliverables are the intent system, the cluster tree, and one
+workbook with every row labelled by both routes. Each opens with a
+machine-generated banner naming exactly what was skipped, and each ends with a
+map from every table back to the artifact it came from — so a fast run can still
+be audited to the source, it just has not been audited *for* you. `mode` is
+recorded in `run_summary.json`, and `verify_run.py` reports `N/A` rather than
+`PASS` for any check whose component did not run: a fast run can never be
+mistaken for a verified one.
+
+Not to be confused with `--smoke`, which shrinks the grids for a wiring test and
+is not a result at all.
 
 **Real models are the default.** With provider keys present the pipeline routes
 to them; with none it falls back to a deterministic stand-in and says so loudly —

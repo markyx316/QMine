@@ -53,7 +53,7 @@ def p9_panel(state: PipelineState, deps: Deps) -> dict[str, Any]:
 
     panel.measure("leaves", H, labels, template_masks=masks, reference_labels=ref_labels,
                   centroids=centroids, margin_threshold=cfg.deployment.margin_threshold,
-                  distill=not cfg.fast_mode)
+                  distill=not cfg.smoke_mode)
     panel.measure("families_pre_governance", H, leaf_family[labels_pre], template_masks=masks,
                   reference_labels=ref_labels, heldout=False)
     panel.measure("families_final", H, final_family[labels], template_masks=masks,
@@ -62,7 +62,7 @@ def p9_panel(state: PipelineState, deps: Deps) -> dict[str, Any]:
     # Every alpha the sweep considered, re-measured here rather than quoted.
     dense = deps.load("emb_base") if deps.has("emb_base") else None
     svd = deps.load("emb_svd_char") if deps.has("emb_svd_char") else None
-    if dense is not None and svd is not None and not cfg.fast_mode:
+    if dense is not None and svd is not None and not cfg.smoke_mode:
         from ...ops.cluster import kmeans_labels
         from ...ops.represent import hybrid
 
@@ -174,11 +174,18 @@ def p10_deploy(state: PipelineState, deps: Deps) -> dict[str, Any]:
     unnamed = [i for i in delivered if not str(names.get(i, "")).strip()]
     named_gate = deps.gate(
         "p10_delivered_leaves_named", "p10",
-        passed=not unnamed,
+        # AN EMPTY PARTITION IS NOT A NAMED PARTITION. `not unnamed` is true both
+        # when every delivered leaf has a name and when there are no delivered
+        # leaves at all — and the second is a total clustering failure that would
+        # read here as "all 0 delivered leaves carry a name". Requiring at least
+        # one leaf costs nothing and removes the false green.
+        passed=bool(delivered) and not unnamed,
         observed={"n_leaves_delivered": len(delivered), "n_unnamed": len(unnamed),
                   "unnamed_leaf_ids": unnamed[:20]},
         threshold={"unnamed_allowed": 0},
-        message=(f"all {len(delivered)} delivered leaves carry a name" if not unnamed else
+        message=("交付分区里一个叶都没有 —— 这不是「全部已命名」, 而是没有可命名的东西"
+                 if not delivered else
+                 f"all {len(delivered)} delivered leaves carry a name" if not unnamed else
                  f"{len(unnamed)} of {len(delivered)} DELIVERED leaves have no name "
                  f"({unnamed[:8]}) — those rows ship with an empty name column"),
         remediation=("A leaf reaches the delivered table without a name when a phase "
@@ -447,6 +454,65 @@ def p10_deploy(state: PipelineState, deps: Deps) -> dict[str, Any]:
     }
 
 
+def _p11_fast(state: PipelineState, deps: Deps) -> dict[str, Any]:
+    """Write the three fast-mode deliverables.
+
+    Deliberately does NOT run the narrative writer, the interpreter or the
+    pre-delivery auditor — `mode="fast"` already turned all three off in config,
+    and reaching them from here would silently re-enable what `fast_skipped`
+    tells the reader was skipped. The figures ARE still built: they are generated
+    by Python from artifacts, cost no model call, and both documents reference
+    them.
+    """
+    from ...report import fast_deliver as fast
+    from ...report.builder import build_figures_only
+
+    refs: dict[str, Any] = {}
+    try:
+        refs.update(build_figures_only(state, deps))
+    except Exception as exc:  # noqa: BLE001
+        deps.emit(f"  figures skipped ({type(exc).__name__}: {exc})")
+    n_figures = len(refs)
+
+    deps.emit("  fast 模式交付: 3 份文档 (完整中间产物保留)")
+    refs["report_fast_topdown"] = deps.store.put_markdown(
+        f"{deps.cfg.domain.key}_自上而下_意图体系完整定义",
+        fast.build_topdown(state, deps), producer="p11",
+        summary="fast 模式交付物 1/3: 类目定义、裁定规则、金标准与分类器")
+    refs["report_fast_bottomup"] = deps.store.put_markdown(
+        f"{deps.cfg.domain.key}_自下而上_聚类树完整定义",
+        fast.build_bottomup(state, deps), producer="p11",
+        summary="fast 模式交付物 2/3: 已交付的家族与叶, 逐叶定义")
+    try:
+        wb = fast.build_workbook(state, deps)
+        refs["workbook"] = deps.store.register_file(
+            wb.stem, wb, "table", producer="p11",
+            summary="fast 模式交付物 3/3: 全量逐行标注 + 定义与分布 sheet")
+    except Exception as exc:  # noqa: BLE001
+        deps.emit(f"  ⚠ 工作簿生成失败 ({type(exc).__name__}: {exc}) — "
+                  "labels_full.csv 仍在运行目录中")
+
+    n_delivered = sum(1 for k in ("report_fast_topdown", "report_fast_bottomup",
+                                  "workbook") if k in refs)
+
+    n_delivered = sum(1 for k in ("report_fast_topdown", "report_fast_bottomup",
+                                  "workbook") if k in refs)
+    return {
+        "phase": "p12",
+        "artifacts": refs,
+        "completed_phases": ["p11"],
+        # COUNT WHAT SHIPPED, not what was intended. This said "3 deliverables"
+        # unconditionally and derived the figure count as `len(refs) - 3`, so a
+        # failed workbook was still reported as three, and a run that lost both
+        # the workbook and the figures printed "-1 figures".
+        "events": [f"P11 (fast): {n_delivered}/3 deliverables + {n_figures} figures "
+                   f"written to {deps.store.gen_dir}; "
+                   f"skipped {', '.join(deps.cfg.fast_skipped)}"
+                   + ("" if n_delivered == 3 else
+                      "  ⚠ a deliverable did not build — see the warnings above")],
+    }
+
+
 def p11_report(state: PipelineState, deps: Deps) -> dict[str, Any]:
     """Write the reports and the executed notebook."""
     from ...report.builder import build_all_reports
@@ -479,6 +545,18 @@ def p11_report(state: PipelineState, deps: Deps) -> dict[str, Any]:
             set_translator(registry_translator(deps.registry))
         except Exception as exc:  # noqa: BLE001
             deps.emit(f"  translator unavailable ({type(exc).__name__}); prose stays English")
+
+    if getattr(deps.cfg, "mode", "full") == "fast":
+        # THREE DOCUMENTS INSTEAD OF THIRTEEN — and every artifact still written.
+        #
+        # The thirteen documents a full run ships exist to ARGUE: each shows the
+        # measurement behind a decision and why the alternative lost. A fast run
+        # removed the layer that produces that argument, so shipping the same
+        # thirteen would be shipping thirteen arguments with the evidence cut out
+        # of them. These three REFER instead — the classes, the tree, and every
+        # labelled row — and each carries the generated disclosure banner naming
+        # what was skipped. The figures and the store are untouched.
+        return _p11_fast(state, deps)
 
     refs = build_all_reports(state, deps)
 

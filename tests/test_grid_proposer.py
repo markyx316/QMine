@@ -133,7 +133,7 @@ def _deps(*, enabled=True, agent=None, art=None):
     events = []
     art = art or {"data_audit": {"n_rows": 5000}}
     return SimpleNamespace(
-        cfg=SimpleNamespace(propose_grids=enabled, fast_mode=False,
+        cfg=SimpleNamespace(propose_grids=enabled, smoke_mode=False,
                             domain=SimpleNamespace(key="test")),
         emit=events.append, agent_ctx=lambda: None,
         has=lambda k: k in art, load=lambda k: art[k]), events

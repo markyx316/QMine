@@ -250,7 +250,7 @@ def p3_represent(state: PipelineState, deps: Deps) -> dict[str, Any]:
             f"P3c: silhouette would have chosen alpha={sweep['silhouette_would_have_chosen']} "
             "— overruled by design (Principle 3)"
         )
-    if deps.cfg.observe_phases and not deps.cfg.fast_mode:
+    if deps.cfg.observe_phases and not deps.cfg.smoke_mode:
         _obs_gates.update(observe_phase(deps, "p3", {"representation": deps.load("representation")}, decisions=decisions).as_state_gates())
     return {
         "phase": "p4",
@@ -282,7 +282,7 @@ def p4_battery(state: PipelineState, deps: Deps) -> dict[str, Any]:
     result = algorithm_battery(
         H, ks=cfg.clustering.battery_k, seeds=tuple(cfg.seed_replay),
         silhouette_sample=cfg.clustering.silhouette_sample,
-        include_hdbscan=not cfg.fast_mode,
+        include_hdbscan=not cfg.smoke_mode,
     )
     # THE NOTE STILL DESCRIBED THE RETRACTED "ELECTION".
     #
@@ -331,7 +331,7 @@ def p4_battery(state: PipelineState, deps: Deps) -> dict[str, Any]:
             f"P4: density methods held back for the novelty sentinel "
             f"(best HDBSCAN: {d['noise_rate'] * 100:.0f}% noise, {d['n_clusters']} clusters)"
         )
-    if deps.cfg.observe_phases and not deps.cfg.fast_mode:
+    if deps.cfg.observe_phases and not deps.cfg.smoke_mode:
         _obs_gates.update(observe_phase(deps, "p4", {"battery": deps.load("battery")}, decisions=[decision]).as_state_gates())
     return {
         "phase": "p5",
@@ -384,7 +384,7 @@ def p5_granularity(state: PipelineState, deps: Deps) -> dict[str, Any]:
     sweep = k_sweep(H, ks, seeds=tuple(cfg.seed_replay),
                     silhouette_sample=cfg.clustering.silhouette_sample, template_masks=masks,
                     reference_partitions=reference_partitions or None,
-                    fast=cfg.fast_mode)
+                    fast=cfg.smoke_mode)
     # WHICH REFERENCE MAY LOCATE K IS DECIDED BY REACH, NOT BY PREFERENCE.
     #
     # A reference that occupies only part of the partition cannot express a
@@ -394,7 +394,7 @@ def p5_granularity(state: PipelineState, deps: Deps) -> dict[str, Any]:
 
     _probe_k = sorted(ks)[len(ks) // 2]
     _probe_labels = kmeans_fit(H, _probe_k, seed=cfg.seed_metric,
-                               fast=cfg.fast_mode).labels_
+                               fast=cfg.smoke_mode).labels_
     _cands: dict[str, Any] = {}
     _tr_y = np.full(len(deps.df), -1, dtype=np.int64)
     for _i, _m in enumerate(masks.values()):
@@ -571,7 +571,7 @@ def p5_granularity(state: PipelineState, deps: Deps) -> dict[str, Any]:
         events.append(f"P5: estimators did NOT converge — {tri['divergence_note']}")
     if tri["silhouette_disagrees"]:
         events.append(f"P5: silhouette peaks at K={tri['estimates']['silhouette_peak_k']} — advisory only")
-    if deps.cfg.observe_phases and not deps.cfg.fast_mode:
+    if deps.cfg.observe_phases and not deps.cfg.smoke_mode:
         _obs_gates.update(observe_phase(deps, "p5", {"granularity": deps.load("granularity")}, decisions=[decision]).as_state_gates())
     return {
         "phase": "p6",
@@ -768,7 +768,7 @@ def p6_hierarchy(state: PipelineState, deps: Deps) -> dict[str, Any]:
         ),
         warn_only=verdict["verdict"] == "underpowered",
     )
-    if deps.cfg.observe_phases and not deps.cfg.fast_mode:
+    if deps.cfg.observe_phases and not deps.cfg.smoke_mode:
         _obs_gates.update(observe_phase(deps, "p6", {"hierarchy_meta": deps.load("hierarchy_meta")}, decisions=[]).as_state_gates())
     return {
         "phase": "p7",

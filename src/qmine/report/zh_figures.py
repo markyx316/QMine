@@ -153,7 +153,7 @@ if sw.get('rows'):
     else:
         print('本次 silhouette 与主裁判恰好同选 — 属于巧合, 不改变它没有投票权这一点。')
 else:
-    print('α-sweep 未产出 (fast_mode?)')"""
+    print('α-sweep 未产出 (smoke_mode?)')"""
 
 
 def fig_battery() -> str:

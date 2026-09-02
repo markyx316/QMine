@@ -18,9 +18,22 @@ import pandas as pd
 CHECKS = []
 
 
-def check(name, category):
+def check(name, category, needs=()):
+    """Register a check. `needs` names the `fast_skipped` keys it depends on.
+
+    A check that verifies a component `mode="fast"` deliberately removed must not
+    report FAIL — the component is absent by configuration, not by defect, and a
+    harness that cries FAIL on every intentional skip trains its reader to ignore
+    it. It must not report PASS either. It reports N/A, naming the skip.
+
+    Declaring `needs` is what makes that distinction MECHANICAL rather than a
+    judgement made while reading output: a check with no `needs` runs in every
+    mode, and one that names a key it does not actually depend on will silently
+    stop running on fast runs — so keep `needs` to what the check literally
+    reads.
+    """
     def deco(fn):
-        CHECKS.append((name, category, fn))
+        CHECKS.append((name, category, fn, tuple(needs)))
         return fn
     return deco
 
@@ -29,28 +42,81 @@ class Run:
     def __init__(self, gen: Path):
         self.gen = gen
         self._cache: dict = {}
+        # A RE-RENDERED GENERATION HOLDS DOCUMENTS, NOT ARTIFACTS.
+        #
+        # `qmine render` writes gen(N+1) from gen(N)'s artifacts, so a rendered
+        # directory contains the .md/.xlsx it produced and almost none of the
+        # .json/.npy they were built from — the store resolves those across
+        # generations, and this harness read `self.gen / name` directly. Running
+        # it on a rendered generation therefore SKIPped 12 checks that had
+        # perfectly good evidence one directory up, which reads as "could not
+        # check" when the truth is "looked in the wrong place". Since
+        # re-rendering is the documented way to verify a report fix, the harness
+        # has to work there.
+        self._search = [gen]
+        m = re.fullmatch(r"gen(\d+)", gen.name)
+        if m:
+            for g in range(int(m.group(1)) - 1, 0, -1):
+                cand = gen.parent / f"gen{g:02d}"
+                if cand.is_dir():
+                    self._search.append(cand)
+
+    def _find(self, filename: str) -> Path | None:
+        for d in self._search:
+            p = d / filename
+            if p.exists():
+                return p
+        return None
 
     def j(self, name):
         if name not in self._cache:
-            p = self.gen / f"{name}.json"
-            self._cache[name] = json.loads(p.read_text()) if p.exists() else None
+            p = self._find(f"{name}.json")
+            self._cache[name] = json.loads(p.read_text()) if p else None
         return self._cache[name]
+
+    #: A full-mode document name -> the fast deliverable that absorbed it. Fast
+    #: mode ships three documents composed FROM these builders, so the content a
+    #: check looks for is present under a different, domain-prefixed filename.
+    #: Without this every content check reports SKIP on a fast run, and the three
+    #: documents that fast mode actually delivers would be the only deliverables
+    #: this harness never reads.
+    FAST_HOME = {
+        "自下而上聚类最终报告.md": "自下而上_聚类树完整定义",
+        "叶清单.md": "自下而上_聚类树完整定义",
+        "Leaf_Catalogue.md": "自下而上_聚类树完整定义",
+        "自上而下类目体系最终报告.md": "自上而下_意图体系完整定义",
+        "类目清单.md": "自上而下_意图体系完整定义",
+        "标注规范与裁定规则.md": "自上而下_意图体系完整定义",
+        "Report_TopDown_Approach.md": "自上而下_意图体系完整定义",
+    }
 
     def md(self, *names):
         for n in names:
+            # Documents are NOT searched across generations: an older
+            # generation's report is the thing a re-render exists to replace,
+            # and reading it would silently verify the previous version.
             p = self.gen / n
             if p.exists():
                 return p.read_text()
+        # Fall back to the fast deliverable that contains this document's content.
+        # Matched by SUFFIX because the filename carries a domain prefix
+        # (`medical_zh_自上而下_...`), which is not knowable here.
+        for n in names:
+            stem = self.FAST_HOME.get(n)
+            if not stem:
+                continue
+            for cand in sorted(self.gen.glob(f"*{stem}.md")):
+                return cand.read_text()
         return None
 
     def npy(self, name):
-        p = self.gen / f"{name}.npy"
-        return np.load(p) if p.exists() else None
+        p = self._find(f"{name}.npy")
+        return np.load(p) if p else None
 
     def labels(self):
-        p = self.gen / "labels_full.csv"
         if "labels" not in self._cache:
-            self._cache["labels"] = pd.read_csv(p) if p.exists() else None
+            p = self._find("labels_full.csv")
+            self._cache["labels"] = pd.read_csv(p) if p else None
         return self._cache["labels"]
 
     @property
@@ -77,7 +143,7 @@ def _(r):
            ("FAIL", f"absent; gates = {sorted(g)[:6]}")
 
 
-@check("phase observers ran and recorded gates", "agents")
+@check("phase observers ran and recorded gates", "agents", needs=["phase_observers"])
 def _(r):
     g = [k for k in r.summary.get("gates", {}) if k.endswith("_observer")]
     return ("PASS", f"{len(g)}: {sorted(g)}") if g else ("FAIL", "no observer gate reached state")
@@ -349,7 +415,7 @@ def _(r):
                     f"(labels carry {real}) — pre/post refinement mixed")
 
 
-@check("observers reached the phases that decide", "agents")
+@check("observers reached the phases that decide", "agents", needs=["phase_observers"])
 def _(r):
     """Four of eighteen phases were observed, and none on the top-down route —
     which is 94% of the spend and produced the worst finding of live39."""
@@ -360,7 +426,8 @@ def _(r):
            ("FAIL", f"{len(g)} observers; missing {missing}")
 
 
-@check("a blocking observation was CONFIRMED, not merely asserted", "agents")
+@check("a blocking observation was CONFIRMED, not merely asserted", "agents",
+       needs=["phase_observers"])
 def _(r):
     """Severity is the agent's confidence; the check is the measurement. A gate
     that failed on an unverified `blocking` would be an LLM stopping the run."""
@@ -407,7 +474,7 @@ def _(r):
                     f"verdicts: {[' x '.join(b['classes']) for b in bad][:3]}")
 
 
-@check("the pre-delivery audit ran and reported itself", "agents")
+@check("the pre-delivery audit ran and reported itself", "agents", needs=["delivery_audit"])
 def _(r):
     a = r.j("delivery_audit")
     if not a:
@@ -422,7 +489,8 @@ def _(r):
     return "PASS", f"{a.get('n_applied')} applied, {a.get('n_refused')} refused, report present"
 
 
-@check("every edited deliverable kept its pre-audit original", "agents")
+@check("every edited deliverable kept its pre-audit original", "agents",
+       needs=["delivery_audit"])
 def _(r):
     a = r.j("delivery_audit") or {}
     changed = a.get("files_changed") or []
@@ -433,7 +501,8 @@ def _(r):
            ("FAIL", f"no pre-audit copy for {missing}")
 
 
-@check("final report was written and its coverage disclosed", "narrative")
+@check("final report was written and its coverage disclosed", "narrative",
+       needs=["narrative_report"])
 def _(r):
     """The agent-written report must ship, and must confess what it left out.
 
@@ -493,15 +562,26 @@ def _(r):
 
 def run(gen: Path, label: str):
     r = Run(gen)
+    mode = r.summary.get("mode", "full")
+    skipped = set(r.summary.get("fast_skipped", []) or [])
     print(f"\n{'=' * 78}\n{label}: {gen}\n{'=' * 78}")
+    if mode != "full":
+        print(f"  MODE = {mode}  —  {len(skipped)} component(s) not run: "
+              f"{', '.join(sorted(skipped))}")
+        print("  Checks over those components report N/A. A fast run is NOT "
+              "comparable to a full run on counts alone.")
     tally = {}
-    for name, cat, fn in CHECKS:
-        try:
-            status, detail = fn(r)
-        except Exception as exc:  # noqa: BLE001
-            status, detail = "ERROR", f"{type(exc).__name__}: {exc}"
+    for name, cat, fn, needs in CHECKS:
+        absent = [k for k in needs if k in skipped]
+        if absent:
+            status, detail = "N/A", f"mode={mode}: {', '.join(absent)} not run"
+        else:
+            try:
+                status, detail = fn(r)
+            except Exception as exc:  # noqa: BLE001
+                status, detail = "ERROR", f"{type(exc).__name__}: {exc}"
         tally[status] = tally.get(status, 0) + 1
-        icon = {"PASS": "✅", "FAIL": "❌", "SKIP": "— ", "ERROR": "💥"}[status]
+        icon = {"PASS": "✅", "FAIL": "❌", "SKIP": "— ", "ERROR": "💥", "N/A": "· "}[status]
         print(f"{icon} [{cat:11s}] {name}")
         print(f"      {str(detail)[:150]}")
     print(f"\n  {tally}")

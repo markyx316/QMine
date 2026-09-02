@@ -290,9 +290,25 @@ class Deps:
         message: str = "",
         remediation: str = "",
         warn_only: bool = False,
+        skipped: bool = False,
     ) -> GateResult:
+        """Record a gate outcome.
+
+        `skipped=True` means THE CHECK DID NOT RUN — there is no observation to
+        compare against the threshold. It is not a pass: a pass asserts the
+        measurement was taken and cleared the bar. `mode="fast"` removes whole
+        measurements (kappa needs two annotators; there is one), and a run that
+        recorded those as passes would be indistinguishable in the ledger from a
+        full run that actually checked them. `GateResult.ok` already treats
+        `skipped` as non-halting, so nothing blocks — the ledger just stops
+        claiming a verdict it does not have. It never raises a lesson, because
+        an unrun check has taught nothing.
+        """
         blocking = name in self.cfg.gates.blocking and not warn_only
-        status = "passed" if passed else ("warned" if warn_only or not blocking else "failed")
+        if skipped:
+            status = "skipped"
+        else:
+            status = "passed" if passed else ("warned" if warn_only or not blocking else "failed")
         g = GateResult(
             name=name,
             phase=phase,
@@ -303,7 +319,7 @@ class Deps:
             message=message,
             remediation=remediation,
         )
-        if not passed:
+        if not passed and not skipped:
             self.lesson(
                 situation=f"{phase} gate {name}: observed {observed}",
                 action="ran the phase with the current configuration",

@@ -373,7 +373,16 @@ class GoldRow(BaseModel):
     label_a: str = ""
     label_b: str = ""
     final: str = ""
+    #: "no contest pending on this row" — which is what all three consumers use
+    #: it for (skip the referee, count the unresolved, size the agreement). It
+    #: is NOT readable as "two annotators agreed" on its own: at
+    #: `n_annotators == 1` every row is uncontested because there is only one
+    #: reading, and nothing agreed with anything. Read it WITH `n_annotators`.
     agreed: bool = False
+    #: How many independent annotators produced this row. 2 is the method; 1 is
+    #: `mode="fast"`, and then `label_b` is empty, `agreed` carries no
+    #: agreement, and kappa over these rows is undefined rather than perfect.
+    n_annotators: int = 2
     adjudicated: bool = False
     rule_cited: str = ""
     rationale_a: str = ""

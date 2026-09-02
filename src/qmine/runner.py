@@ -18,7 +18,7 @@ from pathlib import Path
 from collections.abc import Sequence
 from typing import Any, Iterator
 
-from .artifacts import ArtifactStore, latest_generation
+from .artifacts import ArtifactStore, latest_generation, resolved_config_path
 from .config import QMineConfig
 from .graph.build import build_graph
 from .graph.deps import Deps
@@ -285,7 +285,8 @@ def run_pipeline(
                 try:
                     summary = write_summary(
                         final, store, registry, declared_gates=cfg.gates.blocking,
-                        run_id=run_id, generation=generation, elapsed=time.time() - t0)
+                        run_id=run_id, generation=generation, elapsed=time.time() - t0,
+                        cfg=cfg)
                 except Exception as exc:  # noqa: BLE001
                     log.warning("run_summary could not be written (%s)", exc)
                     summary = {}
@@ -295,7 +296,7 @@ def run_pipeline(
 def write_summary(
     final: PipelineState, store: ArtifactStore, registry: ModelRegistry, *,
     run_id: str, generation: int, elapsed: float, resumed: bool = False,
-    declared_gates: Sequence[str] = (),
+    declared_gates: Sequence[str] = (), cfg: Any = None,
 ) -> dict[str, Any]:
     """Write ``run_summary.json``.
 
@@ -311,6 +312,15 @@ def write_summary(
         "run_id": run_id,
         "generation": generation,
         "resumed": resumed,
+        # WHICH MODE PRODUCED THESE NUMBERS — the first thing a reader of this
+        # file needs and the one thing the numbers themselves cannot say. A fast
+        # run's accuracy, K and alpha look exactly like a full run's, because
+        # they ARE computed the same way; what differs is that nothing checked
+        # them. `qmine inspect`, `verify_run.py` and any future comparison across
+        # runs all read this file, and every one of them would otherwise treat an
+        # unchecked run as an equal to a checked one.
+        "mode": getattr(cfg, "mode", "full"),
+        "fast_skipped": list(getattr(cfg, "fast_skipped", []) or []),
         "elapsed_s": round(elapsed, 1),
         "state_summary": state_summary(final),
         "completed_phases": final.get("completed_phases", []),
@@ -469,7 +479,7 @@ def resume_run(cfg: QMineConfig, run_id: str, *, generation: int = 1,
             final = graph.invoke(payload, config=config)
             summary = write_summary(final, store, registry, declared_gates=cfg.gates.blocking,
                                     run_id=run_id, generation=generation,
-                                    elapsed=time.time() - t0, resumed=True)
+                                    elapsed=time.time() - t0, resumed=True, cfg=cfg)
             return {"state": final, "summary": summary, "events": events,
                     "state_summary": state_summary(final)}
 
@@ -555,6 +565,66 @@ def recover_state(root: Path, generation: int, cfg: QMineConfig,
     return state, missing
 
 
+def inherit_mode(cfg: QMineConfig, root: Path, src_gen: int) -> QMineConfig:
+    """Carry the source generation's `mode` AND `domain` into a re-render.
+
+    A RENDER MUST NOT UPGRADE A FAST RUN. `cfg` arrives from the CLI freshly
+    constructed, so `mode` defaults to "full" — and rendering a fast run
+    therefore produced the thirteen full-mode documents, WITHOUT the
+    skipped-components banner, describing numbers nothing in that run had
+    checked. That is the exact outcome fast mode exists to prevent, reached by
+    the one command whose whole purpose is to re-derive deliverables. Observed on
+    `/tmp/fastrun/f1`: gen02 shipped 叶清单.md, 类目清单.md and 统一度量面板.md
+    with no disclosure anywhere in them.
+
+    Read from the resolved config the SOURCE generation wrote, never from the
+    caller. `fast_skipped` travels with it, so the banner names what that run
+    skipped rather than what today's defaults would skip.
+    """
+    src = resolved_config_path(root, src_gen)
+    if src is None:
+        return cfg
+    try:
+        import yaml as _yaml
+
+        prev = _yaml.safe_load(src.read_text(encoding="utf-8")) or {}
+    except Exception as exc:  # noqa: BLE001
+        log.warning("could not read the source generation's mode from %s (%s) — "
+                    "rendering with the caller's config", src, exc)
+        return cfg
+    # THE DOMAIN TOO, and this half was already wrong before fast mode existed:
+    # `render` builds its config with no `--domain`, so every re-rendered
+    # deliverable carried "**领域**: `generic`" whatever the corpus was —
+    # reproduced on a full-mode render of a `k12_zh` run. Fast mode made it
+    # material rather than cosmetic, because the domain key is part of the
+    # deliverable FILENAME: a render deposited `generic_自上而下_….md` beside the
+    # run's own `k12_zh_自上而下_….md`, two names for one document.
+    prev_domain = prev.get("domain")
+    if isinstance(prev_domain, dict) and prev_domain.get("key"):
+        try:
+            from .config import DomainProfile
+
+            cfg.domain = DomainProfile.model_validate(prev_domain)
+        except Exception as exc:  # noqa: BLE001
+            log.warning("could not restore the source generation's domain (%s) — "
+                        "deliverables will say %r", exc, cfg.domain.key)
+    if str(prev.get("mode", "full")) != "fast":
+        return cfg
+    cfg.mode = "fast"
+    # Re-validate so the mode's own switches (observers, narrative, delivery
+    # audit) are applied exactly as a fresh run would apply them.
+    # `model_dump()` round-trips the domain through a plain dict; re-attaching
+    # the object keeps any non-serialised state the profile carries.
+    _domain = cfg.domain
+    cfg = QMineConfig.model_validate(cfg.model_dump())
+    cfg.domain = _domain
+    # The RECORDED list wins over the one the validator just rebuilt: the banner
+    # must describe the run that produced the artifacts, not the current code.
+    if prev.get("fast_skipped"):
+        cfg.fast_skipped = list(prev["fast_skipped"])
+    return cfg
+
+
 def render_run(cfg: QMineConfig, run_id: str, *, generation: int | None = None,
                agents: bool = False, on_event: Any = None) -> dict[str, Any]:
     """Rebuild a finished run's deliverables into a NEW generation.
@@ -584,6 +654,8 @@ def render_run(cfg: QMineConfig, run_id: str, *, generation: int | None = None,
     if not root.exists():
         raise FileNotFoundError(f"no run at {root}")
     src_gen = generation or latest_generation(root)
+
+    cfg = inherit_mode(cfg, root, src_gen)
 
     registry = ModelRegistry(cfg.llm, cache_dir=root / "llm_cache", run_cfg=cfg)
     # Into the generation this render is about to write, never over the run's own
@@ -640,7 +712,8 @@ def render_run(cfg: QMineConfig, run_id: str, *, generation: int | None = None,
             merged = {**state, **{k: v for k, v in (out or {}).items()
                                   if k in ("gates", "completed_phases")}}
             write_summary(merged, store, registry, run_id=run_id,
-                          generation=store.generation, elapsed=0.0, resumed=True)
+                          generation=store.generation, elapsed=0.0, resumed=True,
+                          cfg=cfg)
         except Exception as exc:  # noqa: BLE001 — the documents are the deliverable
             _emit(f"  run_summary not written for the rendered generation ({exc})")
 

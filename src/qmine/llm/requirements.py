@@ -424,6 +424,25 @@ def scaled_requirements(cfg: Any) -> dict[str, "RoleRequirement"]:
     # The referee sees the disagreements, historically ~16% of the gold set.
     reqs["referee"] = reqs["referee"].model_copy(
         update={"typical_calls": max(1, -(-int(gold * 0.16) // batch))})
+
+    # FAST MODE: zero the roles that will not be called.
+    #
+    # This estimate exists to be consulted BEFORE spending, so quoting a full
+    # run's price for a fast run is the same class of defect as quoting a
+    # 600-row price for a 3,000-row gold set — it is wrong at exactly the moment
+    # the number is still actionable. The roles below are removed by
+    # `QMineConfig._fast_mode_drops_the_second_opinion`; `annotator_b` and
+    # `referee` go with them because one annotator produces no second reading and
+    # therefore no disagreement to adjudicate.
+    if getattr(cfg, "mode", "full") == "fast":
+        silent = ["annotator_b", "referee", "observer", "adversary",
+                  "delivery_auditor", "interpreter", "reporter", "taxonomy_critic"]
+        for role in silent:
+            if role in reqs:
+                reqs[role] = reqs[role].model_copy(update={"typical_calls": 0})
+        # A's pilot passes go too — the pilot itself does not run.
+        reqs["annotator_a"] = reqs["annotator_a"].model_copy(
+            update={"typical_calls": per_annotator})
     return reqs
 
 

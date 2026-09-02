@@ -738,7 +738,15 @@ def test_the_collision_gate_reads_a_re_measurement_not_the_attempt():
 
     gate_src = inspect.getsource(naming)
     assert '"p8_leaves_are_distinguishable"' in gate_src
-    assert "passed=not still_colliding" in gate_src, "the gate must read the re-measurement"
+    # The gate reads the re-measurement AND whether the measurement happened at
+    # all. `passed=not still_colliding` alone was true in two different worlds —
+    # nothing collided, and nothing was compared because the check had raised
+    # `UnboundLocalError` and its own `except` swallowed it. The second shipped
+    # as a green gate on every run where governance rewrote nothing.
+    assert "passed=collision_check_ran and not still_colliding" in gate_src, \
+        "the gate must read the re-measurement, and only when it was taken"
+    assert "skipped=not collision_check_ran" in gate_src, \
+        "a check that crashed must record `skipped`, never `passed`"
 
 
 def test_a_non_default_text_column_survives_canonicalisation():

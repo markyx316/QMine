@@ -12,29 +12,35 @@
 
 ---
 
-## 1. Status — last updated 2026-09-01
+## 1. Status — last updated 2026-09-02
 
-# 642 tests passing. live44 is the newest completed run — 17/17 phases, and the whole live44 defect queue is FIXED and awaiting a verification run.
+# 689 tests passing. `mode="fast"` is built and VERIFIED on a live paid run (`fin01`, finance corpus, 2.40h, ~$4.23+).
 
-**The one thing to know:** every item found on live44 has a fix and a test. The
-next action is a fresh live run to confirm them end-to-end; nothing in the queue
-is blocked on analysis.
+**The one thing to know:** `--fast` and `--smoke` are different things. `--smoke`
+(was `fast_mode`) shrinks the analysis for a wiring test; `--fast`
+(`mode="fast"`) keeps the analysis at full size and removes the second-opinion
+layer. `fin01` confirmed the distinction on real models: the alpha sweep ran its
+full seven values and the gold set was the full derived 3,000 rows, while kappa,
+the pilot and adversarial validation were absent rather than faked.
 
 | | |
 |---|---|
-| Tests | **642** passing (was 625); `ruff --select F src/qmine/` clean |
-| Newest completed run | `live44` gen01 — 17/17 phases, `provider=routed`, 841 calls, **$61.09**, 9.81h |
-| `live44` narrative | **9 of 10 sections** verified, 1 marked hole (live42 was 3 of 9) |
-| `live44` gold set | κ **0.880** on **n=3000**, raw 0.891 — both annotators at full coverage in BOTH rounds |
-| `live44` delivered shape | **53 leaves / 23 families** (p6 produced 49/18 — governance rewrote it) |
-| `live44` gates | 26 recorded — 15 measured, 11 advisory observer; 3 WARNED, 0 failed |
-| Verification | `verify_run.py`: live44 **26 PASS / 0 FAIL / 2 SKIP**; control live42 20/6/2 |
+| Tests | **689** passing (was 665); `ruff --select F src/qmine/ tools/` clean |
+| Live fast run | `fin01` — 17/17 phases, `provider=routed`, 234 calls, 2.40h, est. **$4.23** (4 researcher roles unpriced, so the true figure is higher) |
+| `fin01` quality | CV **0.859**, macro-F1 **0.775**, PV-weighted acc **0.861**, ECE 0.029, coherence 3.91 |
+| `fin01` shape | 20 L1 intents / 34 delivered leaves / 28 families over 10,000 rows |
+| `fin01` gates | 3 `skipped` (the fast-mode three), 1 `warned` (locator reach 24%), 0 failed, `declared_gates_never_evaluated: []` |
+| Verification | `verify_run`: `fin01` **19 PASS / 6 N/A / 2 FAIL / 1 SKIP**; offline finance control 17/6/4/1 |
+| In flight | `fin02` — same pipeline on `金融query-260701.xlsx`, to verify the post-`fin01` fixes |
 
-**live44 cost 2.1x live42 for the same corpus** ($61.09 vs $29.69). Almost all of
-it was p2b: 97% of input tokens are annotation, each call carried the ~20k-token
-rule block, and `annotator_b` (qwen3.8-flash) needed 432 calls to
-`annotator_a`'s 267 because ~35% of its batches came back as a JSON-schema echo.
-The echo is recovered by retry, so it costs money rather than data.
+**Both `fin01` FAILs are fixed and one is verified.** The stale-family headings
+are gone in a re-render (`runs/fin01/gen03`); the phantom-class fix is
+pipeline-level and `fin02` is the test of it.
+
+**Year-over-year, same source, one year apart:** template coverage is 18.6% on
+`250701` and **36.3%** on `260701`. The 2025 slice is markedly more
+heterogeneous, which is also why `p5_locator_reaches_the_corpus` warned on
+`fin01` (the reference frame reached only 24% of clusters).
 
 ### What the live44 examination found, and where it landed
 
@@ -2791,3 +2797,285 @@ values, so the 62 empty batches replay on any resume AND on a new generation of
 live43 — the fix would never fire. Independently, p2b sits inside the forked
 region, which is the case §2 warns never to restart mid-flight. live43 stopped at
 $11.75 / 295 calls and stays as evidence.
+
+---
+
+## Session 2026-09-02 — fast mode
+
+**What was asked:** a mode that returns results faster by skipping the
+double-checking, delivering three files (two per-route reference documents and
+one fully-labelled dataset) without reducing the evidence a user can audit.
+
+**The collision found first.** `fast_mode` already existed and meant "shrink the
+grids for a wiring smoke test" — α grid to 3 values, k sweep to 5, gold to 120
+rows, researchers to 3. That degrades the ANALYSIS. The requested mode is the
+opposite: full analysis, no checking. Shipping both under `--fast` would mean a
+user asking for quick results silently getting a degraded smoke test wearing a
+production label. Renamed the old one to `smoke_mode` / `--smoke` (its own
+docstring already called it that) across 32 sites; `--fast` is now the new mode.
+The rename was done with a **word-boundary** regex — `fast_mode` is a substring of
+`fast_model`, and a naive replace renames the model tier.
+
+**What fast mode removes** (all second opinions; none decides a parameter):
+dual annotation, kappa, the pilot and its self-consistency ceiling, guide repair,
+boundary redraw, phase observers, adversarial validation, the narrative report,
+the delivery audit, result interpretation. **What it does not touch:** every grid,
+the corpus, the gold size, the researcher panel, `propose_grids` (a widener, not
+a check), and every `store.put_*` call.
+
+**Three design decisions worth keeping:**
+
+1. **`_annotate_both` returns `(labels, None)`, never `(labels, labels)`.** The
+   copy would let all four call sites run unedited and write `kappa: 1.000` — a
+   perfect score for a measurement nobody took. The `None` forces each caller to
+   state what it does with one reading. `GoldRow.n_annotators` was added so
+   `agreed` cannot be misread as agreement.
+2. **`deps.gate(skipped=True)`.** `GateStatus` already had `"skipped"` and
+   `deps.gate` could not produce it. `p2a_pilot_agreement`, `p2b_kappa` and
+   `p2b_annotator_symmetry` now record `skipped`; `passed=True` would have left a
+   ledger entry identical to a full run's.
+3. **One list drives every banner.** `_fast_mode_drops_the_second_opinion`
+   populates `cfg.fast_skipped` as it turns each component off, and
+   `fast_deliver._banner()` renders that list. A skip cannot exist without
+   appearing in all three deliverables. An unknown key degrades to the raw key
+   rather than being dropped — `test_an_unknown_skip_key_is_still_disclosed`.
+
+**Verified by mutation, not by passing.** Three guardrails were deliberately
+broken (banner drops unknown keys; `_annotate_both` returns a copy; fast mode
+shrinks the α grid) and each was caught by exactly the test that describes it.
+
+**Also changed:** `verify_run.py` takes `@check(..., needs=[...])` and reports
+`N/A` — never PASS — for a check whose component was skipped; it also knows which
+fast deliverable absorbed each full-mode document, which turned 8 SKIPs into real
+checks (17 PASS vs 12). `run_summary.json` records `mode` and `fast_skipped`.
+`scaled_requirements` zeroes the silent roles so `qmine models --fast` prices what
+will actually run. `make fast RUN=x` added.
+
+**One defect of mine, caught by the suite:** `getattr(ctx.cfg.taxonomy, ...)`
+assumed `cfg.taxonomy` exists; the seven annotator-concurrency tests build a
+`SimpleNamespace` with only `cfg.llm`. Fixed by fetching `cfg.taxonomy`
+defensively too — the same shape as the `getattr(ctx.cfg.llm, ...)` beside it.
+
+**Two defects found by running the render, not by reading it:**
+
+1. **`qmine render` upgraded a fast run to a full one.** `render` builds its
+   config from the CLI, where `mode` defaults to "full", so re-rendering
+   `/tmp/fastrun/f1` produced the thirteen full-mode documents — 叶清单.md,
+   类目清单.md, 统一度量面板.md — with **no banner anywhere in them**. The one
+   command whose purpose is re-deriving deliverables was the one that could strip
+   the disclosure off them. Fixed by `runner.inherit_mode`, which reads the source
+   generation's own `config.resolved.yaml`; the RECORDED `fast_skipped` wins over
+   the validator's rebuilt list so a banner describes the run, not today's code.
+2. **Every render lost the domain — pre-existing, and not mine.** A full-mode
+   render of a `k12_zh` run also wrote "**领域**: `generic`". Cosmetic until fast
+   mode, whose deliverable filenames carry the domain key: the render deposited
+   `generic_自上而下_….md` beside `k12_zh_自上而下_….md`, one document under two
+   names. Fixed in the same function.
+
+**Two more defects, found by running `make demo` after adding a parameter to
+`run()` — both mine, both in the p8 delivered-leaf collision check:**
+
+3. **The collision gate passed on a check that had crashed.** `cents` was bound
+   only inside `if new_labels is not None and not array_equal(...)`, the branch
+   that runs when governance actually rewrote the partition. On every run where
+   governance changed nothing, `_resolve_indistinguishable_leaves` raised
+   `UnboundLocalError`, its own `except` swallowed it, `still_colliding` stayed
+   `[]`, and the gate reported "every delivered leaf is distinguishable from its
+   siblings by name" having compared nothing. Present in every offline run this
+   session; absent from `med04`, where governance did rewrite the tree — which is
+   why no live run had shown it. Fixed by binding `cents` before the branch (when
+   governance is a no-op the delivered partition IS the pre-governance one) and by
+   giving the gate `skipped=not collision_check_ran` so a crashed check can never
+   read as a pass.
+4. **That gate never reached state.** `deps.gate(...)` at what is now
+   naming.py:711 was called without assignment, so the gate was logged and
+   dropped: `run_summary.json` did not contain `p8_leaves_are_distinguishable` on
+   any run. Invisible to the router, unable to halt anything, unreadable
+   afterwards — the same mistake `topdown.py` documents having made once before
+   and found five runs later. Now captured and returned.
+
+   The error handler that hid #3 printed only `(UnboundLocalError)` — no file, no
+   line, no message. It now names the frame, which is how #3 was found at all.
+
+**The finance corpora, and two more defects the dry run caught before spending.**
+`data/raw/金融query-{250701,260701}.xlsx` — 10,000 rows each, one year apart, same
+schema: `original_query`, `wise_pv` (full-log frequency), and a
+`query_1st_category` that is CONSTANT ("金融"), i.e. the slice that produced the
+file rather than a label. A `finance_zh` domain profile already existed.
+
+5. **A CLI default silently overruled the config file.** `cfg.data.text_column =
+   text_column` assigned unconditionally, so Typer's default `"query"` overwrote
+   a config saying `original_query`, and p1 halted with `KeyError: 'query'`
+   before reading a row. `reference_label_columns` had the same bug, failing more
+   quietly — declared columns silently become none. The identical defect had
+   already been found and fixed for `provider` eleven lines below, with a comment
+   saying "a config option that the command line always wins is not an option";
+   these two were left standing. Both now guard on the flag being given, and
+   `--text-column` takes a `None` default so "unset" is representable.
+6. **`--config` REPLACES the default config; there was no way to extend it.**
+   `_load_config` loads exactly one file, so a corpus config stating only a text
+   column would have discarded the whole of `live.yaml` — the role pins, the
+   excluded labs, and the lab-independence requirement double-blind annotation
+   rests on. `_load_config`'s own docstring calls that "the one launch mistake
+   nothing catches", and I nearly made it. `QMineConfig.load` now honours
+   `extends:` (resolved relative to the file, recursive, extending file wins per
+   key), and `configs/live_finance.yaml` uses it.
+
+**`fin01` — the first live fast run** (`金融query-250701.xlsx`, finance_zh,
+`configs/live_finance.yaml`). Estimated $4.53 fast vs $8.80 full; both
+under-report, because three pinned models publish no price and `qmine models`
+says so. Early confirmation from the log: `p0_provider PASSED — provider=routed`,
+`p1_reference_columns_declared PASSED — no reference label columns, and the
+corpus offers none`, and the alpha sweep ran the FULL seven-value grid
+`[0.0, 0.1, 0.2, 0.3, 0.5, 0.65, 0.8]` — fast mode shrank nothing.
+
+Corpus notes for whoever reads `fin01`: template coverage is **18.6%**, below the
+20% floor, so template fragmentation rests on a small base — a property of this
+corpus, reported not gated. `researcher[legacy_audit]` returned no candidates,
+correctly: there are no legacy labels to audit.
+
+**Class CODES do not reproduce across runs; the structure largely does.**
+Measured on the two finance runs (same source, one year apart, independently
+designed taxonomies):
+
+| | |
+|---|---|
+| classes | `fin01` 20, `fin02` 19 |
+| **exact code overlap** | **0** — 0% of the union |
+
+Zero. Yet the Chinese names line up pair for pair: `LOOKUP_FX_RATE` /
+`FX_RATE_LOOKUP` (汇率查询), `CONVERT_CURRENCY` / `CURRENCY_AMOUNT_CONVERSION`,
+`STOCK_FORUM` / `STOCK_FORUM_NAVIGATION`, `DAILY_ANSWER_RETRIEVAL` /
+`DAILY_QUIZ_ANSWER`, `FIND_INSTITUTION_CONTACT` /
+`CUSTOMER_SERVICE_PHONE_LOOKUP`, `VERIFY_PLATFORM_LEGITIMACY` /
+`TRUST_VERIFICATION`, `OTHER` / `UNKNOWN_OR_OTHER`, and so on — plus two genuine
+SPLITS (`LOOKUP_SECURITY_QUOTE` → `STOCK_QUOTE_LOOKUP` + `FUND_NAV_LOOKUP`;
+`LOOKUP_COMMODITY_QUOTE` → `FUTURES_COMMODITIES_QUOTE_LOOKUP` +
+`PRECIOUS_METAL_PRICE_LOOKUP`).
+
+**STRONGER EVIDENCE, no corpus confound:** `fin02` and `fin03` ran the SAME file
+(`金融query-260701.xlsx`) under the same config, and still share **0 of 35 codes**
+(19 vs 16 classes). The fin01/fin02 comparison below was confounded by being
+different corpora; this one is not. The architect re-invents its naming
+convention every run.
+
+Two `fin03` differences are structural, not cosmetic:
+* it MERGED pairs `fin02` split (futures + precious metals -> one
+  `COMMODITY_CRYPTO_QUOTE`; opinion + commentary -> `SECURITY_INFO_OPINION`);
+* it produced **no catch-all class at all** — `fin01` had `OTHER`, `fin02`
+  `UNKNOWN_OR_OTHER`, `fin03` none. Gold is unaffected (unfittable rows go to
+  `UNLABELED` and are dropped), but at INFERENCE every row is forced into a real
+  class with no escape hatch. Worth watching in that run's delivered
+  distribution.
+
+**The 0% is measured; the correspondence is EYEBALLED from the Chinese names and
+is not a measurement.** Making it one would mean labelling one corpus under both
+taxonomies and computing agreement — worth doing, not done here.
+
+Two consequences that matter now:
+
+1. **Never diff two runs by class code.** It reports that nothing reproduced when
+   most of it did. This is the concrete evidence behind CLAUDE.md's existing
+   advice to reuse the TAXONOMY rather than the run when cross-run comparability
+   matters — `--reuse-taxonomy` is the only thing that holds codes fixed.
+2. A few differences look like real corpus change rather than naming drift:
+   `fin01` carries `GRAY_APP_DOWNLOAD`, `CREDIT_REPORT_CHANNEL` and
+   `CALLER_ID_FRAUD_CHECK`, which `fin02` does not; `fin02` adds `CHART_LOOKUP`
+   and `SECURITY_CODE_IDENTIFICATION`. Whether those are drift or a genuine
+   year-over-year shift is undetermined and would need the same joint labelling.
+
+**Rule EXECUTABILITY swung 72% -> 0% between the two finance runs, and it is
+the architect varying, not a bug.** Same config, same source, one year apart:
+
+| | rules | executable | rejected |
+|---|---|---|---|
+| `fin01` | 46 | **33** | 13 |
+| `fin02` | 52 | **0** | 52 |
+
+The rejection reason is identical in both (`does not fire on the rule's own
+example or originating query`). The difference is what the architect wrote:
+`fin01` named literal phrases (`还会涨/跌吗、未来走势、亏不亏`), `fin02` named
+CATEGORIES (`裸数字代码`, `主观/推荐词`, `具体金额换算`). A category is not a
+test, and `rules_against_evidence` correctly refuses to pretend otherwise. **No
+code was changed for this** — the check is right and the variance is upstream of
+it. Open question: an architect prompt that demands literal markers would make
+the rules mechanically checkable, but see
+[[qmine-prompt-emphasis-is-zero-sum]] — hardening one requirement here has broken
+a competing one before.
+
+I chased two wrong hypotheses first (a quoting-style mismatch, then an extractor
+bug) and the measurement killed both before either became an edit. It did surface
+one real gap on the way: `_QUOTED`'s character class had 「」 but not 『』, while
+`usable_markers` already stripped both. Four `fin02` rules gain genuinely usable
+markers from the fix (『净值』, 『主连/合约/期货/连续』, 『k线图/图表/走势图』,
+『净值/基金』). That is a real defect and a small one; it explains 4 rules, not 52,
+and the test says so explicitly so nobody later reads it as the cause.
+
+**Template COVERAGE and locator REACH move independently — do not read one as a
+proxy for the other.** Measured across the two finance runs:
+
+| | template coverage (share of ROWS) | locator reach (share of CLUSTERS) |
+|---|---|---|
+| `fin01` (2025) | 18.6% | 24% |
+| `fin02` (2026) | **36.3%** | **12%** |
+
+Coverage doubled and reach halved. The grid proposer's own note on `fin02` says
+why: its 12 phrasing groups are built around stock-code prefixes (600/300/60)
+plus 走势图/行情/股吧, so the covered rows pile into a few clusters. A phrasing
+group that matches many rows in ONE cluster raises coverage and does nothing for
+reach — and reach is what decides whether the K located on the reference frame
+generalises to the corpus it is then applied to.
+
+Both runs therefore WARN on `p5_locator_reaches_the_corpus`, and `fin02` warns
+harder despite looking better on the headline number. Anyone using coverage to
+predict reach will get the sign wrong; I did.
+
+**`fin02` was damaged by a mid-run macOS file-access revocation, and the damage is
+instructive.** The grant was pulled while the run was in flight. My session
+recovered on restart; the run's own process (pid 91953) never did, so from
+17:16 it could not open any file it had not already read.
+
+| phase | state |
+|---|---|
+| p1-p7 | CLEAN — finished before the revocation |
+| p8 | DEGRADED — `families_final: 0` (family naming could not read its prompt), leaf disambiguation skipped |
+| p11 | FAILED — `ModuleNotFoundError: qmine.report.builder` (lazy import, first touched after the revocation) |
+
+**Three fixes from this session were validated by the accident, not by design:**
+
+1. `p8_leaves_are_distinguishable` reported **SKIPPED** — naming the failing frame
+   (`PermissionError ... disambiguator.md — at pathlib.py:1013 in open`). Before
+   this session it would have reported "PASSED — every delivered leaf is
+   distinguishable from its siblings by name" on a check that had crashed, with
+   no file, no line and no message. This is the exact failure the fix was written
+   against, reproduced by an accident nobody could have staged.
+2. `qmine render fin02` recovered all three deliverables from artifacts —
+   **10,000 rows x 19 cols, 10 sheets**, and the `原始档案位置` table resolved down
+   to 2 unresolved entries. Before the store-resolution fix the same render
+   produced 8 empty sheets, 0 rows, and 13 x "未生成". Verified on a real run.
+3. The render carried `领域: finance_zh` and `模式: fast` — mode and domain
+   inheritance both holding on a live run rather than a fixture.
+
+**`fin02` IS a valid verification run and is NOT a reference delivery.** Its
+p1-p7 results stand (19 intents, 33 leaves, coherence 3.79, held-out
+reproduction 99.3%, no phantom classes in 3,200 gold rows). Its family names do
+not: `families_final` is empty, so the documents fall back to
+`树审计未覆盖 (治理新建) · 主要叶「…」`. No resume path repairs this — p8
+"completed", so `--resume` restarts at p11 and re-runs nothing that was degraded.
+
+`verify_run`: `fin02/gen02` **17 PASS / 6 N/A / 3 FAIL / 2 SKIP** against
+`fin01/gen01` 19/6/2/1. All three failures are the damage, correctly named:
+the unnamed families, the p11 halt, and the known render limitation on
+gold-set provenance.
+
+**The phantom-class fix is CONSISTENT but not independently proven.** `fin02`
+carries zero off-schema labels across 3,200 gold rows — but the guard never
+fired, and `fin01` hit the condition once in 3,200 (0.03%), so zero is equally
+consistent with luck. `test_a_solo_annotator_cannot_invent_a_class` remains the
+actual verification.
+
+**Open, and deliberately not resolved here:** no paid fast run has been made, so
+the single-annotator gold set is untested against a real annotator. `med04`'s
+40.3% vs `live38`'s 78.3% annotator-a win rate says which annotator is better
+flips by corpus and model, so `primary_annotator` is a recorded default, not a
+finding.

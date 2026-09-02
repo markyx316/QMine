@@ -1,0 +1,26 @@
+# Live config for the finance query logs (金融query-*.xlsx).
+#
+# `extends` pulls in the whole provider policy — the pins, the excluded labs, and
+# the lab-independence requirement that double-blind annotation rests on. Copying
+# it here instead would drift the moment `live.yaml` changes, and dropping it is
+# the one launch mistake nothing catches: the router would then pick purely on
+# price and put both annotators on the same lab.
+extends: live.yaml
+
+data:
+  # The corpus column is `original_query`, not `query`. p1 canonicalises it to
+  # `query` for every later phase (`foundation.py`), so this is the only place
+  # the source name appears.
+  text_column: original_query
+  # `wise_pv` is the full-log frequency of each query. Without it every metric is
+  # per-DISTINCT-QUERY, which weights `今日金价` — a head term carrying six
+  # figures of traffic — the same as a one-off long-tail string.
+  # `population_weighted_accuracy` in `topdown_metrics` is the number a product
+  # decision should read, and it does not exist unless this is set.
+  weight_column: wise_pv
+  # `query_1st_category` is CONSTANT ("金融") across all 10,000 rows — it is the
+  # slice that produced the file, not a label. Declaring it as a reference column
+  # would hand the K locator a single-class reference, against which every
+  # candidate partition scores identically. Empty is the correct, deliberate
+  # answer here, not an oversight.
+  reference_label_columns: []

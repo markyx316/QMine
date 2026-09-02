@@ -453,7 +453,7 @@ def test_the_driver_puts_gates_and_findings_into_the_citable_namespace(tmp_path,
     monkeypatch.setattr(roles, "DeliveryAuditorAgent", FakeAuditor)
 
     deps = SimpleNamespace(
-        cfg=SimpleNamespace(audit_delivery=True, fast_mode=False, report_language="zh"),
+        cfg=SimpleNamespace(audit_delivery=True, smoke_mode=False, report_language="zh"),
         store=SimpleNamespace(root=tmp_path, gen_dir=gen),
         run_id="t", emit=lambda m: None, agent_ctx=lambda: None)
     state = {"gates": {"p2b_kappa": {"status": "passed", "observed": {"n": 2982}}}}

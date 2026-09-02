@@ -587,7 +587,7 @@ def k_sweep(
     governance and the delivered table all inherit.  Six minutes of full-effort
     fitting is cheap insurance against re-running everything downstream.
 
-    ``fast=True`` remains available for smoke tests and ``fast_mode`` runs, where
+    ``fast=True`` remains available for smoke tests and ``smoke_mode`` runs, where
     the goal is to exercise the wiring rather than to choose anything.
     """
     from .templates import template_fragmentation

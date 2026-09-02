@@ -78,7 +78,7 @@ def audit_deliverables(state: Any, deps: Any) -> dict[str, Any]:
 
     gen = Path(deps.store.gen_dir)
     idle = {"ran": False, "n_applied": 0, "n_refused": 0}
-    if not getattr(deps.cfg, "audit_delivery", False) or deps.cfg.fast_mode:
+    if not getattr(deps.cfg, "audit_delivery", False) or deps.cfg.smoke_mode:
         return {**idle, "skipped": "disabled"}
 
     docs = {p.name: p.read_text(encoding="utf-8") for p in sorted(gen.glob("*.md"))

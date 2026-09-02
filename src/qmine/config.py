@@ -184,6 +184,20 @@ class ClusteringConfig(BaseModel):
 
 
 class TaxonomyConfig(BaseModel):
+    #: How many INDEPENDENT annotators label the gold set. Two is the method:
+    #: kappa, the pilot ceiling and the referee all exist because two labelled
+    #: the same row. One is `mode="fast"` — and then kappa is not 1.0, it is
+    #: ABSENT, because there is no second reading to agree with.
+    annotators: Literal[1, 2] = 2
+    #: Which one survives at `annotators=1`. `a` is the primary role and `b` is
+    #: DEFINED as the independent second opinion (`llm/requirements.py`), so `a`
+    #: is the default — NOT because it is measurably better. It is not reliably
+    #: better: on live38 annotator_a took 78.3% of the referee's contested
+    #: decisions (z=+14.7); on med04, with a different corpus and different
+    #: models, it took 40.3% (z=-3.35). Which one wins is a property of the
+    #: pairing, and fast mode never measures it, so this is a recorded choice
+    #: rather than a finding.
+    primary_annotator: Literal["a", "b"] = "a"
     n_researchers: int = 5
     l1_target_range: tuple[int, int] = (15, 25)
     min_adjudication_rules: int = 20
@@ -461,13 +475,13 @@ class QMineConfig(BaseModel):
     seed_replay: tuple[int, int] = SEED_REPLAY
 
     #: Skip the expensive optional phases when smoke-testing the wiring.
-    fast_mode: bool = False
+    smoke_mode: bool = False
     #: Run a second-opinion agent over each bottom-up phase's artifacts while the
     #: run is still going. Measured on live38, the bottom-up path used 36 of 966
     #: agent calls (3.7%) and none before P7 — every representation, algorithm, K
     #: and hierarchy decision was made with no agent looking at it. The observer
     #: decides nothing; it cites artifact keys and can fail a gate. Off in
-    #: `fast_mode` so the demo stays cheap.
+    #: `smoke_mode` so the demo stays cheap.
     #: Run the top-down and bottom-up routes as CONCURRENT graph branches.
     #: On by default: measured on live39, 38 min of taxonomy design plus 69 min
     #: of gold annotation sit in front of 39 min of bottom-up CPU work that
@@ -510,7 +524,7 @@ class QMineConfig(BaseModel):
     #: deliverables. Every number it writes is checked against a fact sheet built
     #: from artifacts, and an unverifiable one is rejected and re-asked; after
     #: three failures the section ships with no commentary rather than unchecked
-    #: commentary. Off in `fast_mode`.
+    #: commentary. Off in `smoke_mode`.
     interpret_results: bool = True
     #: Let an agent propose additional grid values from CORPUS CHARACTERISTICS —
     #: never from scores, which `ops.propose.assert_blind` enforces on the payload.
@@ -525,15 +539,38 @@ class QMineConfig(BaseModel):
     #: so selection cannot tell a proposed value from a configured one. live40's
     #: K=7 was a proposed value that won; it is also the best value in its tie set
     #: on both reported metrics, so nothing was harmed — but it paid no toll.
-    #: Off in `fast_mode` regardless.
+    #: Off in `smoke_mode` regardless.
     propose_grids: bool = True
+    #: Attack the classifier's own predictions with a paraphrase/perturbation
+    #: agent and re-score. A pure second opinion: it changes no parameter and
+    #: decides nothing, it only reports whether the accuracy survives contact.
+    #: Off in `mode="fast"`.
+    validate_adversarial: bool = True
+    #: `full` runs the method as designed. `fast` runs THE SAME ANALYSIS with the
+    #: second-opinion layer removed — one annotator instead of two, no phase
+    #: observers, no adversarial attack, no agent-written narrative, no
+    #: pre-delivery audit — and ships three reference documents instead of
+    #: thirteen argued ones.
+    #:
+    #: What it does NOT do is shrink anything: the grids, the corpus, the gold
+    #: size, the researcher panel and every intermediate artifact are identical
+    #: to `full`. That is the whole distinction from `smoke_mode`, which shrinks
+    #: the analysis and keeps the checks. A fast run's numbers are the numbers a
+    #: full run would have produced; what is missing is the evidence that they
+    #: were checked, and `fast_skipped` names every piece of it.
+    mode: Literal["full", "fast"] = "full"
+    #: WRITTEN BY THE VALIDATOR, NOT BY A USER — the machine-readable record of
+    #: what `mode="fast"` turned off. Every fast deliverable's disclosure banner
+    #: is rendered from this list, so a component cannot be skipped without the
+    #: banner naming it: the two cannot drift, because there is only one source.
+    fast_skipped: list[str] = Field(default_factory=list)
     offline: bool = Field(
         default=False, description="No network: hashing encoder + mock LLM."
     )
 
     @model_validator(mode="after")
     def _fast_mode_shrinks_grids(self) -> "QMineConfig":
-        if self.fast_mode:
+        if self.smoke_mode:
             self.representation.alpha_grid = [0.0, 0.1, 0.5]
             self.clustering.k_sweep = [10, 15, 20, 30, 50]
             self.clustering.battery_k = [20]
@@ -542,10 +579,94 @@ class QMineConfig(BaseModel):
             self.taxonomy.n_researchers = 3
         return self
 
+    @model_validator(mode="after")
+    def _fast_mode_drops_the_second_opinion(self) -> "QMineConfig":
+        """Turn off the checking layer — and RECORD it, in one place.
+
+        Every component here is a second opinion: it reads what another part of
+        the run produced and says whether to believe it. None of them chooses a
+        parameter, a K, an alpha or a label, so removing them cannot move a
+        result — which is exactly why they are the safe things to remove, and
+        exactly why removing them leaves a run whose results are unverified.
+
+        Deliberately NOT touched:
+
+        * `alpha_grid`, `k_sweep`, `battery_k`, `refine_rounds`, `gold_sample_size`,
+          `n_researchers` — the analysis. `smoke_mode` shrinks these; fast mode
+          must not, or its answer is a different answer rather than the same
+          answer unchecked.
+        * `propose_grids` — a grid WIDENER, not a check. Dropping it would
+          narrow the search and change the result.
+        * `translate_prose` — the deliverables are still Chinese.
+        * the findings ledger, the gate ledger, and every `store.put_*` call —
+          the user's requirement is fewer documents, not less evidence.
+
+        `fast_skipped` is written here and read by the deliverable banner, so a
+        component added to this list appears in the banner with no second edit,
+        and one removed from it disappears from the banner. A skip the reader is
+        not told about is the failure this guards.
+        """
+        if self.mode != "fast":
+            return self
+        skipped: list[str] = []
+        if self.taxonomy.annotators != 1:
+            self.taxonomy.annotators = 1
+            skipped.append("dual_annotation")
+        # A single reading has nothing to agree with, so every measurement built
+        # on agreement is not "skipped for time" — it is undefined. Zeroing the
+        # repair rounds here is what stops the pipeline from trying to repair a
+        # kappa that was never computed.
+        self.taxonomy.kappa_repair_rounds = 0
+        self.taxonomy.max_taxonomy_redraws = 0
+        skipped += ["kappa_agreement", "pilot_ceiling", "kappa_repair", "taxonomy_redraw"]
+        for field, name in (("observe_phases", "phase_observers"),
+                            ("validate_adversarial", "adversarial_validation"),
+                            ("final_report", "narrative_report"),
+                            ("delivery_audit", "delivery_audit"),
+                            ("interpret_results", "result_interpretation")):
+            if getattr(self, field):
+                setattr(self, field, False)
+                skipped.append(name)
+        self.fast_skipped = skipped
+        return self
+
     # -- io -----------------------------------------------------------------
     @classmethod
     def load(cls, path: str | os.PathLike[str], **overrides: Any) -> "QMineConfig":
+        """Read a config file. `extends:` pulls in another file underneath it.
+
+        A config file REPLACES the default `configs/live.yaml` rather than
+        merging with it — so a small file saying nothing but "this corpus\'s text
+        column is `original_query`" silently discarded the entire provider
+        policy: the pins, the lab-independence requirement that double-blind
+        annotation depends on, and the capability list. `_load_config`\'s own
+        docstring calls that "the one launch mistake nothing catches", and
+        without `extends:` the only way to avoid it is to copy the whole policy
+        into every corpus config, where it then drifts.
+
+        `extends:` is resolved relative to THIS file, recursively, and the
+        extending file wins key by key (`_deep_merge`), so a corpus config states
+        only what is true of its corpus.
+        """
         raw = yaml.safe_load(Path(path).read_text(encoding="utf-8")) or {}
+        base = raw.pop("extends", None)
+        if base:
+            base_path = Path(base)
+            if not base_path.is_absolute():
+                base_path = Path(path).parent / base
+            if not base_path.exists():
+                raise FileNotFoundError(
+                    f"{path} extends {base!r}, which does not exist at {base_path}")
+            parent = yaml.safe_load(base_path.read_text(encoding="utf-8")) or {}
+            # A parent may itself extend; resolve depth-first by recursing on the
+            # parent's own `extends` before merging this file over it.
+            while parent.get("extends"):
+                gp = Path(parent.pop("extends"))
+                if not gp.is_absolute():
+                    gp = base_path.parent / gp
+                parent = _deep_merge(yaml.safe_load(gp.read_text(encoding="utf-8")) or {},
+                                     parent)
+            raw = _deep_merge(parent, raw)
         dom = raw.pop("domain_profile", None)
         if dom:
             dom_path = Path(dom)

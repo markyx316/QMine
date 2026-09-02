@@ -178,6 +178,18 @@ def _register_notebook_figures(deps: Any) -> dict[str, ArtifactRef]:
     return out
 
 
+def build_figures_only(state: PipelineState, deps: Any) -> dict[str, ArtifactRef]:
+    """Every figure, no documents — what `mode="fast"` needs from this module.
+
+    The figures are drawn by matplotlib from artifacts and cost no model call, so
+    a fast run keeps them: both fast deliverables reference them, and dropping
+    them would remove evidence rather than checking. Public because reaching into
+    `_build_figures` from another module would make a private signature part of
+    the contract by accident.
+    """
+    return _build_figures(state, deps)
+
+
 def _build_figures(state: PipelineState, deps: Any, have: set[str] | None = None) -> dict[str, ArtifactRef]:
     """Draw the figures the notebook did not produce.
 
@@ -257,7 +269,7 @@ def _build_figures(state: PipelineState, deps: Any, have: set[str] | None = None
             deps.embedding("emb_hybrid"), fam[labels], deps.store.put_figure_path("fig_umap"),
             seed=deps.cfg.seed_viz, language=lang, title="Corpus layout, coloured by family"))
 
-    if not deps.cfg.fast_mode:
+    if not deps.cfg.smoke_mode:
         _try("fig_umap", "umap", _umap)
 
     return out
