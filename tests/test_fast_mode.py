@@ -634,3 +634,103 @@ def test_the_namer_is_pinned_and_the_pin_is_reachable():
         fin = QMineConfig.load(cfgs / "live_finance.yaml")
         assert fin.llm.model_overrides.get("namer") == "deepseek-v4-pro", \
             "the namer pin must survive the extends chain"
+
+
+# ==========================================================================
+# Column binding — the first thing a new corpus gets wrong
+# ==========================================================================
+
+def _tiny_export(tmp_path):
+    """A file shaped like the house export: constant slice column, pv weights."""
+    import pandas as pd
+
+    p = tmp_path / "t.csv"
+    pd.DataFrame({"event_day": [1] * 5,
+                  "query_1st_category": ["金融"] * 5,
+                  "original_query": ["今日金价", "上证指数", "黄金价格", "金价", "国际金价"],
+                  "wise_pv": [10, 20, 30, 40, 50]}).to_csv(p, index=False)
+    return str(p)
+
+
+def _p1(path, **over):
+    from qmine.graph.nodes.foundation import p1_audit
+
+    cfg = QMineConfig(offline=True)
+    cfg.data.input_path = path
+    cfg.data.text_column = "original_query"
+    cfg.data.weight_column = "wise_pv"
+    cfg.data.reference_label_columns = []
+    for k, v in over.items():
+        setattr(cfg.data, k, v)
+
+    class _D:
+        def __init__(self, c):
+            self.cfg = c
+            self.emitted = []
+
+        def emit(self, m):
+            self.emitted.append(m)
+
+    d = _D(cfg)
+    try:
+        p1_audit({}, d)
+    except ValueError:
+        raise
+    except Exception:
+        pass          # later phase logic needs a real Deps; column binding is done
+    return d
+
+
+@pytest.mark.parametrize("field,bad", [
+    ("text_column", "originl_query"),
+    ("weight_column", "wise_pvv"),
+])
+def test_a_misnamed_column_stops_the_run_and_names_the_real_ones(field, bad, tmp_path):
+    """A column the config names and the file lacks is a config error, not a default.
+
+    Both bound silently: `[c for c in ... if c in raw.columns]` turned a typo into
+    "no reference columns", and `if weight_column in raw.columns else None` turned
+    one into an UNWEIGHTED run — every metric then counts distinct queries instead
+    of traffic, and `population_weighted_accuracy` quietly describes something
+    else. Neither said anything, and a run is hours long, so the check has to fire
+    before the first paid call and has to print what the file actually offers.
+    """
+    with pytest.raises(ValueError) as e:
+        _p1(_tiny_export(tmp_path), **{field: bad})
+    msg = str(e.value)
+    assert bad in msg, "the error must name the column that was wrong"
+    assert "original_query" in msg, "the error must list the columns the file HAS"
+
+
+def test_a_reference_column_that_does_not_exist_is_refused(tmp_path):
+    with pytest.raises(ValueError) as e:
+        _p1(_tiny_export(tmp_path), reference_label_columns=["legacy_l1"])
+    assert "legacy_l1" in str(e.value)
+
+
+def test_a_constant_reference_column_is_dropped_not_used(tmp_path):
+    """`query_1st_category` holds one value per file — a slice name, not a label.
+
+    Declared as a reference it hands the K locator a one-class frame against which
+    every candidate partition scores identically, which is worse than declaring
+    nothing. Dropped with a warning rather than silently, because a user who
+    declared it meant something by it.
+    """
+    d = _p1(_tiny_export(tmp_path), reference_label_columns=["query_1st_category"])
+    assert any("query_1st_category" in m and "constant" in m for m in d.emitted), \
+        f"expected a dropped-constant warning, got {d.emitted}"
+
+
+def test_the_house_export_config_chain_resolves():
+    """`live_finance` -> `corpus_wise_export` -> `live`: columns once, providers once."""
+    from pathlib import Path as _P
+
+    cfgs = _P(__file__).resolve().parents[1] / "configs"
+    if not (cfgs / "corpus_wise_export.yaml").exists():
+        pytest.skip("house-export config not present")
+    c = QMineConfig.load(cfgs / "live_finance.yaml")
+    assert c.data.text_column == "original_query"
+    assert c.data.weight_column == "wise_pv"
+    assert c.data.reference_label_columns == []
+    assert c.llm.provider == "router", "the provider policy must survive two extends"
+    assert c.llm.model_overrides.get("namer") == "deepseek-v4-pro"

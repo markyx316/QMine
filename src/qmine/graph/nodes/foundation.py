@@ -117,10 +117,51 @@ def p1_audit(state: PipelineState, deps: Deps) -> dict[str, Any]:
     deps.emit("P1 audit — profiling corpus")
 
     raw = _load_input(cfg)
-    declared = [c for c in cfg.data.reference_label_columns if c in raw.columns]
+
+    # A COLUMN THE CONFIG NAMES AND THE FILE LACKS IS A CONFIG ERROR, NOT A DEFAULT.
+    #
+    # Both lines below used to filter silently: `[c for c in ... if c in
+    # raw.columns]` turned a typo into "no reference columns", and
+    # `if cfg.data.weight_column in raw.columns else None` turned a typo into an
+    # UNWEIGHTED run — every metric becomes per-distinct-query, and
+    # `population_weighted_accuracy` (the number a product decision should read)
+    # silently describes something else. Neither said anything. A user pointing
+    # the pipeline at a new export format gets exactly one chance to spell these
+    # right, and the run is hours long, so the check belongs here, before the
+    # first paid call, and it must name what the file actually offers.
+    _cols = list(raw.columns)
+    if cfg.data.text_column not in raw.columns:
+        raise ValueError(
+            f"text_column {cfg.data.text_column!r} is not in the input. "
+            f"The file has: {_cols}. Set `data.text_column` in your config "
+            f"(or pass --text-column) to whichever of those holds the query text.")
+    missing_refs = [c for c in cfg.data.reference_label_columns if c not in raw.columns]
+    if missing_refs:
+        raise ValueError(
+            f"reference_label_columns names {missing_refs}, which the input does not "
+            f"have. The file has: {_cols}. Fix the names, or set the list to [] if "
+            f"this corpus genuinely has no legacy labels.")
+    if cfg.data.weight_column and cfg.data.weight_column not in raw.columns:
+        raise ValueError(
+            f"weight_column {cfg.data.weight_column!r} is not in the input. "
+            f"The file has: {_cols}. Fix the name, or set it to null to run "
+            f"unweighted — but do it deliberately: without it every metric counts "
+            f"distinct queries, not traffic.")
+
+    declared = list(cfg.data.reference_label_columns)
+    # A CONSTANT COLUMN IS A SLICE NAME, NOT A LABEL. Every one of these house
+    # exports carries `query_1st_category` holding a single value ('金融',
+    # '医疗', ...) — the slice that produced the file. Declared as a reference it
+    # gives the K locator a one-class frame that scores every candidate
+    # partition identically, which is worse than declaring nothing.
+    _constant = [c for c in declared if raw[c].nunique(dropna=True) <= 1]
+    if _constant:
+        deps.emit(f"  ⚠ dropping reference column(s) {_constant} — constant over the "
+                  f"whole file, so they are the slice name, not a label")
+        declared = [c for c in declared if c not in _constant]
     unused = _label_like_columns(raw, cfg) if not declared else []
     ref_labels = {c: raw[c].astype(str).tolist() for c in declared}
-    weights = raw[cfg.data.weight_column].tolist() if cfg.data.weight_column in raw.columns else None
+    weights = raw[cfg.data.weight_column].tolist() if cfg.data.weight_column else None
     df = build_frame(raw[cfg.data.text_column].astype(str).tolist(), reference_labels=ref_labels, weights=weights)
 
     # THE TEXT COLUMN IS NOW `query`, AND THE CONFIG MUST SAY SO.

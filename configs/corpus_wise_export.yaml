@@ -1,0 +1,36 @@
+# The house query-log export: `<vertical>query-<YYMMDD>.xlsx`.
+#
+# WHY THIS FILE EXISTS RATHER THAN A TEMPLATE YOU EDIT PER RUN.
+#
+# Ten of these exports (金融, 医疗, 人物, 影视, 教育 × 2025/2026) carry the SAME
+# four columns. A template copied and edited before every run is a fresh chance
+# to mistype a column name on every run; this is written once and inherited. Per
+# corpus you then set only what genuinely differs — the domain profile — which is
+# what `configs/live_finance.yaml` does in three lines.
+#
+# For a genuinely DIFFERENT export format, copy this file and change the three
+# `data:` names. p1 now refuses to start when any of them is absent from the
+# input and prints the columns the file actually has, so a wrong name costs you
+# seconds rather than a phase.
+extends: live.yaml
+
+data:
+  # The query text. NOT `query` — p1 canonicalises it to `query` for every later
+  # phase, so this is the only place the source name appears.
+  text_column: original_query
+
+  # Full-log frequency. Without it every metric counts DISTINCT QUERIES, which
+  # weights a head term carrying six figures of traffic the same as a one-off.
+  # `population_weighted_accuracy` in `topdown_metrics` does not exist unless
+  # this is set — on `fin03` it read 0.941 against an unweighted 0.914.
+  weight_column: wise_pv
+
+  # DELIBERATELY EMPTY. These exports carry `query_1st_category`, and it holds a
+  # single constant value per file (the vertical that produced the slice), so it
+  # is a filename, not a label. Declared as a reference it hands the K locator a
+  # one-class frame against which every candidate partition scores identically.
+  # p1 drops a constant reference column with a warning even if it is declared,
+  # but saying so here records that the omission is deliberate.
+  reference_label_columns: []
+
+  # `event_day` is also constant per file and is not read by anything.

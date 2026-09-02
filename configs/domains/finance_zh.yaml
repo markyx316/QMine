@@ -51,7 +51,12 @@ risk_categories:
     rationale: "Requests for individualised investment advice — licensed activity."
     policy: isolate_and_flag
   - name: fraud_gambling
-    patterns: ["杀猪盘", "刷单", "博彩", "澳门", "洗钱", "外汇黑平台"]
+    # `澳门` ALONE MATCHES A CURRENCY, NOT GAMBLING. Measured on both finance
+    # corpora, every single hit this category produced was a Macau Pataca FX
+    # query (澳门币兑换人民币汇率, 澳门汇率) — 12 of 12 false positives, and a
+    # false positive here ISOLATES legitimate traffic into a compliance bucket.
+    # Gambling needs the gambling word, not the place name.
+    patterns: ["杀猪盘", "刷单", "博彩", "澳门.{0,6}(赌|娱乐城|威尼斯人|新葡京)", "洗钱", "外汇黑平台", "赌场"]
     keywords: []
     rationale: "Fraud and gambling probes."
     policy: isolate_and_flag

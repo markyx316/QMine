@@ -1,6 +1,7 @@
 """The three documents a `mode="fast"` run ships, and the banner none of them can omit.
 
-A full run delivers thirteen documents that ARGUE: each one takes a decision the
+A full run delivers ten documents plus six CSV tables and an executed notebook,
+and they ARGUE: each one takes a decision the
 pipeline made, shows the measurement behind it, and says why the alternative lost.
 A fast run has no argument to make — it removed the layer that produces one — so
 it ships three documents that REFER: what the classes are, what the tree is, and
@@ -103,7 +104,13 @@ def _banner(state: Any, deps: Any) -> list[str]:
         "会得到的数字一致; 缺的是「这个数字被独立复核过」这一层证据。需要该证据时, "
         "用 `mode=full` 重跑同一份数据。",
         ">",
-        "> **证据没有减少**: 交付文档从 13 份减为 3 份, 但中间产物一份未少 —— "
+        # NO FULL-MODE COUNT HERE. It was "13", and a full run ships TEN markdown
+        # documents (med04, live44; live42 shipped 9 — it varies with whether the
+        # narrative and audit reports succeed). A reader of a FAST deliverable
+        # needs to know what they hold and that nothing was withheld, not an exact
+        # tally of documents they do not have — and a hard number here goes stale
+        # silently, inside every shipped document.
+        "> **证据没有减少**: 交付文档减为 3 份, 但中间产物一份未少 —— "
         "见文末 §原始档案位置。",
         "",
     ]

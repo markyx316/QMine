@@ -570,7 +570,7 @@ def inherit_mode(cfg: QMineConfig, root: Path, src_gen: int) -> QMineConfig:
 
     A RENDER MUST NOT UPGRADE A FAST RUN. `cfg` arrives from the CLI freshly
     constructed, so `mode` defaults to "full" — and rendering a fast run
-    therefore produced the thirteen full-mode documents, WITHOUT the
+    therefore produced the full-mode documents, WITHOUT the
     skipped-components banner, describing numbers nothing in that run had
     checked. That is the exact outcome fast mode exists to prevent, reached by
     the one command whose whole purpose is to re-derive deliverables. Observed on

@@ -1,0 +1,252 @@
+# 影视动漫 search query log.
+#
+# Every share in this file was measured with `str.contains` on the two 10,000-row
+# 影视query logs in data/raw (250701: 16,451,909 PV; 260701) — never inferred.
+# Where the two disagree, both figures are given.
+#
+# NOT a compliance artifact. The risk categories below are a screening floor for
+# taxonomy work; a deployed 影视 surface needs rights-holder and legal review.
+key: film_tv_zh
+display_name: "影视动漫搜索 Query"
+language: zh
+
+tokenizer: jieba
+char_ngram_range: [1, 3]
+word_ngram_range: [1, 2]
+
+# Light-first. The bake-off still decides. Note the corpus is ~60% proper nouns
+# (drama titles coined in the last 12 months), which no encoder has seen: expect
+# the char n-gram block to carry more weight here than on K12 or finance.
+embedding_candidates:
+  - BAAI/bge-small-zh-v1.5
+  - BAAI/bge-base-zh-v1.5
+  - shibing624/text2vec-base-chinese
+instruction_prefix: null
+
+# Ordered narrow-to-broad: build_groups drops a family whose rows are already
+# 85% claimed, so the small precise ones must claim first.
+#
+# ONE access seed, deliberately. 免费观看 ∪ 在线观看 ∪ 完整版 ∪ 全集 ∪ 高清 is
+# 39.3% of rows / 46.1% of PV on 250701, and a family matching two-fifths of the
+# corpus is a language detector, not a phrasing template — seeding it pushes
+# union coverage to 42% and past the 20-40% ceiling. 在线观看 (13.8%/16.3%) is
+# left to the affix miner: it is nearly disjoint from 免费观看 (5% overlap), so
+# it arrives as its own mined family instead of inflating a seeded one.
+template_seeds:
+  - name: availability_lookup
+    pattern: '(哪里看|哪里能看|在哪看|在哪儿看|在哪能看|哪个平台|哪个台|哪个软件|什么时候播|什么时候上映|什么时候更新|几点更新|更新时间|播出时间|上映时间|定档)'
+    intent_hint: "求作品的合法可看渠道或播出时间 — the licensed counterpart of the free-streaming intent"
+  - name: channel_live_tv
+    pattern: '(节目表|在线直播|直播在线|正在直播|台直播|直播观看)'
+    intent_hint: "求电视频道的直播流或节目单（cctv5 等），与点播是不同的应答面"
+    expected_min_share: 0.006
+  - name: cast_crew
+    pattern: '(演员表|主演|导演是谁|阵容|扮演者|饰演者|谁演的)'
+    intent_hint: "求某作品的演职人员事实"
+    expected_min_share: 0.012
+  - name: episode_locator
+    pattern: '(第.{1,4}集|多少集|更新到第几集|共几集)'
+    intent_hint: "定位到某一集或问总集数/更新进度"
+    expected_min_share: 0.010
+  - name: plot_synopsis
+    pattern: '(剧情介绍|剧情简介|分集剧情|大结局|结局是什么|讲的什么)'
+    intent_hint: "求剧情梗概或结局，不求观看"
+    expected_min_share: 0.008
+  - name: recommendation
+    pattern: '(推荐|排行榜|片单|好看的.{0,4}(剧|电影|电视剧))'
+    intent_hint: "无具体片名，求片单/榜单"
+  - name: free_access
+    pattern: '(免费观看|免费播放|免费看)'
+    intent_hint: "求以免费条件观看某部作品 — 语料的支配意图，合法与否取决于该片的授权状态，不取决于这个词"
+    expected_min_share: 0.15
+
+# The test applied: returning a normal, relevance-optimal result would itself be
+# a legal or safety event. 免费观看 fails that test and is a seed above, not a
+# risk category — 以法之名 aired free-to-air on CCTV-8 + 优酷, 锦绣芳华 on
+# 芒果TV + 湖南卫视, and 红果免费短剧 is free-with-ads by design, so the corpus's
+# own top titles have lawful answers to "免费观看".
+risk_categories:
+  - name: obscene_and_criminal_content
+    # 三级/禁片/情色/色情/福利 all match ZERO rows. The traffic is there, spelled
+    # around the filter — 三年级 for 三级片 (38 rows on 250701, co-occurring with
+    # 邱淑贞/李丽珍/翁虹/徐锦江/任达华 and 《灯草和尚》), and app euphemisms
+    # (幸福宝/芭乐视/大象传媒/麻花传剧/隐藏入口). A screen keyed to the standard
+    # word reports nothing on a corpus that has 0.9-1.0% of PV in this class.
+    patterns:
+      - '(人兽|人与动物|人狗大战|人犬|狗配|马配|猪马狗)'
+      - '(做aj|小头头|幸福宝|芭乐视|大象传媒|麻花传剧|隐藏入口|无需付费|7{3,5}影院)'
+      - '(丝瓜视频|樱桃视频|向日葵视频|香蕉视频|草莓视频|榴莲视频)'
+      - '(李宗瑞|偷拍|迷奸|强奸)'
+    # Works measured in these logs that have no 公映许可证 / are 淫秽物品 in the
+    # PRC. A maintained blocklist seeded from measurement — never a learned leaf;
+    # at n≈50 nothing can be fitted or evaluated on it.
+    keywords: ["缘之空", "无颜之月", "姐孕", "亲吻姐姐", "黑兽", "灯草和尚", "金瓶梅", "妻子的姐姐", "鸭王", "农民伯伯乡下妹"]
+    rationale: >
+      Obscene material under 刑法 363/364, whose 两高 interpretation sets
+      conviction thresholds by click count. Serving a normal result — a working
+      player link — is the distribution act itself, and 快播 (2016) forecloses
+      the "we only provide the technology" defence. This is the one category
+      here where the exposure is criminal rather than civil, and the one where a
+      false negative is unrecoverable. Measured 0.94% of rows / 1.07% of PV
+      (250701) and 0.75% / 0.95% (260701).
+    policy: drop
+  - name: uncensored_cut_and_filter_evasion
+    patterns:
+      - '(未删减|无删减)'
+      - '(三年级|三年.{0,3}(大片|在线|免费|高清|经典|中文|观看|全集|片段))'
+      - '(伦理片|伦理电影|^伦理$)'
+      - '(床戏|吻戏|激情戏)'
+    keywords: []
+    rationale: >
+      Requests for the pre-censorship cut of a work, or for the 擦边 fragment.
+      《网络视听节目内容审核通则》 requires the reviewed version, and a 未删减
+      cut has by definition no 公映许可证 / 网络剧片发行许可证 for that version, so
+      any source holding one is unlicensed. The 三年/三年级 arm is deliberate
+      filter evasion, which is why it must be isolated rather than merely ranked
+      down. Measured 0.88% of rows / 0.77% of PV (250701), 1.37% / 1.16%
+      (260701).
+    policy: isolate_and_flag
+  - name: unlicensed_source_navigation
+    # Licensed destinations (爱奇艺/优酷/腾讯视频/芒果/咪咕/红果/央视/抖音/
+    # 哔哩哔哩) are deliberately absent — this fires on the destination's licence
+    # status, not on the act of naming a platform.
+    patterns:
+      - '(樱花动漫|风车动漫|囧次元|泰剧兔|freeok|FreeOK|大师兄影视|小小影视|策驰|星辰影院|奇优影院|茶杯狐|cupfox|人人影视|麻花影视|西瓜影院|大地资源|大地影视|大地影院|荐片|悟空浏览器|7{3,5}影院)'
+      - '(免费追剧|追剧app|追剧软件)'
+      - '(免费.{0,2}入口|隐藏入口|官方入门网站)'
+    keywords: []
+    rationale: >
+      Navigational queries whose destination is a named unlicensed AV site or
+      app. 《互联网视听节目服务管理规定》(56号令) Art. 17 prohibits
+      转播/链接/聚合 非法视听节目网站 outright — the predicate is the
+      destination's licence, not the copyright status of any one title — and
+      Art. 7 requires the 《信息网络传播视听节目许可证》 to provide AV service at
+      all. Answering these well is the prohibited act, and 剑网2025/2026 name
+      搜索引擎、浏览器、网盘 as the enforcement target. 中消协 (2025-11) adds a
+      consumer-safety limb: these apps bait with 「免费看热播剧」 and harvest
+      location/contacts/camera. Measured 1.30% of rows / 1.58% of PV (250701),
+      1.15% / 1.07% (260701).
+    policy: isolate_and_flag
+  - name: offline_acquisition_channel
+    # 下载 ALONE IS NOT A CHANNEL SIGNAL HERE. Measured 132 rows on 250701 and it
+    # is dominated by app installs — 抖音下载, 泰剧兔app官方下载, 腾讯视频app免费
+    # 下载安装 — so a bare 下载 arm would flag licensed-platform navigation as
+    # piracy. Only 下载 bound to a work noun is kept.
+    patterns:
+      - '(网盘|百度云|百度网盘|阿里云盘|夸克|迅雷|磁力|提取码|种子下载)'
+      - '(电影下载|电视剧下载|全集下载|资源)'
+    keywords: []
+    rationale: >
+      Names a delivery mechanism no licensed Chinese OTT uses — 优酷/爱奇艺/腾讯/
+      芒果/咪咕/红果 all deliver in-app. Unlike 免费观看, this vocabulary has no
+      lawful instance to be confused with, which makes it the one query-text
+      signal in this vertical that is a channel judgement rather than a guess
+      about intent. Serving it means linking to 非法视听节目网站 (56号令 Art. 17)
+      and forfeits the Art. 23 safe harbour of the 信息网络传播权保护条例, since
+      the 应知 test (法释〔2012〕20号 Art. 9, 12) is met by exactly the act of
+      mining, ranking and surfacing such a template. Volatile between logs and
+      therefore never to be sized from one: 0.19% of rows (250701) but 2.10%
+      (260701), where 百度云/百度网盘 alone carry most of it.
+    policy: isolate_and_flag
+  - name: no_domestic_licence_supply
+    # An AVAILABILITY fact, not a content judgement. This category exists because
+    # 逆爱 — 303,652 + 111,656 PV, the corpus's #3 and #7 queries — has no
+    # licensed mainland source, and the free-streaming regex scores
+    # 「逆爱2025全集免费观看」 identically to 「以法之名免费观看」, which does.
+    # It must never be used to suppress or de-rank a work for its theme; the
+    # correct routing is the licensed where-to-watch surface.
+    patterns:
+      - '(双男主|耽美|腐剧|BL剧)'
+      - '((台|泰|韩)剧.{0,6}(双男主|腐))'
+    keywords: []
+    rationale: >
+      A proxy for the axis clustering cannot see: works with no licensed mainland
+      distribution. Where no licensed source exists, every relevance-optimal
+      answer is by construction an unlicensed one, so the query is served
+      correctly only by declining to rank sources at all and routing to
+      availability information. THIS IS A PROXY AND MUST BE VALIDATED — the risk
+      object is the answer, not the query, so a flagged pattern's precision has
+      to be checked against what its result set actually contains before any of
+      it is treated as a finding. Measured 0.80% of rows / 1.51% of PV (250701),
+      0.39% / 0.50% (260701).
+    policy: isolate_and_flag
+
+# Narrower than the 15-25 default. Measured: 8 phrasing markers clear 0.3% of
+# rows, and one of them (access) takes 39.3% of rows / 46.1% of PV on its own, so
+# the intent axis is short and extremely top-heavy. The families that make up the
+# count are the 8 markers plus three classes no marker matches — bare-title
+# navigation (the largest by PV), site/app navigation (抖音 78k PV; 囧次元 44k;
+# 樱花动漫 19k) and the no-licence class — plus the risk leaves.
+expected_l1_range: [8, 16]
+# Wider than L1 because the dominant access class legitimately splits on the
+# ENTITY-TYPE axis rather than the intent axis: 电视剧 19.0% of rows, 电影 7.8%,
+# 动漫 4.5%, 短剧 1.6%, 综艺 0.3%.
+expected_family_range: [10, 24]
+
+pragmatic_intents_hint:
+  - "裸片名导航（以法之名 365k PV、逆爱 303k PV）：no modifier at all, matched by no regex, the largest class by PV. Lexically it is just a proper noun, so clustering groups it by title similarity and genre — the intent (watch / look up / disambiguate) is simply not in the string."
+  - "授权状态：「逆爱2025全集免费观看」与「以法之名免费观看」逐字同构，合规结论相反。Licence status is a property of the TITLE, resolvable only by a title × availability join. No representation of the query text can recover it."
+  - "同一串字符既是作品名也是导航目标：抖音、樱花动漫、cctv5、囧次元 look exactly like titles and are destinations. Serving them as titles is the misclassification, and for the unlicensed ones it is also the compliance event."
+  - "规避拼写：三年级=三级片、做aj、隐藏入口。Designed to look like an ordinary film query and to embed harmlessly among them; the standard words (三级/禁片/色情) match zero rows in this corpus."
+  - "追更 vs 首次观看：「逆爱第8集什么时候更新」求档期，「逆爱免费观看」求播放器 — near-identical phrasing, different answer surface."
+  - "演员反查 vs 作品演员表：「张凌赫主演的电视剧」是 person→works，「以法之名演员表」是 work→people。Both carry 主演/演员; the lookup runs in opposite directions and clustering will merge them."
+  - "平台账号与客服（爱奇艺怎么取消自动续费、抖音充值入口）：a service/account question wearing a platform name, not a content query."
+  - "二创/解说消费 vs 正片消费: consuming a derivative is a different intent AND a different rights position. Measured at 2 rows here — do not seed it on this corpus, but expect it wherever short-video traffic is included."
+
+domain_notes: >
+  影视动漫 query log. Median length 9 characters against 3-6-character drama
+  titles, so the typical query is [片名] + [一个修饰词] and the corpus is
+  template-structured. That makes the modifier the intent signal and the title
+  the noise — the opposite of most verticals — and it is why jieba will return
+  unsegmentable garbage for the title half (these are drama names coined in the
+  last year) while the char n-gram block carries the modifier.
+
+  THE DOMINANT INTENT IS THE COMPLIANCE-SENSITIVE ONE, and that is the single
+  fact a taxonomy for this vertical must be built around. Measured on 250701
+  (10,000 rows / 16,451,909 PV): the access vocabulary
+  (免费观看|在线观看|完整版|全集|高清|免费播放|资源|网盘|百度云|夸克) matches
+  39.3% of rows and 46.1% of PV. Its parts: 免费观看 20.8% of rows / 25.5% PV,
+  在线观看 13.8% / 17.2%, 完整版 12.3% / 14.6%, 全集 12.1% / 14.9%, 高清 8.2% /
+  10.7%. Every other measured intent is two orders of magnitude smaller —
+  演员表 1.5%, 剧情/结局 1.3%, 第N集/多少集 1.8%, 哪里看/什么时候播 0.5%.
+
+  免费观看 IS NOT A PIRACY SIGNAL. It names a viewing condition that licensed
+  supply also satisfies, and it does so on this corpus's own top titles:
+  以法之名 (365k + 358k + 87k PV) premiered on CCTV-8 黄金档 and 优酷 the same
+  night; 锦绣芳华 (140k PV) on 芒果TV + 湖南卫视 金鹰独播剧场; 红果免费短剧 is
+  free-with-ads by design. Lawfulness is a property of the TITLE's availability,
+  not of the phrase, so any risk assignment on this axis must be a title ×
+  availability join and never a regex. The query is not the risk object — the
+  answer is, and a risk label on a query pattern is a proxy that has to be
+  validated against what that pattern's result set actually contains.
+
+  Two axes, not one, and flattening them is the main structural failure mode
+  here. 电视剧 (19.0% of rows) / 电影 (7.8%) / 动漫 (4.5%) / 短剧 (1.6%) /
+  综艺 (0.3%) are ENTITY-TYPE disambiguators; 演员表 / 剧情 are ATTRIBUTE
+  requests; 免费观看 / 在线观看 are ACCESS requests. One level cannot hold all
+  three.
+
+  The legitimate counterpart intent exists and is tiny: 哪里看/哪个平台/什么时候播
+  is 0.5% of rows against the access class's 39.3%. That ratio is itself a
+  headline result — the demand is for a player, not for a licensing answer — and
+  the where-to-watch surface is the natural safe destination for redirected
+  free-streaming demand (cf. Google's Watch tab, and the search-engine practice
+  documented by EUIPO 2024 and the UK IPO 2017 code, all of which key on the
+  DESTINATION, never on per-query intent).
+
+  Live linear TV is present and is a separate answer surface: cctv5在线直播
+  36,814 PV, cctv5节目表 26,960 PV. Relaying or linking an unlicensed 广播电视
+  频道 is prohibited by the same 56号令 Art. 17 as pirate on-demand, so a live
+  branch inherits the risk axis rather than escaping it.
+
+  Two measurement traps that cost real time here: (1) 下载 is NOT an acquisition
+  -channel signal — 132 rows on 250701, dominated by app installs (抖音下载,
+  泰剧兔app官方下载); the channel signal is 网盘/百度云/夸克/迅雷/磁力/资源.
+  (2) The channel class is wildly unstable between logs — 0.19% of rows on
+  250701 and 2.10% on 260701 — so never size it, or the piracy axis generally,
+  from a single day's log.
+
+  Finally, the 动漫 half of the vertical is real (动漫/动画/番剧 4.5% of rows) and
+  it is where the unlicensed-destination traffic concentrates: 囧次元 (44k PV)
+  and 樱花动漫 (19k PV) are among the largest single queries in the corpus and
+  are both unlicensed aggregators, not titles.

@@ -14,33 +14,51 @@
 
 ## 1. Status — last updated 2026-09-02
 
-# 689 tests passing. `mode="fast"` is built and VERIFIED on a live paid run (`fin01`, finance corpus, 2.40h, ~$4.23+).
+# 691 tests passing. `mode="fast"` is built and VERIFIED end-to-end on a paid run (`fin03`): 17/17 phases, verify_run **21 PASS / 6 N/A / 1 SKIP / 0 FAIL**.
+
+(The six N/A are checks whose components fast mode skipped — a fast run's PASS
+count is NOT comparable with a full run's.)
 
 **The one thing to know:** `--fast` and `--smoke` are different things. `--smoke`
-(was `fast_mode`) shrinks the analysis for a wiring test; `--fast`
-(`mode="fast"`) keeps the analysis at full size and removes the second-opinion
-layer. `fin01` confirmed the distinction on real models: the alpha sweep ran its
-full seven values and the gold set was the full derived 3,000 rows, while kappa,
-the pilot and adversarial validation were absent rather than faked.
+(was `fast_mode`) shrinks the analysis for a wiring test; `--fast` (`mode="fast"`)
+keeps the analysis at full size and removes the second-opinion layer. `fin03`
+confirmed the distinction on real models — full α grid, full derived 3,000-row
+gold set, while kappa, the pilot and adversarial validation were ABSENT rather
+than faked.
 
 | | |
 |---|---|
-| Tests | **689** passing (was 665); `ruff --select F src/qmine/ tools/` clean |
-| Live fast run | `fin01` — 17/17 phases, `provider=routed`, 234 calls, 2.40h, est. **$4.23** (4 researcher roles unpriced, so the true figure is higher) |
-| `fin01` quality | CV **0.859**, macro-F1 **0.775**, PV-weighted acc **0.861**, ECE 0.029, coherence 3.91 |
-| `fin01` shape | 20 L1 intents / 34 delivered leaves / 28 families over 10,000 rows |
-| `fin01` gates | 3 `skipped` (the fast-mode three), 1 `warned` (locator reach 24%), 0 failed, `declared_gates_never_evaluated: []` |
-| Verification | `verify_run`: `fin01` **19 PASS / 6 N/A / 2 FAIL / 1 SKIP**; offline finance control 17/6/4/1 |
-| In flight | `fin02` — same pipeline on `金融query-260701.xlsx`, to verify the post-`fin01` fixes |
+| Tests | **691** passing (was 665); `ruff --select F src/qmine/ tools/` clean |
+| Newest run | `fin03` — fast, 10,000 finance rows, 17/17 phases, `routed`, 193 calls, **1.35 h**, est. **$3.19** |
+| `fin03` quality | CV **0.914**, macro-F1 **0.839**, PV-weighted **0.941**, ECE 0.025, coherence 3.86 |
+| `fin03` shape | 16 L1 intents / 21 delivered leaves / 15 families, all named |
+| `fin03` gates | 16 recorded; 4 `skipped` (the fast-mode four), 1 `warned` (locator reach 20%), 0 failed |
+| Verification | `verify_run`: `fin03` **21 PASS / 6 N/A / 0 FAIL / 1 SKIP**; `fin01` control 19/6/2/1 |
+| Namer | pinned `deepseek-v4-pro` — over ALL namer roles at end of run: max **1701.6 s → 136.8 s** (12.4x), p50 74.9 → **31.9 s**, failures 3 → **0** |
 
-**Both `fin01` FAILs are fixed and one is verified.** The stale-family headings
-are gone in a re-render (`runs/fin01/gen03`); the phantom-class fix is
-pipeline-level and `fin02` is the test of it.
+**Everything that needed a live run got one.** The gate guards (a check that did
+not run reports `skipped`, never `passed`), the solo-annotator schema check (no
+phantom classes), the delivered-partition tree filter (no stale `家族 N`
+headings) are confirmed against `fin03`, with `fin01` as the control that still
+shows the two failures `fin03` clears. The store-resolution fix is NOT confirmed
+by `fin03` and cannot be: it wrote its deliverables into gen01, where there is no
+cross-generation lookup to exercise. Its confirmation is the `fin02` RENDER into
+gen02 — 10,000 rows and 10 populated sheets where the pre-fix code produced 0 rows
+and 8 empty ones.
 
-**Year-over-year, same source, one year apart:** template coverage is 18.6% on
-`250701` and **36.3%** on `260701`. The 2025 slice is markedly more
-heterogeneous, which is also why `p5_locator_reaches_the_corpus` warned on
-`fin01` (the reference frame reached only 24% of clusters).
+**Cost/time, measured, for anyone sizing a run:** full 50k — `live39` 3.4 h/$5.52,
+`live40` 4.0 h/$7.01, `live44` 9.8 h/$61.09 (841 calls vs 696, 8x the bill: one
+expensive model). Fast 10k — **1.35-2.40 h / $3.19-$4.23** across the two complete fast runs
+(`fin03`, `fin01`); quote the range, not the better one. The
+closest like-for-like on 10,000 rows is `med04` (full) 7.9 h/$65.05 against
+`fin03` (fast) 1.35 h/$3.19 — different corpora, so an order of magnitude rather
+than a ratio.
+
+**A full run ships 10 markdown documents, 6 CSVs and a notebook** (`med04`,
+`live44`; `live42` shipped 9 — it varies with whether the narrative and audit
+reports succeed). The docs and the fast-mode banner said "13" until today; the
+banner no longer states a full-mode count at all, because a hard number there
+goes stale silently inside every shipped document.
 
 ### What the live44 examination found, and where it landed
 
@@ -429,7 +447,10 @@ record.
     inflation. They earn it (three real defects), but the trade should be a
     decision, not an accident.
 
-12. **Refinement has not converged on any run.** live40, live41, live42 all hit
+12. **Refinement converges on some corpora, not others** (was: "has not converged
+    on any run" — falsified 2026-09-02 by `hierarchy_meta.converged`:
+    `fin01`/`fin02`/`fin03` and `ecom01`/`ecom02` are all `true`; every K12 and
+    medical run is `false`). live40, live41, live42 all hit
     the 5-round limit. Honestly disclosed in the report, but it means the
     delivered leaf count depends on which round it stopped at.
 
@@ -448,16 +469,13 @@ record.
     Chinese deliverables. Frozen by gate NAME in `GATE_MESSAGE_DEBT`
     (`tests/test_pipeline.py`); the set may shrink, anything new fails the test.
 
-16. **Three domain profiles are untested on real data:** `finance_zh`,
-    `sports_zh`, `politics_zh`. `generic.yaml` ships 0 template seeds, so a corpus
-    without a profile locates K against unvalidated mined groups — now gated by
+16. **Two domain profiles are untested on real data:** `sports_zh`,
+    `politics_zh`. (`finance_zh` was exercised on 2026-09-02 by `fin01`/`fin02`/
+    `fin03` and works — its risk categories, template seeds and
+    `expected_l1_range` [15,22] all held, and all three runs landed 16-20 L1
+    classes.) `generic.yaml` ships 0 template seeds, so a corpus without a profile
+    locates K against unvalidated mined groups — now gated by
     `p3_locator_reference_validated`, but never exercised.
-
-17. **`verify_run.py` on a RENDERED generation skips most checks.** It reads one
-    generation directory, and a render writes only reports there — the analytical
-    artifacts stay in the source generation. live42: 20 pass on gen01, 9 pass /
-    13 skip on gen02. Either teach it the store's cross-generation resolution, or
-    document that a rendered generation is scored against its source.
 
 18. **`zh_panel`'s `fixed` and `waived` lists are unsorted** (`entries.values()`),
     unlike `open_findings`, which sorts blocking-first. Their caps are disclosed
@@ -478,8 +496,6 @@ record.
   The code reports that rather than shipping a column of blanks.
 - `completed_phases` uses an `operator.add` reducer — it cannot be pruned via
   `update_state`. Rewind by graph **position** (`as_node=<predecessor>`) instead.
-- `qmine` has no `new-generation` command; `runner.new_generation()` exists but is
-  not exposed on the CLI.
 - Verify a live run really used live agents: `run_summary.json` →
   `llm_usage.provider` must read `routed`, not `offline`.
 
@@ -3073,6 +3089,28 @@ carries zero off-schema labels across 3,200 gold rows — but the guard never
 fired, and `fin01` hit the condition once in 3,200 (0.03%), so zero is equally
 consistent with luck. `test_a_solo_annotator_cannot_invent_a_class` remains the
 actual verification.
+
+**Two §2 open questions closed today** (removed there, recorded here per the
+file's contract):
+
+* **#17 `verify_run.py` on a rendered generation** — taught it the store's
+  cross-generation resolution. It now searches DOWN through generations for
+  artifacts but deliberately NOT for documents: an older generation's report is
+  the thing a re-render replaces, and reading it would silently verify the
+  previous version. Measured on `fin01/gen03`: 8 PASS / 12 SKIP before,
+  **19 PASS / 2 SKIP** after.
+* **#16 `finance_zh` untested** — narrowed, not deleted. Three real runs
+  exercised it; its risk categories, template seeds and `expected_l1_range`
+  [15,22] all held (16-20 L1 classes across the three). `sports_zh` and
+  `politics_zh` remain untested.
+
+**A wrong number was shipping inside every fast deliverable.** The banner said
+"交付文档从 13 份减为 3 份". A full run ships **10** markdown documents (`med04`,
+`live44`; `live42` shipped 9). The count appeared in 8 places including the
+banner and the `--fast` help text. The banner now states no full-mode count at
+all — a reader of a fast deliverable needs to know what they hold and that
+nothing was withheld, and a hard number there goes stale silently inside every
+shipped document. The docs carry the real figure with its composition.
 
 **Open, and deliberately not resolved here:** no paid fast run has been made, so
 the single-annotator gold set is untested against a real annotator. `med04`'s

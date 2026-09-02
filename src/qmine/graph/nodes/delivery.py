@@ -549,10 +549,10 @@ def p11_report(state: PipelineState, deps: Deps) -> dict[str, Any]:
     if getattr(deps.cfg, "mode", "full") == "fast":
         # THREE DOCUMENTS INSTEAD OF THIRTEEN — and every artifact still written.
         #
-        # The thirteen documents a full run ships exist to ARGUE: each shows the
+        # The documents a full run ships exist to ARGUE: each shows the
         # measurement behind a decision and why the alternative lost. A fast run
         # removed the layer that produces that argument, so shipping the same
-        # thirteen would be shipping thirteen arguments with the evidence cut out
+        # the same set would be shipping those arguments with the evidence cut out
         # of them. These three REFER instead — the classes, the tree, and every
         # labelled row — and each carries the generated disclosure banner naming
         # what was skipped. The figures and the store are untouched.

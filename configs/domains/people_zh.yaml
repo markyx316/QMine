@@ -1,0 +1,251 @@
+# 人物 / public-figure query log (Part IV §4.3). Bare-name dominated: 81.2% of rows
+# and 87.0% of PV carry no intent marker at all. Every share below was MEASURED on
+# data/raw/人物query-250701.xlsx (10,000 rows, 9,966,159 PV), not assumed.
+key: people_zh
+display_name: "People / public-figure query log"
+language: zh
+
+tokenizer: jieba
+# Median query length is 3 characters (61.8% of rows are <=3 chars), so a 1-gram is
+# a bare surname (陈/李/王) and collapses unrelated people; the discriminative units
+# are the 2-4 char suffix markers (简介 / 个人资料 / 市委书记).
+char_ngram_range: [2, 4]
+word_ngram_range: [1, 2]
+
+# Light Chinese first. multilingual-e5-small is kept in the bake-off because 1.91%
+# of rows (1.37% pure Latin: aespa / treasure / beyond / liam gallagher) are a script
+# minority of exactly the size that collapses into one junk cluster on a zh-only encoder.
+embedding_candidates:
+  - BAAI/bge-small-zh-v1.5
+  - BAAI/bge-base-zh-v1.5
+  - shibing624/text2vec-base-chinese
+  - intfloat/multilingual-e5-small
+# Null on purpose: the bge instruction prefix is ~15 characters against a 3-character
+# query and would dominate the pooled representation. Revisit only if the bake-off says so.
+instruction_prefix: null
+
+# Every seed is a MEASURED suffix family from this corpus, anchored to keep it high
+# precision, and every one clears the 0.004 group filter in ops/templates.build_groups.
+# Deliberately NOT seeded: 微博$ (0.37%), 名单$ (0.31%) — real but below that filter,
+# and the scandal/rumour lexicon, which is a risk category, not a display exemplar.
+template_seeds:
+  - name: bio_intro_suffix
+    pattern: "(简介|介绍)$"
+    intent_hint: "求人物生平简介（已公开档案）；语料中多为「X简介」「X个人资料简介」"
+    expected_min_share: 0.045
+  - name: bio_profile_data_suffix
+    pattern: "资料$"
+    intent_hint: "求人物个人资料卡（与简介同一意图的另一种说法）"
+    expected_min_share: 0.022
+  - name: bio_resume_suffix
+    pattern: "(简历|履历)$"
+    intent_hint: "求人物履历（官员为组织部门/新华社公开简历，艺人为自述档案）"
+    expected_min_share: 0.017
+  - name: party_post_holder
+    pattern: "书记$"
+    intent_hint: "由地域/机构反查党委书记人选，如「新疆党委书记」「太原市委书记」；多数不带疑问词"
+    expected_min_share: 0.012
+  - name: state_post_holder
+    pattern: "(主席|部长|省长|市长|总理|厅长|局长)$"
+    intent_hint: "由机构/地域反查行政职务的任职者，如「南京市长」「统战部部长」"
+    expected_min_share: 0.009
+  - name: portrait_image_request
+    pattern: "(图片|照片)$"
+    intent_hint: "求人物图像素材"
+    expected_min_share: 0.008
+  - name: slot_holder_who_is
+    pattern: "是谁$"
+    intent_hint: "反向人物解析：由作品/关系/职务定位到具体人物，如「水浒传的作者是谁」「宋佳老公是谁」「新疆党委书记是谁」"
+    expected_min_share: 0.006
+  - name: family_relation_lookup
+    pattern: "(老婆|妻子|老公|丈夫|前妻|家世)"
+    intent_hint: "求人物的配偶/家世关系（答案不在权威档案里，与生平简介是不同的检索任务）"
+    expected_min_share: 0.005
+  - name: single_attribute_lookup
+    pattern: "(年龄|多大|身高|生日|哪里人|籍贯|出生地)"
+    intent_hint: "求单项属性事实（年龄/身高/生日/籍贯），一条 infobox 字段即可回答"
+    expected_min_share: 0.0045
+
+# Strict test applied: serving a normal result is itself a legal/safety event.
+# 简介/资料/简历 (11% of rows) is NOT here — it is lawfully published record and the
+# corpus's core intent; labelling it risk would over-suppress the vertical.
+risk_categories:
+  - name: political_personnel_speculation
+    patterns:
+      - "(另有任用|履新|调任|任免|免职|新任|接任)"
+      - "(被查|落马|双开|接受审查调查|停职)"
+    keywords: ["另有任用", "任免", "调任", "履新"]
+    rationale: >
+      Measured at 16 rows (0.16%) but 0.46% of PV — severity is inverted against
+      row frequency. 另有任用 has no legal definition; it is an organization-department
+      euphemism for "post to be decided later", covering promotion, lateral move or a
+      pending problem alike. On the 2025-07-01 snapshot no onward appointment for the
+      subject of the 28k-PV query 马兴瑞另有任用 had been announced, so ANY served result
+      is by construction non-authoritative political speculation — 散布谣言 under
+      网络信息内容生态治理规定 Art. 6, and outside the 时政类新闻信息 whitelist because no
+      whitelisted announcement exists to reproduce. The 被查/落马 slice is doubly loaded:
+      defamation of a named individual AND political rumour, reaching the 2013 两高
+      interpretation's public-prosecution triggers. Isolate so the answer path can return
+      "no authoritative announcement exists" instead of ranking speculation.
+    policy: isolate_and_flag
+  - name: political_figure_source_provenance
+    patterns:
+      - "(书记|省长|市长|主席|部长|总理|厅长|委员)"
+      - "(中央政治局|国务院|自治区党委|省委|市委|总书记)"
+    keywords: ["党委书记", "省委书记", "市委书记", "国家主席", "领导班子"]
+    rationale: >
+      391 rows (3.91%) / 3.15% of PV. The violation here is provenance, not topic:
+      personnel and office information about serving officials is 时政类新闻信息, which
+      may only be reproduced from the CAC 互联网新闻信息稿源单位名单 whitelist and may not be
+      distorted (互联网新闻信息服务管理规定). Serving a plausible non-whitelist page is a
+      licensing breach independent of whether the content is true, and the authoritative
+      record (人民网地方领导资料库 / 新华社简历) is a different source from the one an
+      entertainer biography resolves to. Must never be blended into a generic biography
+      family, or the whole family inherits the wrong source policy.
+    policy: isolate_and_flag
+  - name: death_and_survival_status
+    patterns:
+      - "(去世|逝世|死了|死亡|病逝|遗体|死因|还活着|走了吗)"
+    keywords: ["去世了吗", "死了吗", "死了没有"]
+    rationale: >
+      17 rows (0.17%). The class is NOT homogeneous and that is the whole point: it
+      contains true, fresh, authoritative deaths (蔡澜 died six days before this snapshot;
+      何柱国, 董文华) and false death rumours about living people (赵本山去世了吗, 马云死了吗,
+      赵薇死了吗, 刘晓庆死了没有). Serving a normal ranked result for the second kind
+      republishes a defamatory falsehood about a living person — 民法典 1024/1025 with a
+      合理核实义务, criminal exposure at 5,000 views / 500 forwards under the 2013 两高
+      interpretation, and an affirmative detect-and-stop duty under 网络暴力信息治理规定
+      Arts. 13/15. Blanket-blocking the pattern is equally wrong: it would suppress true,
+      high-demand news. Isolate for an authoritative-source gate plus 辟谣标签 routing.
+    policy: isolate_and_flag
+  - name: defamation_and_scandal
+    patterns:
+      - "(出轨|塌房|黑料|绯闻|丑闻|私生活|劈腿|人设崩|艳照)"
+    keywords: ["黑料", "塌房", "爆料"]
+    rationale: >
+      Only 3 rows in this file (网红黑料, 扒哥黑料), but the highest severity per row in
+      the corpus and a lower bound rather than a size — unverified allegations mostly
+      travel through the bare-name channel with no marker. A routine result is directly
+      the legal event: 违法信息 (侮辱诽谤, 生态治理规定 Art. 6(十)) if false, and 不良信息
+      (炒作绯闻丑闻, Art. 7(二)) even if true, which Art. 11 bars from 首页首屏/热搜/榜单/
+      推荐 surfaces. The 2021 娱乐明星网上信息规范通知 puts the same constraint on ranking
+      surfaces specifically. Isolate so no scandal item can be promoted by a family that
+      is otherwise safe to amplify.
+    policy: isolate_and_flag
+  - name: sexualised_and_non_person_browse
+    patterns:
+      - "(美女|帅哥|性感|写真|比基尼|泳装|丝袜|黑丝|白丝|大胸|胸大|裸|艳照|套图|尺度|福利)"
+    keywords: ["美女图片", "性感美女", "美女写真"]
+    rationale: >
+      60 rows (0.60%) but 0.99% of PV — it over-indexes 2x on traffic against rows.
+      淫秽色情 is 违法信息 (生态治理规定 Art. 6(九); 互联网信息服务管理办法 Art. 15) and
+      性暗示/性挑逗 is 不良信息 (Art. 7(四)) barred from 首页首屏/热搜/榜单/推荐 (Art. 11), so
+      a family containing these rows can never be safely promoted. It is simultaneously a
+      taxonomy artifact: 美女 alone carries 32k PV and is a class-level browse term, not a
+      person query at all. Isolate as a rejection class; merging it into any person family
+      contaminates that family's ranking eligibility.
+    policy: isolate_and_flag
+  - name: unpublished_private_life
+    patterns:
+      - "(老婆|妻子|老公|丈夫|前妻|情人|家世|家庭背景|子女|后代|父亲|母亲|爷爷)"
+      - "(住址|家庭住址|行程|航班|定位|手机号|身份证|微信号)"
+    keywords: ["家世", "前妻", "私生活"]
+    rationale: >
+      99 rows (0.99%) / 0.62% of PV for the relational patterns; the locator patterns
+      scored 0 in this file and are carried as a lexicon, not as a measurement. The risk
+      is conditional on the SUBJECT, which the query string does not reveal: for
+      entertainers (宋佳老公, 刘宇宁老婆) this is self-disclosed and benign, but for serving
+      officials (习近平前妻 appears in this file) 婚姻变化、配偶子女从业、房产 are reported
+      INTERNALLY under 《领导干部报告个人有关事项规定》 and are not published, so no lawful
+      public source exists and any served result is unverified aggregation — SPC 网络侵权
+      解释 Art. 12, and 侵犯公民个人信息罪 / 人肉搜索 under the 2023 网络暴力指导意见 Art. 4
+      once contact or whereabouts are involved. Isolate so the population-conditioned path
+      can apply; do not suppress the entertainer slice, which is ordinary lawful demand.
+    policy: isolate_and_flag
+
+# Tight on purpose. The marked-intent inventory is small (biography, post-holder lookup,
+# single-attribute, relation, image, reverse resolution, news-status, personnel change,
+# plus a rejection class), so a large L1 count is evidence the taxonomy split on PERSON
+# or TOPIC rather than on intent — the entity-dominance failure mode. Family count runs
+# higher than the intent count because biography / relation / status each split by
+# subject population (officials, entertainers, fictional-historical).
+expected_l1_range: [8, 14]
+expected_family_range: [10, 20]
+
+pragmatic_intents_hint:
+  - "突发人事/新闻状态查询：同一个裸名字，在事件当天是「最新动态」，平日是「生平档案」。头部三条 陈小江/马兴瑞/韦韬 合计占全库 16.4% PV，全部来自 2025-07-01 当天的新疆、广西人事发布，词面上完全没有痕迹，只有 (人名 × 日期 × 新闻索引) 才能分开"
+  - "讣闻核实 vs 谣言核实：「蔡澜」（快照前 6 天去世，30k PV）以裸名字进入，与「赵本山去世了吗」「马云死了吗」词面同族但处置相反——一个要权威新闻，一个要辟谣标签"
+  - "反向人物解析：实测 是谁$ 74 条中绝大多数是「作品/关系/职务 → 人物」（水浒传的作者是谁、宋佳老公是谁、新疆党委书记是谁），检索方向与「这个人是谁」相反，聚类只看得到共同的「是谁」"
+  - "裸名字的身份消歧：同一字符串可能指向多个真实人物、也可能指向文艺形象（白鹿、哪吒、财神爷、李白），是人物垂类的核心失败模式，纯文本聚类结构上不可见"
+  - "导航型意图：求某人的微博/主页/账号（微博$ 37 条，0.37%），与信息型查询词面无差别，但满足条件是跳转而不是答案"
+  - "人事异动的委婉语：「另有任用」无法律定义，实际意图是「这个人的职位发生了什么」，且正确答案可能是「尚无权威公告」；仅 16 行却占 0.46% PV"
+  - "主体人群决定答案来源：官员 / 艺人 / 文史虚构人物（约 1.0% 行：孙悟空、李白、诸葛亮、杨贵妃、水浒传的作者）三类，同一意图的权威来源与合规基线完全不同，而人群在 query 串里不可见——应作为每个叶子的必备属性，而不是并列分支"
+  - "类目级浏览伪装成人物 query：美女/帅哥/明星等（0.60% 行、0.99% PV）根本不是人物查询，应进拒识类而非意图类"
+  - "行数与流量背离：色情向 0.60% 行 / 0.99% PV，人事异动 0.16% 行 / 0.46% PV——按行频排序会把这两类判成尾部噪声"
+
+domain_notes: |
+  All figures measured on data/raw/人物query-250701.xlsx: 10,000 rows, 9,966,159 PV,
+  no duplicate queries.
+
+  1. THIS IS A BARE-NAME LOG. Median query length is 3 characters; 61.8% of rows and
+     74.7% of PV are <=3 chars, 70.6% / 80.5% at <=4 chars. Against a generous marker
+     lexicon (简介|资料|简历|书记|主席|是谁|图片|年龄|老婆|去世|另有任用|个人|...), 81.2% of
+     rows and 87.0% of PV match NOTHING. Intent is a prior over the PERSON, not a
+     property of the string, so any taxonomy read off query text describes under 20% of
+     rows and near-zero of the head traffic. Say so explicitly rather than reporting the
+     marked minority as if it were the corpus.
+
+  2. THE HEAD IS NEWS, NOT EVERGREEN. 陈小江 (961,536 PV), 马兴瑞 (502,916), 韦韬 (170,243)
+     are 16.4% of all PV and are one single-day political-personnel event (the 2025-07-01
+     Xinjiang party-secretary change and the Guangxi appointment); 蔡澜 (30k) had died six
+     days earlier. The largest intent in the corpus is "what just happened to this person"
+     and it is lexically invisible. Do not model this vertical as a stable evergreen
+     biography log.
+
+  3. THREE SUBJECT POPULATIONS, NOT TWO. Serving officials (习近平, 省委书记, 另有任用),
+     entertainers (鹿晗, 肖战, 白鹿, 刘宇宁, 王安宇), and fictional/historical/literary
+     figures (~1.0% of rows: 孙悟空, 哪吒, 李白, 诸葛亮, 杨贵妃, 财神爷, 水浒传的作者). The same
+     intent resolves to a different authoritative source and a different lawful basis per
+     population — 人民网地方领导资料库 / 新华社 for officials, self-disclosed profiles for
+     entertainers, reference works for the third. The population is invisible in the query
+     string: carry it as a required attribute on every leaf, never as a sibling branch.
+
+  4. 是谁 DOES NOT MEAN "who is this person" HERE. Of 74 是谁$ rows, the dominant shape is
+     「X的作者/老公/书记/主人公是谁」 — reverse resolution from a work, relation or post to a
+     person. The bare-name identity intent, which is the corpus's implicit majority, takes
+     no marker at all. A naming agent that reads 是谁 as identity lookup will mislabel the
+     class.
+
+  5. THE BIOGRAPHY SUFFIX BLOCK IS THE CORE LAWFUL INTENT, NOT A HAZARD. 简介/介绍 5.64%,
+     资料 2.75%, 简历/履历 2.14%. This is lawfully published record (PIPL Art. 27; SPC
+     网络侵权解释 Art. 12(四) exempts 自行或已合法公开的信息). Labelling the whole ~11% bio-PII
+     regex as risk is a false-positive class, not a safety win. The genuinely risky tail is
+     the relational slice (老婆/妻子/家世/前妻, 0.71%) and only when the subject is an official.
+
+  6. SERVING IS NOT AMPLIFYING. 违法信息 may not be transmitted at all; 不良信息 (炒作绯闻丑闻;
+     性暗示) is merely barred from 首页首屏/热搜/榜单/推荐 (生态治理规定 Art. 11), and the 2021
+     娱乐明星网上信息规范通知 lands on the same ranking surfaces. Risk labels in this vertical
+     should drive source routing and ranking-surface eligibility, not blanket suppression.
+
+  7. PV AND ROW FREQUENCY DISAGREE, IN BOTH DIRECTIONS. Adult-adjacent: 0.60% of rows,
+     0.99% of PV. Personnel change: 0.16% of rows, 0.46% of PV. Bio suffixes go the other
+     way (5.64% of rows, 3.39% of PV). Report both; a row-weighted taxonomy will call the
+     high-traffic classes tail noise.
+
+  8. SCRIPT MINORITY. 1.91% of rows contain Latin characters, 1.37% are pure Latin (aespa,
+     treasure, beyond, rose, liam gallagher) — K-pop and band names. A ~2% script minority
+     is exactly the size that collapses into a single junk cluster on a Chinese-only
+     encoder; check explicitly whether this slice became its own leaf, and do not accept
+     such a leaf as an intent.
+
+  9. ENTITY DOMINANCE IS THE FAILURE MODE. With 81% of rows carrying no intent marker,
+     clustering will organise by person and by topic (all 陈小江 rows together) rather than
+     by intent. A high L1 count is a symptom of that, not a richer taxonomy.
+
+  10. TEMPLATE COVERAGE WILL READ "too_low" AND THAT IS CORRECT. The nine seeds above plus
+     the mined affixes cover 17.1% of rows on this file, because 81% of it is bare names.
+     Do not loosen the seeds to chase the coverage window — a loose seed sweeps two intents
+     into one group and corrupts the alpha sweep it is supposed to judge. Note also what the
+     affix miner discovers here: the surviving discovered groups are 前缀「陈小」and 前缀「新疆」
+     — person and place prefixes, i.e. ENTITIES, not phrasings. They must not be read as
+     phrasing families.

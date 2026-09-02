@@ -550,7 +550,7 @@ class QMineConfig(BaseModel):
     #: second-opinion layer removed — one annotator instead of two, no phase
     #: observers, no adversarial attack, no agent-written narrative, no
     #: pre-delivery audit — and ships three reference documents instead of
-    #: thirteen argued ones.
+    #: the full set of argued ones.
     #:
     #: What it does NOT do is shrink anything: the grids, the corpus, the gold
     #: size, the researcher panel and every intermediate artifact are identical

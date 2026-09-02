@@ -24,14 +24,23 @@ flowchart LR
 
 ### Before you start
 
-- It needs **API keys** for at least one provider (DeepSeek, Zhipu, Qwen,
-  OpenRouter, Anthropic, OpenAI…). Without them it runs a deterministic offline
-  stand-in and says so loudly — useful for checking the wiring, useless as output.
-- A full 50k run takes **about 4–4.5 hours**. Cost depends almost entirely on
-  routing: `live40` spent **$7.01** over 696 calls, `live42` **$29.69** over 702.
-  Nearly the same call count, 4× the bill — one expensive model in the mix.
-  Run `qmine models` for an estimate before you spend anything.
-  `qmine models` prints the routing plan and an estimate before you spend anything.
+- It needs **API keys for DeepSeek, Zhipu, Qwen AND OpenRouter** — all four, under
+  the default `configs/live.yaml`. OpenRouter is not optional: four roles are
+  pinned to `moonshotai/kimi-k3`, which is reachable only there, and an
+  unroutable pin is treated as a config error that stops the run rather than
+  degrading it. Anthropic and OpenAI keys do **nothing** here — both labs are in
+  `excluded_labs`. With no keys at all it runs a deterministic offline stand-in
+  and says so loudly: useful for checking the wiring, useless as output.
+- **Time and cost vary by more than 10×, and routing is why.** Measured on real
+  runs: a full 50k-row run took **3.4 h / $5.52** (`live39`), **4.0 h / $7.01**
+  (`live40`) and **9.8 h / $61.09** (`live44`) — 841 calls against 696, but 8× the
+  bill, because one expensive model was in the mix. `qmine models` prints the
+  routing plan and an estimate before you spend anything; run it first.
+- **`--fast` is roughly 5× quicker and far cheaper**, because it removes the
+  second-opinion layer rather than shrinking the analysis. The closest like-for-like
+  pair on 10,000 rows: `med04` (full) **7.9 h / $65.05**, `fin03` (fast)
+  **1.4 h / $3.19**. Different corpora, so read it as an order of magnitude, not a
+  ratio. See [Two speeds](#two-speeds-and-what-the-fast-one-gives-up).
 - **Deliverables are written in Chinese** by default. `report_language` switches
   the reports; the machine-readable CSVs are language-neutral.
 - It is a **research pipeline, not a product.** There is no hosted service, no
@@ -481,7 +490,7 @@ fragments intents worst; and HDBSCAN produced overwhelming noise at every
 
 ```bash
 make install                 # encoders, notebook tooling, tests
-cp .env.example .env         # DEEPSEEK_API_KEY / ZHIPU_API_KEY / QWEN_API_KEY
+cp .env.example .env         # DEEPSEEK / ZHIPU / QWEN / OPENROUTER keys — all four
                              # optional: TAVILY_API_KEY or BRAVE_API_KEY for web research
 
 qmine models                 # the routing plan and cost estimate — spends nothing
@@ -497,9 +506,9 @@ qmine render live45          # rebuild the deliverables from a finished run's ar
 `--fast` is for when you want the clustering and the labels now and can do
 without the evidence that they were checked. It runs **the same analysis** — the
 same corpus in full, the same α and K grids, the same gold-set size, the same
-twelve phases — and removes only the layer that second-guesses it:
+phases — and removes only the layer that second-guesses it:
 
-| | `make live` (full) | `make fast` |
+| | full (default) | `--fast` |
 |---|---|---|
 | annotators on the gold set | 2, independent | **1** |
 | inter-annotator κ | measured | **absent** — not 1.0, not 0.0 |
@@ -509,16 +518,52 @@ twelve phases — and removes only the layer that second-guesses it:
 | agent-written report, pre-delivery audit | run | not run |
 | **grids, corpus, gold size, researchers** | full | **identical** |
 | **intermediate artifacts** | all | **all** |
-| deliverables | 13 documents + notebook | 3 reference documents |
+| deliverables | 10 documents + 6 CSVs + notebook | **3 reference documents** |
 
-The three fast deliverables are the intent system, the cluster tree, and one
-workbook with every row labelled by both routes. Each opens with a
-machine-generated banner naming exactly what was skipped, and each ends with a
-map from every table back to the artifact it came from — so a fast run can still
-be audited to the source, it just has not been audited *for* you. `mode` is
-recorded in `run_summary.json`, and `verify_run.py` reports `N/A` rather than
-`PASS` for any check whose component did not run: a fast run can never be
-mistaken for a verified one.
+Measured on 10,000 finance queries: `fin03` ran in **1.4 h for ~$3.19** over 193
+calls, 17/17 phases, and passed `verify_run` **21 / 0**. Its gold set was the full
+derived 3,000 rows and its α sweep the full grid — fast mode shrank nothing.
+
+**How to run it**
+
+```bash
+# the bundled defaults (K12 corpus)
+make fast RUN=my-fast-run
+
+# your own corpus — override the LIVE_* variables
+make fast RUN=x LIVE_INPUT=data/raw/mine.xlsx LIVE_DOMAIN=finance_zh \
+          LIVE_TEXT=original_query LIVE_REFS=
+
+# or call the CLI directly, which is what the target does
+qmine run --input data/raw/mine.xlsx --domain finance_zh \
+          --config configs/live_finance.yaml --provider router --fast \
+          --run-id my-fast-run
+```
+
+A corpus config must start with `extends: live.yaml`, or it silently replaces the
+provider policy — the role pins and the lab-independence rule that double-blind
+annotation depends on. `configs/live_finance.yaml` is a worked example.
+
+**What you get**
+
+```
+<domain>_自上而下_意图体系完整定义.md   the intent system: classes, rules, gold, classifier
+<domain>_自下而上_聚类树完整定义.md     the delivered tree: families, leaves, definitions
+<domain>_query_挖掘结果.xlsx           every row labelled by both routes, + definition sheets
+```
+
+Each opens with a machine-generated banner naming exactly what was skipped, and
+each ends with a map from every table back to the artifact it came from — so a
+fast run can still be audited to the source, it just has not been audited *for*
+you. `mode` and `fast_skipped` are recorded in `run_summary.json`, and
+`verify_run.py` reports **N/A** rather than `PASS` for any check whose component
+did not run, so a fast run can never be mistaken for a verified one — and its
+PASS count is not comparable with a full run's.
+
+**When NOT to use it.** If the labels are going to train something, settle an
+argument, or be defended to someone else, run full: κ, the pilot ceiling and the
+adversarial pass are the evidence that the labels are trustworthy, and fast mode
+does not produce them.
 
 Not to be confused with `--smoke`, which shrinks the grids for a wiring test and
 is not a result at all.
@@ -652,7 +697,9 @@ metric's own spread. Widening the band makes it worse — at a measured 2-sd ban
 the run elects an α its own panel shows fragments intents more. The fix is
 replication, which has not been done.
 
-**Refinement has never converged.** Every run so far hits the iteration limit, so
+**Refinement converges on some corpora and not others.** `fin01`/`fin02`/`fin03`
+(finance) and `ecom01`/`ecom02` (e-commerce) all report `converged: true`;
+`live39`-`live44` (K12) and `med04` (medical) all hit the iteration limit, so
 the delivered leaf count depends partly on which round it stopped at. Disclosed in
 the reports; not fixed.
 

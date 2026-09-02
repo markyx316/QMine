@@ -1,0 +1,318 @@
+# 教育培训 query log. Measured on data/raw/教育query-250701.xlsx
+# (10,000 rows, 28,503,117 PV) with tools/check_domain_profile.py and a probe
+# script; every share in this file is a measurement on that sample, not a prior
+# carried over from k12_zh. THIS IS NOT k12_zh: the character-level help that
+# defines K12 is 13.2% of rows and 7.5% of PV here, while bare institution
+# names are 22.4% of rows and 44.6% of PV.
+key: education_zh
+display_name: "Education / training query log"
+language: zh
+
+tokenizer: jieba
+char_ngram_range: [1, 3]
+word_ngram_range: [1, 2]
+
+# Light-first. The corpus is monolingual zh with a short median length (6 chars)
+# and a huge proper-noun mass; a heavy multilingual encoder buys nothing the
+# bake-off can measure. Opt in to BAAI/bge-m3 only if the bake-off asks for it.
+embedding_candidates:
+  - BAAI/bge-small-zh-v1.5
+  - BAAI/bge-base-zh-v1.5
+  - shibing624/text2vec-base-chinese
+instruction_prefix: null
+
+# CONTRACT: everything matching is near-certainly the SAME ASK. Measured rows /
+# %rows / %PV are in the comments. Broad "topic" regexes that would have covered
+# more traffic were rejected on purpose and are named where they were rejected —
+# a seed that sweeps two intents corrupts the alpha sweep it judges.
+template_seeds:
+  # 2,244 rows · 22.4% rows · 44.6% PV. The query IS an institution name and
+  # nothing else — the highest-precision group in the corpus. Anchored on
+  # purpose: the unanchored 学院|大学|学校|校区|官网 pattern reaches 33.1% rows /
+  # 52.1% PV but sweeps 分数线, 是几本, 官网 and 怎么样 into one group.
+  # Read its fragmentation as an INTENT measure: the group is topically
+  # heterogeneous by design (理工/师范/医药/职业技术), so a split by discipline
+  # is the encoder behaving correctly, not template fragmentation.
+  - name: institution_name_lookup
+    pattern: "^[一-龥A-Za-z0-9]{2,14}(大学|学院)$"
+    intent_hint: "查询单个院校（裸实体名）的整体信息"
+    expected_min_share: 0.18
+  # 997 rows · 10.0% rows · 5.8% PV. Overwhelmingly single rare characters.
+  - name: pronunciation
+    pattern: "(怎么读|的拼音|拼音是什么|拼音怎么写|的读音|读音是什么|念什么)"
+    intent_hint: "求一个字/词的读音"
+    expected_min_share: 0.07
+  # 252 rows · 2.5% rows · 1.6% PV. Covers 成语, 招考术语 (985/211, 特控线,
+  # 专业清) and loanwords alike — all one ask, 求释义. See the
+  # idiom_meaning_as_lottery_probe risk note: ~20% of this group's PV is not
+  # a dictionary lookup at all, and no lexical rule separates it.
+  - name: word_meaning
+    pattern: "(什么意思|啥意思|的意思|意思是什么|释义)"
+    intent_hint: "求一个词/术语的释义"
+    expected_min_share: 0.02
+  # 153 rows · 1.5% rows · 0.8% PV.
+  - name: word_formation
+    pattern: "(组词|怎么组词|能组什么词)"
+    intent_hint: "用一个字组出词语"
+    expected_min_share: 0.01
+  # 132 rows · 1.3% rows · 0.8% PV. 怎么写 is deliberately excluded — it also
+  # reads as "how do I write this essay/application" — and bare 笔画 is written
+  # as 的笔画/多少笔画 because 笔画 alone matches 简笔画 (a drawing request, a
+  # different ask; measured 3 rows).
+  - name: stroke_and_radical
+    pattern: "(笔顺|的笔画|多少笔画|几笔画|部首|偏旁)"
+    intent_hint: "求字形写法/结构"
+    expected_min_share: 0.01
+  # 380 rows · 3.8% rows · 2.6% PV. Year- and province-stamped almost always.
+  # 多少分 is excluded: it splits between 满分多少分 (rule) and 多少分能上 (advice).
+  # The floor is 0.015, not the 0.038 measured here: the same seed measures 1.9%
+  # on 教育query-260701.xlsx. This group is seasonal, so its level is not a constant.
+  - name: admission_score_line
+    pattern: "(分数线|录取线|投档线)"
+    intent_hint: "求某校/某省某年的录取分数线"
+    expected_min_share: 0.015
+  # 150 rows · 1.5% rows · 0.8% PV, and almost every hit is literally
+  # "<校名>是一本还是二本". Bare 一本|二本|几本 was rejected: it also matches the
+  # score-line family. Floor set from the lower cross-year reading (0.7% on
+  # 教育query-260701.xlsx), not from this sample.
+  - name: institution_tier_judgement
+    pattern: "(是一本还是二本|是几本|是一本|是二本|是三本|几本大学|属于几本)"
+    intent_hint: "判断某院校的批次/层次"
+    expected_min_share: 0.005
+  # 82 rows · 0.8% rows · 1.0% PV, dominated by 中考. Sharply seasonal; this
+  # sample is a July snapshot, so the share is a ceiling, not a level.
+  - name: exam_result_lookup
+    pattern: "(成绩查询|查分|成绩什么时候出|成绩公布|分数查询)"
+    intent_hint: "查询本人考试成绩/出分时间"
+    expected_min_share: 0.005
+  # 146 rows · 1.5% rows · 3.2% PV — a 2x PV-per-row premium. Named
+  # government destinations only (学信网 alone is 77,819 PV). This is
+  # navigational: one correct destination, and the wrong one is a phishing
+  # event, not a bad result. Kept separate from institution_name_lookup
+  # because a 考试院 is a state service portal, not a school.
+  - name: official_portal_nav
+    pattern: "(学信网|阳光高考|中国人事考试网|中国教育考试网|研招网|教育考试院|招生考试院)"
+    intent_hint: "导航到官方教育/考试/学历政务门户"
+    expected_min_share: 0.01
+  # 15 rows · 0.15% rows · 0.87% PV — the corpus's #1 head query (翻译, 102,629
+  # PV) is a utility launch, not an education topic. Anchored hard so it cannot
+  # swallow 西安翻译学院 (an institution) or 岳阳楼记原文及翻译 (a text task).
+  # No expected_min_share: 15 rows is too thin a base to floor.
+  - name: translation_tool_nav
+    pattern: "^(百度|谷歌|有道|金山|讯飞)?(在线)?(中|英|日|韩|法|德|俄|西)?(文|语)?翻译(器|在线翻译|在线|软件|工具)?$"
+    intent_hint: "打开翻译工具（工具导航，非学科内容）"
+
+risk_categories:
+  # 173 rows · 1.7% rows · 1.9% PV as written. The discriminator below is
+  # measured, not assumed: of the 生肖 traffic in this
+  # sample only ONE row (1953年属什么生肖) is a genuine zodiac question — the
+  # rest carry answer-key framing (正确/准确/最准/最佳生肖), and 3 of the 9
+  # 打一数字 rows reuse the exact same prompt heads as the 生肖 rows
+  # (万里挑一, 俯拾皆是, 舍本逐末), which is the 南都-documented Mark Six form
+  # "一种生肖外加一组数字". Broad on purpose, as in k12_zh: over-isolating a
+  # real idiom puzzle costs a routing hop.
+  - name: zodiac_lottery_riddle
+    patterns:
+      - "打一.{0,4}(生肖|肖|动物|数字)"
+      - "(是|指|代表)什么(生肖|动物)"
+      - "猜.{0,3}(生肖|动物)"
+      - "(正确|准确|最准|最佳|最正确)生肖"
+      - "解一生肖"
+      - "生肖是什么"
+      - "的生肖$"
+    keywords: ["六合彩", "特码", "开奖", "玄机图", "玄机"]
+    rationale: >
+      Underground Mark Six (地下六合彩) drainage wearing riddle clothing: the 49
+      Mark Six numbers map onto the 12 zodiac animals, so a zodiac name is a
+      complete bet designator. 赌博 is enumerated prohibited information
+      (互联网信息服务管理办法 §15(7); 网络信息内容生态治理规定 §6(9)) and §16 imposes
+      a stop-transmission-and-report duty; CAC's 清朗 actions name 搜索引擎 and
+      联想词/相关搜索 as remediation surfaces. Serving these normally does three
+      things at once: it transmits illegal-gambling content, it trips a
+      reporting obligation, and — because 13.2% of this corpus is children's
+      character help — it puts betting answers on a minors surface, which
+      未成年人网络保护条例 §22 names explicitly. In semantic space these embed next
+      to classical-idiom lookups, so nothing but an explicit screen separates them.
+    policy: isolate_and_flag
+
+  # 18 rows · 91,452 PV = 19.7% of the word_meaning group's PV. Measured by
+  # matching riddle prompt heads against the 释义 rows: 俯拾皆是的意思 (24,171 PV)
+  # sits beside 俯拾皆是猜生肖 (27,675 PV); 舍本逐末的意思 (18,324) beside
+  # 舍本逐末打一数字; 万里挑一的意思 (6,853) beside 万里挑一打一正确生肖 (42,892).
+  # One row is explicit: 俯拾皆是的意思打一生肖. This is a HEAD-SET rule, not a
+  # phrasing rule — the phrasing is a normal dictionary lookup.
+  - name: idiom_meaning_as_lottery_probe
+    # DATED LIST — MEASURED TO EXPIRE. This enumerates the specific idioms that
+    # were that period's lottery prompts, and it works on the snapshot it was
+    # built from (18 hits on 250701) and NOT on the next one (0 hits on 260701).
+    # The riddles rotate; the list does not. Evidence it is real on its own
+    # snapshot: 俯拾皆是 appears 17 times, 14 of them with 生肖/打一, while ordinary
+    # school idioms are absent from the corpus entirely (画蛇添足 0, 亡羊补牢 0).
+    # So the plain-meaning query really is a step in solving the riddle here.
+    # TREAT `zodiac_lottery_riddle` AS THE DURABLE CATEGORY — it is pattern-based
+    # and grew 173 -> 255 rows across the same two snapshots. This one is a
+    # supplement that must be re-mined per snapshot or dropped; do not read its
+    # zero as "no lottery probing this period".
+    patterns:
+      - "(俯拾皆是|府拾皆是|俯拾即是|舍本逐末|舍本逐未|万里挑一|百里挑一|一薰一莸|遍地黄金|美女如云|立雪求道|倾国倾城|见风使舵|呵欠连天|生机勃勃|动力十足|九死一生|争强斗胜|春秋大爱|大好山河).{0,6}(意思|释义|意思是什么)"
+    keywords: []
+    rationale: >
+      The same lottery prompt strings arriving as ordinary 成语释义 queries. A
+      lexical screen cannot see them — "俯拾皆是的意思" is a textbook dictionary
+      ask — so without this head list they land in the word_meaning family and
+      are served as children's vocabulary help, which is exactly the
+      未成年人网络保护条例 §22/§24 exposure the zodiac screen exists to prevent, plus
+      an unlogged path into gambling drainage. The head list is corpus-derived
+      and therefore perishable: it must be re-mined from the 生肖/打一 rows each
+      run, never inherited — and that is measured, not assumed: this exact head
+      list matches 18 rows on 教育query-250701.xlsx and ZERO on
+      教育query-260701.xlsx, where the riddle generator has moved on to new heads
+      (斗方名士, 一心百君) while the zodiac screen still fires on 2.55% of rows.
+      Isolation here means "route to the same handling path as
+      zodiac_lottery_riddle", not "refuse the definition".
+    policy: isolate_and_flag
+
+  # 201 rows · 2.0% rows · 3.8% PV as written; the portal names alone are
+  # 146 rows / 1.5% / 3.2%. Head: 学信网 77,819 PV,
+  # 学信网登录入口官网 46,352, 阳光高考网 59,811, 中国人事考试网 50,554, plus a long
+  # tail of provincial 教育考试院官网.
+  - name: official_portal_impersonation
+    patterns:
+      - "(学信网|阳光高考|中国人事考试网|中国教育考试网|研招网|教育考试院|招生考试院|国家医学考试网)"
+      - "(学历|学位|成绩|证书|准考证).{0,6}(查询|验证|认证).{0,4}(入口|官网|网址|系统)"
+      - "(提前|内部).{0,2}查分"
+    keywords: ["登录入口", "官网入口", "查询入口", "官方网站"]
+    rationale: >
+      These are credential- and score-verification portals, and 学信网 (CHSI) is
+      the Ministry of Education's SOLE official credential-verification site. The
+      failure mode is navigational, not topical: a high-fidelity clone at
+      chwsi.com.cn — one letter from chsi.com.cn — copied the logo and columns to
+      harvest logins and support diploma falsification, and MOE's annual 高考预警
+      names "提前查分" links that collect ID and bank details. Serving a lookalike
+      or an SEO'd intermediary in place of the government destination is a
+      credential-theft event and, downstream, the supply side of 刑法 §280
+      document fraud. Isolate so this family routes to an allowlisted-destination
+      path instead of ordinary ranking.
+    policy: isolate_and_flag
+
+  # MEASURED 0 / 10,000 ROWS ON THIS SAMPLE — recorded here so nobody reads the
+  # category as evidence. It is pre-registered anyway, on two grounds: the sample
+  # is the PV HEAD of the log and this class is structurally long-tail, and the
+  # consequence is criminal rather than editorial. If it still matches zero rows
+  # on the full log, DELETE it — do not let it sit as decoration (k12_zh shipped
+  # a zero-matching category once and a blind panel had to find it).
+  - name: credential_and_exam_integrity_fraud
+    patterns:
+      - "(包过|保过|保录|包毕业|包拿证|免考拿证|不用考试|无需考试|快速拿证)"
+      - "(办证|假学历|假文凭|假毕业证|学历造假|买文凭|证书代办|办理毕业证)"
+      - "(替考|代考|枪手|作弊器材|考试答案|原题答案|绝密真题|押题答案)"
+      - "(内部指标|内部名额|低分上名校|补录名额|改分|花钱上大学)"
+    keywords: ["山寨证书", "挂靠", "野鸡大学"]
+    rationale: >
+      Four criminal or expressly banned asks that share one handling need.
+      包过/保过 is a guarantee 广告法 §24(1) forbids for education advertising and
+      that 人社部函〔2022〕25号 names verbatim; 办证/假学历 is 刑法 §280 forgery of
+      state-organ documents and seals; 替考/枪手/作弊器材/试题答案 is 刑法 §284-1 plus
+      教育法 §§79–80, with 两高 2019 defining 作弊器材 and setting the 情节严重
+      thresholds; 内部指标/低分上名校/改分 is the enrolment fraud MOE's 招生录取预警
+      publishes every year. Serving any of them normally supplies the demand side
+      of an offence rather than answering a question. Note what this category
+      deliberately does NOT do: 野鸡大学 detection needs MOE's 全国高等学校名单 as an
+      entity allowlist (3,167 institutions as of 2025-06-20), not a keyword — the
+      keyword here only catches people who already suspect it.
+    policy: isolate_and_flag
+
+expected_l1_range: [12, 20]
+expected_family_range: [18, 30]
+
+# Principle 1: what clustering is structurally blind to here. This corpus is
+# mostly BARE NAMES — an institution, a character, a portal — so the ask is
+# usually not in the string at all. That makes this list load-bearing rather
+# than decorative.
+pragmatic_intents_hint:
+  - "裸校名背后的四种不同请求：官网导航 / 批次层次判断 / 分数线 / 值不值得报 —— 同一个字符串，四条服务路径"
+  - "生僻单字查询的真实动机是取名而非课业（昱/煜/晟/珩/歆/婧/熠 是姓名用字，淬/婺/酉 是课文用字，字面完全同形）"
+  - "成语释义实为彩票谜底求解（已测：释义族 19.7% 的 PV 与生肖谜题共用词头）"
+  - "门户名的导航意图 vs 办事流程求解（『学信网』要站点，『学信网怎么查学历』要步骤）"
+  - "报考决策咨询伪装成事实查询（『是一本还是二本』『排名』问的是要不要报）"
+  - "时效锁定：问的是今年那一个数字（『中考成绩什么时候出来2025年』——年份就是全部请求）"
+  - "家长代查 vs 学生本人查：同一字符串，不同受众，未成年人义务是否触发取决于此"
+  - "商业服务求购藏在信息类家族里（志愿填报族中的 AI 志愿助手/高价填报指导）"
+  - "跨域注入流量（生肖谜题占据 PV 头部，却不是任何教育意图）"
+  - "工具启动而非学科内容（翻译=全库第一头部 query，属不属于本垂类是分类学必须显式回答的问题）"
+
+domain_notes: >
+  Chinese education/training search, measured on a 10,000-row / 28,503,117-PV
+  July snapshot. Median query length 6 chars.
+
+  STRUCTURE. Bare institution names (^名+大学|学院$) are 2,244 rows = 22.4% of
+  rows and 44.6% of PV; the looser institution pattern reaches 33.1% rows /
+  52.1% PV. Character- and word-level help is 13.2% of rows but only 7.5% of PV.
+  That is a ~3x difference in PV per row, so equal-granularity leaves will
+  under-resolve the word-help tail while over-resolving nothing: expect to spend
+  leaves on word help that the PV column will not justify, and spend them anyway.
+
+  NOT K12. Vocational bare names (职业技术学院/职业学院/技术学院/职业大学) alone are
+  802 rows / 8.0% rows / 6.2% PV, and the corpus also carries higher education,
+  adult 学历提升 and professional certification (教师资格证, 执业药师, 证券从业,
+  计算机二级). The 拼音/组词/怎么读 overlap with k12_zh is real but is a minority
+  of this vertical, not its spine. Do not inherit k12_zh's leaf shape.
+
+  NO SINGLE INTENT OWNS THE HEAD. The top three queries by PV belong to three
+  different intents: 翻译 (102,629, a tool launch), 高考 (97,280, deliberation),
+  学信网 (77,819, government-portal navigation). A taxonomy that reads the head
+  as one thing is reading it wrong.
+
+  PORTALS ARE THEIR OWN AXIS. Named government destinations (学信网, 阳光高考网,
+  中国人事考试网, provincial 教育考试院) are 1.5% of rows but 3.2% of PV — a 2x
+  PV-per-row premium and a zero-tolerance ranking requirement. Keep them out of
+  the institution family: a 考试院 is a state service portal, not a school.
+
+  TIME AND PLACE ARE FACETS, NOT FAMILIES. Score lines and result lookups arrive
+  stamped with a year and a province (2025年中考录取分数线, 河北省教育考试院官网). Let
+  those drive clustering and every family splits into a dated half and an
+  undated half, and again by province. Normalise them into facet features before
+  the alpha sweep.
+
+  ENTITY DENSITY. 2,244 distinct institution names and a long tail of single
+  rare characters mean most of the vocabulary occurs once. Sparse features will
+  key on the shared suffix (大学/学院/怎么读) and dense features on topic
+  (理工/师范/医药); the alpha sweep is really choosing between those two, so read
+  it that way rather than as a quality score.
+
+  MINORS CONTEXT IS A CORPUS-LEVEL FACT, NOT A LEAF. The 13.2% word-help share
+  establishes that a material number of sessions are children's, which activates
+  未成年人网络保护条例 §§22–25 (no gambling content anywhere on the surface, 显著提示
+  for 不良信息, nothing on 首页首屏/热搜, no automated commercial marketing to
+  minors) and 广告法 §40 across the WHOLE vertical — including the adult
+  higher-education families. It changes obligations on adjacent surfaces; it is
+  not itself a risk class.
+
+  CROSS-YEAR CHECK. The same seeds re-measured on 教育query-260701.xlsx give
+  45.8% rows / 61.3% PV coverage with zero ambiguous overlap, and every share
+  holds within a factor of two — except 分数线 (3.8% -> 1.9%) and 是几本
+  (1.5% -> 0.7%), which are seasonal, and the zodiac screen, which GREW
+  (1.7% -> 2.6% of rows, 1.9% -> 3.6% of PV). Treat the structure as stable and
+  the levels as dated.
+
+  KNOWN GAP. 准考证 matched 0 rows in this sample even though the exam-admin
+  intent is clearly present, and the 包过/办证/替考 fraud lexicon matched 0 rows
+  too. Both are head-sample artefacts to re-measure on the full log before
+  concluding the intents are absent.
+
+  EXPECTED HIGH SEED COVERAGE — DO NOT "FIX" IT. These seeds match 45.4% of rows
+  (61.9% of PV) on 250701 and 45.8% on 260701, and p1 prints a caution that a
+  family matching half the corpus is "a language detector, not a phrasing
+  template". That caution is the K12-derived template_coverage_range (0.20-0.40)
+  applied to a differently-templated corpus; config.py records that the same
+  window flagged the e-commerce corpus at 0.534 for no defect at all, and says
+  the window is NOT gated on. What the gate requires is min_template_rows 400 and
+  min_template_row_fraction 0.05 — this corpus clears both by an order of
+  magnitude.
+
+  The largest single seed, institution_name_lookup, is ANCHORED and so matches
+  only bare institution names: 2,239 of its 2,244 hits carry no other marker, one
+  navigate intent. It is large because 22.4% of this corpus really is someone
+  typing a college name and nothing else. Unanchoring it to reduce coverage would
+  sweep the 分数线/几本/官网 queries into the same family and break the one-intent
+  contract that makes the alpha sweep meaningful.

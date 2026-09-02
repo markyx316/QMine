@@ -156,7 +156,7 @@ def run(
         help="Fast mode: same analysis, no second-opinion layer. One annotator "
              "(no kappa), no phase observers, no adversarial validation, no "
              "agent-written report or pre-delivery audit; three deliverables "
-             "instead of thirteen. Every intermediate artifact is still written."),
+             "instead of the full set. Every intermediate artifact is still written."),
     offline: bool = typer.Option(False, "--offline", help="No network: hashing encoder + heuristic agents."),
     provider: str = typer.Option(
         "", "--provider",
