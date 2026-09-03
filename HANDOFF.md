@@ -3112,6 +3112,54 @@ all — a reader of a fast deliverable needs to know what they hold and that
 nothing was withheld, and a hard number there goes stale silently inside every
 shipped document. The docs carry the real figure with its composition.
 
+**TEMPORAL DRIFT: pool the snapshots, never diff two runs.** Two runs do not
+produce comparable labels — `fin02` and `fin03` ran the SAME 10,000 rows under the
+same config and shared **0 of 35 class codes**. So a year-over-year comparison has
+to happen INSIDE one run.
+
+* `tools/pool_snapshots.py` stacks snapshots with a `_snapshot` tag.
+* `tools/drift_report.py` joins `labels_full.csv` back **positionally** (verified
+  20,000/20,000) — NOT on query text, which fans out on repeated queries.
+* `_snapshot` is deliberately NOT passed as a reference label column: reference
+  columns are the frame the K locator scores against, so declaring it would ask
+  the clustering to find a K separating 2025 from 2026.
+* Shares are WITHIN-SNAPSHOT, never raw. 医疗 PV falls 9.74M -> 5.21M (-47%), so
+  raw PV reports every class as declining. Row share answers "did the variety of
+  asks change", PV share "did traffic change". Row shares get a z-test; PV gets
+  none by design — traffic is the population, not a sample.
+
+**The degeneracy check is the one that matters**, and `fin-pool` passes it: of 54
+leaves and 17 intents, **0 are >95% one snapshot** (share-of-2025 median 0.51).
+The clusters span both years, so the frame really is shared. Run this check on
+every pooled run before believing its drift table.
+
+**`fin-pool` measured:** 21 PASS / 6 N/A / 0 FAIL (control `fin03` identical),
+17/17 phases, 2.11 h, 252 calls, $4.49, 54 delivered leaves, 34/34 families named.
+Pooling was CHEAPER than feared and better in two ways: gold is capped at 3,000
+regardless of corpus size, ECE 0.0159 **PASSED** where every single-snapshot
+finance run warned (0.0247-0.0289), and 0/59 leaves fell below the coherence
+floor. Finding: the 2026 finance mix consolidated onto `LOOKUP_MARKET_QUOTE`
+(66.2% -> 79.0% of PV) and stock-forum browsing, while every service and
+informational intent receded — corroborated by regexes that never touch the
+pipeline's labels (stock-forum +0.7pp in both, exactly).
+
+**Domain profiles: `medical_zh` had ZERO template seeds**, which is how the first
+pooled medical run reported "NO template group passed the cohesion check (0/12)"
+and rested its alpha decision on untrusted masks. Now 8 seeds, 54.5%/60.1%
+coverage across the two snapshots, worst overlap 11-12%. Three decisions, each
+measured: `有哪些` REJECTED as a seed (a phrasing, not an intent — it enumerates
+symptoms, foods, types and hospitals alike); `禁忌/副作用` REJECTED (67% of its
+matches also matched efficacy — a facet, not a family); efficacy SPLIT by dosage
+form into drug/substance, disjoint at 835 + 1,917 = 2,752 exactly.
+`people_zh`, `film_tv_zh`, `education_zh` added the same way.
+
+**An empty text cell halted a launched run.** Under pandas 3.0 `.astype(str)` no
+longer turns NA into "nan", so one blank in 20,000 rows reached `char_profile` and
+died with `object of type 'float' has no len()`. `edu-pool` halted on row 17,717
+AFTER launch. p1 now drops empty-text rows with a loud count and REFUSES a corpus
+that is >5% empty, because that is a broken export and analysing what survives
+hides it.
+
 **Open, and deliberately not resolved here:** no paid fast run has been made, so
 the single-annotator gold set is untested against a real annotator. `med04`'s
 40.3% vs `live38`'s 78.3% annotator-a win rate says which annotator is better

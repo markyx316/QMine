@@ -144,15 +144,56 @@ def p2a_taxonomy(state: PipelineState, deps: Deps) -> dict[str, Any]:
     # fan-out — so they run concurrently. Sequentially, five agents that each take
     # a minute (longer for the web-researching ones) turn Phase 2a into the
     # slowest step in the pipeline for no methodological reason.
+    # ONE ANGLE FAILING MUST NOT KILL THE PHASE.
+    #
+    # The fan-out already treats an angle that returns NOTHING as a warning and
+    # carries on — but an angle that RAISES took the whole run with it. On
+    # `ppl-pool` and `film-pool`, `researcher_pragmatic_intents` hit a provider
+    # CONTENT FILTER (400, `contentFilter`, 系统检测到输入或生成内容可能包含不安全
+    # 或敏感内容) on all three attempts and killed p2a two hours into a paid run.
+    # Both corpora contain exactly what a Chinese provider filters: 人物 mixes
+    # serving officials with entertainers, 影视 carries adult and banned titles.
+    # That is a property of the corpus, not a fault to halt on, and the remaining
+    # four angles had already succeeded.
+    #
+    # A failure is recorded per angle so the taxonomy's provenance says which
+    # perspectives are missing — the same reason an empty angle is announced.
+    # Halting is kept for the case that actually warrants it: NO angle survived,
+    # which means the role is misconfigured rather than the content awkward.
+    def _one_safe(angle: dict[str, Any]) -> Any:
+        try:
+            return _one(angle)
+        except Exception as exc:  # noqa: BLE001
+            reason = type(exc).__name__
+            if "contentFilter" in str(exc) or "1301" in str(exc):
+                reason = "provider content filter"
+            deps.emit(f"  ⚠ researcher[{angle['key']}] FAILED ({reason}) — this angle "
+                      f"contributed nothing; the taxonomy is designed without it")
+            failed_angles.append({"angle": angle["key"], "error": f"{type(exc).__name__}: {exc}"[:300]})
+            return None
+
+    failed_angles: list[dict[str, Any]] = []
     submissions: list[Any] = []
     if len(angles) > 1 and not deps.registry.is_offline:
         from concurrent.futures import ThreadPoolExecutor
 
         with ThreadPoolExecutor(max_workers=min(len(angles), cfg.llm.max_concurrency)) as pool:
-            for sub in pool.map(_one, angles):
-                submissions.append(sub)
+            for sub in pool.map(_one_safe, angles):
+                if sub is not None:
+                    submissions.append(sub)
     else:
-        submissions = [_one(a) for a in angles]
+        submissions = [x for x in (_one_safe(a) for a in angles) if x is not None]
+
+    if not submissions:
+        raise RuntimeError(
+            f"every one of the {len(angles)} research angles failed — "
+            + "; ".join(f"{f['angle']}: {f['error'][:80]}" for f in failed_angles)
+            + ". A taxonomy cannot be designed from nothing; this is a routing or "
+              "provider problem, not a corpus one.")
+    if failed_angles:
+        deps.emit(f"  ⚠ {len(failed_angles)}/{len(angles)} research angles failed — "
+                  f"the taxonomy rests on {len(submissions)}: "
+                  f"{', '.join(f['angle'] for f in failed_angles)} missing")
 
     architect = ArchitectAgent(ctx)
     draft = architect.run(

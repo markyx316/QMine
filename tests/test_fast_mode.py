@@ -734,3 +734,101 @@ def test_the_house_export_config_chain_resolves():
     assert c.data.reference_label_columns == []
     assert c.llm.provider == "router", "the provider policy must survive two extends"
     assert c.llm.model_overrides.get("namer") == "deepseek-v4-pro"
+
+
+def test_an_empty_query_cell_is_dropped_loudly_not_crashed_on(tmp_path):
+    """One empty cell in 20,000 rows must not halt a run at phase 1.
+
+    `raw[text].astype(str)` used to turn NaN into the string "nan"; under pandas
+    3.0's string dtype it leaves NA as NA, so a float reached `char_profile` and
+    died with `object of type 'float' has no len()`. `edu-pool` halted exactly
+    that way on row 17,717 — AFTER the run was launched, which is the expensive
+    place to discover it.
+
+    Dropped rather than filled: an empty query is not a query, and "" would be
+    embedded, clustered and counted as though someone searched for nothing.
+    """
+    import pandas as pd
+
+    from qmine.graph.nodes.foundation import p1_audit
+
+    p = tmp_path / "t.csv"
+    # 985 as an INT is legitimate here — people search university tiers — so the
+    # fix must drop the empty cell without touching the numeric queries.
+    pd.DataFrame({"original_query": ["今日金价", None, "上证指数", 985] + ["查询"] * 40,
+                  "wise_pv": [1, 2, 3, 4] + [1] * 40}).to_csv(p, index=False)
+    cfg = QMineConfig(offline=True)
+    cfg.data.input_path = str(p)
+    cfg.data.text_column = "original_query"
+    cfg.data.weight_column = "wise_pv"
+    cfg.data.reference_label_columns = []
+
+    class _D:
+        def __init__(self):
+            self.cfg = cfg
+            self.emitted = []
+
+        def emit(self, m):
+            self.emitted.append(m)
+
+    d = _D()
+    try:
+        p1_audit({}, d)
+    except ValueError:
+        raise                      # the >5% guard is a different, deliberate path
+    except Exception:
+        pass                       # later phase logic needs a real Deps
+    assert any("empty" in m and "dropped" in m for m in d.emitted), \
+        f"the drop must be reported, got {d.emitted}"
+
+
+def test_a_mostly_empty_text_column_is_refused_outright(tmp_path):
+    """5% empty is a broken export, and analysing what survives hides that."""
+    import pandas as pd
+
+    from qmine.graph.nodes.foundation import p1_audit
+
+    p = tmp_path / "t.csv"
+    pd.DataFrame({"original_query": ["查询"] * 10 + [None] * 10,
+                  "wise_pv": [1] * 20}).to_csv(p, index=False)
+    cfg = QMineConfig(offline=True)
+    cfg.data.input_path = str(p)
+    cfg.data.text_column = "original_query"
+    cfg.data.reference_label_columns = []
+
+    class _D:
+        def __init__(self, c):
+            self.cfg = c
+
+        def emit(self, m):
+            pass
+
+    with pytest.raises(ValueError, match="export problem"):
+        p1_audit({}, _D(cfg))
+
+
+def test_one_failed_research_angle_does_not_kill_the_phase():
+    """A content filter on one of five angles must not end a two-hour paid run.
+
+    The fan-out already treated an angle returning NOTHING as a warning, but an
+    angle that RAISED took p2a with it. `ppl-pool` and `film-pool` both died that
+    way: `researcher_pragmatic_intents` hit a provider content filter (HTTP 400,
+    `contentFilter`, 系统检测到输入或生成内容可能包含不安全或敏感内容) on all three
+    attempts. Both corpora contain precisely what a Chinese provider filters —
+    人物 mixes serving officials with entertainers, 影视 carries adult and banned
+    titles — so this is a property of the corpus, not a fault to halt on.
+
+    Halting is kept for the case that warrants it: NO angle survived, which means
+    the role is misconfigured rather than the content awkward.
+    """
+    import inspect
+
+    from qmine.graph.nodes import topdown
+
+    src = _code_only(inspect.getsource(topdown.p2a_taxonomy))
+    assert "_one_safe" in src, "the per-angle call must be wrapped"
+    assert "failed_angles" in src, "failures must be recorded, not swallowed"
+    assert "if not submissions:" in src, \
+        "every angle failing IS fatal — a taxonomy cannot come from nothing"
+    # The wrapper must be what the pool maps over, or it protects nothing.
+    assert "pool.map(_one_safe, angles)" in src

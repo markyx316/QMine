@@ -24,6 +24,8 @@ from typing import Any
 import numpy as np
 from langgraph.types import Send
 
+from types import SimpleNamespace
+
 from ...agents.roles import AuditorAgent, NamerAgent, RiskSentinelAgent
 from ...ops.cards import (
     build_naming_cards,
@@ -191,7 +193,28 @@ def p7_audit(state: PipelineState, deps: Deps) -> dict[str, Any]:
     )
 
     samples = cluster_samples(deps.df, labels, text_col=cfg.data.text_column, seed=cfg.seed_metric)
-    risk = RiskSentinelAgent(deps.agent_ctx()).run(cluster_samples=samples)
+    # THE SENTINEL IS ADVISORY — ITS ABSENCE MUST NOT END THE RUN.
+    #
+    # `p7_risk_independently_found` is `warn_only`: the sentinel exists to see
+    # whether risk content is found by someone who was not told to look, which is
+    # evidence about the OTHER agents rather than a decision of its own. It
+    # decides no label, no K and no parameter.
+    #
+    # On `ppl-pool` it hit a provider CONTENT FILTER (400, `contentFilter`) three
+    # times and killed p7 an hour into a paid run — on a corpus of Chinese public
+    # figures, which is exactly the material a Chinese provider screens. Losing
+    # the finding is a real loss and it is disclosed; losing the run is worse and
+    # buys nothing. `independently_found` then reads False, which is the honest
+    # value: nobody independently found risk content, because nobody looked.
+    try:
+        risk = RiskSentinelAgent(deps.agent_ctx()).run(cluster_samples=samples)
+    except Exception as exc:  # noqa: BLE001
+        _why = ("provider content filter" if "contentFilter" in str(exc) or "1301" in str(exc)
+                else f"{type(exc).__name__}")
+        deps.emit(f"  ⚠ risk sentinel unavailable ({_why}) — no INDEPENDENT risk sweep "
+                  f"this run; `p7_risk_independently_found` can only report the namers' "
+                  f"own flags, which is not the same evidence")
+        risk = SimpleNamespace(findings=[])
     deps.emit(f"  auditor: {len(audit.prescriptions)} prescriptions; "
               f"risk sentinel: {len(risk.findings)} findings")
 

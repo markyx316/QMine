@@ -148,6 +148,30 @@ def p1_audit(state: PipelineState, deps: Deps) -> dict[str, Any]:
             f"unweighted — but do it deliberately: without it every metric counts "
             f"distinct queries, not traffic.")
 
+    # AN EMPTY TEXT CELL CRASHES p1 — DROP IT LOUDLY, DO NOT LET IT THROUGH.
+    #
+    # `raw[text].astype(str)` used to turn NaN into the string "nan"; under
+    # pandas 3.0's string dtype it leaves NA as NA, so a float reaches
+    # `char_profile` and dies with `object of type 'float' has no len()`. One
+    # empty cell in 20,000 rows halts the whole run at phase 1 — `edu-pool` did
+    # exactly that, after the launch, on row 17,717.
+    #
+    # Dropped rather than filled: an empty query is not a query, and "" would be
+    # clustered, labelled and counted as though someone had searched for nothing.
+    # Reported rather than silent, because a corpus that is 5% empty is a broken
+    # export and the operator needs to know that, not a quietly shorter run.
+    _n_before = len(raw)
+    raw = raw[raw[cfg.data.text_column].notna()].reset_index(drop=True)
+    if len(raw) < _n_before:
+        _dropped = _n_before - len(raw)
+        deps.emit(f"  ⚠ dropped {_dropped:,}/{_n_before:,} row(s) ({_dropped / _n_before:.2%}) "
+                  f"with an empty {cfg.data.text_column!r} — an empty query is not a query")
+        if _dropped / _n_before > 0.05:
+            raise ValueError(
+                f"{_dropped:,} of {_n_before:,} rows ({_dropped / _n_before:.1%}) have an empty "
+                f"{cfg.data.text_column!r}. That is an export problem, not a corpus: fix the "
+                f"input rather than analysing what survives.")
+
     declared = list(cfg.data.reference_label_columns)
     # A CONSTANT COLUMN IS A SLICE NAME, NOT A LABEL. Every one of these house
     # exports carries `query_1st_category` holding a single value ('金融',

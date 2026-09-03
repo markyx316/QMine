@@ -1,0 +1,33 @@
+# 人物 (public-figure) slice of the house export.
+#
+# ROUTING AWAY FROM ZHIPU, FOR THIS CORPUS ONLY — measured, not guessed.
+#
+# `ppl-pool` died twice on this corpus with HTTP 400 `contentFilter`
+# (系统检测到输入或生成内容可能包含不安全或敏感内容). The split is perfectly clean:
+#
+#   FAILED  researcher_literature          zhipu:glm-5.3-flash
+#           researcher_pragmatic_intents   zhipu:glm-5.3-flash
+#           researcher_risk_compliance     zhipu:glm-5.3-flash
+#           risk_sentinel                  zhipu:glm-5.3
+#   PASSED  annotator_a (127 calls)        deepseek-v4-flash
+#           namer_0..4  (35 calls)         deepseek-v4-pro
+#           tree_auditor, taxonomy_critic  deepseek-v4-pro
+#
+# Every Zhipu role failed and every DeepSeek role succeeded, on a corpus whose
+# head is a serving-official personnel announcement (陈小江/马兴瑞/韦韬, 16.4% of
+# PV on the 2025 snapshot) alongside entertainers. That is exactly the material a
+# Chinese provider screens, and it is a property of THIS vertical — the other
+# four domains ran on Zhipu without a single filter rejection.
+#
+# `moonshotai/kimi-k3` rather than `deepseek-v4-pro` for the researchers: they are
+# the only TOOL-USING agents here, and `live.yaml` records that deepseek-v4-pro
+# rejects the `tool_choice` LangChain sets when a response_format is bound (400,
+# "Thinking mode does not support this tool_choice"). kimi-k3 is already this
+# file's parent's pin for observer/adversary/delivery_auditor — all of which are
+# OFF in fast mode, so it is otherwise idle here.
+extends: corpus_wise_export.yaml
+
+llm:
+  model_overrides:
+    researcher: moonshotai/kimi-k3
+    risk_sentinel: moonshotai/kimi-k3

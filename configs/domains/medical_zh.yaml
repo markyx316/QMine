@@ -35,6 +35,64 @@ template_seeds: []
 # Patterns stay deliberately lexical and recall-oriented: this screen FLAGS for
 # review, it does not classify, and a false positive costs a look while a false
 # negative ships.
+template_seeds:
+  # MINED AND MEASURED on both 医疗 snapshots (10,000 rows each), not invented.
+  # Coverage 54.5% / 60.1% of rows and 61.2% / 69.2% of PV, worst cross-seed
+  # overlap 11-12%. The profile shipped with ZERO seeds, which is how `med-pool`
+  # came to report "NO template group passed the cohesion check (0/12)": with no
+  # seeded anchor every group is mined, and pooling two snapshots loosens them
+  # enough to fail cohesion. The alpha decision then rests on masks not known to
+  # be same-intent.
+  #
+  # `有哪些` was tested and REJECTED as a seed. It is a phrasing, not an intent —
+  # it enumerates symptoms, foods, types and hospitals alike, so it sweeps four
+  # intents into one family and breaks the contract that makes these the judge of
+  # the alpha sweep. Where it qualifies an intent (症状有哪些) that intent's own
+  # seed already catches it.
+  #
+  # `禁忌/副作用` was tested and REJECTED for the same reason: 67% of its matches
+  # also matched efficacy, because 芒果的功效与作用禁忌 is an efficacy query with a
+  # contraindication FACET. Facets are not phrasing families. The
+  # `drug_interaction` risk category below still covers the compliance angle.
+  # THE EFFICACY ASK, SPLIT BY SUBJECT — because one family at 27-33% of the
+  # corpus is a weak anchor for the alpha sweep, and because the subject is what
+  # the taxonomy actually splits on: `med04` delivered TCM_FOOD_EFFICACY (24.6%)
+  # and DRUG_EFFICACY (10.2%) as two separate L1 classes from this one phrasing.
+  # The dosage form is the only lexical signal that separates them.
+  #
+  # `(?<!图)片` NOT `片`: bare 片 matches inside 图片 (picture), so
+  # 黄皮果的功效与作用图片 — a fruit — was being read as a pharmaceutical tablet.
+  # 6 such rows on 250701.
+  - name: drug_efficacy
+    pattern: "((?<!图)片|丸|胶囊|颗粒|口服液|注射液|软膏|滴眼液|冲剂|糖浆).{0,14}(功效|主治|用途|(?<!副)作用)"
+    intent_hint: "求某个药品制剂（片/丸/胶囊/颗粒…）的功效与适应症"
+  - name: substance_efficacy
+    # NEGATIVE LOOKAHEAD, so the two efficacy seeds PARTITION rather than nest.
+    # Without it `substance` is a superset of `drug` and both match every
+    # efficacy query — measured, 2,749/2,752 overlap, which is not two families.
+    # Disjoint: 835 + 1,917 = 2,752, exactly the single seed's reach, 0 overlap.
+    pattern: "^(?!.*((?<!图)片|丸|胶囊|颗粒|口服液|注射液|软膏|滴眼液|冲剂|糖浆)).*(功效|主治|用途|(?<!副)作用)"
+    intent_hint: "求某味中药材/食材/保健成分的功效、作用与主治"
+    expected_min_share: 0.19
+  - name: symptom_cause
+    pattern: "(怎么回事|什么原因|引起的|是什么引起|的原因)"
+    intent_hint: "求某个身体现象的成因"
+  - name: symptom_list
+    pattern: "(症状|前兆|征兆|临床表现)"
+    intent_hint: "求某个疾病对应的症状清单"
+  - name: treatment_howto
+    pattern: "(怎么治|如何治疗|吃什么药|用什么药|怎么办|能治好)"
+    intent_hint: "求治疗或用药方案"
+  - name: term_definition
+    pattern: "(是什么意思|是什么东西|是什么病|是指什么|什么是)"
+    intent_hint: "求医学名词/缩写/指标的释义"
+  - name: normal_range
+    pattern: "(正常值|正常范围|正常是多少|多少正常|标准值|参考值|正常标准)"
+    intent_hint: "求某项检验指标的正常区间与分级标准"
+  - name: dosage_and_administration
+    pattern: "(一天吃几|一次吃几|用法用量|服用方法|怎么吃|饭前|饭后|空腹)"
+    intent_hint: "求药品/补充剂的用法、用量与服用时机"
+
 risk_categories:
   - name: self_medication_and_dosage
     policy: "Never state a dose. Route to a pharmacist or the package insert."
@@ -64,7 +122,13 @@ risk_categories:
   - name: prescription_and_controlled
     policy: "Do not explain how to obtain without a prescription."
     patterns:
-      - '(处方药|不用处方|怎么开到|哪里能买到.*药|抗生素|安眠药|止痛药|激素)'
+      # BARE `激素` MATCHES A LAB TEST, NOT A CONTROLLED DRUG. Measured on both
+      # snapshots it caught 促甲状腺激素高 (TSH), 性激素六项, 人绒毛膜促性腺激素
+      # (hCG), 抗缪勒氏管激素 (AMH) and 雌激素低的症状 — endocrine measurements and
+      # symptoms, 23 of 40 hits on 250701. A false positive here ISOLATES an
+      # ordinary lab-result question into a controlled-substance bucket. The
+      # drug sense needs the drug word.
+      - '(处方药|不用处方|怎么开到|哪里能买到.*药|抗生素|安眠药|止痛药|激素(?:药|类药|针|软膏|治疗)|打激素|用激素)'
       - '(?i)(without a prescription|where to buy .* (pills|medication))'
   - name: self_harm_and_crisis
     policy: "Crisis routing takes precedence over every other intent."
