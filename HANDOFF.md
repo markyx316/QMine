@@ -625,8 +625,12 @@ not apply**: it warned that page-view weights would destroy the significance
 tests, but the module already refuses p-values on traffic share, and
 `_z_two_proportion` takes row counts at its single call site.
 
-**README overhauled (2026-09-03).** 905 → 810 lines, 7,536 → 6,862 words, 3
-figures → 7, and the first result moved from line 522 to line 105. Evidence is now
+**README overhauled (2026-09-03).** 905 → **661** lines. The cross-run `Results`
+section was written, then moved to `docs/RESULTS.md` at the owner's request — it
+was more for a first-time reader to digest than the README should ask. The README
+keeps two figures (decision chain, churn-vs-drift) beside the sections they
+illustrate; the four cross-run figures went with the tables. Nothing was deleted,
+and `tools/run_evidence.py` / `tools/readme_figures.py` regenerate both. Evidence is now
 cross-run (14 complete live runs, six corpora) rather than the single `live42`,
 which was the one run whose report demonstrably failed. Two long literature
 sections moved to `docs/WHY_NOT_A_PROMPT.md` and `docs/WHAT_ITS_FOR.md`; "Known

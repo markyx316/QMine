@@ -1141,11 +1141,20 @@ def _evidence():
         os.chdir(cwd)
 
 
-def _readme() -> str:
+def _reader_facing_markdown() -> str:
+    """Every hand-written page a reader sees, concatenated.
+
+    Deliberately NOT just README.md. The cross-run tables have already moved once
+    (README -> docs/RESULTS.md), and a guard pinned to one filename silently
+    stops guarding the moment its content is relocated — it does not fail, it
+    passes on an empty search, which is the worse outcome.
+    """
     from pathlib import Path
 
     import qmine
-    return (Path(qmine.__file__).parent.parent.parent / "README.md").read_text(encoding="utf-8")
+    root = Path(qmine.__file__).parent.parent.parent
+    pages = [root / "README.md", *sorted((root / "docs").glob("*.md"))]
+    return "\n".join(p.read_text(encoding="utf-8") for p in pages if p.exists())
 
 
 def test_every_run_the_readme_names_still_exists_with_the_shape_it_claims():
@@ -1167,7 +1176,7 @@ def test_every_run_the_readme_names_still_exists_with_the_shape_it_claims():
         pytest.skip("no runs/ directory in this checkout")
     ev = {r["run"]: r for r in rows}
 
-    md = _readme()
+    md = _reader_facing_markdown()
     # rows look like: | `live44` | K12 | 49,999 | 0.8796 | 3,000 | 20 | 53 / 23 | ...
     checked = 0
     for row in re.finditer(r"^\|\s*`([a-z0-9-]+)`\s*\|([^\n]+)$", md, re.M):
@@ -1179,15 +1188,17 @@ def test_every_run_the_readme_names_still_exists_with_the_shape_it_claims():
         if shape:
             leaves, fams = (int(x) for x in shape.split(" / "))
             assert (leaves, fams) == (ev[run]["leaves"], ev[run]["families"]), (
-                f"README says {run} delivered {leaves}/{fams}; the artifacts say "
+                f"the docs say {run} delivered {leaves}/{fams}; the artifacts say "
                 f"{ev[run]['leaves']}/{ev[run]['families']}")
             checked += 1
         for c in cells:
             if re.fullmatch(r"0\.\d{4}", c) and ev[run]["kappa"] is not None:
                 assert abs(float(c) - ev[run]["kappa"]) < 1e-4, (
-                    f"README quotes kappa {c} for {run}; artifact says {ev[run]['kappa']}")
+                    f"the docs quote kappa {c} for {run}; the artifact says {ev[run]['kappa']}")
                 checked += 1
-    assert checked >= 5, f"only {checked} README cells matched a known run — has the table moved?"
+    assert checked >= 5, (
+        f"only {checked} cells across README.md and docs/*.md matched a known run — "
+        "the cross-run tables have gone missing, so nothing is being guarded")
 
 
 def test_the_readme_never_quotes_a_kappa_for_a_single_annotator_run():
@@ -1200,7 +1211,7 @@ def test_the_readme_never_quotes_a_kappa_for_a_single_annotator_run():
         pytest.skip("no runs/ directory in this checkout")
     fast = {r["run"] for r in rows if r["kappa"] is None}
 
-    for row in re.finditer(r"^\|\s*`([a-z0-9-]+)`\s*\|([^\n]+)$", _readme(), re.M):
+    for row in re.finditer(r"^\|\s*`([a-z0-9-]+)`\s*\|([^\n]+)$", _reader_facing_markdown(), re.M):
         if row.group(1) in fast:
             assert not re.search(r"\|\s*\*{0,2}0\.\d{3,4}\*{0,2}\s*\|", row.group(2)), (
                 f"{row.group(1)} has ONE annotator — it has no kappa to quote: {row.group(2)[:90]}")
