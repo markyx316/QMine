@@ -110,7 +110,11 @@ def _banner(state: Any, deps: Any) -> list[str]:
         # needs to know what they hold and that nothing was withheld, not an exact
         # tally of documents they do not have — and a hard number here goes stale
         # silently, inside every shipped document.
-        "> **证据没有减少**: 交付文档减为 3 份, 但中间产物一份未少 —— "
+        # NO DOCUMENT COUNT HERE EITHER. It said "3 份", and a multi-snapshot run
+        # ships a fourth (the drift comparison). A count in a banner that every
+        # deliverable carries goes stale the moment the deliverable set changes,
+        # and it changed. What the reader needs is that nothing was withheld.
+        "> **证据没有减少**: 交付文档数量减少了, 但中间产物一份未少 —— "
         "见文末 §原始档案位置。",
         "",
     ]

@@ -74,6 +74,7 @@ def build_frame(
     *,
     reference_labels: dict[str, Sequence[str]] | None = None,
     weights: Sequence[float] | None = None,
+    snapshots: Sequence[str] | None = None,
 ) -> pd.DataFrame:
     """The canonical dataframe every later phase reads.
 
@@ -85,6 +86,14 @@ def build_frame(
     feats = pd.DataFrame([char_profile(q) for q in df["query"]])
     df = pd.concat([df, feats], axis=1)
     df["weight"] = list(weights) if weights is not None else 1.0
+    # WHICH SNAPSHOT EACH ROW CAME FROM — carried like `weight`, and read by as
+    # little as `weight` is. The drift phase and the delivered table use it; no
+    # representation, clustering, K decision or taxonomy step may. It is
+    # deliberately NOT a reference label: reference labels are the frame the K
+    # locator scores against, and asking the clustering to find a K that
+    # separates one period from another is the opposite of a shared frame.
+    if snapshots is not None:
+        df["snapshot"] = [str(x) for x in snapshots]
     for name, vals in (reference_labels or {}).items():
         df[name] = list(vals)
     df["row_id"] = np.arange(len(df))

@@ -22,6 +22,18 @@ flowchart LR
   P --> D["deliverables<br/>taxonomy · rules · labels · reports"]
 ```
 
+---
+
+**Who it is for.** Teams who need a defensible intent taxonomy over their own query
+log — search relevance, query understanding, content strategy, annotation
+programmes — and who will be asked to show their work.
+
+**Who it is not for.** Anyone who wants labels quickly and does not need the
+evidence behind them. One good prompt against a strong model is far cheaper;
+[Why not just prompt a frontier model?](#why-not-just-prompt-a-frontier-model)
+argues why it is not the same thing, but if you do not need the argument you do
+not need this.
+
 ### Before you start
 
 - It needs **API keys for DeepSeek, Zhipu, Qwen AND OpenRouter** — all four, under
@@ -31,447 +43,226 @@ flowchart LR
   degrading it. Anthropic and OpenAI keys do **nothing** here — both labs are in
   `excluded_labs`. With no keys at all it runs a deterministic offline stand-in
   and says so loudly: useful for checking the wiring, useless as output.
-- **Time and cost vary by more than 10×, and routing is why.** Measured on real
-  runs: a full 50k-row run took **3.4 h / $5.52** (`live39`), **4.0 h / $7.01**
-  (`live40`) and **9.8 h / $61.09** (`live44`) — 841 calls against 696, but 8× the
-  bill, because one expensive model was in the mix. `qmine models` prints the
+- **Budget a full 50k run at 3–4 hours and $5–$7.** That is `live39`
+  (3.4 h / **$5.52**) and `live40` (4.0 h / **$7.01**), the two full runs whose
+  every token had a published price. Routing dominates both: swap in one expensive
+  model and the bill moves by an order of magnitude. `qmine models` prints the
   routing plan and an estimate before you spend anything; run it first.
-- **`--fast` is roughly 5× quicker and far cheaper**, because it removes the
-  second-opinion layer rather than shrinking the analysis. The closest like-for-like
-  pair on 10,000 rows: `med04` (full) **7.9 h / $65.05**, `fin03` (fast)
-  **1.4 h / $3.19**. Different corpora, so read it as an order of magnitude, not a
-  ratio. See [Two speeds](#two-speeds-and-what-the-fast-one-gives-up).
+- **`--fast` removes the second-opinion layer rather than shrinking the
+  analysis**, and lands at **1.1–2.4 h / $3.01–$4.49** across nine runs of
+  10,000–20,000 rows. It keeps the full corpus, the full grids and the full gold
+  set; what it gives up is the κ, the pilot and the adversarial pass. See
+  [Two speeds](#two-speeds-and-what-the-fast-one-gives-up).
 - **Deliverables are written in Chinese** by default. `report_language` switches
   the reports; the machine-readable CSVs are language-neutral.
-- It is a **research pipeline, not a product.** There is no hosted service, no
-  uptime promise, and the open questions are listed in the open rather than
-  smoothed over.
+- It is a **research pipeline, not a product.** There is no hosted service and no
+  uptime promise. The open questions are kept in the open, dated, in
+  [`HANDOFF.md` §2](HANDOFF.md) — including the ones with no fix yet.
 
 ```bash
-make install
-make demo                    # 8k rows, offline, ~4 min — check the wiring
-make live RUN=my-first-run   # the full 50k corpus on real models
+make install                 # builds .venv and installs the `qmine` entry point into it
+make demo                    # 8k rows, offline stand-in, ~4 min — checks the wiring, spends nothing
+.venv/bin/qmine models       # the routing plan and a cost estimate — still spends nothing
+make live RUN=my-first-run   # the real thing: 50k rows, real models, 3-4 h, $5-$7
 ```
+
+`make install` builds a virtualenv at `.venv`; `qmine` is installed **into it**, not
+onto your `PATH`. Either `source .venv/bin/activate` once, or call
+`.venv/bin/qmine` as written throughout this file.
 
 ---
 
-## Table of contents
+## What's here
 
-- [What it produces](#what-it-produces)
-- [How it works](#how-it-works)
-- [Why not just prompt a frontier model?](#why-not-just-prompt-a-frontier-model)
-- [What is new here](#what-is-new-here)
-- [What it is for](#what-it-is-for)
-- [Results from a real run](#results-from-a-real-run)
-- [Using it](#using-it)
+- [What it produces](#what-it-produces) — the files you get
+- [Results](#results) — 14 real runs, six corpora, and what they measured
+- [What you do with the output](#what-you-do-with-the-output) — the schema, and three uses
+- [Using it](#using-it) — commands, and the two speeds
+- [How it works](#how-it-works) — the twelve phases
+- [Comparing two time periods](#comparing-two-time-periods) — pooled snapshots and drift
+- [What is new here](#what-is-new-here) — six things a scripted pipeline does not do
+- [Why not just prompt a frontier model?](#why-not-just-prompt-a-frontier-model) — the measured failure modes
 - [Persistence, generations and recovery](#persistence-generations-and-recovery)
-- [Reproducibility](#reproducibility)
-- [Known limitations](#known-limitations)
-- [Support](#support)
-- [Repository layout](#repository-layout)
-- [Status and contributing](#status-and-contributing)
+- [Reproducibility](#reproducibility) · [Repository layout](#repository-layout) · [Support](#support)
+
+The longer arguments live in [`docs/`](docs/): [why not a prompt](docs/WHY_NOT_A_PROMPT.md),
+[what an intent taxonomy is for](docs/WHAT_ITS_FOR.md),
+[architecture](docs/ARCHITECTURE.md), [model routing](docs/MODEL_ROUTING.md).
 
 ---
 
 ## What it produces
 
 One command against a 50,000-query corpus produces a complete, self-describing
-delivery. This is what the current generators emit; the `live42` directories
-predate some of them, so no single generation on disk holds every row:
+delivery — `runs/live44/gen01/` holds every row of this table, and
+`runs/filmdrift/gen01/` holds the drift document:
 
 | deliverable | what it is |
 |---|---|
 | `00_索引.md` | the reading order — what to open first, and what each file is for |
 | `00_最终报告.md` | the through-line, **written by an agent**, every number checked against a fact sheet |
-| `类目清单.md` | the 21 top-down intent classes: definition, satisfaction criterion, worked positive/negative examples, delivered row count |
+| `类目清单.md` | every top-down intent class — definition, satisfaction criterion, worked positive/negative examples, delivered row count (**20** on live44; 15–25 across the fourteen runs) |
 | `叶清单.md` | every delivered cluster leaf with its blind-assigned name and the sampled queries it was named from |
 | `家族与叶层级.md` | the delivered two-level tree, with each family's true composition |
-| `标注规范与裁定规则.md` | the labeling guide **verbatim** and all 139 adjudication rules — enough to reproduce the annotation |
+| `标注规范与裁定规则.md` | the labeling guide **verbatim** and every adjudication rule the run earned — **162** on live44, 70–283 across the full runs — enough to reproduce the annotation |
 | `自上而下类目体系最终报告.md` | the top-down route: taxonomy → gold standard → classifier → adversarial validation |
 | `自下而上聚类最终报告.md` | the bottom-up route: encoder bake-off, K location, hierarchy, governance, and every rejected alternative |
 | `统一度量面板.md` | both routes under one measurement harness |
 | `交付前审核报告.md` | what a final auditing agent changed in the documents, and what it refused to change |
 | `自下而上聚类全流程.ipynb` | an executed notebook — the figures are produced by running it, not drawn separately |
 | `labels_full.csv` | every query with both routes' labels, plus machine-readable CSVs of the classes, rules and tree |
+| `deployment.json` + centroids | the deployable classifier — 140–256 KB of centroids; inference is `encode(query) → hybrid transform → argmax(x @ centroids.T)`, with rows under a 0.02 margin routed to a fallback |
+| `快照对比_漂移分析.md` | **multi-snapshot runs only** — what moved between the two periods, and what the comparison cannot tell you |
 
-Deliverables are written in Chinese by default (`report_language`).
-
----
-
-## How it works
-
-Seventeen graph nodes implement the twelve-phase methodology. The two routes fork
-after the corpus audit and run **concurrently** — measured on real runs, the fork
-hid **62 minutes** of bottom-up work inside the top-down critical path on
-`live42`, 23% of that run's wall clock.
-
-```mermaid
-flowchart TB
-  P0["p0 · foundation<br/>seeds, config, provenance"] --> P1["p1 · audit<br/>corpus profile, template mining, risk screen"]
-  P1 --> TD1 & BU1
-
-  subgraph TD["TOP-DOWN — what users are trying to do"]
-    direction TB
-    TD1["p2a · taxonomy design<br/>5 web researchers → architect → critic"]
-    TD2["p2b · gold standard<br/>2 BLIND annotators + referee, κ vs a self-consistency ceiling"]
-    TD3["p2c · classifier"]
-    TD4["p2d · adversarial validation<br/>an agent paid to falsify each label"]
-    TD5["p2e · sub-intents"]
-    TD1 --> TD2 --> TD3 --> TD4 --> TD5
-  end
-
-  subgraph BU["BOTTOM-UP — what the queries look like"]
-    direction TB
-    BU1["p3 · representation<br/>encoder bake-off on THIS corpus, α chosen by measurement"]
-    BU2["p4 · algorithm battery"]
-    BU3["p5 · granularity<br/>K located by intent alignment; stability may only reject"]
-    BU4["p6 · hierarchy"]
-    BU5["p7 · blind naming<br/>namer sees queries only — never an existing label"]
-    BU6["p8 · governance<br/>prescriptions are executed or the run fails"]
-    BU1 --> BU2 --> BU3 --> BU4 --> BU5 --> BU6
-  end
-
-  TD5 --> J["p9 · unified panel<br/>both routes, one ruler"]
-  BU6 --> J
-  J --> P10["p10 · deployment<br/>classifier + both label sets"] --> P11["p11 · reports & notebook"] --> P12["p12 · maintenance"]
-```
-
-Every phase writes artifacts to a generation directory. Generations are
-append-only: a rejected tree is kept, because a rejected artifact is still
-evidence.
+Deliverables are written in Chinese by default (`report_language`); the CSVs are
+language-neutral. A `--fast` run ships the three reference documents instead of the
+ten — see [Two speeds](#two-speeds-and-what-the-fast-one-gives-up).
 
 ---
 
-## Why not just prompt a frontier model?
+## Results
 
-The honest question, and it deserves measurements rather than adjectives. You
-*can* paste queries into a strong model and ask for a taxonomy. Every claim below
-is a published result about why the answer cannot be trusted, followed by what
-this pipeline does instead.
+Fourteen complete runs on real models, across six corpora and two modes. Every
+number below is read from an artifact in `runs/`, and
+[`tools/run_evidence.py`](tools/run_evidence.py) regenerates the whole table.
 
-**A long context is not a read corpus.** Put the relevant material in the middle
-of a long input and accuracy falls *below* the same model given no documents at
-all — the curve is U-shaped, primacy at the front, recency at the end, a trough in
-between ([Liu et al., TACL 2024][lim]). A bigger window does not fix it: GPT-3.5
-and GPT-3.5-16K trace nearly superimposed position curves, and Claude-1.3 scores
-76.1 against Claude-1.3-100K's 76.4. Nor is it a language-understanding problem —
-the same U-shape appears on pure UUID key-value lookup. Under [RULER][ruler],
-*effective* context runs well under the advertised number (GPT-4: 128k claimed,
-64k effective), and degrades fastest on **aggregation** tasks with many
-distractors. A taxonomy over 50,000 queries — roughly 500k tokens — is an
-aggregation query with 49,999 distractors, several times outside the regime
-anyone has validated.
+### Full runs — the ones that measured agreement
 
-So QMine never asks a model to read the corpus. Phase 3 encodes every row
-numerically, Phases 4–6 cluster them, and agents receive a **card** for one
-cluster at a time — centre, random and edge members — a bounded, position-
-controlled payload. Counts and shares are arithmetic over the full table, never a
-model's impression of it.
+| run | corpus | rows | κ | n | L1 classes | leaves / families | calls | cost | hours |
+|---|---|---:|---:|---:|---:|---:|---:|---:|---:|
+| `live38` | K12 | 49,999 | 0.8221 | 2,991 | 22 | 36 / 12 | 577 | *(replay)* | 0.95 |
+| `live39` | K12 | 49,999 | 0.8341 | 2,983 | 22 | 39 / 11 | 668 | **$5.52** | 3.36 |
+| `live40` | K12 | 49,999 | 0.8427 | 2,982 | 25 | 25 / 7 | 696 | **$7.01** | 4.03 |
+| `live44` | K12 | 49,999 | 0.8796 | 3,000 | 20 | 53 / 23 | 841 | $61.09 ⚠ | 9.81 |
+| `med04` | medical | 10,000 | 0.8989 | 3,000 | 18 | 44 / 34 | 905 | $65.05 ⚠ | 7.90 |
 
-**Asking a model to check its own work makes it worse.** Intrinsic
-self-correction — review with no external feedback — is measured net-negative:
-GPT-4 on GSM8K goes 95.5 → 91.5 → 89.0 over two rounds, GPT-3.5 on CommonSenseQA
-75.8 → 38.1 ([Huang et al., ICLR 2024][selfcorr]). The published successes used
-**oracle labels** to decide when to stop; remove the oracle and the gains invert.
-Adding agents does not rescue it either — multi-agent debate loses to plain
-self-consistency at matched inference budget (83.2 vs 85.3 at six responses).
+**κ 0.8221–0.8989, every measurement on n ≈ 3,000** — a band across five runs and
+two corpora, which is a different kind of claim from a single 0.89. Published
+multi-annotator query-intent work lands around 0.79–0.82 (ORCAS-I: Cohen's 0.82 on
+1,000 queries, two annotators; Product Insights: Fleiss 0.79 on 1,500, three), so
+the band sits at the top of that range — read with the caveats in
+[How to read that κ](#how-to-read-that-κ) below.
 
-This is why QMine's guardrails are not review agents. Every one is arithmetic
-against an external record: written numbers checked value-by-value against a fact
-sheet, an agent's assertion evaluated as an expression, an edit required to name
-the artifact it came from. And it is the strongest argument for Phase 2b — a
-refereed gold set *is* the oracle those results say you need.
+**⚠ on the two big numbers.** `$61.09` and `$65.05` are **lower bounds covering
+about 40% of those runs' tokens**: 60.3% of live44's and 59.7% of med04's tokens
+belong to roles whose model publishes no price, and those fall back to a frontier
+rate. `run_summary.json` names them in `unpriced_roles`. `live39` and `live40` are
+0% unpriced and are the honest anchors for what a full 50k run costs. `live38`'s
+run was a replay — 519 of its 577 calls were cache hits — so it has no meaningful
+price at all. This is the money version of the house rule about reading `n`.
 
-**A model grading its own output is not a neutral instrument.** LLM judges
-recognise their own generations and the strength of that self-preference is
-linearly correlated with the recognition ([Panickssery et al., NeurIPS
-2024][selfpref]). They also carry heavy position bias — asked which of two
-answers is better, then asked again with the order swapped, Claude-v1 was
-consistent 23.8% of the time — and are fooled by verbose restatement 91.3% of the
-time ([Zheng et al., NeurIPS 2023][judge]). The constructive finding in that same
-paper is the one QMine is built on: chain-of-thought only halved a judge's
-grading errors (14/20 → 6/20), but giving it a **reference answer** took them to
-3/20. An answer key beats a better prompt.
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/img/fig_cost_coverage_dark.png">
+  <img alt="Share of each run's tokens that had a published price, with the dollar figure at the end of each bar" src="docs/img/fig_cost_coverage.png">
+</picture>
 
-QMine's Phase 9 panel is blind, and Phase 7's fan-out makes blindness structural
-rather than an instruction — each naming agent sees only its own payload.
-Anything that decides is a measurement, not a judgement.
+### Fast runs — the same analysis, without the second opinion
 
-**A labelling scheme already has an acceptance test, and it is strict.**
-Computational linguistics reads κ > 0.8 as reliable and 0.67–0.8 as supporting
-only tentative conclusions; Krippendorff's own preconditions include a guide
-**fixed in advance**, coders working **independently**, and no discussion or
-voting — "any of these practices make the resulting data unusable for measuring
-reproducibility" ([Artstein & Poesio, CL 2008][kappa]). A single prompt produces
-a scheme for which no such number exists, or can exist.
+| run | corpus | rows | L1 | leaves / families | calls | cost | hours |
+|---|---|---:|---:|---:|---:|---:|---:|
+| `fin-pool` | finance ×2 snapshots | 20,000 | 17 | 54 / 34 | 252 | $4.49 | 2.11 |
+| `med-pool` | medical ×2 | 20,000 | 20 | 24 / 20 | 190 | $3.87 | 1.55 |
+| `ppl-pool` | public figures ×2 | 20,000 | 16 | 25 / 24 | 208 | $3.01 | 1.29 |
+| `edu-pool` | education ×2 | 19,999 | 20 | 28 / 13 | 197 | $3.67 | 1.47 |
+| `film-pool` | film/TV ×2 | 20,000 | 15 | 12 / 12 | 167 | $3.50 | 1.07 |
+| `filmdrift` | film/TV ×2 | 20,000 | 17 | 34 / 22 | 217 | $3.91 | 1.97 |
+| `fin01` `fin02` `fin03` | finance | 10,000 | 20 / 19 / 16 | 34/28 · 30/24 · 21/15 | 234 / 194 / 193 | $4.23 / $3.06 / $3.19 | 2.40 / 1.75 / 1.35 |
 
-Each of those preconditions is a test here: the guide is frozen before annotation
-and every rule the architect *and* the referee write must reach the annotator;
-each annotator's labels come back as its own; a row nobody labelled is missing
-data, not agreement; guide repair runs on a fresh sample so refereed rows survive.
-And because an annotator disagrees with **itself** about a quarter of the time
-([Abercrombie et al.][intra]), κ is read against a self-consistency ceiling —
-which is what separates a fixable guide gap from irreducible ambiguity.
+Fast runs have **no κ at all** — one annotator, so there is nothing to compare.
+That is recorded as absent, never as 1.0. All eleven pooled and fast runs above
+score **21 PASS / 6 N/A / 0 FAIL** under [`tools/verify_run.py`](tools/verify_run.py);
+the six N/A are the checks whose components fast mode skipped, and a fast run's
+PASS count is not comparable with a full run's.
 
-**The convenient clustering scores do not mean what they look like.** Silhouette
-is defined on the dissimilarity you hand it ([Rousseeuw 1987][sil]), so comparing
-one embedding's silhouette to another's compares two different measurements that
-share a name — and embedding geometry makes the absolute values untrustworthy
-across spaces anyway ([Ethayarajh, EMNLP 2019][aniso]; [Steck et al., WWW
-2024][cosine]). Stability is asymmetric for a deeper reason: high instability is
-provably informative, but the converse **is not a theorem** — counter-examples
-exist, and in the large-*n* K-means limit stability tracks the symmetry of the
-distribution rather than whether K is right ([von Luxburg 2010][stab]).
+### The two routes do not collapse into one
 
-Hence the rule that K is *located* by intent alignment and stability may only
-*reject*; hence silhouette is reported with no voting rights; hence a null test,
-because a model asked for a taxonomy will always return one ([Ben-Hur et
-al. 2002][benhur]).
+This is the measurement that justifies the architecture. If a cluster tree and an
+intent taxonomy were saying the same thing, one of the two routes would be waste.
 
-![The unified panel — silhouette is reported in hatched bars marked "no voting rights"](docs/img/fig6_panel.png)
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/img/fig_route_agreement_dark.png">
+  <img alt="AMI between the top-down taxonomy and the bottom-up tree, per run, leaf and family level" src="docs/img/fig_route_agreement.png">
+</picture>
 
-Measured on this corpus, that exclusion changes the answer. The same intent, in
-the three candidate spaces — the α silhouette would have picked (0.8) scatters it
-across 2.37 families where the chosen α=0.1 keeps it in 1.86:
+Across every run that recorded it, agreement lands between **0.309 and 0.679 AMI**
+and never approaches 1. Neither route is recoverable from the other, so both ship.
 
-![The same intent, split across three embedding spaces](docs/img/fig5_intent_split.png)
+What that disagreement looks like up close, on `live44`: queries sharing one
+phrasing template, and where the clustering put them.
 
-**There is no single true taxonomy to find.** What counts as correct is set by
-the aim, so clustering becomes scientific through open communication of the aims
-and choices, not through uniqueness of the solution ([Hennig 2015][hennig]).
-That makes the record the deliverable. A dataset others build on is expected to
-document its motivation, composition and collection process
-([Datasheets][datasheets]); a model shipped for use is expected to report
-disaggregated performance, not one aggregate ([Model Cards][cards]); and
-provenance — which entity was generated by which activity, derived from what — is
-a [W3C Recommendation][prov] with a data model, not a vibe. A run directory here
-answers those by construction: which rows, which sampling, which encoder, which
-guide version, which annotators, what *n*, what was excluded and why.
+![Where each phrasing family landed — one solid bar is one intent in one cluster; many bands are a twin split](docs/img/fig_template_spread.png)
 
-![Decision chain — every choice, its candidates, and the metric that settled it](docs/img/fig_decision_chain.png)
+`lexical_relation` is one bar at 100% — one phrasing family, one cluster, and the
+two routes agree about it completely. `suffix:什么字` splits 50/48 across two
+clusters: the same surface pattern carrying two different intents, which the
+taxonomy separates and the geometry does not. Every point in the dot plot above is
+a corpus-wide average over that mixture.
+The spread looks like a corpus property — film/TV lowest, education highest — but
+the four finance runs alone span 0.510–0.641, so run-to-run variance is a live
+competing explanation and this measurement cannot separate them.
 
-**The fair comparison, stated honestly.** Reported self-correction gains have
-turned out to be artefacts of a weak starting prompt — on CommonGen-Hard, one
-well-written prompt beat seven rounds of refinement, 81.8 to 67.0
-([Huang et al.][selfcorr] §5). The same standard applies to us: a pipeline
-costing *N* model calls should be compared against the best *N*-call baseline,
-not against one lazy call, and any advantage that a better prompt would also
-supply is not an advantage of the architecture. What is left after that test is
-the part a prompt cannot produce at any length: a labelled gold set with a κ and
-an *n*, a K chosen against a null, an adversary paid to falsify the labels, and a
-partition re-measured *after* governance rewrote it.
+### The same corpus does not give the same tree twice
 
-[lim]: https://aclanthology.org/2024.tacl-1.9/
-[ruler]: https://arxiv.org/abs/2404.06654
-[selfcorr]: https://arxiv.org/abs/2310.01798
-[selfpref]: https://arxiv.org/abs/2404.13076
-[judge]: https://arxiv.org/abs/2306.05685
-[kappa]: https://aclanthology.org/J08-4004/
-[intra]: https://arxiv.org/abs/2301.10684
-[sil]: https://doi.org/10.1016/0377-0427(87)90125-7
-[aniso]: https://aclanthology.org/D19-1006/
-[cosine]: https://arxiv.org/abs/2403.05440
-[stab]: https://arxiv.org/abs/1007.1075
-[benhur]: https://psb.stanford.edu/psb-online/proceedings/psb02/benhur.pdf
-[hennig]: https://doi.org/10.1016/j.patrec.2015.04.009
-[datasheets]: https://arxiv.org/abs/1803.09010
-[cards]: https://arxiv.org/abs/1810.03993
-[prov]: https://www.w3.org/TR/prov-overview/
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/img/fig_delivered_shape_dark.png">
+  <img alt="Delivered leaves and families per run, grouped by corpus" src="docs/img/fig_delivered_shape.png">
+</picture>
 
----
+`film-pool` and `filmdrift` are the **same 20,000 rows** — corpora verified
+byte-identical and in the same order — through the same config in the same mode.
+They delivered **12 leaves / 12 families** and **34 leaves / 22 families**. The
+four K12 runs, all on one 49,999-row file, span 25 to 53 leaves.
 
-## What is new here
+**Where the variance comes from.** Not from the K locator. It picks a family K,
+and then phase-8 governance isolates leaves that do not belong with their
+siblings — each isolate becoming its own family. The delivered count exceeds the
+located K in **13 of 14 runs**, by a median of **2.3×** and up to 4.0× (`med-pool`,
+5 → 20). Only `live40` delivered exactly the K it located.
 
-Five things this project does that a scripted pipeline or a prompt does not.
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/img/fig_governance_shift_dark.png">
+  <img alt="Families the K locator chose against families actually delivered, per run" src="docs/img/fig_governance_shift.png">
+</picture>
 
-**1. Two routes, one ruler — and the comparison is the point.**
-A cluster tree answers "what do these queries look like?"; an intent taxonomy
-answers "what is the user trying to do?". They are different questions, and
-merging them loses both answers. QMine delivers both label sets side by side and
-measures them on the same sub-sample with the same seed. Some intents are
-*structurally invisible* to clustering — on `live42`, 6 of 21 classes fell below
-the kNN-agreement bar, among them `navigational`, `inappropriate_content` and
-`interpret_figurative_meaning`. Their meaning lives in pragmatics rather than
-wording, so no amount of clustering will find them and they must draw their
-accuracy from the rule layer. That is the measured justification for running the
-expensive route at all.
+This is why the phase diagram's "K location" box is not where the delivered shape
+is decided, and why anything presented as final is read from the delivered
+partition rather than from the locator's output.
 
-**2. Blindness is enforced, not requested.**
-The cluster namer sees member queries and nothing else. Prompt instructions are
-not enough, so a firewall scans every payload for the forbidden vocabulary and
-raises if a label leaks (`memory/context.py`). The annotators are independent
-models from different labs, so agreement is not one model agreeing with itself.
+Two consequences, both load-bearing. A shape quoted from one run is not a property
+of the corpus. And two runs' labels **cannot be diffed** — which is why comparing
+time periods pools the snapshots into a single run rather than differencing two
+([Comparing two time periods](#comparing-two-time-periods)).
 
-**3. Agent output enters through doors, each with a mechanical guardrail.**
-An agent may never change a parameter. What it *can* do is bounded per channel:
+### How to read that κ
 
-| channel | what it may do | the guardrail |
-|---|---|---|
-| prose (`agents/verify.py`) | write a report section | every number must appear in that section's fact sheet, checked value by value |
-| observation (`agents/observe.py`) | flag a problem | must cite a resolving artifact key, and may carry an assertion the pipeline evaluates itself |
-| grid proposal (`ops/propose.py`) | suggest a value to sweep | proposed **blind to scores**, so it is pre-registered; capped, additions only, graded every run |
-| deliverable edit (`ops/edits.py`) | fix a document | anchored replacement, anchor must be unique, numbers must come from the artifact it cites |
-| prescription | change the tree | settled or the run fails before reports are written |
+It is agreement between two **LLM** annotators from different labs, not between
+humans, and it is measured against the annotator's own self-consistency ceiling,
+which is the number that makes it interpretable at all.
 
-**4. Findings cannot quietly disappear.**
-A critic once found a real defect before the run that shipped it, and nothing
-read the critic. Findings now live in a run-level ledger and close only when
-their own assertion passes — not when someone decides they are fine.
-
-**5. "Confirmed" is not "defective", and the pipeline says so.**
-Machine-checked findings are re-verified independently. On one run, 13 findings
-were machine-confirmed and only **2** were real defects — most of the rest
-compared two fields that measure different populations. A check proves an
-assertion failed; it says nothing about whether the conclusion holds. Both the
-report framing and the observer prompt carry that measured rate.
-
----
-
-## What it is for
-
-An intent taxonomy is not a report you file. It is a control surface, an
-analytics substrate, and — increasingly — a compliance artifact.
-
-**It decides which retrieval path runs.** This was the point from the beginning:
-Broder introduced the navigational/informational/transactional split because "each
-type is best satisfied by very different results" ([SIGIR Forum 2002][broder]),
-and Rose & Levinson spelled out the mechanism — advice-seeking queries lean on
-usage- and connectivity-based relevance, open-ended research on term-frequency
-signals ([WWW 2004][rose]). It is still how it works. Google's rater guidelines
-make intent **step one** of relevance measurement, before any rating is given
-([SQRG][sqrg]). And LinkedIn's production query-understanding model routes every
-query into four types — extract structured constraints, rewrite with member
-context, fall back to high-recall lexical retrieval when intent is unclear, or
-block — cutting request failures 17.13% in an online A/B, with relevance up 57% on
-navigational and 75% on exploratory queries ([KDD '26][linkedin]). Note the shape:
-four classes, one of them a **risk** class, one an explicit **unclear-intent
-fallback**.
-
-**A borrowed taxonomy collapses, measurably.** Three studies of the *same* three
-Broder classes report navigational at 20%, at 11.7–15.3%, and at ~10%, and
-informational at 48%, 61–63%, and >80% ([Broder][broder]; [Rose &
-Levinson][rose]; [Jansen et al. 2008][jansen]) — a factor of four on identical
-labels. Worse, when Rose & Levinson's taxonomy was applied to real Bing question
-queries, **86.7% of them fell into a single category**; a purpose-built 16-class
-taxonomy spread them out *and* achieved higher inter-assessor agreement
-([Cambazoglu et al., CHIIR 2021][cambazoglu]). Finer was not harder to agree on.
-That is the case for mining the taxonomy from the corpus you actually have, and
-it is the same lesson this repo learned the expensive way when K12 thresholds were
-imported into gates meant to be corpus-independent.
-
-**Once labelled, the log becomes an instrument.** Microsoft Research applied a
-product-intent classifier to Bing logs and could then report, per class, success
-rate (navigational 77.28%, comparison 61.31%), volume share, relative user effort
-(navigational costs 2.63× comparison), and session position — 56% of transactional
-queries are preceded by a comparison query ([Rao et al.][rao]). Applying the same
-taxonomy to corpora a decade apart measured a demand shift: 15–17% of web queries
-are product-related, against 5–7% before. Two of their five classes — Comparison
-and Support — appear in no prior taxonomy and came from the data, which is the
-argument for this pipeline's bottom-up route in one sentence.
-
-Every query in a QMine run carries both labels, so intent volume is a `group by`
-and the demand/supply gap is a diff against your catalogue or content inventory
-([Goswami et al., WWW '19][goswami] — abstract-level only; the method detail is
-unverified).
-
-**It is the guardrail on query rewriting.** eBay's null/low-result rewriter treats
-the shopping-category distribution as the check that a rewrite has not destroyed
-intent: "a sufficiently strong signal that the alternative query distorts user's
-search intent if the inferred level-2 categories are changed", with top-1 rewrites
-preserving category 71.5% of the time ([SIGIR eCom 2017][ebay] — offline on 3,000
-sampled queries; no online A/B, despite what secondary sources say). Zero-results
-rate is a first-class tracked KPI at least at [Wikimedia][wmf].
-
-**The risk class is not optional, and for this corpus it is regulatory.** NAVER
-ships a 12-class sensitive-query taxonomy as a runtime classifier in front of
-generation, grouped Legal / Ethical / Service-sensitive, with **Age-restricted
-contents** as a first-class category ([arXiv 2404.08672][naver]). Their data also
-shows why a taxonomy is re-run rather than written once: self-harm queries average
-1.6% of sensitive traffic and hit **17.2% in a single day** against a news event.
-For a Chinese K12 corpus this is law, not practice — the
-《[未成年人网络保护条例][minors]》 took effect 1 January 2024, and the CAC's
-《[移动互联网未成年人模式建设指南][cac]》 (Nov 2024) prescribes five age bands
-(<3, 3–8, 8–12, 12–16, 16–18) each with its own content prescriptions.
-
-QMine's taxonomy carries an explicit risk class and the screen runs on **every
-row**, not the sample. On `live42` it hit 1,499 rows across 30 leaves, and the leaf
-catalogue reports each leaf's own count — because the blind namer's risk flag sees
-a *sample* and the screen sees *everything*, and conflating them hides most of the
-exposure. What a mined risk class is **not** is a shipped safety system: NAVER's
-live harm-class precision was 74.7% with ~50 queries reviewed by humans daily.
-
-**It replaces the most expensive part of an annotation programme.** The published
-cost of building one taxonomy by hand: 1,000 queries, five assessors, **50–70
-hours each** — roughly 250–350 person-hours of labelling alone — through a nine-
-phase loop of draft, pilot, feedback, guideline revision, relabel, adjudicate
-([Cambazoglu et al.][cambazoglu]). At product scale it never ends: Google works
-with ~16,000 raters against a ~180-page guideline revised roughly twice a year
-([SQRG][sqrg]), NIST budgets six contractors for two to four weeks per track
-([Soboroff][nist]), and LinkedIn labelled ~14K production queries while noting that
-"query understanding labels are expensive: correctness depends not only on semantic
-plausibility but also on product policy" ([KDD '26][linkedin]). And the labels do
-not amortise — "whenever a new vertical is introduced, a costly new set of
-editorial data must be gathered" ([Arguello et al., SIGIR 2010][arguello]).
-
-The most reusable thing QMine emits is therefore not the labels but
-`标注规范与裁定规则.md`: the labeling guide plus 139 adjudication rules, each with
-its trigger, target class, rationale and worked examples, marked by whether the
-architect predicted it or the referee earned it against a real disagreement. That
-is the artifact those 250–350 hours produce.
-
-**Migrating to another domain.** Nothing above is K12-specific. Point it at a
-different corpus and override the defaults; domain profiles carry the phrasing
-seeds and risk vocabulary, and the pipeline gates whether a corpus has the
-reference labels it would otherwise silently do without.
-
-[amazon]: https://www.amazon.science/blog/from-structured-search-to-learning-to-rank-and-retrieve
-[broder]: https://sigir.org/files/forum/F2002/broder.pdf
-[rose]: https://www.ambuehler.ethz.ch/CDstore/www2004/docs/1p13.pdf
-[jansen]: https://eprints.qut.edu.au/30951/
-[cambazoglu]: https://marksanderson.org/files/papers/CHIIR21b.pdf
-[sqrg]: https://services.google.com/fh/files/misc/hsw-sqrg.pdf
-[linkedin]: https://arxiv.org/abs/2605.27441
-[rao]: https://arxiv.org/pdf/2005.08591
-[goswami]: https://dl.acm.org/doi/10.1145/3308560.3316605
-[ebay]: https://ceur-ws.org/Vol-2311/paper_8.pdf
-[wmf]: https://www.mediawiki.org/wiki/Wikimedia_Discovery/FAQ
-[naver]: https://arxiv.org/abs/2404.08672
-[minors]: https://www.moj.gov.cn/pub/sfbgw/zcjd/202310/t20231024_488321.html
-[cac]: https://www.cac.gov.cn/2024-11/15/c_1733364304749288.htm
-[nist]: https://arxiv.org/abs/2409.15133
-[arguello]: https://ils.unc.edu/~jarguell/ArguelloSIGIR10.pdf
-
----
-
-## Results from a real run
-
-`live42`, 49,999 Chinese K12 search queries, four providers, roughly 4.5 hours.
-
-| | |
-|---|---|
-| top-down | **21** L1 intent classes, **139** adjudication rules |
-| bottom-up | **24** families / **58** leaves over all 49,999 rows |
-| gold standard | κ **0.8928** on **n=2,999** double-annotated rows (raw agreement 0.902) |
-| adversarial validation | **93.3%** of 150 attacked labels survived falsification |
-| quality gates | **26** recorded — 15 measured (observed value + threshold), 11 advisory observer gates |
-
-**How to read that κ.** Published multi-annotator query-intent work lands around
-κ 0.79–0.82: ORCAS-I reports Cohen's 0.82 on 1,000 queries with two annotators,
-Product Insights Fleiss 0.79 on 1,500 with three. So 0.8928 is in band — but read
-it with three caveats. It is agreement between two **LLM** annotators from
-different labs, not between humans. It is measured against the annotator's own
-self-consistency ceiling, which is the number that makes it interpretable at all.
-And agreement degrades with depth everywhere it has been measured: ORCAS-I's
-labeller scores 90.2% on three top-level classes and 78.3% on five, and the
-residual "abstain" class scores κ 0.303 where the real classes score 0.68–0.81.
-A pipeline reporting near-perfect leaf-level agreement should be suspected, not
-celebrated. Roughly 3–5% of queries have no single recoverable intent even for
-careful human assessors.
+**The number shipped is the better of two rounds.** A guide-repair pass
+re-annotates a fresh sample and the run keeps the repaired guide only if κ does not
+fall. On four of the five full runs it *fell* and the guide was reverted — live38
+0.8221 → 0.7944, live39 0.8341 → 0.8054, live40 0.8427 → 0.8425, live44 0.8796 →
+0.8746 — and only `med04` improved, 0.8814 → 0.8989. So the table reports the
+delivered guide's κ, which is the right number, but it is a maximum over two
+attempts rather than a single measurement. Both rounds and their separate n are in
+`gold_agreement.json` → `kappa_trace`; the keep-or-revert rule is
+`graph/nodes/topdown.py`. Agreement degrades with
+depth everywhere it has been measured: ORCAS-I's labeller scores 90.2% on three
+top-level classes and 78.3% on five, and its residual "abstain" class scores
+κ 0.303 where the real classes score 0.68–0.81. A pipeline reporting near-perfect
+leaf-level agreement should be suspected, not celebrated. Roughly 3–5% of queries
+have no single recoverable intent even for careful human assessors.
 
 For contrast on why the gate exists at all: Rose & Levinson (2004), the
 second-most-cited taxonomy in the field, was labelled by "one of the authors" and
 reports no agreement statistic — its own Future Work section concedes the
 framework still needed testing by judges other than the authors.
+
+> **Read `n` before believing any metric.** That rule is in this repository
+> because a κ of 0.813 was once computed on 199 of 600 rows after an outage and
+> shipped as a methodology result. Coverage is now reported beside every score,
+> and a row nobody labelled counts as missing data, not as agreement.
 
 Three of the source methodology's counter-intuitive findings were reproduced
 independently, as measurements rather than restatements: a smaller encoder beat a
@@ -479,10 +270,55 @@ larger one on clustering stability; silhouette would have chosen the α that
 fragments intents worst; and HDBSCAN produced overwhelming noise at every
 `min_cluster_size` tried.
 
-> **Read `n` before believing any metric.** That rule is in this repository
-> because a κ of 0.813 was once computed on 199 of 600 rows after an outage and
-> shipped as a methodology result. Coverage is now reported beside every score,
-> and a row nobody labelled counts as missing data, not as agreement.
+---
+
+## What you do with the output
+
+The file you will actually use is `labels_full.csv` — every row of your corpus,
+labelled by both routes, with a confidence and an ambiguity flag on each.
+
+| column | what it is |
+|---|---|
+| `td_l1`, `td_l1_name` | the top-down intent class and its name |
+| `td_user_need` | what the user is trying to accomplish, in one phrase |
+| `td_confidence`, `td_margin`, `td_ambiguous` | the classifier's confidence, its margin over the runner-up, and whether the row was flagged as genuinely ambiguous |
+| `td_decided_by` | which mechanism assigned it — annotator, referee, rule or classifier |
+| `bu_leaf`, `bu_leaf_name`, `bu_user_need` | the delivered cluster leaf |
+| `bu_family_final` | its family in the delivered two-level tree |
+| `bu_leaf_pre_governance` | the leaf before phase-8 governance rewrote the tree — kept so a delivered label can be traced back |
+| `bu_margin`, `bu_ambiguous` | distance to the nearest competing centroid, and the flag derived from it |
+
+Two real rows from `filmdrift`, and the reason both routes ship:
+
+| query | top-down intent | bottom-up leaf |
+|---|---|---|
+| `以法之名` | 解析裸片名/类型限定作品条目 *(resolve a bare title)* — 0.949 | 电视剧免费全集在线观看查询 |
+| `以法之名张译电视剧在线观看免费高清` | 在线播放指定作品 *(play a named work)* — 0.988 | 电视剧免费全集在线观看查询 |
+
+Same cluster, different intent. The bottom-up route groups them because they share
+surface form; the top-down route separates them because a bare title is a request
+to **disambiguate** and the long query is a request to **play**. They want
+different result pages. A pipeline with only one route cannot see this.
+
+**Three things to do with it on day one.**
+
+- **Route on `td_l1`.** This was the original point of intent taxonomies: Broder
+  introduced the navigational/informational/transactional split because "each type
+  is best satisfied by very different results."
+- **Gate on `td_margin` / `td_ambiguous`.** Rows the pipeline itself flags as
+  ambiguous are where a confident wrong answer costs most — send them to a
+  fallback path rather than to the winning class.
+- **`group by bu_leaf` against your content inventory.** Intent volume is a
+  `group by`; the demand/supply gap is a diff against your catalogue.
+
+The most reusable artifact is not a number: `标注规范与裁定规则.md` ships the labeling
+guide verbatim plus every adjudication rule the run produced (139 on `live42`, 162
+on `live44`), which is enough for a human team to reproduce the annotation — or to
+disagree with it precisely.
+
+→ [Why an intent taxonomy is worth building at all](docs/WHAT_ITS_FOR.md) — the
+survey of how retrieval routing, query rewriting, sensitive-query handling and
+compliance regimes consume one, with citations.
 
 ---
 
@@ -493,12 +329,12 @@ make install                 # encoders, notebook tooling, tests
 cp .env.example .env         # DEEPSEEK / ZHIPU / QWEN / OPENROUTER keys — all four
                              # optional: TAVILY_API_KEY or BRAVE_API_KEY for web research
 
-qmine models                 # the routing plan and cost estimate — spends nothing
+.venv/bin/qmine models                 # the routing plan and cost estimate — spends nothing
 make demo                    # 8k rows, offline stand-in, ~4 min
 make live RUN=live45         # the full corpus on real models
 make fast RUN=live46         # same analysis, no second-opinion layer, 3 documents
-qmine watch live45           # attach the dashboard to a run, live or finished
-qmine render live45          # rebuild the deliverables from a finished run's artifacts
+.venv/bin/qmine watch live45           # attach the dashboard to a run, live or finished
+.venv/bin/qmine render live45          # rebuild the deliverables from a finished run's artifacts
 ```
 
 ### Two speeds, and what the fast one gives up
@@ -519,6 +355,7 @@ phases — and removes only the layer that second-guesses it:
 | **grids, corpus, gold size, researchers** | full | **identical** |
 | **intermediate artifacts** | all | **all** |
 | deliverables | 10 documents + 6 CSVs + notebook | **3 reference documents** |
+| **snapshot drift (`p10b`)** | run | **identical** — it is the point of a pooled run |
 
 Measured on 10,000 finance queries: `fin03` ran in **1.4 h for ~$3.19** over 193
 calls, 17/17 phases, and passed `verify_run` **21 / 0**. Its gold set was the full
@@ -530,19 +367,29 @@ derived 3,000 rows and its α sweep the full grid — fast mode shrank nothing.
 # the bundled defaults (K12 corpus)
 make fast RUN=my-fast-run
 
-# your own corpus — override the LIVE_* variables
-make fast RUN=x LIVE_INPUT=data/raw/mine.xlsx LIVE_DOMAIN=finance_zh \
-          LIVE_TEXT=original_query LIVE_REFS=
-
-# or call the CLI directly, which is what the target does
-qmine run --input data/raw/mine.xlsx --domain finance_zh \
+# your own corpus — call the CLI with a corpus config
+.venv/bin/qmine run --input data/raw/mine.xlsx --domain finance_zh \
           --config configs/live_finance.yaml --provider router --fast \
           --run-id my-fast-run
 ```
 
-A corpus config must start with `extends: live.yaml`, or it silently replaces the
-provider policy — the role pins and the lab-independence rule that double-blind
-annotation depends on. `configs/live_finance.yaml` is a worked example.
+**Use a corpus config rather than the `LIVE_*` variables for anything with a
+frequency column.** The `make` targets pass `configs/live.yaml`, which names no
+`weight_column`, so a run started that way counts **distinct queries** — a head
+term carrying six figures of traffic weighs the same as a one-off, and
+`population_weighted_accuracy` does not exist at all. On `fin03` that metric read
+0.941 against an unweighted 0.914. A corpus config sets the column once:
+
+```yaml
+# configs/live_finance.yaml
+extends: corpus_wise_export.yaml     # text_column, weight_column, reference columns
+```
+
+The chain must bottom out at `live.yaml`, because `--config` **replaces** the
+default rather than merging with it — without that inheritance the whole provider
+policy is silently dropped, including the role pins and the lab-independence rule
+that double-blind annotation depends on. `configs/live_finance.yaml`,
+`live_film.yaml` and `live_people.yaml` are one-line worked examples.
 
 **What you get**
 
@@ -550,6 +397,7 @@ annotation depends on. `configs/live_finance.yaml` is a worked example.
 <domain>_自上而下_意图体系完整定义.md   the intent system: classes, rules, gold, classifier
 <domain>_自下而上_聚类树完整定义.md     the delivered tree: families, leaves, definitions
 <domain>_query_挖掘结果.xlsx           every row labelled by both routes, + definition sheets
+快照对比_漂移分析.md                    multi-snapshot runs only — what moved between periods
 ```
 
 Each opens with a machine-generated banner naming exactly what was skipped, and
@@ -609,6 +457,259 @@ holds the dossiers behind the design decisions.
 
 ---
 
+## How it works
+
+Every parameter choice, the candidates it beat, and the measurement that settled
+it — one image, `live44`:
+
+![Decision chain — every choice, its candidates, and the metric that settled it](docs/img/fig_decision_chain.png)
+
+
+Seventeen graph nodes implement the twelve-phase methodology. The two routes fork
+after the corpus audit and run **concurrently** — measured on real runs, the fork
+hid **62 minutes** of bottom-up work inside the top-down critical path on
+`live42`, 23% of that run's wall clock.
+
+```mermaid
+flowchart TB
+  P0["p0 · foundation<br/>seeds, config, provenance"] --> P1["p1 · audit<br/>corpus profile, template mining, risk screen"]
+  P1 --> TD1 & BU1
+
+  subgraph TD["TOP-DOWN — what users are trying to do"]
+    direction TB
+    TD1["p2a · taxonomy design<br/>5 web researchers → architect → critic"]
+    TD2["p2b · gold standard<br/>2 BLIND annotators + referee, κ vs a self-consistency ceiling"]
+    TD3["p2c · classifier"]
+    TD4["p2d · adversarial validation<br/>an agent paid to falsify each label"]
+    TD5["p2e · sub-intents"]
+    TD1 --> TD2 --> TD3 --> TD4 --> TD5
+  end
+
+  subgraph BU["BOTTOM-UP — what the queries look like"]
+    direction TB
+    BU1["p3 · representation<br/>encoder bake-off on THIS corpus, α chosen by measurement"]
+    BU2["p4 · algorithm battery"]
+    BU3["p5 · granularity<br/>K located by intent alignment; stability may only reject"]
+    BU4["p6 · hierarchy"]
+    BU5["p7 · blind naming<br/>namer sees queries only — never an existing label"]
+    BU6["p8 · governance<br/>prescriptions are executed or the run fails"]
+    BU1 --> BU2 --> BU3 --> BU4 --> BU5 --> BU6
+  end
+
+  TD5 --> J["p9 · unified panel<br/>both routes, one ruler"]
+  BU6 --> J
+  J --> P10["p10 · deployment<br/>classifier + both label sets"]
+  P10 --> P10B["p10b · drift<br/>multi-snapshot runs only"] --> P11["p11 · reports & notebook"] --> P12["p12 · maintenance"]
+```
+
+Every phase writes artifacts to a generation directory. Generations are
+append-only: a rejected tree is kept, because a rejected artifact is still
+evidence.
+
+---
+
+## Comparing two time periods
+
+Give the runner **several files instead of one** and it pools them into a single
+corpus, tagging each row with the snapshot it came from. Everything downstream —
+the taxonomy, the gold set, the encoder bake-off, K location, the tree, the
+naming — is derived **once, over both periods together**. A phase then splits the
+finished labels by snapshot and compares.
+
+```bash
+.venv/bin/qmine run --input data/raw/金融query-250701.xlsx,data/raw/金融query-260701.xlsx \
+          --domain finance_zh --config configs/live_finance.yaml \
+          --provider router --fast --run-id fin-pool
+```
+
+Each corpus gets a one-line config that inherits the column names and the
+provider policy — `configs/live_finance.yaml`, `live_film.yaml`,
+`live_people.yaml`, all `extends: corpus_wise_export.yaml`.
+
+**Why pooling, rather than one run per period and a diff.** Because the diff is
+not computable, and there are two independent demonstrations of it in this repo.
+`fin01` and `fin02` are the two finance files run separately: **20 and 19 classes
+sharing zero codes**. They are not contradictory — `LOOKUP_FX_RATE` and
+`FX_RATE_LOOKUP` are the same intent — but nothing joins them, and a human
+deciding which pairs match is redoing the taxonomy by hand and injecting the
+answer. That comparison confounds two things, though, because the two files hold
+different data — the clean control is
+[the same corpus run twice](#the-same-corpus-does-not-give-the-same-tree-twice),
+which moved the delivered tree from 12 leaves to 34. Pooled, a class means the same
+thing in both periods **because it was defined once, on both**, and the comparison
+becomes a lookup.
+
+**The snapshot tag** is a constant date-like column if the file has one
+(`event_day` in these exports), else a digit run in the filename, else the stem.
+It is carried beside `weight`, never as a reference column: declaring it as one
+would ask the K locator to find a K that separates 2025 from 2026, which is the
+opposite of the shared frame the comparison needs. Duplicate tags are refused
+rather than silently merged.
+
+**What p10b measures.** Everything is a **share within its own snapshot**, both by
+row and by traffic weight — never a raw count. One medical pair fell 9.74M to
+5.21M in total weight; on raw counts every single class "declined" and the
+composition, the only thing a drift report is for, was invisible. Classes present
+in only one period are reported **separately** as emergent or receded, since a
+class that appeared has no share *change* and reading "appeared" as "grew" is a
+different claim. Groups too thin to compare (< 30 rows on a side) are named as
+such rather than being given a delta the sample cannot support. Effect size is
+Cramér's V, because at n = 20,000 a χ² p-value is significant for differences too
+small to act on.
+
+**A guardrail on the premise.** The comparison assumes both periods share one
+label frame. `p10b` measures each group's snapshot purity and flags any group
+sitting almost entirely in one period — that group was *separated*, not compared.
+Measured across six pooled runs: `fin-pool` 0 of 52 leaves, `med-pool` 0 of 24,
+`edu-pool` 0 of 28, `film-pool` 0 of 12, `filmdrift` 0 of 34 leaves but 1 of 17
+top-down classes, and the news-driven `ppl-pool` **6 of 24** — all six of those
+genuine period-specific public figures. So the gate warns rather than blocks: a
+nonzero count is a prompt to look, not a defect.
+
+**What ships.** `快照对比_漂移分析.md`, generated entirely from
+`drift_analysis.json` — every number in it is a lookup, so it costs no model call
+and ships in **both** full and fast mode. Its last section states plainly what the
+comparison cannot tell you: no causation, two points are not a trend, a pooled
+shift can reverse within every segment (Simpson's paradox), and whether the two
+exports were sampled the same way is not something the pipeline can verify.
+
+**What it found on five verticals.** Same two dates one year apart, ~20,000 pooled
+rows each, one taxonomy per corpus labelling both years:
+
+| corpus | queries in both years | of this year's traffic | intent-mix movement | biggest single shift |
+|---|---:|---:|---:|---|
+| medical | 6,329 (46.3%) | 77.8% | 0.111 | 药品功效与副作用查询 **+5.44pp** |
+| education | 6,713 (50.5%) | 78.3% | 0.103 | 高等院校信息查询 **−2.82pp** |
+| finance | 5,447 (37.4%) | 80.7% | 0.216 | 查询个股股票信息 **+7.08pp** |
+| public figures | 4,494 (29.0%) | 56.3% | 0.288 | 查询人物个人资料简介 **+12.00pp** |
+| film/TV | 2,841 (16.6%) | 36.7% | 0.203 | 免费完整版在线观看 **−13.62pp** |
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/img/fig_churn_vs_drift_dark.png">
+  <img alt="Query overlap between years against intent-mix movement, five verticals" src="docs/img/fig_churn_vs_drift.png">
+</picture>
+
+**The two axes are independent, and that is the finding.** film/TV recycles only
+16.6% of its distinct queries and only 36.7% of this year's traffic sits on
+queries that existed a year ago — the titles turn over almost completely — yet its
+intent mix moved *less* than the public-figures corpus, whose queries are twice as
+stable. Track query strings and you would call film/TV the most-changed corpus and
+public figures one of the calmest. Both readings are wrong. The surface churns;
+the intents persist.
+
+**Is a shift one thing or many?** For each class, `p10b` computes the
+concentration (HHI) of the per-query delta and ships the queries that carry it.
+On film/TV the −13.6pp decline in free-full-episode viewing is spread across
+**6,201 distinct queries** (HHI 0.004) — 2025's dramas ageing out, a broad
+behavioural shift. The +11.0pp rise in live-TV viewing has one query carrying 23%
+of it, and its top five deltas are all `cctv5` variants: one entity, not a trend.
+The report names the measurement and prints the queries; it does not tell you
+which it is.
+
+Runs are unchanged when given a single input: no snapshot column, no drift phase,
+no extra deliverable.
+
+---
+
+## What is new here
+
+Six things this project does that a scripted pipeline or a prompt does not.
+
+**1. Two routes, one ruler — and the comparison is the point.**
+A cluster tree answers "what do these queries look like?"; an intent taxonomy
+answers "what is the user trying to do?". They are different questions, and
+merging them loses both answers. QMine delivers both label sets side by side and
+measures them on the same sub-sample with the same seed. Across every run that
+recorded it, the two agree at **AMI 0.309–0.679** and never approach 1 — neither
+is recoverable from the other. And some intents are *structurally invisible* to
+clustering — every run measures which, against a bar taken from that corpus's own
+spread rather than a constant:
+
+| run | corpus | classes | rule-dependent |
+|---|---|---:|---:|
+| `live44` | K12 | 20 | **6** |
+| `live42` | K12 | 21 | **6** |
+| `med04` | medical | 18 | **8** |
+| `edu-pool` | education | 20 | **6** |
+| `fin-pool` | finance | 17 | **5** |
+| `film-pool` | film/TV | 15 | **5** |
+| `ppl-pool` | public figures | 15 | **3** |
+
+A quarter to two-fifths of every taxonomy, on every corpus tried. On `live44` they
+are `correctness_verdict`, `riddle_solving`, `exercise_answer`,
+`classical_interpretation`, `site_navigation` and `unclassifiable_noise` — meanings
+that live in pragmatics rather than wording. No amount of clustering finds them;
+they draw their accuracy from the rule layer. That is the measured justification
+for running the expensive route at all.
+
+**2. Blindness is enforced, not requested.**
+The cluster namer sees member queries and nothing else. Prompt instructions are
+not enough, so a firewall scans every payload for the forbidden vocabulary and
+raises if a label leaks (`memory/context.py`). The annotators are independent
+models from different labs, so agreement is not one model agreeing with itself.
+
+**3. Agent output enters through doors, each with a mechanical guardrail.**
+An agent may never change a parameter. What it *can* do is bounded per channel:
+
+| channel | what it may do | the guardrail |
+|---|---|---|
+| prose (`agents/verify.py`) | write a report section | every number must appear in that section's fact sheet, checked value by value |
+| observation (`agents/observe.py`) | flag a problem | must cite a resolving artifact key, and may carry an assertion the pipeline evaluates itself |
+| grid proposal (`ops/propose.py`) | suggest a value to sweep | proposed **blind to scores**, so it is pre-registered; capped, additions only, graded every run |
+| deliverable edit (`ops/edits.py`) | fix a document | anchored replacement, anchor must be unique, numbers must come from the artifact it cites |
+| narrative (`agents/narrate.py`) | write the final report | a fact sheet per section **plus a coverage check** — `check_numbers` is precision-only and blind to omission |
+| prescription | change the tree | settled or the run fails before reports are written |
+
+**4. Findings cannot quietly disappear.**
+A critic once found a real defect before the run that shipped it, and nothing
+read the critic. Findings now live in a run-level ledger and close only when
+their own assertion passes — not when someone decides they are fine.
+
+**5. "Confirmed" is not "defective", and the pipeline says so.**
+Machine-checked findings are re-verified independently. On one run, 13 findings
+were machine-confirmed and only **2** were real defects — most of the rest
+compared two fields that measure different populations. A check proves an
+assertion failed; it says nothing about whether the conclusion holds. Both the
+report framing and the observer prompt carry that measured rate.
+
+**6. Two time periods are labelled ONCE, then compared.**
+The obvious way to track drift is to run the pipeline on each period and diff the
+results. That does not work — [the same corpus run twice](#the-same-corpus-does-not-give-the-same-tree-twice)
+delivered 12 leaves and then 34, so a diff of two runs measures the pipeline's
+variance on top of the corpus's. QMine stacks
+the snapshots into **one** corpus, derives **one** taxonomy and **one** cluster
+tree from the pooled rows, and only then splits by snapshot to compare. Every
+class means the same thing in both periods because it was defined once, on both.
+See [Comparing two time periods](#comparing-two-time-periods).
+
+---
+
+## Why not just prompt a frontier model?
+
+The honest question. The short answer is that the failure modes are measured and
+they are exactly the ones this task hits:
+
+- **A long context is not a read corpus.** Put the relevant material in the middle
+  of a long input and accuracy falls *below* the same model given no documents at
+  all — a U-shaped curve, and a bigger window does not fix it (Claude-1.3 scores
+  76.1 against Claude-1.3-100K's 76.4). Under RULER, *effective* context runs far
+  under the advertised number and degrades fastest on **aggregation** with many
+  distractors. A taxonomy over 50,000 queries is an aggregation task.
+- **Asking a model to check its own work makes it worse.** Intrinsic
+  self-correction is measured net-negative: GPT-4 on GSM8K goes 95.5 → 91.5 → 89.0
+  over two rounds. The published successes used oracle labels to decide when to
+  stop.
+- **A model judging its own output is not an instrument.** LLM judges show heavy
+  position bias — asked which of two answers is better, Claude-v1 is
+  order-consistent 23.8% of the time — and are fooled by verbose restatement.
+
+So this pipeline never asks a model to grade itself, never asks one to hold the
+corpus in its head, and never lets one set a parameter.
+
+→ [The full argument, with citations and what each result implies for the design](docs/WHY_NOT_A_PROMPT.md)
+
+---
+
 ## Persistence, generations and recovery
 
 A four-hour run must survive an outage, and a rejected result must survive a
@@ -663,98 +764,6 @@ one proves nothing.
 
 ---
 
-## Known limitations
-
-Measured, unresolved, and listed here rather than in an issue tracker nobody
-reads. The full log is in [`HANDOFF.md`](HANDOFF.md).
-
-**The request timeout assumes one throughput for every role, and it is wrong by
-5x in both directions.** `timeout_seconds` derives from a single constant of 40
-output tokens/sec. Measured across roles on `live44`, real throughput runs from
-**7.4 tok/s** (a tool-free researcher) to **181.7** (an annotator). The slow end
-is reasoning: with no tool round-trips, wall time is dominated by thinking, and
-thinking tokens are not counted in the output total — so they land in the
-denominator and not the numerator.
-
-The consequence compounds, because the provider SDK is given `max_retries=2`. A
-role whose timeout is marginal spends *three* attempts reaching it before the
-pipeline's own retry begins: on `live44` two researchers each burned
-3 × 585s = **1,757 seconds returning zero tokens**, then succeeded on the retry.
-Two angles cost ~48 minutes apiece instead of ~14, and roughly a third of the
-design phase bought nothing.
-
-Note what is **not** wrong here, since an earlier draft of this file said it was:
-only `literature` and `risk_compliance` are given web tools. `log_reading`,
-`legacy_audit` and `pragmatic_intents` are deliberately tool-free — the whole
-value of the log reader is that it forms its view from the rows and nothing else,
-and a search box invites it to substitute recall for observation. The tool-free
-angles returned **12** candidates each on `live44`, more than either web angle's
-10 and 11.
-
-**The α decision sits inside its own noise.** Across five seed replicates the
-winner was 0.1, 0.5, 0.1, 0.0, 0.1. The tie band is roughly 4.5× narrower than the
-metric's own spread. Widening the band makes it worse — at a measured 2-sd band
-the run elects an α its own panel shows fragments intents more. The fix is
-replication, which has not been done.
-
-**Refinement converges on some corpora and not others.** `fin01`/`fin02`/`fin03`
-(finance) and `ecom01`/`ecom02` (e-commerce) all report `converged: true`;
-`live39`-`live44` (K12) and `med04` (medical) all hit the iteration limit, so
-the delivered leaf count depends partly on which round it stopped at. Disclosed in
-the reports; not fixed.
-
-**Restarting into the concurrent region is unreliable.** The two routes fork, and
-a resume that lands inside the fork has silently dropped a branch. The join now
-halts loudly instead, but the underlying question — whether a multi-superstep
-fan-out can be restored at all — is open. Open a new generation and run it once.
-
-**Model behaviour is a live variable.** One provider returned the JSON *schema*
-instead of data on 69 of 197 `annotator_b` calls on `live44` (35%), against 1 of
-137 for the other annotator; because every field on the response
-model had a default, that validated into a valid-but-empty result and silently
-lost half a gold set before it was caught. It is now rejected before validation
-and retried — but the class of failure is general, and a permissive default
-anywhere is a place it can recur.
-
-**An intent taxonomy may not be the right primitive at all.** Amazon argues the
-opposite case directly: mapping query tokens to entity categories and attributes
-yields "static query plans that cannot incorporate feedback in the retrieval
-stage" and "compounding errors due to incorrect query understanding and/or content
-understanding", and they favour learning to rank and retrieve instead
-([Amazon Science][amazon]). The defensible claim for this project is that a
-taxonomy is an *interpretable control surface and an analytics substrate* — not
-that it is state of the art in retrieval.
-
-**The annotated distribution is not the corpus distribution.** Gold rows are drawn
-by cluster-stratified sampling precisely so rare intents survive selection
-([Rao et al.][rao] avoid random sampling for the same reason), which means class
-shares on the gold set are *not* an estimate of class shares in the corpus. Those
-come from the delivered labels over all rows. Anywhere the two are printed near
-each other is a place to check the denominator.
-
-**Three of the shipped domain profiles have never been run on real data.**
-`finance_zh`, `sports_zh` and `politics_zh` are untested; a corpus with no profile
-falls back to mined phrasing groups, which is gated but not validated.
-
----
-
-## Support
-
-Open an issue. Before filing, [`HANDOFF.md`](HANDOFF.md) §2 lists what is already
-known to be broken or unresolved — it is kept current, and an item there is a
-known gap rather than a surprise.
-
-`qmine doctor` reports installed packages and whether matplotlib can find a CJK
-font (without one the figures render boxes). Note that it currently checks only
-`ANTHROPIC_API_KEY` and probes no model, so it will **not** tell you whether your
-DeepSeek / Zhipu / Qwen keys work — use `qmine models`, which resolves the routing
-plan and prices it without spending anything.
-
-**Licence:** none is declared yet. Until one is added, treat this as
-all-rights-reserved and ask before redistributing.
-
----
-
 ## Repository layout
 
 ```
@@ -768,11 +777,13 @@ docs/                 architecture, routing, domain profiles, playbook mapping
 docs/research/        the dossiers behind the design decisions
 tests/                one test per defect — the docstring names which
 tools/verify_run.py   mechanical checks over a finished run
+tools/run_evidence.py aggregates every complete live run into one table
+tools/readme_figures.py rebuilds this README's cross-run figures from that table
 HANDOFF.md            dated log of state, findings and open questions
 runs/<id>/gen01/      artifacts and deliverables (git-ignored — runs stay local)
 ```
 
-**625 tests.** Each one records the defect it was written after, and its docstring
+**711 tests.** Each one records the defect it was written after, and its docstring
 names that defect — `tests/` is the real index of the invariants this pipeline
 holds.
 
@@ -782,32 +793,18 @@ HF_HOME=$(pwd)/.hf .venv/bin/python -m pytest tests/ -q
 
 ---
 
-## Status and contributing
+## Support
 
-**What this is.** A working research pipeline, exercised end to end on a 50,000-row
-corpus across several live runs. It is not a hosted product and makes no
-uptime promise.
+Open an issue. Before filing, [`HANDOFF.md`](HANDOFF.md) §2 lists what is already
+known to be broken or unresolved — it is kept current, and an item there is a
+known gap rather than a surprise.
 
-**What it is honest about.** [`HANDOFF.md`](HANDOFF.md) carries a dated log of
-every open question, including the measured and unresolved ones — an alpha
-decision that sits inside its own noise, a refinement loop that has not converged
-on any run, and a client timeout that can burn half the design phase and return
-nothing. Findings that cannot yet be acted on are kept where they cannot quietly
-disappear rather than being written out of the record, and entries there are
-corrected when they turn out to be wrong.
+`.venv/bin/qmine doctor` reports installed packages, which provider credentials it
+found, and whether matplotlib can find a CJK font (without one the figures render
+boxes). It does **not** probe any model — for that use `.venv/bin/qmine models`,
+which resolves the routing plan and prices it without spending anything.
 
-**If you are extending it**, two habits save the most time here, and both were
-learned expensively:
+**Licence:** none is declared yet. Until one is added, treat this as
+all-rights-reserved and ask before redistributing.
 
-- **Execute and look — never infer a result you could measure.** Read figures back
-  after generating them; run notebooks rather than trusting that cells compile.
-  Nearly every real defect in this repository was found by running, and several
-  *false* findings came from reasoning that looked sound.
-- **Read `n` before believing any metric.** A κ of 0.813 was once computed on 199
-  of 600 rows after an outage and shipped as a methodology result.
-
-Start from `tests/` — each test's docstring names the defect it was written
-after, which is faster than reading the module it guards.
-
-**Contributions** that come with a test recording the defect they fix are the ones
-that will land fastest — that is the convention the whole suite follows.
+---

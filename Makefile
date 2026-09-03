@@ -38,7 +38,7 @@ LIVE_DOMAIN ?= k12_zh
 LIVE_TEXT   ?= query
 LIVE_REFS   ?= legacy_l1,legacy_l2
 
-live:  ## a PAID live run — `make live RUN=live43` (~4h, ~$30). K12 by default; override LIVE_*
+live:  ## a PAID live run — `make live RUN=live43` (~3-4h, ~$5-$7). K12 by default; override LIVE_*
 	@test -n "$(RUN)" || (echo "usage: make live RUN=live43" && exit 1)
 	@test -f .env || (echo "no .env — live runs need provider keys" && exit 1)
 	$(QM) run --input $(LIVE_INPUT) --domain $(LIVE_DOMAIN) \

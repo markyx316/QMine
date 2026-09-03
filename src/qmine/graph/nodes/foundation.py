@@ -2,6 +2,9 @@
 
 from __future__ import annotations
 
+import re
+import warnings
+
 import platform
 import sys
 import time
@@ -186,7 +189,16 @@ def p1_audit(state: PipelineState, deps: Deps) -> dict[str, Any]:
     unused = _label_like_columns(raw, cfg) if not declared else []
     ref_labels = {c: raw[c].astype(str).tolist() for c in declared}
     weights = raw[cfg.data.weight_column].tolist() if cfg.data.weight_column else None
-    df = build_frame(raw[cfg.data.text_column].astype(str).tolist(), reference_labels=ref_labels, weights=weights)
+    _snap_col = getattr(cfg.data, "snapshot_column", "_snapshot")
+    snapshots = (raw[_snap_col].astype(str).tolist()
+                 if _snap_col in raw.columns else None)
+    df = build_frame(raw[cfg.data.text_column].astype(str).tolist(),
+                     reference_labels=ref_labels, weights=weights,
+                     snapshots=snapshots)
+    if snapshots is not None:
+        _n_snap = len(set(snapshots))
+        deps.emit(f"  {_n_snap} snapshot(s) in this corpus: "
+                  + ", ".join(f"{t}={snapshots.count(t):,}" for t in sorted(set(snapshots))))
 
     # THE TEXT COLUMN IS NOW `query`, AND THE CONFIG MUST SAY SO.
     #
@@ -501,7 +513,70 @@ def _scout_unknown_domain(deps: Deps, df: Any, audit: dict[str, Any]) -> Any:
         producer="p1",
         summary=f"vertical={out.vertical or '?'} ({out.confidence})")
 
+def _read_one(path: str) -> pd.DataFrame:
+    if str(path).endswith((".xlsx", ".xls")):
+        return pd.read_excel(path)
+    if str(path).endswith(".parquet"):
+        return pd.read_parquet(path)
+    if str(path).endswith((".jsonl", ".json")):
+        return pd.read_json(path, lines=str(path).endswith(".jsonl"))
+    return pd.read_csv(path)
+
+
+def _snapshot_tag(path: str, df: pd.DataFrame) -> str:
+    """Name a snapshot: a constant date-like column if there is one, else the stem.
+
+    These exports carry `event_day` holding one value per file, which is the
+    honest name for the period. Falling back to a digit run in the filename
+    covers `<vertical>query-250701.xlsx`; the stem covers everything else.
+    """
+    from pathlib import Path as _P
+
+    for col in ("event_day", "date", "dt", "snapshot"):
+        if col in df.columns:
+            vals = pd.unique(df[col].dropna())
+            if len(vals) == 1:
+                return str(vals[0])
+    m = re.search(r"(\d{6,8})", _P(path).stem)
+    return m.group(1) if m else _P(path).stem
+
+
 def _load_input(cfg: Any) -> pd.DataFrame:
+    # SEVERAL SNAPSHOTS OF ONE VERTICAL, STACKED AND TAGGED.
+    #
+    # One run over the pooled rows is the only way two periods are comparable:
+    # two runs on the SAME 10,000 rows shared 0 of 35 class codes, because the
+    # architect renames every run and the tree is refitted from scratch.
+    #
+    # Order is preserved and the tag rides along in `cfg.data.snapshot_column`.
+    # It is NOT added to `reference_label_columns` — see that field's note.
+    paths = list(getattr(cfg.data, "input_paths", []) or [])
+    if paths:
+        frames, tags = [], []
+        for one in paths:
+            d = _read_one(one)
+            tag = _snapshot_tag(one, d)
+            if tag in tags:
+                raise ValueError(
+                    f"two inputs resolve to the same snapshot tag {tag!r} "
+                    f"({paths}). The drift analysis could not tell them apart; "
+                    f"rename a file or give them distinguishable dates.")
+            tags.append(tag)
+            d = d.copy()
+            d[cfg.data.snapshot_column] = tag
+            frames.append(d)
+        cols = [set(f.columns) for f in frames]
+        if any(c != cols[0] for c in cols):
+            # Concatenating mismatched schemas silently NaN-fills, and a column
+            # present in one snapshot and absent in another then reads as drift.
+            shared = sorted(set.intersection(*cols))
+            dropped = sorted(set.union(*cols) - set(shared))
+            warnings.warn(
+                f"inputs differ in columns; keeping the {len(shared)} shared and "
+                f"dropping {dropped}", stacklevel=2)
+            frames = [f[shared] for f in frames]
+        return pd.concat(frames, ignore_index=True)
+
     path = cfg.data.input_path
     if not path:
         raise ValueError("config.data.input_path is not set")
@@ -522,7 +597,16 @@ def _label_like_columns(raw: Any, cfg: Any) -> list[str]:
     labels while the run declares none — a free-text column has cardinality near
     the row count and never trips this.
     """
-    skip = {cfg.data.text_column, cfg.data.weight_column, "row_id", "id", "query_id"}
+    # THE SNAPSHOT TAG IS NOT A LEGACY LABEL — THIS PIPELINE ADDED IT.
+    #
+    # It is low-cardinality text by construction (one value per input file), so
+    # without this it trips on EVERY pooled run, and the advice it gives is the
+    # reverse of correct: declaring the snapshot as a reference column asks the K
+    # locator to find a K that separates 2025 from 2026, destroying the shared
+    # frame the whole comparison rests on. Caught by running a real two-snapshot
+    # run and reading the gate, not by the tests.
+    skip = {cfg.data.text_column, cfg.data.weight_column, "row_id", "id", "query_id",
+            getattr(cfg.data, "snapshot_column", "_snapshot"), "snapshot"}
     out = []
     for col in raw.columns:
         if str(col) in skip:

@@ -250,7 +250,21 @@ def run(
 
     cfg = _load_config(config, domain, run_root=run_root, smoke_mode=smoke,
                        mode="fast" if fast else "full", offline=offline)
-    cfg.data.input_path = input
+    # SEVERAL INPUTS, COMMA-SEPARATED — the same vertical at different times.
+    # One run over the pooled rows is the only way the periods are comparable.
+    # Measured: fin01 (金融 2025-07) and fin02 (金融 2026-07) were run separately
+    # and produced 20 and 19 classes sharing ZERO codes — semantically parallel
+    # (`LOOKUP_FX_RATE` vs `FX_RATE_LOOKUP`) but not joinable, so there is nothing
+    # to diff. Pooling derives ONE taxonomy over both periods and splits after.
+    # A single path is unchanged in every respect.
+    _paths = [x.strip() for x in str(input).split(",") if x.strip()]
+    if len(_paths) > 1:
+        cfg.data.input_paths = _paths
+        cfg.data.input_path = _paths[0]
+        console.print(f"[dim]{len(_paths)} snapshots will be pooled into one run; "
+                      f"drift is compared inside it (phase p10b)[/dim]")
+    else:
+        cfg.data.input_path = input
     # AN UNSET FLAG MUST NOT OVERRULE THE CONFIG — the same defect as `provider`
     # below, which was fixed there and left standing here.
     #

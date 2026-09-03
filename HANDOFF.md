@@ -12,53 +12,73 @@
 
 ---
 
-## 1. Status — last updated 2026-09-02
+## 1. Status — last updated 2026-09-03
 
-# 691 tests passing. `mode="fast"` is built and VERIFIED end-to-end on a paid run (`fin03`): 17/17 phases, verify_run **21 PASS / 6 N/A / 1 SKIP / 0 FAIL**.
+# Multi-snapshot pooling and drift analysis (phase `p10b`) are built, wired into BOTH modes, and validated on real data.
 
-(The six N/A are checks whose components fast mode skipped — a fast run's PASS
-count is NOT comparable with a full run's.)
+Give `--input` several comma-separated paths and they are stacked into one
+corpus, tagged by snapshot; one taxonomy and one tree label every period; `p10b`
+splits the finished labels and compares. Single-input runs are untouched — no
+snapshot column, no phase, no extra deliverable (verified).
 
-**The one thing to know:** `--fast` and `--smoke` are different things. `--smoke`
-(was `fast_mode`) shrinks the analysis for a wiring test; `--fast` (`mode="fast"`)
-keeps the analysis at full size and removes the second-opinion layer. `fin03`
-confirmed the distinction on real models — full α grid, full derived 3,000-row
-gold set, while kappa, the pilot and adversarial validation were ABSENT rather
-than faked.
+**Why pooling rather than two runs and a diff — measured, not assumed.** `fin01`
+(金融 2025-07) and `fin02` (金融 2026-07) were run separately and produced **20 and
+19 classes sharing ZERO codes** — `LOOKUP_FX_RATE` vs `FX_RATE_LOOKUP`, parallel
+but not joinable. Leaves are worse (count, boundaries and names all move). A
+cross-run diff therefore measures the pipeline's own variance, not the corpus's.
 
 | | |
 |---|---|
-| Tests | **691** passing (was 665); `ruff --select F src/qmine/ tools/` clean |
-| Newest run | `fin03` — fast, 10,000 finance rows, 17/17 phases, `routed`, 193 calls, **1.35 h**, est. **$3.19** |
-| `fin03` quality | CV **0.914**, macro-F1 **0.839**, PV-weighted **0.941**, ECE 0.025, coherence 3.86 |
-| `fin03` shape | 16 L1 intents / 21 delivered leaves / 15 families, all named |
-| `fin03` gates | 16 recorded; 4 `skipped` (the fast-mode four), 1 `warned` (locator reach 20%), 0 failed |
-| Verification | `verify_run`: `fin03` **21 PASS / 6 N/A / 0 FAIL / 1 SKIP**; `fin01` control 19/6/2/1 |
-| Namer | pinned `deepseek-v4-pro` — over ALL namer roles at end of run: max **1701.6 s → 136.8 s** (12.4x), p50 74.9 → **31.9 s**, failures 3 → **0** |
+| Tests | **709** passing, exit 0; `ruff --select F src/qmine/ tools/` clean |
+| New phase | `p10b_drift`, between p10 and p11, in `PHASE_NODES` + `SEQUENTIAL_TAIL` |
+| New modules | `ops/drift.py`, `report/zh_drift.py` |
+| New deliverable | `快照对比_漂移分析.md` — generated **entirely from `drift_analysis.json`**, no model call, so it ships in **full AND fast** |
+| New config | `data.input_paths`, `data.snapshot_column` (both additive) |
+| Gate | `p10b_snapshots_share_one_frame`, **warn-only** |
+| Rule file | `.claude/rules/multi-snapshot.md` |
 
-**Everything that needed a live run got one.** The gate guards (a check that did
-not run reports `skipped`, never `passed`), the solo-annotator schema check (no
-phantom classes), the delivered-partition tree filter (no stale `家族 N`
-headings) are confirmed against `fin03`, with `fin01` as the control that still
-shows the two failures `fin03` clears. The store-resolution fix is NOT confirmed
-by `fin03` and cannot be: it wrote its deliverables into gen01, where there is no
-cross-generation lookup to exercise. Its confirmation is the `fin02` RENDER into
-gen02 — 10,000 rows and 10 populated sheets where the pre-fix code produced 0 rows
-and 8 empty ones.
+**What it measures.** Within-snapshot shares only, by row AND by traffic weight —
+never raw counts (one medical pair fell 9.74M → 5.21M in weight; on raw counts
+every class "declined"). `emergent`/`receded` are reported apart from `stable`,
+because a class present in one period has no share *change*. Under 30 rows on
+both sides → `too_thin_to_compare`. Effect size is Cramér's V; **no p-value on
+traffic share** — traffic is the population, and `z_row_share` has exactly one
+call site, on row counts.
+
+**Two metrics added from the literature review**, both validated on film-pool:
+`total_variation` (20.33% by traffic — "this much traffic would have to be
+reassigned to turn 2026 back into 2025"), and **delta concentration** (HHI over
+the per-query delta), which separates a broad shift from a single entity. The
+latter is the most actionable column in the report: 影视 streaming −13.6pp is
+spread over **6,201 distinct queries** (HHI 0.004 — structural, 2025 dramas aging
+out), while live-TV +11.0pp has one query at 23% (all top-5 are cctv5 variants).
+
+**Two defects the first real render caught, both fixed.** (1) The concentrated
+bucket was labelled 「疑似单一事件」 — refuted immediately by the cctv5 case, which
+is one *entity* across many surface forms, not one event; it now names the
+measurement and ships the query list as evidence. (2) The family axis rendered
+bare ids `11` and `15`; names now come from `_shape.family_names` (leaf-membership
+join — an id join mismatched 19 of 19 on live38), degrading to `#11` rather than
+raising.
+
+**A false regression, twice believed.** Three `test_render_command.py` tests
+failed in two long suite runs and passed in isolation. Cause: they call
+`inspect.getsource(p11_report)`, which re-reads `delivery.py` from disk at the
+imported function's line numbers — so editing that file mid-suite makes the
+assertion read the wrong text. Not a code defect. **Do not run the suite while
+editing source.**
 
 **Cost/time, measured, for anyone sizing a run:** full 50k — `live39` 3.4 h/$5.52,
 `live40` 4.0 h/$7.01, `live44` 9.8 h/$61.09 (841 calls vs 696, 8x the bill: one
-expensive model). Fast 10k — **1.35-2.40 h / $3.19-$4.23** across the two complete fast runs
-(`fin03`, `fin01`); quote the range, not the better one. The
-closest like-for-like on 10,000 rows is `med04` (full) 7.9 h/$65.05 against
-`fin03` (fast) 1.35 h/$3.19 — different corpora, so an order of magnitude rather
-than a ratio.
+expensive model). Fast 10k — **1.35-2.40 h / $3.19-$4.23** (`fin03`, `fin01`);
+quote the range, not the better one. Five pooled 20k fast runs: fin-pool 2.11 h/
+$4.49, film-pool 1.07 h/$3.50, med-pool 1.55 h/$3.87, edu-pool 1.47 h/$3.67,
+ppl-pool 1.29 h/$3.01 — all **21 PASS / 6 N/A / 0 FAIL**.
 
-**A full run ships 10 markdown documents, 6 CSVs and a notebook** (`med04`,
-`live44`; `live42` shipped 9 — it varies with whether the narrative and audit
-reports succeed). The docs and the fast-mode banner said "13" until today; the
-banner no longer states a full-mode count at all, because a hard number there
-goes stale silently inside every shipped document.
+**A full run ships 10 markdown documents, 6 CSVs and a notebook** (plus the drift
+document on a pooled run). The docs and the fast-mode banner said "13" until
+recently; the banner no longer states a full-mode count at all, because a hard
+number there goes stale silently inside every shipped document.
 
 ### What the live44 examination found, and where it landed
 
@@ -244,6 +264,71 @@ record.
    Until answered: open a new generation and run it ONCE, never restart mid-flight.
 
 ### P2 — measured, disclosed, not acted on
+
+0l. **Six measured limitations rescued from the README (2026-09-03).** The
+   README's "Known limitations" section was deleted at the owner's request during
+   the README overhaul. Four of these six existed **nowhere else** — not in this
+   file, not in the code — so they are recorded here verbatim rather than lost to
+   git history. None is resolved; each is disclosed and unacted-on.
+
+   **The request timeout assumes one throughput for every role, and it is wrong by
+   5x in both directions.** `timeout_seconds` derives from a single constant of 40
+   output tokens/sec. Measured across roles on `live44`, real throughput runs from
+   **7.4 tok/s** (a tool-free researcher) to **181.7** (an annotator). The slow end
+   is reasoning: with no tool round-trips, wall time is dominated by thinking, and
+   thinking tokens are not counted in the output total — so they land in the
+   denominator and not the numerator.
+
+   **The α decision sits inside its own noise.** Across five seed replicates the
+   winner was 0.1, 0.5, 0.1, 0.0, 0.1. The tie band is roughly 4.5× narrower than the
+   metric's own spread. Widening the band makes it worse — at a measured 2-sd band
+   the run elects an α its own panel shows fragments intents more. The fix is
+   replication, which has not been done.
+
+   **Refinement converges on some corpora and not others.** `fin01`/`fin02`/`fin03`
+   (finance) and `ecom01`/`ecom02` (e-commerce) all report `converged: true`;
+   `live39`-`live44` (K12) and `med04` (medical) all hit the iteration limit, so
+   the delivered leaf count depends partly on which round it stopped at. Disclosed in
+   the reports; not fixed.
+
+   **Restarting into the concurrent region is unreliable.** The two routes fork, and
+   a resume that lands inside the fork has silently dropped a branch. The join now
+   halts loudly instead, but the underlying question — whether a multi-superstep
+   fan-out can be restored at all — is open. Open a new generation and run it once.
+
+   **Model behaviour is a live variable.** One provider returned the JSON *schema*
+   instead of data on 69 of 197 `annotator_b` calls on `live44` (35%), against 1 of
+   137 for the other annotator; because every field on the response
+   model had a default, that validated into a valid-but-empty result and silently
+   lost half a gold set before it was caught. It is now rejected before validation
+   and retried — but the class of failure is general, and a permissive default
+   anywhere is a place it can recur.
+
+   **The annotated distribution is not the corpus distribution.** Gold rows are drawn
+   by cluster-stratified sampling precisely so rare intents survive selection
+   ([Rao et al.][rao] avoid random sampling for the same reason), which means class
+   shares on the gold set are *not* an estimate of class shares in the corpus. Those
+   come from the delivered labels over all rows. Anywhere the two are printed near
+   each other is a place to check the denominator.
+
+
+0k. **Delta concentration is computed on raw query strings, so ONE ENTITY can
+   read as dispersed.** `WATCH_LIVE_TV` scored top1=23% across 311 distinct
+   queries, which the report calls "concentrated" — but its top five deltas are
+   all cctv5 phrasings, i.e. essentially ONE entity. The number is honest about
+   what it measures and the shipped query list makes the truth visible, so this
+   is a sharpness limit, not a defect. The literature review's suggestion is to
+   recompute the delta with named-entity spans replaced by a placeholder: if the
+   rise survives, it is a pattern; if it vanishes, it was an entity. Not done —
+   it needs an entity recogniser this pipeline does not have.
+
+0j. **The five pooled runs on disk have no `drift_analysis.json`.** fin-pool,
+   film-pool, med-pool, edu-pool and ppl-pool predate `p10b`, and `qmine render`
+   cannot add it — render replays report generators, and p10b is a phase. Their
+   drift figures exist only via `tools/drift_report.py` (which is why that script
+   was kept). Either re-run one pooled corpus to get a first-class artifact, or
+   accept the external script as the record for those five.
+
 
 5. **The declared per-role token budgets are miscalibrated in both directions,
    and now quantified.** Measured against live42's own `usage.json`: the
@@ -498,6 +583,138 @@ record.
   `update_state`. Rewind by graph **position** (`as_node=<predecessor>`) instead.
 - Verify a live run really used live agents: `run_summary.json` →
   `llm_usage.provider` must read `routed`, not `offline`.
+
+---
+
+## 4. Session (2026-09-03) — pooled snapshots become a phase
+
+Five pooled runs had already been produced by hand (`tools/pool_snapshots.py` +
+`tools/drift_report.py`). This session turned that into pipeline functionality.
+
+**Built.** `data.input_paths` / `data.snapshot_column` (additive);
+`foundation._load_input` stacks and tags, refusing duplicate tags and warning on
+schema mismatch; `build_frame(snapshots=)` carries the tag beside `weight` and
+**never** as a reference column (declaring it as one would ask the K locator to
+find a K separating 2025 from 2026 — the opposite of the shared frame the
+comparison needs); `ops/drift.py`; `p10b_drift`; `report/zh_drift.py`.
+
+**Wired into both modes deliberately.** A multi-snapshot run exists *for* the
+comparison, so losing it to the cheap mode would defeat the point. The document
+is a pure lookup over `drift_analysis.json`, which is what lets it ship in fast
+mode without a model call. `_p11_fast`'s deliverable count is now derived from an
+`_expected` list rather than hardcoded, so it cannot go stale again.
+
+**Validated before shipping.** `ops/drift.py` was checked against the fin-pool
+data by reproducing the earlier manual measurements exactly (`+12.802pp`, purity
+0/54, median 0.507, jaccard 0.3743). Then rendered against real film-pool data
+and READ — which is what caught both defects below.
+
+**Corrected a claim I had written into the code.** The `drift.py` docstring and
+the CLI comment both said two runs on *the same 10,000 rows* shared "0 of 35
+class codes". Measured: `fin01` and `fin02` are **different** files (2025-07 vs
+2026-07) with **20 and 19** classes and zero overlap. The real finding is
+stronger and on-point; both sites now state it correctly.
+
+**Adopted from the literature review** (`drift-phase-design` workflow, 4 agents):
+total-variation distance as an interpretable magnitude, delta concentration (HHI)
+to separate a broad shift from a single entity, plus two caveats — this measures
+*prior-probability shift over a fixed taxonomy* and is structurally blind to real
+concept drift, and same-date-one-year-apart is defeated by moving calendars
+(lunar new year, exam/results dates, sports fixtures). **Its headline critique did
+not apply**: it warned that page-view weights would destroy the significance
+tests, but the module already refuses p-values on traffic share, and
+`_z_two_proportion` takes row counts at its single call site.
+
+**README overhauled (2026-09-03).** 905 → 810 lines, 7,536 → 6,862 words, 3
+figures → 7, and the first result moved from line 522 to line 105. Evidence is now
+cross-run (14 complete live runs, six corpora) rather than the single `live42`,
+which was the one run whose report demonstrably failed. Two long literature
+sections moved to `docs/WHY_NOT_A_PROMPT.md` and `docs/WHAT_ITS_FOR.md`; "Known
+limitations" and "Status and contributing" deleted at the owner's request, with
+six measured findings from the first rescued into §2 above.
+
+Two new tools: `tools/run_evidence.py` (one comparable table over every complete
+live run) and `tools/readme_figures.py` (the five cross-run figures, light and
+dark, regenerated from that table). Four README claims were false and are fixed:
+"625 tests" (711), the `qmine doctor` warning (that defect is fixed), 21 classes /
+139 rules quoted under a `live44` pointer (20 / 162), and every bare `qmine`
+command (the entry point is `.venv/bin/qmine`; `make install` does not touch PATH).
+`Makefile:41` said `~$30` for a run that costs $5-$7.
+
+**Cost figures were materially misleading and are now qualified.** 60.3% of
+`live44`'s and 59.7% of `med04`'s tokens belong to roles whose model publishes no
+price and fall back to a frontier rate, so `$61.09` and `$65.05` cover ~40% of
+those runs. `live39` ($5.52) and `live40` ($7.01) are 0% unpriced and are now the
+quoted anchors; `live38`'s $1.10 is a replay (519 of 577 calls cached).
+
+**Licence contradiction resolved (owner decision).** `pyproject.toml` declared
+MIT with no `LICENSE` file while the README said all-rights-reserved. The MIT
+claim was **removed** from the packaging metadata and the README's conservative
+wording kept; a comment at that spot warns against reinstating a licence field
+without the matching file, since metadata is what tools read.
+
+**The drift phase has now run live** (`filmdrift`, 影视 pooled 20,000 rows, routed,
+fast): **18 phases** (17 + p10b), 217 calls, **$3.91**, 1.97 h, `verify_run`
+**21 PASS / 6 N/A / 0 FAIL / 1 SKIP**. It shipped `快照对比_漂移分析.md` from a real
+weighted corpus and independently reproduced the figures measured by hand from
+film-pool — 2,841 shared queries, 16.6% Jaccard, 36.7% of 2026 traffic on queries
+that existed in 2025. `p10b_snapshots_share_one_frame` WARNED on 1 group, which is
+the designed behaviour: a prompt to look, not a block.
+
+**Reading that document caught a fourth defect.** Its preamble carried the same
+retracted "same 10,000 rows / 0 of 35 codes" claim that had already been corrected
+in `ops/drift.py` and `cli.py` — a THIRD copy, and the only one that reaches a
+reader who cannot check it against the repo.
+`test_the_pooling_rationale_states_the_measurement_that_was_actually_taken` now
+pins all three sites.
+
+**And it produced the controlled experiment the pooling argument was missing.**
+`film-pool` and `filmdrift` ran the SAME 20,000 rows — corpora verified
+byte-identical and in the same order — through the same config chain in the same
+mode. They delivered **12 leaves / 12 families** and **34 leaves / 22 families**:
+2.8x on identical input. The earlier fin01/fin02 argument compared two *different*
+files, so it confounded corpus change with run variance; this does not. It is the
+decisive evidence for never diffing two runs, and it is now the pooling argument's
+primary citation.
+
+**A third defect, found only by RUNNING it.** The snapshot tag is
+low-cardinality text, so `_label_like_columns` reported `_snapshot` as an
+undeclared legacy label on every pooled run — and that warning tells the operator
+to pass it via `--reference-columns`, which is exactly what
+`test_the_snapshot_tag_never_becomes_a_reference_column` forbids (it would ask the
+K locator to find a K separating 2025 from 2026). No unit test could have caught
+it: the column does not exist until the pipeline adds it. `skip` now excludes it;
+the gate reads PASSED — "no reference label columns, and the corpus offers none"
+— on both an offline and a live two-snapshot run.
+
+**Controls, because a count means nothing on its own.** An offline+smoke+fast
+two-snapshot run scored 17 PASS / 6 N/A / 4 FAIL / 1 SKIP. A **single-input**
+run of the same corpus and flags — which never enters p10b — scored the
+**identical** 17/6/4/1, including the same family-naming FAIL. All four are
+offline-stand-in artifacts (`provider='offline'`, `[offline-heuristic]` prose, an
+audit that covers few families), none drift-related. Verified separately that
+`_family_display` does not leak: `labels_full.csv` still carries integer
+`bu_family_final`.
+
+**Two defects the first real render caught.** The concentrated bucket was
+labelled 「疑似单一事件」 and the first case refuted it (cctv5 = one entity across
+many phrasings, not one event) — it now names the measurement and ships the
+evidence queries. And the family axis rendered bare ids; `_shape.family_names`
+now supplies names by leaf-membership join.
+
+**Tests.** +12 in `tests/test_fast_mode.py`. One of them failed on first run and
+the fixture was wrong, not the code: it asserted "a pure base-rate change is not
+drift" on a frame whose two snapshots had genuinely different compositions.
+
+**`tools/pool_snapshots.py` and `tools/drift_report.py` are superseded but kept**
+— the first built the five pooled runs on disk, the second is an out-of-pipeline
+check on p10b and the only way to get drift figures for runs that predate it.
+
+**Method note worth keeping.** `inspect.getsource` re-reads the file from disk at
+the imported function's line numbers, so **editing source during a suite run
+produces false failures**. Three `test_render_command.py` failures were attributed
+to this twice before it was confirmed; the second time I contaminated the
+verifying run myself by editing `cli.py` while it was in flight.
 
 ---
 

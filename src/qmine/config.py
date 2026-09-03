@@ -116,6 +116,23 @@ class DataConfig(BaseModel):
     reference_label_columns: list[str] = Field(
         default_factory=list, description="Legacy labels, if any. Reference only — never supervision."
     )
+    #: Several inputs of the SAME shape, sampled at different times. When set, p1
+    #: stacks them in order and tags every row with its snapshot, so one run
+    #: produces one taxonomy and one tree over all of them — which is the only way
+    #: the periods are comparable. Measured: two runs on the SAME 10,000 rows
+    #: shared 0 of 35 class codes, because the architect renames every run and the
+    #: tree is refitted. Diffing two runs therefore reports that nothing
+    #: reproduced when most of it did.
+    #:
+    #: `input_path` still works and is unchanged; this is additive.
+    input_paths: list[str] = Field(default_factory=list)
+    #: Column holding the snapshot tag. Carried through the canonical frame the
+    #: way `weight` is — read by the drift phase and the delivered table, and by
+    #: NOTHING else. It must never become a `reference_label_column`: reference
+    #: columns are the frame the K locator scores against, so declaring it would
+    #: ask the clustering to find a K that separates one period from the other,
+    #: which is both meaningless and the opposite of a shared frame.
+    snapshot_column: str = "_snapshot"
     sample_size: int | None = Field(default=None, description="None = use all rows.")
     min_query_len: int = 1
     max_query_len: int = 200

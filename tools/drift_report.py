@@ -1,5 +1,13 @@
 #!/usr/bin/env python
-"""Compare labelled snapshots inside ONE pooled run — what moved between periods.
+"""SUPERSEDED by phase p10b — kept as an independent check on it.
+
+`ops/drift.py` + `report/zh_drift.py` now do this inside the run and ship
+`快照对比_漂移分析.md`. This script computes the same quantities from outside the
+pipeline, which is how the p10b numbers were first validated (it reproduced
+`LOOKUP_MARKET_QUOTE +12.802pp`, purity 0/54, jaccard 0.3743 exactly). Useful for
+the five pooled runs that predate p10b and have no `drift_analysis.json`.
+
+Compare labelled snapshots inside ONE pooled run — what moved between periods.
 
 Joins a run's `labels_full.csv` back to the pooled source POSITIONALLY, not on
 query text. `labels_full.csv` preserves input row order exactly (verified

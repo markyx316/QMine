@@ -474,29 +474,34 @@ def _p11_fast(state: PipelineState, deps: Deps) -> dict[str, Any]:
         deps.emit(f"  figures skipped ({type(exc).__name__}: {exc})")
     n_figures = len(refs)
 
-    deps.emit("  fast 模式交付: 3 份文档 (完整中间产物保留)")
+    deps.emit("  fast 模式交付: 核心参考文档 (完整中间产物保留)")
     refs["report_fast_topdown"] = deps.store.put_markdown(
         f"{deps.cfg.domain.key}_自上而下_意图体系完整定义",
         fast.build_topdown(state, deps), producer="p11",
-        summary="fast 模式交付物 1/3: 类目定义、裁定规则、金标准与分类器")
+        summary="fast 模式交付物: 类目定义、裁定规则、金标准与分类器")
     refs["report_fast_bottomup"] = deps.store.put_markdown(
         f"{deps.cfg.domain.key}_自下而上_聚类树完整定义",
         fast.build_bottomup(state, deps), producer="p11",
-        summary="fast 模式交付物 2/3: 已交付的家族与叶, 逐叶定义")
+        summary="fast 模式交付物: 已交付的家族与叶, 逐叶定义")
     try:
         wb = fast.build_workbook(state, deps)
         refs["workbook"] = deps.store.register_file(
             wb.stem, wb, "table", producer="p11",
-            summary="fast 模式交付物 3/3: 全量逐行标注 + 定义与分布 sheet")
+            summary="fast 模式交付物: 全量逐行标注 + 定义与分布 sheet")
     except Exception as exc:  # noqa: BLE001
         deps.emit(f"  ⚠ 工作簿生成失败 ({type(exc).__name__}: {exc}) — "
                   "labels_full.csv 仍在运行目录中")
 
-    n_delivered = sum(1 for k in ("report_fast_topdown", "report_fast_bottomup",
-                                  "workbook") if k in refs)
+    _drift_document(state, deps, refs)
 
-    n_delivered = sum(1 for k in ("report_fast_topdown", "report_fast_bottomup",
-                                  "workbook") if k in refs)
+    # COUNT WHAT SHIPPED, INCLUDING THE DRIFT DOCUMENT. The set is 3 on a
+    # single-snapshot run and 4 when there are snapshots to compare, so the
+    # expected total is derived rather than written as a literal — a hardcoded 3
+    # was already wrong the moment p10b started shipping a fourth.
+    _expected = ["report_fast_topdown", "report_fast_bottomup", "workbook"]
+    if deps.has("drift_analysis"):
+        _expected.append("report_drift")
+    n_delivered = sum(1 for k in _expected if k in refs)
     return {
         "phase": "p12",
         "artifacts": refs,
@@ -505,12 +510,157 @@ def _p11_fast(state: PipelineState, deps: Deps) -> dict[str, Any]:
         # unconditionally and derived the figure count as `len(refs) - 3`, so a
         # failed workbook was still reported as three, and a run that lost both
         # the workbook and the figures printed "-1 figures".
-        "events": [f"P11 (fast): {n_delivered}/3 deliverables + {n_figures} figures "
+        "events": [f"P11 (fast): {n_delivered}/{len(_expected)} deliverables + {n_figures} figures "
                    f"written to {deps.store.gen_dir}; "
                    f"skipped {', '.join(deps.cfg.fast_skipped)}"
-                   + ("" if n_delivered == 3 else
+                   + ("" if n_delivered == len(_expected) else
                       "  ⚠ a deliverable did not build — see the warnings above")],
     }
+
+
+def _drift_document(state: PipelineState, deps: Deps, refs: dict[str, Any]) -> None:
+    """Add the snapshot-comparison document, when there is one to add.
+
+    Shipped in BOTH modes. It is generated entirely from `drift_analysis.json`, so
+    it costs no model call and survives `mode="fast"`, which disables every
+    agent-written deliverable. A multi-snapshot run whose whole point is the
+    comparison must not lose the comparison to the cheap mode.
+    """
+    if not deps.has("drift_analysis"):
+        return
+    try:
+        from ...report.zh_drift import build as build_drift
+
+        refs["report_drift"] = deps.store.put_markdown(
+            "快照对比_漂移分析", build_drift(state, deps), producer="p11",
+            summary="两个快照在同一套标签下的差异")
+    except Exception as exc:  # noqa: BLE001
+        deps.emit(f"  ⚠ drift document not written ({type(exc).__name__}: {exc}) — "
+                  "drift_analysis.json still holds every number")
+
+
+def _family_display(deps: Deps, col: "pd.Series") -> "pd.Series":
+    """`11` → `#11 观看直播`, falling back to `#11` when naming is unavailable.
+
+    Never raises: a drift table with bare ids is worse than one with names, but a
+    p10b that dies on a missing naming artifact is worse than both.
+    """
+    try:
+        import numpy as np
+
+        from qmine.report._shape import family_names
+
+        naming = deps.load("tree_naming") if deps.has("tree_naming") else {}
+        fam = (deps.load("leaf_family_final") if deps.has("leaf_family_final")
+               else deps.load("leaf_family"))
+        leaves = (deps.load("leaf_labels_final") if deps.has("leaf_labels_final")
+                  else deps.load("leaf_labels"))
+        sizes = np.bincount(np.asarray(leaves), minlength=len(fam))
+        names = family_names(naming, fam, sizes)
+    except Exception as exc:  # noqa: BLE001
+        deps.emit(f"  ⚠ family names unavailable ({type(exc).__name__}) — "
+                  "the family drift table will show ids only")
+        names = {}
+    return col.map(lambda i: f"#{i} {names[int(i)]}" if int(i) in names else f"#{i}")
+
+
+def p10b_drift(state: PipelineState, deps: Deps) -> dict[str, Any]:
+    """Compare the snapshots — ONLY when there is more than one.
+
+    A no-op on a single-snapshot corpus, which is every run this pipeline made
+    before multi-input existed. It reads the DELIVERED labels, so it must run
+    after p10, and it writes an artifact p11 turns into a document.
+
+    Why this is a phase and not a script: the comparison is only valid inside one
+    run. Two runs of this pipeline on the same 10,000 rows shared 0 of 35 class
+    codes, so anything that compares two runs' labels is comparing noise. Putting
+    the measurement where the shared taxonomy lives is what makes it mean
+    anything.
+    """
+    from ...ops import drift
+
+    cfg = deps.cfg
+    snap_col = "snapshot"
+    df = deps.df
+    if snap_col not in getattr(df, "columns", []):
+        return {"phase": "p11", "completed_phases": ["p10b"],
+                "events": ["P10b: single snapshot — no drift analysis"]}
+    tags = sorted(df[snap_col].astype(str).unique())
+    if len(tags) < 2:
+        return {"phase": "p11", "completed_phases": ["p10b"],
+                "events": [f"P10b: one snapshot ({tags}) — nothing to compare"]}
+
+    deps.emit(f"P10b drift — comparing {len(tags)} snapshots: {', '.join(tags)}")
+    work = pd.DataFrame({snap_col: df[snap_col].astype(str),
+                         "query": df[cfg.data.text_column].astype(str),
+                         "weight": df["weight"] if "weight" in df.columns else 1.0})
+
+    # THE DELIVERED LABELS, JOINED BY POSITION. `labels_full` is written in corpus
+    # order (verified 20,000/20,000 on a real run), and a join on query TEXT fans
+    # out on repeated queries — these corpora contain them.
+    labels: dict[str, Any] = {}
+    try:
+        lab = pd.read_csv(Path(deps.store.gen_dir) / "labels_full.csv")
+        if len(lab) == len(work):
+            for col in ("td_l1", "bu_leaf_name", "bu_family_final"):
+                if col in lab.columns:
+                    work[col] = lab[col].values
+                    labels[col] = col
+            # FAMILIES ARE KEYED BY ID, AND AN ID IS NOT A FINDING. The first
+            # real render showed `11` and `15` as the two biggest movers, which
+            # no reader can act on. Names come from `_shape.family_names`, which
+            # joins through LEAF MEMBERSHIP — never by integer id, which
+            # mismatched 19 of 19 on live38. The id is kept as the primary key.
+            if "bu_family_final" in work.columns:
+                work["bu_family_final"] = _family_display(deps, work["bu_family_final"])
+        else:
+            deps.emit(f"  ⚠ labels_full has {len(lab):,} rows against {len(work):,} in the "
+                      f"frame — not joining by position; drift is corpus-level only")
+    except Exception as exc:  # noqa: BLE001
+        deps.emit(f"  ⚠ delivered labels unreadable ({type(exc).__name__}) — "
+                  "drift is corpus-level only")
+
+    out: dict[str, Any] = {
+        "snapshots": tags,
+        "inventory": drift.snapshot_inventory(work, snap_col, "query", "weight"),
+        "query_churn": drift.query_churn(work, snap_col, "query", "weight"),
+        "by_label": {}, "purity": {},
+        "note": ("Shares are WITHIN-SNAPSHOT. The snapshots differ in total weight, "
+                 "so raw counts would report every class as declining. Both periods "
+                 "were labelled by ONE taxonomy and ONE tree in this run, which is "
+                 "what excludes 'the taxonomy changed' as an explanation."),
+    }
+    for col in labels:
+        out["by_label"][col] = drift.label_drift(work, col, snap_col, "weight",
+                                                 text_col="query")
+        out["purity"][col] = drift.snapshot_purity(work, col, snap_col)
+
+    ref = deps.store.put_json("drift_analysis", out, producer="p10b",
+                              summary=f"{len(tags)} snapshots compared over "
+                                      f"{len(labels)} label axes")
+    n_pure = sum(v.get("n_single_snapshot", 0) for v in out["purity"].values())
+    gate = deps.gate(
+        "p10b_snapshots_share_one_frame", "p10b",
+        # A group sitting almost entirely in one snapshot was separated, not
+        # compared. A few are ordinary (a real event only one period saw); many
+        # mean the pooled frame is a fiction and no share here means what it looks
+        # like. Advisory, because only reading them can tell which.
+        passed=n_pure == 0,
+        observed={"n_single_snapshot_groups": n_pure,
+                  **{f"{k}_purity": v for k, v in out["purity"].items()}},
+        threshold={"n_single_snapshot_groups": 0},
+        message=("every labelled group spans both snapshots" if n_pure == 0 else
+                 f"{n_pure} group(s) sit almost entirely in ONE snapshot — read them "
+                 f"before trusting any share below; they were separated, not compared"),
+        remediation="A single-snapshot group is either a genuine period-specific event "
+                    "or a sign the two extracts are not the same population. Open the "
+                    "queries in it and decide which; the numbers cannot.",
+        warn_only=True,
+    )
+    return {"phase": "p11", "artifacts": {"drift_analysis": ref},
+            "gates": {gate.name: gate}, "completed_phases": ["p10b"],
+            "events": [f"P10b: {len(tags)} snapshots compared; "
+                       f"{n_pure} single-snapshot group(s)"]}
 
 
 def p11_report(state: PipelineState, deps: Deps) -> dict[str, Any]:
@@ -559,6 +709,7 @@ def p11_report(state: PipelineState, deps: Deps) -> dict[str, Any]:
         return _p11_fast(state, deps)
 
     refs = build_all_reports(state, deps)
+    _drift_document(state, deps, refs)
 
     # THE DOCUMENT A READER OPENS FIRST, AND THE ONLY ONE NOT ASSEMBLED BY PYTHON.
     #

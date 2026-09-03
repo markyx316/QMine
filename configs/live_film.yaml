@@ -1,0 +1,10 @@
+# 影视 slice of the house export (影视query-*.xlsx).
+#
+# Columns come from `corpus_wise_export.yaml`, providers from `live.yaml`
+# beneath it. Nothing is corpus-specific yet beyond the domain profile, passed
+# with `--domain film_tv_zh` — the file exists so that adding an override later
+# is a one-line edit rather than a restructure.
+#
+# Pooled use: `--input 影视query-250701.xlsx,影视query-260701.xlsx` tags each row
+# from its constant `event_day` and fires p10b.
+extends: corpus_wise_export.yaml

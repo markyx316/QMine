@@ -4,7 +4,9 @@ version = "1.0.0"
 description = "A twelve-phase query-intent mining and clustering agent team, built on LangGraph."
 readme = "README.md"
 requires-python = ">=3.10"
-license = { text = "MIT" }
+# No licence is declared yet — see README "Support". Do NOT reinstate a licence
+# field here without adding the matching LICENSE file; the two contradicting each
+# other is worse than neither, because packaging metadata is what tools read.
 
 dependencies = [
   "numpy>=1.26",

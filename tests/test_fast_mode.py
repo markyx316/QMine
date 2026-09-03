@@ -832,3 +832,375 @@ def test_one_failed_research_angle_does_not_kill_the_phase():
         "every angle failing IS fatal — a taxonomy cannot come from nothing"
     # The wrapper must be what the pool maps over, or it protects nothing.
     assert "pool.map(_one_safe, angles)" in src
+
+
+# ==========================================================================
+# Multi-snapshot drift (p10b)
+# ==========================================================================
+
+def _pooled_frame():
+    """Two snapshots, one label column, deliberately uneven weights."""
+    import pandas as pd
+
+    rows = []
+    for snap, n_a, n_b in (("20250701", 60, 40), ("20260701", 30, 70)):
+        rows += [{"snapshot": snap, "query": f"q{i}", "weight": 10.0, "cls": "A"}
+                 for i in range(n_a)]
+        rows += [{"snapshot": snap, "query": f"r{i}", "weight": 1.0, "cls": "B"}
+                 for i in range(n_b)]
+    return pd.DataFrame(rows)
+
+
+def test_drift_uses_within_snapshot_shares_not_raw_counts():
+    """Raw counts report every class as declining when total traffic falls.
+
+    One medical pair fell 9.74M to 5.21M total weight (-47%). A comparison on raw
+    weight would show every single class shrinking and say nothing about
+    composition, which is the only thing a drift report is for.
+    """
+    import pandas as pd
+
+    from qmine.ops import drift
+
+    # Both snapshots identical in COMPOSITION; only the second's total weight is
+    # halved. `_pooled_frame` deliberately differs between periods, so it cannot
+    # isolate the base-rate effect — this needs a frame where nothing but the
+    # base rate moves.
+    df = pd.DataFrame(
+        [{"snapshot": snap, "query": f"q{i}", "weight": w, "cls": c}
+         for snap, w in (("20250701", 10.0), ("20260701", 5.0))
+         for c, n in (("A", 60), ("B", 40))
+         for i in range(n)])
+    d = drift.label_drift(df, "cls", "snapshot", "weight")
+    assert d["stable"], "two classes present in both snapshots must be comparable"
+    for r in d["stable"]:
+        assert abs(r["weight_share_delta_pp"]) < 0.001, \
+            f"a pure base-rate change must not read as drift: {r}"
+        assert abs(r["row_share_delta_pp"]) < 0.001, r
+
+    # ...and the inventory must still SHOW the traffic fall, so a reader can see
+    # the base rate moved even though composition did not.
+    inv = {r["snapshot"]: r["weight_total"] for r in
+           drift.snapshot_inventory(df, "snapshot", "query", "weight")}
+    assert inv["20260701"] < inv["20250701"]
+
+
+def test_drift_separates_emergent_classes_from_shifts():
+    """A class present in one snapshot only cannot have a share CHANGE.
+
+    Putting it in the same ranked table as genuine shifts invites reading
+    'appeared' as 'grew', and the two need different treatment: an emergent class
+    may be new behaviour, or may be behaviour that was always there and too
+    sparse to cluster until the pooled corpus gave it enough rows. Observed live:
+    a netdisk-piracy class with 2 rows in one snapshot and 189 in the other.
+    """
+    import pandas as pd
+
+    from qmine.ops import drift
+
+    df = _pooled_frame()
+    df = pd.concat([df, pd.DataFrame([{"snapshot": "20260701", "query": f"n{i}",
+                                       "weight": 1.0, "cls": "NEW"} for i in range(50)])],
+                   ignore_index=True)
+    d = drift.label_drift(df, "cls", "snapshot", "weight")
+    assert [r["label"] for r in d["emergent"]] == ["NEW"]
+    assert "NEW" not in {r["label"] for r in d["stable"]}
+
+
+def test_drift_purity_check_catches_a_frame_that_is_not_shared():
+    """The whole comparison rests on both periods sharing one label frame.
+
+    A group sitting ~entirely in one snapshot was SEPARATED, not compared. Four of
+    five real corpora had zero such groups; the fifth (news-driven) had 6 of 25,
+    all genuine period-specific events — so a nonzero count is a prompt to look,
+    which is why the gate warns rather than blocks.
+    """
+    import pandas as pd
+
+    from qmine.ops import drift
+
+    df = _pooled_frame()
+    clean = drift.snapshot_purity(df, "cls", "snapshot")
+    assert clean["n_single_snapshot"] == 0
+
+    df2 = pd.concat([df, pd.DataFrame([{"snapshot": "20260701", "query": f"z{i}",
+                                        "weight": 1.0, "cls": "ONLY_B"} for i in range(50)])],
+                    ignore_index=True)
+    dirty = drift.snapshot_purity(df2, "cls", "snapshot")
+    assert dirty["n_single_snapshot"] == 1
+    assert dirty["single_snapshot"][0]["label"] == "ONLY_B"
+
+
+def test_the_drift_phase_is_a_no_op_on_a_single_snapshot():
+    """Every run before multi-input had one snapshot; none may change behaviour."""
+    import inspect
+
+    from qmine.graph.nodes import delivery
+
+    src = _code_only(inspect.getsource(delivery.p10b_drift))
+    assert 'if snap_col not in getattr(df, "columns", [])' in src
+    assert "len(tags) < 2" in src, "a one-snapshot corpus must return early"
+
+
+def test_the_drift_phase_and_document_reach_BOTH_modes():
+    """fast mode disables agent prose; the drift analysis must survive it.
+
+    A multi-snapshot run exists FOR the comparison, so losing it to the cheap mode
+    would defeat the point. The document is generated from `drift_analysis.json`
+    with no model call, which is what lets it ship in both.
+    """
+    import inspect
+
+    from qmine.config import QMineConfig
+    from qmine.graph.build import PHASE_NODES, SEQUENTIAL_TAIL
+    from qmine.graph.nodes import delivery
+
+    assert "p10b_drift" in [n for n, _ in PHASE_NODES]
+    assert "p10b_drift" in SEQUENTIAL_TAIL
+    for m in ("full", "fast"):
+        assert "p10b" not in str(QMineConfig(mode=m, offline=True).fast_skipped)
+    assert "_drift_document" in _code_only(inspect.getsource(delivery._p11_fast))
+    assert "_drift_document" in _code_only(inspect.getsource(delivery.p11_report))
+
+
+def test_the_snapshot_tag_never_becomes_a_reference_column():
+    """Reference columns are the frame the K locator scores against.
+
+    Declaring the snapshot as one asks the clustering to find a K that separates
+    2025 from 2026 — meaningless, and the exact opposite of the shared frame the
+    comparison depends on.
+    """
+    import inspect
+
+    from qmine.graph.nodes import foundation
+    from qmine.ops import audit
+
+    p1 = _code_only(inspect.getsource(foundation.p1_audit))
+    assert "snapshots=snapshots" in p1, "the tag must reach build_frame explicitly"
+    assert "reference_labels=ref_labels" in p1
+    # and it must be a separate parameter, not folded into reference_labels
+    bf = _code_only(inspect.getsource(audit.build_frame))
+    assert "snapshots: Sequence[str] | None" in bf
+    assert 'df["snapshot"]' in bf
+
+
+def test_total_variation_is_defined_when_a_class_is_missing_on_one_side():
+    """It is summed over the UNION, so an emergent class contributes its full
+    share rather than being skipped — which would understate the movement by
+    exactly the part that is most interesting."""
+    from qmine.ops.drift import _total_variation
+
+    assert _total_variation({"a": 1.0}, {"a": 1.0}) == 0.0
+    assert _total_variation({"a": 1.0}, {"b": 1.0}) == 1.0
+    # half of |0.6-0.4| + |0.4-0.3| + |0-0.3|
+    assert abs(_total_variation({"a": .6, "b": .4}, {"a": .4, "b": .3, "c": .3}) - 0.3) < 1e-9
+
+
+def test_delta_concentration_separates_one_query_from_many():
+    """A class can move because one entity blew up or because the behaviour
+    broadened, and the product response is opposite. Measured on 影视: the
+    -13.6pp streaming decline spread over 6,201 distinct queries (HHI 0.004),
+    while the +9.7pp live-TV rise had one query carrying 23% of it.
+    """
+    import pandas as pd
+
+    from qmine.ops.drift import _delta_concentration
+
+    one = pd.DataFrame([{"snapshot": "B", "q": "cctv5"} for _ in range(100)]
+                       + [{"snapshot": "A", "q": "cctv5"}])
+    c = _delta_concentration(one, "snapshot", "q", "A", "B", None)
+    assert c["hhi_of_delta"] == 1.0 and c["top1_share_of_delta"] == 1.0
+
+    many = pd.DataFrame([{"snapshot": "B", "q": f"q{i}"} for i in range(100)])
+    c2 = _delta_concentration(many, "snapshot", "q", "A", "B", None)
+    assert c2["hhi_of_delta"] < 0.02, c2
+    assert c2["n_distinct_queries"] == 100
+
+
+def test_the_concentration_label_names_the_measurement_not_the_conclusion():
+    """An earlier draft called the concentrated bucket 「疑似单一事件」 and the first
+    real case refuted it: 央视直播 had top1=23%, but its top five deltas were all
+    cctv5 phrasings — one ENTITY across many surface forms, not one event. The
+    same rule as `test_the_report_does_not_present_a_confirmed_check_as_a_proven_defect`.
+    """
+    import inspect
+
+    from qmine.report.zh_drift import _conc
+
+    # Comments here legitimately name the phrase they warn against; test the CODE.
+    src = _code_only(inspect.getsource(_conc))
+    assert "疑似单一事件" not in src, "HHI measures concentration, not event-ness"
+    assert _conc({"hhi_of_delta": 0.5, "top1_share_of_delta": 0.6,
+                  "n_distinct_queries": 3}).startswith("**变化集中在少数 query**")
+    assert _conc(None) == "—" and _conc({}) == "—"
+
+
+def test_a_family_reaches_the_drift_table_with_a_name_not_a_bare_id():
+    """The first real render showed `11` and `15` as the two biggest movers.
+    Names are joined through LEAF MEMBERSHIP (`_shape.family_names`), never by
+    integer id — an id join mismatched 19 of 19 families on live38.
+    """
+    import inspect
+
+    from qmine.graph.nodes.delivery import _family_display
+
+    src = _code_only(inspect.getsource(_family_display))
+    assert "family_names" in src, "must reuse the leaf-membership join"
+    assert "leaf_family_final" in src, "must prefer the DELIVERED partition"
+
+    import pandas as pd
+    # naming unavailable must degrade to ids, never raise: a bare-id table beats
+    # a p10b that dies.
+    class _D:
+        has = staticmethod(lambda k: False)
+        load = staticmethod(lambda k: (_ for _ in ()).throw(KeyError(k)))
+        emit = staticmethod(lambda m: None)
+    assert list(_family_display(_D(), pd.Series([11, 15]))) == ["#11", "#15"]
+
+
+def test_the_snapshot_tag_is_not_reported_as_an_undeclared_legacy_label():
+    """It is low-cardinality text by construction, so it tripped the legacy-label
+    guard on EVERY pooled run — and that warning tells the operator to declare it
+    via `--reference-columns`, which is precisely what
+    `test_the_snapshot_tag_never_becomes_a_reference_column` forbids. Found by
+    running a real two-snapshot run and reading the gate.
+    """
+    import pandas as pd
+
+    from qmine.config import QMineConfig
+    from qmine.graph.nodes.foundation import _label_like_columns
+
+    cfg = QMineConfig(offline=True)
+    raw = pd.DataFrame({"query": [f"q{i}" for i in range(100)],
+                        "_snapshot": ["20250701"] * 50 + ["20260701"] * 50,
+                        "legacy_cat": ["a", "b"] * 50})
+    found = _label_like_columns(raw, cfg)
+    assert "_snapshot" not in found, f"the pipeline's own tag is not a legacy label: {found}"
+    assert "legacy_cat" in found, "a real legacy label must still be caught"
+
+
+def test_the_pooling_rationale_states_the_measurement_that_was_actually_taken():
+    """The same claim was written into THREE places and was wrong in all three.
+
+    It said two runs over "the same 10,000 rows" shared "0 of 35" class codes.
+    Measured: `fin01` and `fin02` are DIFFERENT files (金融 2025-07 and 2026-07)
+    producing 20 and 19 classes with zero shared codes. The point survives — the
+    codes are `LOOKUP_FX_RATE` vs `FX_RATE_LOOKUP`, parallel but not joinable —
+    but the experiment described was not the experiment run, and this one reaches
+    a shipped deliverable, where a reader cannot check it against the repo.
+    """
+    import inspect
+    from pathlib import Path
+
+    from qmine.ops import drift
+    from qmine.report import zh_drift
+
+    shipped = inspect.getsource(zh_drift)
+    cli = Path(inspect.getsourcefile(drift)).parent.parent / "cli.py"
+    for where, text in (("the shipped drift report", shipped),
+                        ("ops/drift.py", inspect.getsource(drift)),
+                        ("cli.py", cli.read_text(encoding="utf-8"))):
+        assert "0/35" not in text and "0 of 35" not in text, \
+            f"{where} still carries the retracted 0-of-35 figure"
+        assert "完全相同的 10,000 行" not in text, \
+            f"{where} still claims the two runs used identical rows"
+    # and the real measurement must be the one the reader is given
+    assert "fin01" in shipped and "fin02" in shipped
+    assert "20" in shipped and "19" in shipped
+
+
+# ==========================================================================
+# The README's numbers
+# ==========================================================================
+
+def _evidence():
+    """The cross-run table, imported rather than shelled out.
+
+    An earlier version ran `tools/run_evidence.py --json /dev/stdout` and parsed
+    the output; it silently SKIPPED because the table print and the JSON share
+    one stream. A skipped check proves nothing, which is the whole reason this
+    file exists.
+    """
+    import importlib.util
+    from pathlib import Path
+
+    import qmine
+    root = Path(qmine.__file__).parent.parent.parent
+    if not (root / "runs").exists():
+        return root, None
+    spec = importlib.util.spec_from_file_location(
+        "_run_evidence", root / "tools" / "run_evidence.py")
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    import os
+    cwd = os.getcwd()
+    try:
+        os.chdir(root)
+        return root, mod.collect()
+    finally:
+        os.chdir(cwd)
+
+
+def _readme() -> str:
+    from pathlib import Path
+
+    import qmine
+    return (Path(qmine.__file__).parent.parent.parent / "README.md").read_text(encoding="utf-8")
+
+
+def test_every_run_the_readme_names_still_exists_with_the_shape_it_claims():
+    """The README now carries ~40 numbers read off fourteen runs.
+
+    Every one of them goes stale the moment a run is re-rendered into a new
+    generation, and a stale figure in a README is read as current — the same
+    failure as the fast-mode banner's hardcoded "13 documents", which was wrong
+    in eight places before anyone noticed.
+
+    This asserts only that rows PRESENT in the README agree with
+    `tools/run_evidence.py`; it deliberately does not assert the row count, which
+    would fail on the fifteenth run rather than catch an error.
+    """
+    import re
+
+    _, rows = _evidence()
+    if not rows:
+        pytest.skip("no runs/ directory in this checkout")
+    ev = {r["run"]: r for r in rows}
+
+    md = _readme()
+    # rows look like: | `live44` | K12 | 49,999 | 0.8796 | 3,000 | 20 | 53 / 23 | ...
+    checked = 0
+    for row in re.finditer(r"^\|\s*`([a-z0-9-]+)`\s*\|([^\n]+)$", md, re.M):
+        run, rest = row.group(1), row.group(2)
+        if run not in ev:
+            continue
+        cells = [c.strip().replace("**", "") for c in rest.split("|")]
+        shape = next((c for c in cells if re.fullmatch(r"\d+ / \d+", c)), None)
+        if shape:
+            leaves, fams = (int(x) for x in shape.split(" / "))
+            assert (leaves, fams) == (ev[run]["leaves"], ev[run]["families"]), (
+                f"README says {run} delivered {leaves}/{fams}; the artifacts say "
+                f"{ev[run]['leaves']}/{ev[run]['families']}")
+            checked += 1
+        for c in cells:
+            if re.fullmatch(r"0\.\d{4}", c) and ev[run]["kappa"] is not None:
+                assert abs(float(c) - ev[run]["kappa"]) < 1e-4, (
+                    f"README quotes kappa {c} for {run}; artifact says {ev[run]['kappa']}")
+                checked += 1
+    assert checked >= 5, f"only {checked} README cells matched a known run — has the table moved?"
+
+
+def test_the_readme_never_quotes_a_kappa_for_a_single_annotator_run():
+    """Absent is not 1.0 and not 0.0. A fast run has one annotator, so any kappa
+    beside one of those run ids would be fabricated."""
+    import re
+
+    _, rows = _evidence()
+    if not rows:
+        pytest.skip("no runs/ directory in this checkout")
+    fast = {r["run"] for r in rows if r["kappa"] is None}
+
+    for row in re.finditer(r"^\|\s*`([a-z0-9-]+)`\s*\|([^\n]+)$", _readme(), re.M):
+        if row.group(1) in fast:
+            assert not re.search(r"\|\s*\*{0,2}0\.\d{3,4}\*{0,2}\s*\|", row.group(2)), (
+                f"{row.group(1)} has ONE annotator — it has no kappa to quote: {row.group(2)[:90]}")

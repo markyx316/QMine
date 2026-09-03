@@ -1,5 +1,12 @@
 #!/usr/bin/env python
-"""Stack time-separated snapshots of one vertical into a single corpus.
+"""SUPERSEDED by the pipeline itself — kept because it BUILT the five pooled runs.
+
+`qmine run --input a.xlsx,b.xlsx` now stacks and tags snapshots internally
+(`foundation._load_input`), so new work does not need this script. The pooled
+CSVs in `data/raw/*-pooled.csv` and the five `*-pool` runs were produced here, so
+deleting it would make those runs unreproducible.
+
+Stack time-separated snapshots of one vertical into a single corpus.
 
 WHY POOL RATHER THAN RUN EACH SNAPSHOT AND DIFF THE RESULTS.
 

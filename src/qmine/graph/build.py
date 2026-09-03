@@ -84,6 +84,10 @@ PHASE_NODES: list[tuple[str, Callable]] = [
     ("p8_governance", naming.p8_governance),
     ("p9_panel", delivery.p9_panel),
     ("p10_deploy", delivery.p10_deploy),
+    # Fires ONLY when the corpus carries more than one snapshot; a no-op
+    # otherwise, which is every single-input run. Placed here because it reads
+    # the DELIVERED labels (p10) and its artifact becomes a p11 document.
+    ("p10b_drift", delivery.p10b_drift),
     ("p11_report", delivery.p11_report),
     ("p12_maintain", delivery.p12_maintain),
 ]
