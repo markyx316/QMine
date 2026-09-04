@@ -657,6 +657,159 @@ claim was **removed** from the packaging metadata and the README's conservative
 wording kept; a comment at that spot warns against reinstating a licence field
 without the matching file, since metadata is what tools read.
 
+**A Chinese edition of the cross-domain analysis ships alongside the English one**
+(`docs/DRIFT_ANALYSIS.zh.md`, 546 lines), with **Chinese-labelled figures** —
+`tools/drift_figures.py --lang zh` writes a `*_zh.png` set using the same CJK font
+stack as `report/zh_notebook.py`, and every figure was read back to confirm the
+glyphs render rather than boxing. Verbatim primary-source quotes (the Baidu 6-K
+sentences) stay in English on purpose.
+
+Two guards keep the pair honest, because a translation is a second copy of ~310
+numbers and copies drift:
+`test_the_translated_analysis_carries_the_same_numbers_as_the_original` compares the
+numeric content of both documents — allowing only an explicit, arithmetic-checked
+万/亿 conversion table — and also pins heading and table-row counts;
+`test_the_chinese_analysis_points_at_chinese_figures` refuses an English-labelled
+figure inside the Chinese report. Both were mutation-tested.
+
+**The sampling question is largely CLOSED (2026-09-04), by reframing rather than by
+new data.** Two corrections to the earlier write-up, both material:
+
+1. **A top-N-by-PV export is a CENSUS, not a sample.** It contains every query at or
+   above its floor. So for any threshold T at or above both years' floors, the
+   population {PV >= T} is fully observed in both years and comparing it needs no
+   model and no assumption about how many queries exist. Exact results:
+   finance **+35.5%** traffic (and its qualifying-query count ROSE), film/TV −28.1%,
+   people −24.6%, medical **−59.8%**, education **−61.5%** — and the *count* of
+   queries clearing the bar fell 55.9% (medical) and 60.2% (education). Those are
+   measurements, not estimates. The earlier "algebraically undecidable" framing was
+   too pessimistic and has been removed.
+2. **The snapshots are single DAYS, tested not assumed.** `event_day` is one value per
+   file and both fall on the 1st, which is also how monthly partitions are labelled.
+   Two content tests settle it: the education files contain the EARLY admissions stage
+   (分数线 366 queries) and **zero** 投档 and **zero** 开学/报到, which a whole-July
+   aggregate must contain; and the 2026 film file has **zero** 决赛/半决赛/冠军/八强/16强
+   despite the World Cup Final falling on 19 July.
+
+**What remains open, quantified.** Only the sub-threshold region. For any decline to be
+pure redistribution, the tail must have absorbed the lost traffic, and since each
+hidden query carries less than T that sets a hard minimum: education **19,276** new
+near-threshold queries, medical **17,166**, film/TV 13,056, people 11,863 — and that is
+the generous case, with every new query sitting exactly at the bar. Each vertical's
+entire observed above-bar population is only 4,000-10,000 queries. Inside the census
+band all four declining verticals flattened mildly (Gini −0.021 to −0.042), the
+direction dispersion predicts, while finance CONCENTRATED (+0.051) while growing.
+
+**A method that failed, kept as a warning.** Fitting the rank-PV curve and
+extrapolating past rank 10,000 does not survive its diagnostic: the exponent drifts
+systematically with rank (medical 0.339 -> 0.765, education 0.300 -> 0.764), so it is
+not a single power law, and two defensible fitting choices gave contradictory signs for
+finance. `tools/` deliberately does NOT ship this.
+
+**All five pooled runs now have drift reports, WITHOUT re-running anything
+(2026-09-04).** `p10b` makes no model calls, so it is a deterministic function of
+artifacts already on disk. `tools/backfill_drift.py` recomputes it from the delivered
+labels plus the pooled source and writes into a NEW generation
+(`runs/*-pool/gen02/`). Re-running would have cost money AND produced different
+labels — the same 20,000 film rows run twice delivered 12 leaves and then 34.
+
+**Verified three ways.** (1) Backfilling `filmdrift`, which executed p10b live,
+reproduces its shipped artifact with **zero differences** —
+`test_a_backfilled_drift_analysis_equals_what_the_live_phase_wrote` pins this.
+(2) All five reproduce independent earlier measurements exactly (shared queries,
+Jaccard, total variation, top mover). (3) Every number in every document traces to
+its artifact; the only untraceable strings are the z threshold 1.96, the 30-row
+floor, dates and section numbers.
+
+**The cross-domain analysis is `docs/DRIFT_ANALYSIS.md`** (+ three figures from
+`tools/drift_figures.py`). Its findings, in the order they matter:
+
+- **The corpus is a top-10,000-by-PV cut and the cut MOVED.** PV floor and top-10k
+  total move in lockstep (education −47.6% vs −48.1%), so "medical search fell 47%"
+  is not established — only that the top 10k carried 47% less. Finance is the
+  informative exception: floor +3.3% against total +34.7%, a divergence that means
+  new traffic arrived above the floor.
+- **A share can rise while the audience falls.** 药品功效与副作用查询 gained 5.44pp of
+  share and lost **14% of its traffic**. In medical and education essentially NO
+  class grew absolutely; every riser fell more slowly than its vertical.
+- **Depth control flips a headline.** Truncating both years at the common floor moves
+  education's 高等院校信息查询 from −2.82pp to **+0.85pp**, and the real riser is
+  university rankings at +8.71pp. finance/film/people are robust (TV moves ≤0.004);
+  medical and education are understated by 40-50% in the raw cut.
+- **The AI-complexity hypothesis is not supported in the head.** Length did not rise;
+  question share fell in all five but the shift-share decomposition shows it is MIX,
+  not behaviour (finance −5.78pp total = −6.01 mix + −0.24 within), and medical
+  became MORE question-like within its classes (+1.46pp). The sharpest test — does a
+  class's question-likeness predict its share loss — fails in all five (best: finance
+  ρ=−0.271, p=0.054). Scope: the tail is absent by construction and untested.
+- **One vertical's biggest finding is a football match.** 2026-07-01 was in the World
+  Cup Round of 32 (28 Jun-3 Jul), live on CCTV-5 (92 of 104 matches) — both verified
+  against primary sources. cctv5 PV 8.3×; 8 of the top 12 film/TV queries. It is ~35%
+  of that vertical's drift (TV 0.203 → 0.131), and removing it UNMASKS Korean content
+  (+4.06 → +4.82pp).
+- **The people phrasing shift is real** and survives every control: 资料 6.35% → 18.03%
+  of rows, bare short names 70.1% → 50.8%, while the interrogative 是谁 does not move.
+  Two 2025 news figures (陈小江 11.19% of that snapshot, 马兴瑞 5.74%) explain only 13%
+  of the drift, and removing them makes the shift stronger.
+
+**The research pass (72 agents) then corrected four things in the first draft**, all
+now folded in:
+
+- **Finance's growth is intensity, not breadth.** I inferred from the low delta-HHI
+  that many new tickers arrived. Measured at a common floor: distinct queries +3.2%,
+  PV per query **+31.3%**. Same queries, busier. Several top risers (英伟达, 美光科技)
+  are US-listed, which a domestic account cannot buy.
+- **The gaokao calendar is EXCLUDED, not merely unverified.** Beijing (6/27-7/1),
+  Jiangsu (6/28-7/2) and Shanghai (7/1-7/2) application windows were identical in both
+  years. So education's **-48% has no established cause** — the cohort decline is 14x
+  too small and the platform-wide contraction 4x. That is now stated as the largest
+  unexplained fact in the dataset.
+- **The two AI hypotheses were conflated.** H1 (AI makes queries more complex) and H2
+  (AI absorbs question-shaped demand) predict opposite things. H2 is refuted
+  everywhere; H1 is refuted in four verticals and **weakly SUPPORTED in medical**,
+  whose traffic-weighted length rose in both cuts and whose within-class question
+  share rose +1.46pp. Medical is the open lead, not a refutation.
+- **The sampling ambiguity is algebraic, not merely practical.** A uniform demand fall
+  and a constant-demand dispersion apply the identical transformation to everything in
+  a fixed-N window, so floor and total move together under both and every
+  scale-invariant statistic is unchanged. Only a quantity from outside the window
+  breaks the tie — the cheapest being total PV per vertical per day.
+
+**Verified external anchors (primary sources):** Baidu App MAU 735m -> 644m (-12.4%,
+SEC 6-K, exactly this window); CNNIC search users 877.82m -> 782.06m (-10.9%); MoF H1
+2026 securities stamp duty +97.3% YoY; CSDC 20.16m new A-share accounts (+60%); CMG
+holding World Cup rights with CCTV-5 carrying 92 of 104 matches, Round of 32 running
+28 Jun-3 Jul so 2026-07-01 was a match day. A background contraction of ~11-12% is
+therefore real and documented — and medical/education fell **four times** that, so
+those are vertical-specific, not industry weather.
+
+**Also ruled out** (each with a failed prediction): query-suggestion reshuffling
+(collapsing token-reordered synonyms leaves TV unchanged to 4dp); 限韩令 easing (the
+Korean class's largest query is a *Thai* drama); one blockbuster driving the streaming
+collapse (哪吒2 bounded at <=0.83pp of -13.62pp); short-drama displacement (短剧 rows
+fall 158 -> 34 at a matched floor); a generic live-TV shift (CCTV-5 +719% while
+CCTV-6 -31% and CCTV-8 -72%).
+
+**The search cap applies to WebSearch only; WebFetch still works**, and the agents
+left URLs. Verified directly afterwards: Baidu's two 6-Ks (*"In June 2025, Baidu
+App's MAUs reached 735 million"* / *"644 million in June 2026"* = −12.4% over exactly
+this window, plus online marketing revenue already −15% YoY in Q2 2025); and the
+MoF's own page (「证券交易印花税1549亿元，同比增长97.3%」). Both are now `[verified]`.
+
+**Education's calendar question was closed with internal arithmetic instead of more
+research.** Admission-related queries are only **6.4%** of 2025 education PV and
+**8.6%** of the decline — had they gone to zero the vertical would still have fallen
+**46.9%**. So no exam-calendar shift of any size explains it, and the 2026 provincial
+dates (which I could not reach) do not need resolving.
+
+**A per-vertical accounting of what the identified causes actually cover:** film/TV
+**103%** (the five named 2025 dramas lost more than the vertical did net), people
+**79%** (two political-news figures), medical **3%**, education **7%**. Medical and
+education are ~95% unexplained and no external series closes the gap — the documented
+platform contraction is 11-12% against their 47-48%. Given the algebraic
+indistinguishability above, the likeliest resolution is that their gap is not a demand
+fall but a change in the window. One number decides it: total PV per vertical per day.
+
 **The drift phase has now run live** (`filmdrift`, 影视 pooled 20,000 rows, routed,
 fast): **18 phases** (17 + p10b), 217 calls, **$3.91**, 1.97 h, `verify_run`
 **21 PASS / 6 N/A / 0 FAIL / 1 SKIP**. It shipped `快照对比_漂移分析.md` from a real

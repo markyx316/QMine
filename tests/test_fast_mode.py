@@ -1215,3 +1215,118 @@ def test_the_readme_never_quotes_a_kappa_for_a_single_annotator_run():
         if row.group(1) in fast:
             assert not re.search(r"\|\s*\*{0,2}0\.\d{3,4}\*{0,2}\s*\|", row.group(2)), (
                 f"{row.group(1)} has ONE annotator — it has no kappa to quote: {row.group(2)[:90]}")
+
+
+def test_a_backfilled_drift_analysis_equals_what_the_live_phase_wrote():
+    """`tools/backfill_drift.py` recomputes p10b for runs that predate the phase.
+
+    It is only trustworthy if it is the SAME computation. `filmdrift` executed
+    p10b live on a routed, weighted, two-snapshot corpus, so backfilling it is a
+    control: the two artifacts must agree field for field. When this was first
+    run they did — zero differences across inventory, churn, all three label axes
+    and purity.
+
+    Without this, "backfilled" would be a claim rather than a measurement, and
+    five domains' reports would rest on it.
+    """
+    import json
+    import subprocess
+    import sys
+    import tempfile
+    from pathlib import Path
+
+    import qmine
+    root = Path(qmine.__file__).parent.parent.parent
+    live_p = root / "runs" / "filmdrift" / "gen01" / "drift_analysis.json"
+    if not live_p.exists():
+        pytest.skip("filmdrift (the live-p10b control) is not in this checkout")
+
+    with tempfile.TemporaryDirectory() as tmp:
+        r = subprocess.run([sys.executable, str(root / "tools" / "backfill_drift.py"),
+                            "filmdrift", "--out", tmp],
+                           cwd=root, capture_output=True, text=True)
+        out_p = Path(tmp) / "filmdrift" / "drift_analysis.json"
+        assert out_p.exists(), f"backfill wrote nothing (exit {r.returncode}): {r.stderr[-600:]}"
+        back = json.loads(out_p.read_text(encoding="utf-8"))
+    live = json.loads(live_p.read_text(encoding="utf-8"))
+
+    back.pop("backfilled", None)          # provenance note, absent from a live run
+    assert set(live) == set(back), f"key sets differ: {set(live) ^ set(back)}"
+    for key in ("inventory", "query_churn", "by_label", "purity", "snapshots"):
+        assert live[key] == back[key], (
+            f"backfilled `{key}` differs from what the live phase wrote — the "
+            f"backfill is not the same computation")
+
+
+def test_the_translated_analysis_carries_the_same_numbers_as_the_original():
+    """A translated report is a second copy of every number, and copies drift.
+
+    `docs/DRIFT_ANALYSIS.zh.md` restates ~310 figures from the English original.
+    Editing one and not the other is the obvious failure, and a reader of the
+    Chinese version cannot check it against anything. This pins them together.
+
+    Chinese renders large values in 万/亿 rather than M/bn, so those are allowed
+    to differ by an explicit, arithmetic-checked mapping — nothing else is.
+    """
+    import collections
+    import re
+    from pathlib import Path
+
+    import qmine
+    docs = Path(qmine.__file__).parent.parent.parent / "docs"
+    en_p, zh_p = docs / "DRIFT_ANALYSIS.md", docs / "DRIFT_ANALYSIS.zh.md"
+    if not (en_p.exists() and zh_p.exists()):
+        pytest.skip("the drift analysis is not in this checkout")
+
+    def nums(text):
+        text = re.sub(r"20\d\d-\d\d-\d\d|20\d\d", " ", text)     # dates are labels
+        text = text.replace(",", "").replace("−", "-")
+        return collections.Counter(re.findall(r"-?\d+\.\d+|(?<![\d.])\d+(?![\d.])", text))
+
+    #: english token -> the 万/亿 rendering used in the Chinese. Each pair is an
+    #: exact unit conversion, verified when the translation was written.
+    SCALED = {
+        "877.82": "8.7782", "782.06": "7.8206", "154.9": "1549", "20.16": "2016",
+        "1466": "1.466", "3660": "3.66", "73": "7.3", "1000000": "100",
+        "8.09": "809", "10.90": "1090", "16.45": "1645", "12.50": "1250",
+        "9.74": "974", "5.21": "521", "28.50": "2850", "14.80": "1480",
+        "9.97": "997", "7.79": "779", "8.04": "804", "11.83": "1183",
+        "7.51": "751", "3.92": "392", "10.96": "1096", "17.54": "1754",
+        "5.82": "582", "4.62": "462", "2.46": "246", "3.95": "395",
+        "2.17": "217", "4.53": "453", "13.70": "1370", "0.32": "32",
+        "0.27": "27", "0.70": "70", "0.17": "17", "0.67": "67", "0.80": "80",
+        "0.36": "36", "0.13": "13", "696": "69.6",
+    }
+    en, zh = nums(en_p.read_text(encoding="utf-8")), nums(zh_p.read_text(encoding="utf-8"))
+    missing = [v for v in en if v not in zh and SCALED.get(v) not in zh]
+    assert not missing, (
+        f"{len(missing)} figure(s) in the English analysis have no counterpart in the "
+        f"Chinese one — the two have drifted apart: {sorted(missing)[:12]}")
+
+    # and the structure must stay parallel, or a whole section was dropped
+    e_txt, z_txt = en_p.read_text(encoding="utf-8"), zh_p.read_text(encoding="utf-8")
+    assert (len(re.findall(r"^#{1,3} ", e_txt, re.M))
+            == len(re.findall(r"^#{1,3} ", z_txt, re.M))), "heading counts differ"
+    assert (len(re.findall(r"^\|", e_txt, re.M))
+            == len(re.findall(r"^\|", z_txt, re.M))), "table row counts differ"
+
+
+def test_the_chinese_analysis_points_at_chinese_figures():
+    """An English-labelled figure inside a Chinese report is half-translated.
+
+    The figures carry their own axis labels and footnotes, so `--lang zh` renders
+    a second set; the Chinese document must reference those, not the originals.
+    """
+    import re
+    from pathlib import Path
+
+    import qmine
+    zh_p = Path(qmine.__file__).parent.parent.parent / "docs" / "DRIFT_ANALYSIS.zh.md"
+    if not zh_p.exists():
+        pytest.skip("the drift analysis is not in this checkout")
+    imgs = re.findall(r'src(?:set)?="([^"]+)"', zh_p.read_text(encoding="utf-8"))
+    assert imgs, "no figures referenced at all"
+    wrong = [i for i in imgs if "_zh" not in i]
+    assert not wrong, f"Chinese report references English figures: {wrong}"
+    for i in imgs:
+        assert (zh_p.parent / i).exists(), f"missing figure {i}"

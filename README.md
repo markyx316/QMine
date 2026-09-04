@@ -88,7 +88,10 @@ onto your `PATH`. Either `source .venv/bin/activate` once, or call
 
 The evidence and the longer arguments live in [`docs/`](docs/):
 **[results across all 14 live runs](docs/RESULTS.md)** — κ, cost, route agreement
-and the delivered shapes, with the figures — plus
+and the delivered shapes, with the figures —
+**[a worked drift analysis](docs/DRIFT_ANALYSIS.md)** — five Chinese verticals a year
+apart, what moved and what turned out to be a football tournament
+([中文版](docs/DRIFT_ANALYSIS.zh.md)) — plus
 [why not a prompt](docs/WHY_NOT_A_PROMPT.md),
 [what an intent taxonomy is for](docs/WHAT_ITS_FOR.md),
 [architecture](docs/ARCHITECTURE.md) and [model routing](docs/MODEL_ROUTING.md).
@@ -456,6 +459,19 @@ behavioural shift. The +11.0pp rise in live-TV viewing has one query carrying 23
 of it, and its top five deltas are all `cctv5` variants: one entity, not a trend.
 The report names the measurement and prints the queries; it does not tell you
 which it is.
+
+**A worked example.** Five verticals were compared a year apart and written up in
+[`docs/DRIFT_ANALYSIS.md`](docs/DRIFT_ANALYSIS.md) — and in Chinese, with
+Chinese-labelled figures, in [`docs/DRIFT_ANALYSIS.zh.md`](docs/DRIFT_ANALYSIS.zh.md). It is also a catalogue of the ways
+a two-snapshot comparison misleads: one vertical's biggest finding is a World Cup
+match day, two verticals' "growing" classes all shrank in absolute terms, and one
+headline reverses sign once both cuts are truncated to the same depth.
+
+A run that predates the phase does not need re-running —
+[`tools/backfill_drift.py`](tools/backfill_drift.py) recomputes `p10b` from the
+delivered labels and the pooled source, with no model call. It is verified against
+`filmdrift`, which executed `p10b` live: the backfilled artifact matches the shipped
+one field for field.
 
 Runs are unchanged when given a single input: no snapshot column, no drift phase,
 no extra deliverable.
