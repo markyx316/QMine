@@ -1,5 +1,7 @@
 # QMine — a query-intent mining agent team
 
+English | [中文](README.zh.md)
+
 **Turns a raw search log into a defensible intent taxonomy, a labelled corpus, and the evidence for every choice in it.**
 
 QMine is a [LangGraph](https://github.com/langchain-ai/langgraph) agent team that
@@ -95,9 +97,7 @@ and the delivered shapes, with the figures — plus
 
 ## What it produces
 
-One command against a 50,000-query corpus produces a complete, self-describing
-delivery — `runs/live44/gen01/` holds every row of this table, and
-`runs/filmdrift/gen01/` holds the drift document:
+One command against one or more query corpora produces a complete, self-describing delivery:
 
 | deliverable | what it is |
 |---|---|
