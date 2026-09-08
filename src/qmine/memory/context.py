@@ -244,6 +244,114 @@ def budget_text(text: str, max_chars: int, *, tail: int = 0, label: str = "") ->
     )
 
 
+#: The character budget the researcher evidence block gets. A PROMPT-CONTEXT
+#: number, not a corpus number — it says how much a model is given to read, and
+#: it is the same on every corpus. Defined here so `agents/roles.py` (which
+#: enforces it) and `graph/nodes/topdown.py` (which builds within it) cannot
+#: drift apart; they did, and the builder had no idea what it had to fit inside.
+RESEARCHER_EVIDENCE_CHARS = 24_000
+
+
+def fair_caps(lengths: Sequence[int], budget: int) -> list[int]:
+    """Max-min fair allocation of `budget` across items of these lengths.
+
+    Progressive filling: everything at or under the current equal share is
+    satisfied in full and releases what it did not use; the remainder is shared
+    among the rest; repeat. Items still over the share at the end split what is
+    left equally.
+
+    Carries no absolute length, which is the point — the share is derived from
+    the budget and the item count, so it fits a corpus of ten-character queries
+    and one of thousand-character documents without being retuned for either.
+    """
+    lengths = list(lengths)
+    if not lengths:
+        return []
+    caps = [0] * len(lengths)
+    unsettled = set(range(len(lengths)))
+    remaining = budget
+    while unsettled:
+        share = remaining // len(unsettled)
+        fits = [i for i in unsettled if lengths[i] <= share]
+        if not fits:
+            for i in unsettled:
+                caps[i] = share
+            break
+        for i in fits:
+            caps[i] = lengths[i]
+            remaining -= lengths[i]
+            unsettled.discard(i)
+    return caps
+
+
+def fair_excerpts(
+    items: Sequence[str],
+    max_chars: int,
+    *,
+    unit: str = "item",
+    label: str = "",
+) -> list[str]:
+    """Cap each item at its FAIR SHARE, so no one item crowds the others out.
+
+    THE THIRD STRATEGY, and the only one that keeps every item.  `budget_text`
+    cuts the block mid-string and severs whatever is at the cut.  `budget_units`
+    keeps whole units from the head and DROPS THE TAIL.  Both are wrong when
+    every item must be present — a list of risk categories, say — and one item
+    happens to be enormous.
+
+    Measured on `ai02`: the risk_compliance evidence came to 37,205 characters
+    against a 24,000 budget, and `self_harm`'s six samples were **22,244 of
+    them** (two at 8,194) because on a conversational corpus its hits are long
+    fiction prompts.  `budget_text` cut inside `self_harm`, so
+    `medical_self_diagnosis`, `financial_advice`, `legal_outcome_prediction` and
+    `circumvention` — 440 characters between them — never reached the one
+    researcher whose whole assignment is safety.
+
+    **NO ABSOLUTE LENGTH APPEARS HERE, deliberately.**  An earlier fix capped
+    every row at a flat 300 characters, which is a K12-style imported constant:
+    tuned on a corpus whose median row is 10 characters, and on a corpus of
+    contracts or code (median row 800) it would gut every row while fixing
+    nothing.  `test_gates_do_not_import_thresholds_that_only_fit_one_corpus`
+    exists for exactly that mistake.  The share is derived from the budget and
+    the item count instead, so the same code adapts to any corpus.
+
+    Max-min fair allocation (progressive filling): items at or under the current
+    equal share keep their FULL text and release what they did not use; the
+    released budget is redistributed among the rest; repeat until only items
+    above the share remain, and those split what is left equally.
+
+    **If everything already fits, this returns the items unchanged and logs
+    nothing.**  That is the property that makes it safe to adopt everywhere:
+    on every corpus this project has run before — maximum row 28 to 64
+    characters — it is a no-op.
+    """
+    items = [str(i) for i in items]
+    if not items:
+        return []
+    lengths = [len(i) for i in items]
+    if sum(lengths) <= max_chars:
+        return items
+
+    caps = fair_caps(lengths, max_chars)
+
+    out: list[str] = []
+    n_cut = 0
+    for text, cap in zip(items, caps):
+        if len(text) <= cap:
+            out.append(text)
+            continue
+        n_cut += 1
+        # The omission is stated in-band. A silently shortened example reads as
+        # a complete one, which is how a model concludes things about content it
+        # was never shown.
+        out.append(text[:cap] + f"…[+{len(text) - cap} chars]")
+    log.warning("prompt block%s: %d of %d %s(s) excerpted to fit %d chars "
+                "(fair share %d chars; longest was %d)",
+                f" {label!r}" if label else "", n_cut, len(items), unit,
+                max_chars, max_chars // max(len(items), 1), max(lengths))
+    return out
+
+
 def budget_units(
     units: Sequence[str],
     max_chars: int,

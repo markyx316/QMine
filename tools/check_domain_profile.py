@@ -27,7 +27,9 @@ import yaml
 
 def _load(path: str, text: str, weight: str | None):
     p = Path(path)
-    df = pd.read_excel(p) if p.suffix in (".xlsx", ".xls") else pd.read_csv(p)
+    df = (pd.read_excel(p) if p.suffix in (".xlsx", ".xls")
+          else pd.read_parquet(p) if p.suffix == ".parquet"
+          else pd.read_csv(p))
     if text not in df.columns:
         sys.exit(f"--text-column {text!r} not in {list(df.columns)}")
     w = df[weight] if weight and weight in df.columns else pd.Series(1, index=df.index)

@@ -1330,3 +1330,497 @@ def test_the_chinese_analysis_points_at_chinese_figures():
     assert not wrong, f"Chinese report references English figures: {wrong}"
     for i in imgs:
         assert (zh_p.parent / i).exists(), f"missing figure {i}"
+
+
+# ==========================================================================
+# The comparison AXIS: what the two pooled groups differ by
+# ==========================================================================
+#
+# `--input a,b` pools two files and p10b compares them. Everything in
+# `ops/drift.py` is axis-agnostic; `report/zh_drift.py` was not, and said so in
+# prose: 「不是趋势」, 「同月同日不等于季节可比」, 「时段性事件」. Those are true of
+# two dates and false of two SAMPLING STRATA of one period — the AI-assistant
+# head (top-N by PV) and tail (random) exports. A reader who believes them
+# concludes user behaviour changed when nothing changed at all.
+
+def _drift_payload():
+    """A drift_analysis.json exercising every branch of the document."""
+    return {
+        "snapshots": ["head", "tail"],
+        "inventory": [
+            {"snapshot": "head", "rows": 100, "distinct_queries": 90, "weight_total": 5000.0},
+            {"snapshot": "tail", "rows": 120, "distinct_queries": 110, "weight_total": 7000.0}],
+        "query_churn": {"comparable": True, "shared": 40, "jaccard": 0.25,
+                        "shared_weight_share_a": 0.5, "shared_weight_share_b": 0.4},
+        "by_label": {"td_l1": {
+            "comparable": True, "n_classes": 3, "cramers_v": 0.21,
+            "total_variation_weight": 0.18, "total_variation_rows": 0.15,
+            "n_comparisons": 40,
+            "stable": [{"label": "A", "rows_a": 50, "rows_b": 60, "row_share_a": .5,
+                        "row_share_b": .5, "weight_share_a": .4, "weight_share_b": .5,
+                        "weight_share_delta_pp": 10.0, "z_row_share": 2.4,
+                        "delta_concentration": None}],
+            "emergent": [{"label": "E", "rows_a": 0, "rows_b": 30, "row_share_a": 0.0,
+                          "row_share_b": .25, "weight_share_a": 0.0, "weight_share_b": .1,
+                          "weight_share_delta_pp": 10.0, "z_row_share": 3.1,
+                          "delta_concentration": None}],
+            "receded": [{"label": "R", "rows_a": 30, "rows_b": 0, "row_share_a": .3,
+                         "row_share_b": 0.0, "weight_share_a": .1, "weight_share_b": 0.0,
+                         "weight_share_delta_pp": -10.0, "z_row_share": -3.1,
+                         "delta_concentration": None}],
+            "too_thin_to_compare": [{"label": "T"}]}},
+        "purity": {"td_l1": {"checked": True, "n_groups": 3, "n_single_snapshot": 1,
+                             "share_min": 0.0, "share_median": 0.5, "share_max": 1.0,
+                             "single_snapshot": [{"label": "E", "rows": 30,
+                                                  "share_of_head": 0.0}]}},
+    }
+
+
+def _render(axis: str) -> str:
+    from qmine.report.zh_drift import build
+
+    payload = _drift_payload()
+
+    class _Cfg:
+        class data:
+            comparison_axis = axis
+
+        class domain:
+            key = "ai_assistant_zh"
+
+    class _Deps:
+        cfg = _Cfg()
+
+        def load(self, _name):
+            return payload
+
+    return build({"run_id": "t01"}, _Deps())
+
+
+def test_the_time_axis_document_is_unchanged_by_the_axis_parameter():
+    """The axis table must be additive. Pinned against the pre-change document.
+
+    Verified once against the original module byte-for-byte over seven payload
+    shapes (full / no purity / clean purity / no churn / no labels / empty class
+    lists / no snapshot tags) — all identical. These are the sentences that check
+    survived, so a later edit to the `time` vocabulary trips here rather than
+    silently rewording every existing multi-snapshot run's deliverable.
+    """
+    doc = _render("time")
+    assert doc.startswith("# 快照对比 · 漂移分析")
+    assert "同一套标签体系下，两个时间点的差异" in doc
+    assert "| 快照 | 行数 | 去重 query | 总流量 |" in doc
+    assert "### 2.1 两期都存在的类目" in doc
+    assert "### 2.2 新出现的类目" in doc
+    assert "### 2.3 消失的类目" in doc
+    # the four caveats that only make sense about dates
+    assert "- **不是趋势。** 这是两个时间点，不是一条曲线。" in doc
+    assert "- **同月同日不等于季节可比。**" in doc
+    assert "- **两期的抽样方式必须一致。**" in doc
+    assert "它能说某一类涨了或跌了" in doc
+    assert "少数几个通常是真实的时段性事件；" in doc, (
+        "the purity note's time-specific clause was dropped once while "
+        "parameterising this — 16 characters, and nothing else in the document moved")
+
+
+def test_a_stratum_comparison_is_never_reported_as_change_over_time():
+    """Two sampling strata of ONE period must not be described as drift.
+
+    The AI-assistant exports are a top-1000-by-PV head and a random tail of the
+    same month. Pooling them is right — one taxonomy has to label both or the two
+    sides share no class codes (`fin01`/`fin02`: 20 and 19 classes, zero shared).
+    Calling the result 漂移 is not.
+    """
+    doc = _render("stratum")
+    assert doc.startswith("# 分层对比")
+    assert "漂移" not in doc, "a stratum comparison must not use the drift vocabulary"
+    for forbidden in ("不是趋势", "同月同日", "时段性事件", "两个时间点"):
+        assert forbidden not in doc, f"{forbidden!r} describes dates, not strata"
+    assert "不是时间变化" in doc, "it must say so positively, not merely omit the claim"
+    assert "两层来自同一时间段" in doc
+
+
+def test_the_stratum_caveats_do_not_warn_against_their_own_design():
+    """The inverted caveat — the failure that made this parameterisation necessary.
+
+    On the time axis 「两期的抽样方式必须一致」 is a real warning: differing sampling
+    would masquerade as a real change. Between a head and a tail sample the
+    differing sampling IS the independent variable, so the same sentence tells the
+    reader the document is confounded when it is measuring what it set out to.
+    """
+    doc = _render("stratum")
+    assert "两期的抽样方式必须一致" not in doc
+    assert "抽样口径不同正是本报告的自变量" in doc
+    # and the estimand limit that IS real here
+    assert "不能推回总体" in doc
+
+
+def test_an_unknown_comparison_axis_degrades_to_time_rather_than_dying():
+    """A document whose every number is right must not be lost to a config typo."""
+    assert _render("nonsense") == _render("time")
+
+
+def test_the_stratum_deliverable_is_not_filed_under_the_drift_name():
+    """A filename is a claim, and the numbers inside cannot undo it."""
+    import inspect
+
+    from qmine.graph.nodes import delivery
+
+    src = _code_only(inspect.getsource(delivery._drift_document))
+    assert "comparison_axis" in src
+    assert "分层对比_头尾结构差异" in src
+    assert "快照对比_漂移分析" in src, "the time axis must keep the name it has always had"
+
+
+# ==========================================================================
+# Preparing a multi-vertical assistant export (`tools/prepare_assistant_corpus`)
+# ==========================================================================
+
+def _prep():
+    import importlib.util
+
+    root = Path(__file__).resolve().parents[1]
+    spec = importlib.util.spec_from_file_location(
+        "prepare_assistant_corpus", root / "tools" / "prepare_assistant_corpus.py")
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    return mod
+
+
+def _fake_exports(tmp_path):
+    """Two categories with deliberately incomparable traffic scales."""
+    import pandas as pd
+
+    def frame(rows):
+        return pd.DataFrame(rows, columns=["normalized_query", "query_1st_category_new",
+                                           "query_2nd_category_new", "search_num"])
+    head = frame([
+        ("变清晰", "软件", "商用软件", 5_000_000),   # one string, most of the file's PV
+        ("去水印", "软件", "商用软件", 1_000_000),
+        ("好的", "软件", "商用软件", 100),
+        ("好的", "法律", "普法问答", 90),            # SAME string, different category
+        ("离婚怎么起诉", "法律", "普法问答", 60),
+        ("欠钱不还怎么办", "法律", "普法问答", 50),
+    ])
+    tail = frame([
+        ("图片糊了怎么修", "软件", "商用软件", 2),
+        ("合同违约金上限", "法律", "普法问答", 1),
+    ])
+    h, t = tmp_path / "head.xlsx", tmp_path / "tail.xlsx"
+    head.to_excel(h, index=False)
+    tail.to_excel(t, index=False)
+    return str(h), str(t)
+
+
+def test_the_prepared_corpus_normalises_traffic_within_each_category(tmp_path):
+    """Raw PV is not comparable across categories, so the run must not use it.
+
+    Each category's top-N export has its OWN traffic floor — measured on the real
+    corpus, 3 to 419 — so the file is a union of 33 censuses cut at 33 different
+    depths. Left raw, two of the 33 categories hold 55% of pooled weight and the
+    single string `变清晰` holds 17%, which makes every weighted metric in the run
+    mostly a statement about that one string.
+    """
+    mod = _prep()
+    df, audit = mod.build(*_fake_exports(tmp_path), weight_scale=1000.0)
+
+    assert set(df.stratum) == {mod.HEAD_TAG, mod.RANDOM_TAG}, (
+        "the stratum tags name the SAMPLING (top1k / random1k); `tail` was a "
+        "conclusion about where the rows sit, which is a different claim")
+    for (stratum, l1), g in df.groupby(["stratum", "l1"]):
+        assert g.pv_norm.sum() == pytest.approx(1000.0), (
+            f"{stratum}/{l1} carries {g.pv_norm.sum()}, not the 1000 every "
+            f"category must carry for the categories to be comparable")
+    head = df[df.stratum == mod.HEAD_TAG]
+    raw_soft = head.loc[head.l1 == "软件", "search_num"].sum() / head.search_num.sum()
+    norm_soft = head.loc[head.l1 == "软件", "pv_norm"].sum() / head.pv_norm.sum()
+    assert raw_soft > 0.99, "the fixture must reproduce the domination it guards against"
+    assert norm_soft == pytest.approx(0.5), "two categories, so each must carry half"
+    assert audit["l1_categories"] == 2
+
+
+def test_the_prepared_corpus_keeps_one_string_in_two_categories_apart(tmp_path):
+    """Collapsing across categories would move a chip's whole traffic into one.
+
+    `👌 好的，继续吧` appears under 32 of the real corpus's 33 first-level
+    categories and carries 2.13M PV. Collapsing to distinct strings would assign
+    all of it to whichever category happened to be modal, wrecking that category's
+    normalisation and destroying the evidence that the string is not topical.
+    Exact duplicate rows are still summed; the category attribution is data.
+    """
+    mod = _prep()
+    df, _ = mod.build(*_fake_exports(tmp_path))
+    rows = df[(df["query"] == "好的") & (df.stratum == mod.HEAD_TAG)]
+    assert len(rows) == 2, "one row per category, not one row"
+    assert set(rows.l1) == {"软件", "法律"}
+    assert (rows.n_l1_categories == 2).all(), (
+        "the breadth measurement is what makes a content-free string identifiable")
+    assert rows.is_ack.all()
+    assert not df.loc[df["query"] == "离婚怎么起诉", "is_ack"].any()
+
+
+def test_the_acknowledgement_pattern_is_anchored_at_both_ends():
+    """`好的` is an acknowledgement; `好的，帮我写一份年终总结` is a request.
+
+    A substring match cannot tell them apart, and the family it defines carries
+    15% of the real corpus's normalised traffic — so a loose pattern here would
+    silently swallow real requests into the one class nobody reads.
+    """
+    import re
+
+    mod = _prep()
+    pat = re.compile(mod.ACK_PATTERN)
+    for ack in ("好的", "嗯嗯", "👌 好的，继续吧", "🆗 行，继续吧", "可以", "继续", "OK"):
+        assert pat.match(ack), f"{ack!r} is an acknowledgement"
+    for real in ("好的，帮我写一份年终总结", "需要准备哪些材料", "继续写下一章",
+                 "可以退款吗", "对方不还钱怎么办"):
+        assert not pat.match(real), f"{real!r} is a request, not an acknowledgement"
+
+
+# ==========================================================================
+# The vertical crosstab (`tools/vertical_crosstab.py`)
+# ==========================================================================
+
+def _crosstab_mod():
+    import importlib.util
+
+    root = Path(__file__).resolve().parents[1]
+    spec = importlib.util.spec_from_file_location(
+        "vertical_crosstab", root / "tools" / "vertical_crosstab.py")
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    return mod
+
+
+def test_the_vertical_crosstab_refuses_the_pre_governance_columns():
+    """p8 rewrites the tree, so those columns describe one the run did not deliver.
+
+    Anything shown as final must come from the DELIVERED partition. The refusal is
+    in the tool rather than in a comment because the column names differ by one
+    suffix and the wrong one produces a table that looks entirely plausible.
+    """
+    mod = _crosstab_mod()
+    assert mod._PRE_GOVERNANCE == {"bu_leaf_pre_governance", "bu_family_pre_governance"}
+    import inspect
+
+    src = _code_only(inspect.getsource(mod.main))
+    assert "_PRE_GOVERNANCE" in src and "sys.exit" in src
+
+
+def test_the_crosstab_shares_are_within_category_not_across():
+    """Across categories a row count measures the export's allocation, not the corpus.
+
+    This export takes exactly 1,000 rows per category per stratum, so a class that
+    is 80% one category partly reflects that quota. Within-category shares are the
+    only ones that mean anything, and they must each sum to 1.
+    """
+    import pandas as pd
+
+    mod = _crosstab_mod()
+    df = pd.DataFrame({
+        "ref_l1": ["金融"] * 6 + ["医疗"] * 4,
+        "bu_family_final": ["A", "A", "A", "B", "B", "C", "A", "B", "B", "B"],
+        "w": [10.0, 10, 10, 5, 5, 1, 100, 1, 1, 1],
+    })
+    ct = mod.crosstab(df, "ref_l1", "bu_family_final", "w")
+    for _cat, g in ct.groupby("ref_l1"):
+        assert g.row_share_in_category.sum() == pytest.approx(1.0)
+        assert g.traffic_share_in_category.sum() == pytest.approx(1.0)
+    # 医疗 has 4 rows to 金融's 6; within-category shares must not inherit that
+    med = ct[ct.ref_l1 == "医疗"].set_index("bu_family_final")
+    assert med.loc["B", "row_share_in_category"] == pytest.approx(0.75)
+
+
+def test_the_crosstab_names_a_class_breadth_without_calling_it_a_verdict():
+    """A class in 32 of 33 categories is not that category's property.
+
+    That is exactly how the acknowledgement family appears, and the number that
+    reveals it is breadth. It ships as a measurement — `n_categories` and the top
+    category's share — with no verdict column, because whether breadth or
+    concentration matters is the reader's call.
+    """
+    import pandas as pd
+
+    mod = _crosstab_mod()
+    df = pd.DataFrame({
+        "ref_l1": ["a", "b", "c", "a", "a", "a"],
+        "bu_family_final": ["ACK", "ACK", "ACK", "SPECIAL", "SPECIAL", "SPECIAL"],
+    })
+    ct = mod.crosstab(df, "ref_l1", "bu_family_final", None)
+    conc = mod.concentration(ct, "ref_l1", "bu_family_final")
+    assert conc.loc["ACK", "n_categories"] == 3
+    assert conc.loc["SPECIAL", "n_categories"] == 1
+    assert conc.loc["SPECIAL", "top_category_share"] == pytest.approx(1.0)
+    assert "verdict" not in conc.columns
+
+
+def test_the_translated_corpus_guide_carries_the_same_numbers_as_the_original():
+    """Second copy of every number, same failure mode as the drift-analysis pair.
+
+    `docs/AI_ASSISTANT_CORPUS.zh.md` restates the measurements that justify each
+    preparation decision — the 33 PV floors, the 15.97%, the 17-of-33 that kills
+    the population estimate. A reader of the Chinese edition cannot check them
+    against anything, so they are pinned to the English here.
+    """
+    import re
+    from pathlib import Path
+
+    import qmine
+    docs = Path(qmine.__file__).parent.parent.parent / "docs"
+    en_p, zh_p = docs / "AI_ASSISTANT_CORPUS.md", docs / "AI_ASSISTANT_CORPUS.zh.md"
+    if not (en_p.exists() and zh_p.exists()):
+        pytest.skip("the corpus guide is not in this checkout")
+
+    def nums(text):
+        # an ASCII comma after a number is absorbed by the token; 全角 is not
+        text = text.replace(",", "")
+        return {m for m in re.findall(r"\d+(?:\.\d+)?%?", text) if len(m) > 1}
+
+    #: English M -> the 万 rendering used in the Chinese. Exact conversions.
+    SCALED = {"5.80": "580", "5.23": "523", "1.78": "178", "2.13": "213"}
+    for eng, chi in SCALED.items():
+        assert float(eng) * 1e6 == float(chi) * 1e4, f"{eng}M != {chi}万"
+
+    en = {SCALED.get(x, x) for x in nums(en_p.read_text(encoding="utf-8"))}
+    zh = nums(zh_p.read_text(encoding="utf-8"))
+    assert not (en - zh), f"figures in the English edition missing from the Chinese: {sorted(en - zh)}"
+    assert not (zh - en), f"figures in the Chinese edition missing from the English: {sorted(zh - en)}"
+
+    zh_text = zh_p.read_text(encoding="utf-8")
+    # It must land on the stratum deliverable. It DOES quote the drift vocabulary,
+    # deliberately — §2 exists to explain why that framing is the wrong one — so
+    # the check is on what the document concludes, not on what it mentions.
+    assert "分层对比_头尾结构差异.md" in zh_text
+    assert "data.comparison_axis: stratum" in zh_text
+    # an untranslated Latin word wedged between CJK characters is a translation slip
+    assert not re.findall(r"[一-鿿][a-zA-Z]{3,}[一-鿿]", zh_text)
+
+
+def test_fast_mode_coverage_is_measured_not_asserted():
+    """`ai04` reported 「覆盖率 100%」 with 225 of 3,000 gold rows unlabelled.
+
+    The two-annotator path guards this: `n_sub = agree.get("n_submitted",
+    agree["n"])`, and `agreement()` supplies `n_submitted`. The single-annotator
+    path added for fast mode built its `agree` dict by hand and left the key out,
+    so the fallback made `coverage = n / n = 1.0` — structurally, always,
+    whatever failed. At 60% coverage it would still have reported 100% and
+    passed, which is exactly the failure the comment above that computation was
+    written about ("a kappa of 0.813 computed on 199 of 600 rows").
+
+    `n` must also count rows that came back with a REAL label: a lost row is
+    filled with the UNLABELED sentinel, so `len(labels_a)` is the SUBMITTED count
+    wearing the answered count's name.
+    """
+    import inspect
+
+    from qmine.graph.nodes.topdown import p2b_gold
+
+    src = _code_only(inspect.getsource(p2b_gold))
+    solo = src.split("if solo:", 1)[-1].split("else:", 1)[0]
+    assert '"n_submitted"' in solo, (
+        "the single-annotator agree dict must carry n_submitted, or the coverage "
+        "guard degenerates to 1.0 and cannot fail")
+    assert "UNLABELED" in solo, (
+        "n must count rows that came back LABELLED, not rows that came back")
+
+
+def test_the_coverage_fallback_cannot_silently_report_one():
+    """The arithmetic itself, on the shape the bug produced."""
+    agree_broken = {"n": 3000}                      # what the bug built
+    agree_fixed = {"n": 2775, "n_submitted": 3000}  # what it must build
+
+    def coverage(agree):
+        n_sub = agree.get("n_submitted", agree["n"]) or 1
+        return agree["n"] / n_sub
+
+    assert coverage(agree_broken) == 1.0, "reproduces the defect"
+    assert coverage(agree_fixed) == pytest.approx(0.925), "and the fix measures it"
+    assert coverage(agree_fixed) < 0.95, (
+        "92.5% must be distinguishable from 100% — a run that lost a whole "
+        "annotator batch must not read as complete")
+
+
+def test_a_pooled_run_carries_its_stratum_column_into_the_delivered_labels():
+    """Every drift/stratum report ends by pointing at a column that was not written.
+
+    「原始数据: `labels_full.csv`（逐行标签，含分层列）」 is the last line of the
+    document, and it was FALSE on all six pooled runs on disk — fin-pool,
+    med-pool, edu-pool, film-pool, ppl-pool, filmdrift — as well as `ai04`. None
+    of their `labels_full.csv` carries a snapshot column, so a reader who
+    followed the pointer to check a share, or to re-slice the comparison, could
+    not. The whole document is about that column.
+
+    Additive: `build_frame` only creates `snapshot` when the run pooled several
+    inputs, so a single-snapshot run gains no column and its `labels_full.csv` is
+    unchanged.
+    """
+    import inspect
+
+    from qmine.graph.nodes import delivery
+
+    src = _code_only(inspect.getsource(delivery.p10_deploy))
+    assert 'if "snapshot" in df.columns:' in src, (
+        "the delivered labels must carry the stratum column when the run has one")
+    assert 'out["snapshot"] = df["snapshot"]' in src
+
+
+def test_the_postprocessor_refuses_a_positional_join_it_cannot_verify():
+    """`labels_full` is written in corpus order, so the join is by POSITION.
+
+    A positional join that is silently wrong gives every row a different query's
+    category — and the table still looks entirely plausible. `backfill_drift`
+    refuses a misaligned positional join for the same reason.
+    """
+    import importlib.util
+
+    import pandas as pd
+
+    root = Path(__file__).resolve().parents[1]
+    spec = importlib.util.spec_from_file_location(
+        "postprocess_assistant_run", root / "tools" / "postprocess_assistant_run.py")
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+
+    labels = pd.DataFrame({"query": ["a", "b", "c"], "td_l1": ["X", "Y", "Z"]})
+    good = pd.DataFrame({"query": ["a", "b", "c"], "snapshot": ["top1k"] * 3,
+                         "l1": ["p", "q", "r"], "weight": [3.0, 2.0, 1.0]})
+    out = mod.join_verified(labels, good)
+    assert list(out["l1"]) == ["p", "q", "r"]
+
+    shuffled = good.iloc[[1, 0, 2]].reset_index(drop=True)
+    with pytest.raises(SystemExit):
+        mod.join_verified(labels, shuffled)
+    with pytest.raises(SystemExit):
+        mod.join_verified(labels, good.head(2))
+
+
+def test_the_stratum_addendum_will_not_state_an_overlap_it_cannot_compute():
+    """`weight` is normalised WITHIN (stratum, category), so it is two scales.
+
+    Comparing one stratum's floor against the other's normalised weights returns
+    "100% of the random sample sits above the head floor" — an artefact of the
+    normalisation, and the exact incomparability this corpus preparation exists
+    to handle. The addendum computes that statistic from RAW counts or says it
+    did not compute it.
+    """
+    import importlib.util
+
+    import pandas as pd
+
+    root = Path(__file__).resolve().parents[1]
+    spec = importlib.util.spec_from_file_location(
+        "postprocess_assistant_run", root / "tools" / "postprocess_assistant_run.py")
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+
+    df = pd.DataFrame({"snapshot": ["top1k"] * 3 + ["random1k"] * 3,
+                       "l1": ["c"] * 6, "weight": [500.0, 300.0, 200.0, 400.0, 350.0, 250.0]})
+    without = mod.stratum_addendum(df, "snapshot", "top1k", "random1k", raw=None)
+    assert "本次未计算" in without, "an uncomputable overlap must be declared, not guessed"
+    assert "0.00%" not in without and "100.00%" not in without
+
+    raw = pd.DataFrame({"stratum": ["head"] * 3 + ["tail"] * 3, "l1": ["c"] * 6,
+                        "search_num": [900, 500, 100, 3, 2, 1]})
+    with_raw = mod.stratum_addendum(df, "snapshot", "top1k", "random1k", raw=raw)
+    assert "本次未计算" not in with_raw
+    assert "0 / 3 = 0.00%" in with_raw, "raw counts give the true, non-overlapping answer"

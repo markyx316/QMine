@@ -20,7 +20,12 @@ from typing import Any, Literal, Sequence
 
 from pydantic import BaseModel, Field, PrivateAttr
 
-from ..memory.context import budget_text, budget_units, render_card
+from ..memory.context import (
+    RESEARCHER_EVIDENCE_CHARS,
+    budget_text,
+    budget_units,
+    render_card,
+)
 
 #: Document separator for the delivery auditor's block (an f-string may not
 #: contain a backslash, so this cannot be inlined).
@@ -153,7 +158,7 @@ class ResearcherAgent(ToolAgent):
     def build_user(self, *, evidence: str = "", domain_notes: str = "", **kw: Any) -> str:
         return (
             f"## Domain\n{domain_notes}\n\n"
-            f"## Evidence for your angle\n{budget_text(evidence, 24000, tail=2000, label='researcher evidence')}\n\n"
+            f"## Evidence for your angle\n{budget_text(evidence, RESEARCHER_EVIDENCE_CHARS, tail=2000, label='researcher evidence')}\n\n"
             "Return your submission."
         )
 

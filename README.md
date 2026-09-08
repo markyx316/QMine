@@ -92,6 +92,9 @@ and the delivered shapes, with the figures —
 **[a worked drift analysis](docs/DRIFT_ANALYSIS.md)** — five Chinese verticals a year
 apart, what moved and what turned out to be a football tournament
 ([中文版](docs/DRIFT_ANALYSIS.zh.md)) — plus
+**[preparing a multi-vertical corpus](docs/AI_ASSISTANT_CORPUS.md)** — an AI-assistant
+log with 33 verticals in one file, where 16% of head traffic turned out to be seven
+content-free strings ([中文版](docs/AI_ASSISTANT_CORPUS.zh.md)),
 [why not a prompt](docs/WHY_NOT_A_PROMPT.md),
 [what an intent taxonomy is for](docs/WHAT_ITS_FOR.md),
 [architecture](docs/ARCHITECTURE.md) and [model routing](docs/MODEL_ROUTING.md).
@@ -118,6 +121,8 @@ One command against one or more query corpora produces a complete, self-describi
 | `labels_full.csv` | every query with both routes' labels, plus machine-readable CSVs of the classes, rules and tree |
 | `deployment.json` + centroids | the deployable classifier — 140–256 KB of centroids; inference is `encode(query) → hybrid transform → argmax(x @ centroids.T)`, with rows under a 0.02 margin routed to a fallback |
 | `快照对比_漂移分析.md` | **multi-snapshot runs only** — what moved between the two periods, and what the comparison cannot tell you |
+| `分层对比_头尾结构差异.md` | the same comparison when the two groups differ by **sampling** rather than by date (`data.comparison_axis: stratum`) — its caveats are different, and one of the time-axis caveats is inverted here |
+| `垂类交叉表.md` + `.csv` | **multi-vertical corpora** — the delivered classes crossed against the source categories, with each class's breadth. Produced by `tools/vertical_crosstab.py` on any finished run |
 
 Deliverables are written in Chinese by default (`report_language`); the CSVs are
 language-neutral. A `--fast` run ships the three reference documents instead of the
@@ -251,6 +256,7 @@ that double-blind annotation depends on. `configs/live_finance.yaml`,
 <domain>_自下而上_聚类树完整定义.md     the delivered tree: families, leaves, definitions
 <domain>_query_挖掘结果.xlsx           every row labelled by both routes, + definition sheets
 快照对比_漂移分析.md                    multi-snapshot runs only — what moved between periods
+分层对比_头尾结构差异.md                when the two groups differ by sampling, not by date
 ```
 
 Each opens with a machine-generated banner naming exactly what was skipped, and

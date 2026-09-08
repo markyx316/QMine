@@ -1,0 +1,222 @@
+# AI-assistant conversation log, 33 topical verticals in one file.
+#
+# NOT A SEARCH LOG, and the difference decides most of what follows. Every other
+# profile here describes a query log where a row is a self-contained search
+# intent. A large part of this corpus is not that: it is multi-turn conversation
+# flattened into a query table, so rows like 「他与皮肤不粘连，是独立个体」(医疗)、
+# 「目前没发现低于6.8的」(商品)、「前面讲的还记得吗」 are turns whose meaning lives
+# in a context the export does not carry. They are still real traffic and are
+# analysed, but no method that reads one row at a time can recover their intent,
+# and the deliverables must say so rather than name them confidently.
+#
+# MEASURED ON THE POOLED head+tail EXPORT (65,986 rows, 33 L1 / 213 L2 categories,
+# `tools/prepare_assistant_corpus.py`). Every number in this file came from that
+# corpus; nothing here is inherited from another domain.
+key: ai_assistant_zh
+display_name: "AI 助手对话 Query（33 垂类混合）"
+language: zh
+
+tokenizer: jieba
+char_ngram_range: [1, 3]
+word_ngram_range: [1, 2]
+
+# Light-first, as elsewhere. Note this corpus's queries are SHORT — the head's
+# median length is 3-12 characters and 72% of its raw traffic sits in queries of
+# 6 characters or fewer — so most of the signal a bigger encoder would add has
+# very little text to attach to. Opt in to BAAI/bge-m3 only if the bake-off says
+# the light pair is losing on the long-tail rows, which is where length is.
+embedding_candidates:
+  - BAAI/bge-small-zh-v1.5
+  - BAAI/bge-base-zh-v1.5
+instruction_prefix: null
+
+# EVERY SEED BELOW WAS MEASURED FOR COVERAGE AND OVERLAP BEFORE IT WAS WRITTEN
+# (`tools/check_domain_profile.py`). The contract is intent PURITY, not size:
+# overlap with any other seed is <= 3.8% for all twelve, and 0% for eight.
+#
+# Three of them (image_edit_op, doc_summarize, translate) match 10-23 rows and
+# are kept deliberately. They are canonical single-string commands that carry
+# wildly disproportionate traffic — 19 rows of `image_edit_op` are 1.69% of the
+# corpus's normalised traffic, 10 rows of `doc_summarize` are 1.36% — so they are
+# tight, real families that happen to be tiny in rows. Do not "improve" their
+# coverage by loosening them; that trades the contract for a bigger number.
+template_seeds:
+  # THE LARGEST FAMILY IN THE CORPUS BY TRAFFIC, AND IT CARRIES NO INTENT.
+  #
+  # 1,065 rows, 15.09% of normalised traffic, present in all 33 categories. Seven
+  # strings alone are 15.97% of raw pooled head PV and appear in 29-32 of the 33
+  # categories — `👌 好的，继续吧` and `🆗 行，继续吧` in 32 each. A string spread
+  # over 32 topical categories is not topical: these are the assistant's own
+  # suggested-reply chips and bare continuation turns.
+  #
+  # Seeded so the miner ISOLATES them. They must not be dropped: that 29% of a
+  # typical category's head traffic is content-free acknowledgement (median 30.1%
+  # per category, 71.9% in 生活和情感) is the single largest finding here, and a
+  # dropped row cannot be reported.
+  - name: ack_continuation
+    pattern: "^[\\s👌🆗👍😊🙏]*(嗯+|好的?|行|是的?|对|要|需要|可以|继续|OK|ok|Ok|yes|谢谢|没有|不用|知道了?|明白)[\\s，,。！!、~～]*(继续吧|继续|吧|的|了|啊|呀)?[\\s。！!~～]*$"
+    intent_hint: "无内容的确认/继续，多为建议回复气泡或多轮对话中的一轮，不表达任何检索意图"
+  - name: image_generate
+    pattern: "(生成|帮我画|画一[张幅]|绘制|做一张|出一张|生成一[张幅]).{0,14}(图|图片|照片|海报|头像|插画|壁纸|封面)|^画[一个]|文生图"
+    intent_hint: "求文生图"
+  # Single-string editing commands. 84% of their traffic is one category (软件),
+  # which is what a tool panel's buttons look like in a query log.
+  - name: image_edit_op
+    pattern: "^(去水印|智能抠图|抠图|涂抹消除|消除笔|变清晰|高清修复|图片修复|画质修复|老照片修复|提取线稿|线稿提取|证件照|美颜|滤镜|找相似图|扩图|图片放大|去除路人|换背景|一键美化)$"
+    intent_hint: "对已上传图片的单步编辑操作"
+  - name: doc_summarize
+    pattern: "(总结|概括|归纳|提炼).{0,8}(全文|概要|要点|内容|大意|重点)|(全文|文章|文档|这篇).{0,4}(概要|摘要|总结)|^总结一下"
+    intent_hint: "求对已上传文档/文章做摘要"
+  - name: translate
+    pattern: "(翻译成|译成|帮我翻译|中译英|英译中|翻译一下|^翻译$)"
+    intent_hint: "求翻译"
+  - name: write_compose
+    pattern: "(帮我写|写一篇|写一份|撰写|起草|生成一篇|拟一份).{0,20}"
+    intent_hint: "求从零生成一段长文本"
+  - name: rewrite_polish
+    pattern: "(续写|扩写|改写|润色|精简一[点些]|再简洁|换个说法|重写一[遍下])"
+    intent_hint: "对上一轮输出的修改指令 —— 依赖上文，单看这一行无法还原对象"
+  - name: solve_exercise
+    pattern: "(这道题|这几道题|帮我解答|求解|解方程|算出|计算一下|答案是什么|怎么算)"
+    intent_hint: "求解题"
+  - name: definition_ask
+    pattern: "(是什么意思|什么意思|的定义|通俗解释|怎么理解)$|^什么是"
+    intent_hint: "求术语释义"
+  - name: recommend_pick
+    pattern: "(推荐一[下个]|有什么推荐|哪个更?好|哪家更?好|哪个划算|性价比高|值得买吗|哪个靠谱)"
+    intent_hint: "求推荐/选择建议"
+  - name: price_lookup
+    pattern: "(多少钱|什么价格|价格是多少|报价多少|收费标准|贵不贵)"
+    intent_hint: "求价格"
+  - name: roleplay_persona
+    pattern: "(扮演|角色扮演|你现在是[一个]{0,2}|假装你是|以.{1,12}的身份)"
+    intent_hint: "要求助手进入某个角色设定"
+
+# RISK: an assistant GENERATES, so a mis-served row here produces content rather
+# than a bad result page. Counts below are rows in the pooled 65,986-row corpus.
+#
+# READ EVERY COUNT BELOW WITH THIS: LONG FICTION PROMPTS OVER-TRIGGER ALL OF THEM.
+# Fiction markers (写一篇/续写/同人/世界观/剧情…) are 2.0% of corpus rows and 15% of
+# risk hits — a 7.5x enrichment — because a 500-character roleplay prompt contains
+# many words and only has to contain one. `self_harm` is the extreme: 38% of its
+# hits are fiction-marked and its hits have a MEDIAN LENGTH OF 565 CHARACTERS
+# against the corpus's 10. One measured example: a Rothschild character
+# description tripped `financial_advice` on the single word 抄底.
+#
+# So a count here is "rows to look at", never "defects found" — and query LENGTH
+# is the cheapest first filter when triaging any of these lists.
+risk_categories:
+  # 45 of 67 hits are in 成人色情, which is an entire first-level category of the
+  # export (1,000 rows per stratum). 117 of that category's 1,000 head rows are
+  # image-generation phrasing, carrying 15.7% of its traffic — so the category is
+  # substantially a GENERATION problem, not a retrieval one, and isolating it
+  # from the ordinary image_generate family is the point.
+  - name: sexualised_image_request
+    patterns:
+      - "(生成|画|绘制|帮我画|出图|9:16|16:9).{0,40}(性感|裸|胸围|内衣|丝袜|情趣|诱人|湿身)"
+      - "(消除|去掉|脱掉).{0,8}(衣服|内搭|背心|上衣)"
+    keywords: []
+    rationale: >
+      Requests to synthesise sexualised imagery, including "remove the clothing
+      from this photo" edits. 67 rows across 8 categories.
+    policy: isolate_and_flag
+  - name: sexual_content
+    patterns: ["(做爱|口交|自慰|情趣用品|成人片|黄片|色情|18禁|H文|肉文)"]
+    keywords: []
+    rationale: "Explicit sexual content requests. 57 rows across 9 categories."
+    policy: isolate_and_flag
+  # ONE ROW, AND IT IS THE REASON THIS CATEGORY EXISTS. The single hit is a
+  # self-identified 15-year-old asking about her own body measurement, and the
+  # EXPORT'S OWN TAXONOMY files it under 生活和情感/两性知识 — a general
+  # sex-education bucket with no minor-specific handling. A category that fires
+  # once is still correct to declare: its job is to catch the row when it
+  # appears, and n=1 is not evidence that the next export has none.
+  - name: minor_sexualisation
+    patterns: ["(小学|初中|中学|未成年|萝莉|幼女|儿童|学生妹).{0,12}(裸|性感|胸|内衣|做爱|色情)"]
+    keywords: []
+    rationale: >
+      Sexualised content involving minors, or a self-identified minor asking
+      about their own body. Highest severity in this profile. 1 row measured.
+    policy: isolate_and_flag
+  # DECLARED, AND MEASURED AS A PURE FALSE-POSITIVE GENERATOR ON THIS CORPUS.
+  #
+  # 16 hits. ZERO are first-person: 10 carry explicit fiction markers (写一篇/续写/
+  # 同人/世界观 — 老九门 and 喜羊羊 plot requests), the rest are history (杜聿明),
+  # news, and an abstract law question. The discriminator that would work is
+  # FIRST PERSON PRESENT TENSE, and it matches nothing here.
+  #
+  # Kept broad anyway, deliberately, and this is the one place in the file where
+  # that trade goes the other way from `finance_zh`'s 澳门 note: there a false
+  # positive isolated legitimate traffic into a compliance bucket, which is a real
+  # cost; here a false negative is a person in crisis getting a plot summary. Read
+  # the 16 as "16 to look at", not as 16 defects.
+  - name: self_harm
+    patterns: ["(自杀|不想活了?|活不下去|自残|割腕|安眠药.{0,6}(过量|多少片|致死))"]
+    keywords: []
+    rationale: >
+      Self-harm and suicide language. On this corpus every hit is third-person
+      (fiction, history, news); the category over-triggers on purpose because the
+      asymmetry of the two error types demands it.
+    policy: isolate_and_flag
+  - name: medical_self_diagnosis
+    patterns: ["(我.{0,8}(得了|是不是|会不会).{0,10}(病|癌|瘤|艾滋|梅毒)|该吃什么药|吃几粒|加大剂量|自己在家.{0,4}(治|处理))"]
+    keywords: []
+    rationale: "Self-diagnosis and dosing questions. 9 rows, 6 of them in 医疗."
+    policy: isolate_and_flag
+  # THREE WORDS WERE REMOVED FROM THIS PATTERN AND EACH FOR A MEASURED REASON.
+  # 抄底 and 梭哈 match inside long fiction — 抄底 fired on a Rothschild character
+  # description, this file's clearest false positive. 带单 ("a tout leading
+  # trades") matched exactly one row in 65,986 and it was 宽**带单**独计费 —
+  # a substring of "broadband billed separately", the same trap as `finance_zh`'s
+  # 澳门 note. What survives all requires an advice-seeking FRAME, which neither a
+  # character sheet nor a telecoms question has.
+  - name: financial_advice
+    patterns: ["(推荐.{0,4}[只支]?股|买什么股|能涨到|该不该[买卖]|操作建议)"]
+    keywords: []
+    rationale: "Individualised investment advice — licensed activity. 2 rows."
+    policy: isolate_and_flag
+  - name: legal_outcome_prediction
+    patterns: ["(能不能胜诉|能胜诉吗|会判几年|要判多久|判几年|会不会坐牢)"]
+    keywords: []
+    rationale: "Predicting a legal outcome. 6 rows, all in 法律."
+    policy: isolate_and_flag
+  - name: circumvention
+    patterns: ["(破解|翻墙|盗版|免费看.{0,6}(会员|VIP)|去除.{0,4}(付费|会员)限制|激活码)"]
+    keywords: []
+    rationale: >
+      Paywall, DRM and access-control circumvention. 28 rows across 10
+      categories. Note 8 are in 小说 and may be fiction plot requests rather
+      than real circumvention — check before acting on the count.
+    policy: isolate_and_flag
+
+# WIDER THAN THE 15-25 DEFAULT, because the corpus is 33 verticals rather than
+# one. These are triangulation only and never override the data. The reference
+# columns (33 L1 / 213 L2) reach 100% of rows, so `k_locator: auto` will locate K
+# against them rather than against the phrasing seeds — which is the designed
+# behaviour and the right one here: the seeds reach 5.1% of rows.
+expected_l1_range: [18, 30]
+expected_family_range: [22, 45]
+
+pragmatic_intents_hint:
+  - "无内容确认/继续（建议回复气泡与多轮对话轮次，占典型垂类头部流量的三成，聚类会把它们和真实短 query 混在一起）"
+  - "对上一轮输出的修改指令（改写/精简/换个说法 —— 对象在上文里，不在这一行）"
+  - "对助手本身的抱怨与元评论（「你能不能别那么废话」「为什么要给我推这个」）"
+  - "工具面板的单步操作指令（去水印/变清晰/抠图 —— 是按钮事件，不是检索意图）"
+  - "把助手当树洞的情绪倾诉（看起来像闲聊，实际是留存与安全都要关心的一类）"
+
+domain_notes: >
+  Three properties of this corpus decide how to read anything measured on it.
+  (1) It is MIXED-VERTICAL: 33 first-level categories in one file, sampled at
+  exactly 1,000 rows per category per stratum, so ROW COUNTS ACROSS CATEGORIES
+  ARE AN ARTEFACT OF THE EXPORT and carry no information about relative size.
+  (2) Each category's top-1,000 has its own PV floor — measured, 3 to 419 — so the
+  file is a union of 33 censuses at 33 different floors and RAW `search_num` IS
+  NOT COMPARABLE ACROSS CATEGORIES. Use the `pv_norm` column, which normalises
+  within (stratum, category). Reweighting to the true population is NOT possible
+  from these two files: the capture-recapture bridge fails because 17 of 33
+  categories have zero random-sample rows at or above their head floor.
+  (3) It is CONVERSATIONAL, so a large share of rows are turns rather than
+  queries. Expect a big, semantically empty cluster of acknowledgements and a
+  second of tool-button strings; both are real traffic and neither is an intent.
+  Treat the head and the tail as two sampling strata of ONE period — set
+  `data.comparison_axis: stratum`, never the time-drift default.

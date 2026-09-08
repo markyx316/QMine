@@ -38,6 +38,12 @@ from ...agents.roles import (
 )
 from ...config import gold_size_for
 from ...determinism import deterministic_subsample, rng
+from ...memory.context import (
+    RESEARCHER_EVIDENCE_CHARS,
+    budget_units,
+    fair_caps,
+    fair_excerpts,
+)
 from ...ops.audit import stratified_sample
 from ...ops.classify import UNLABELED, RuleEngine, agreement, build_features, train_classifier
 from . import observe as _observe
@@ -579,6 +585,37 @@ def p2a_taxonomy(state: PipelineState, deps: Deps) -> dict[str, Any]:
     }
 
 
+#: TWO KINDS OF LIST LIVE IN THESE BLOCKS, AND THEY NEED OPPOSITE STRATEGIES.
+#:
+#: A list where EVERY ENTRY MUST APPEAR — the risk categories — must not lose an
+#: entry, so entries are capped at their fair share (`fair_excerpts`). Measured
+#: on `ai02`: `budget_text` cut inside `self_harm`, whose six samples were 22,244
+#: of the block's 37,205 characters, and four categories costing 440 characters
+#: between them never reached the safety researcher at all.
+#:
+#: A list that is a SAMPLE — 400 raw queries, 200 random rows — must not lose the
+#: INTEGRITY of what it shows, and losing entries costs nothing: a random sample
+#: of 28 is still a random sample. Those use `budget_units`, which keeps whole
+#: rows and states how many it withheld.
+#:
+#: Getting this backwards is not hypothetical. Fair-sharing a sample of 200
+#: 800-character contract rows yields 200 fragments of 112 characters — every row
+#: mutilated, nothing readable — where `budget_units` yields 28 whole contracts
+#: and says so. Neither strategy carries an absolute length, so both adapt to a
+#: corpus this project has never seen.
+
+
+def _scaffold_room(rendered_with_empty_rows: str) -> int:
+    """Characters left for ROWS once the block's own headers and prefixes are paid.
+
+    MEASURED, NOT GUESSED. A reserve picked by hand ("about 1,500 should do it")
+    was 1,500 short on the first corpus that stressed it, which put the block
+    over budget and handed the tail straight back to `budget_text` — the exact
+    failure the row budgeting exists to prevent.
+    """
+    return max(1, RESEARCHER_EVIDENCE_CHARS - len(rendered_with_empty_rows))
+
+
 def _evidence_for_angle(
     key: str, df: pd.DataFrame, audit: dict, templates: dict, risk: dict, cfg: Any, seed: int
 ) -> str:
@@ -592,7 +629,10 @@ def _evidence_for_angle(
     if key == "log_reading":
         idx = stratified_sample(df, 400, strata_cols=[c for c in cfg.data.reference_label_columns if c in df.columns][:1], seed=seed)
         rows = df[col].astype(str).iloc[idx].tolist()
-        return "## Raw queries (stratified sample, read every one)\n" + "\n".join(f"- {q}" for q in rows)
+        head = "## Raw queries (stratified sample, read every one)\n"
+        return head + budget_units([f"- {q}" for q in rows],
+                                   _scaffold_room(head), unit="query",
+                                   label="log_reading rows")
     if key == "literature":
         return (
             f"## Corpus profile\n{json.dumps({k: v for k, v in audit.items() if k in ('n_rows', 'length', 'script_mix')}, ensure_ascii=False, indent=1)}\n\n"
@@ -611,28 +651,80 @@ def _evidence_for_angle(
             parts.append(f"Flagged as shape-defined or catch-all: {json.dumps(info['form_defined_suspects'], ensure_ascii=False)}")
             for d in info["distribution"][:8]:
                 mask = df[c].astype(str) == d["label"]
-                ex = df[col].astype(str)[mask].head(10).tolist()
+                ex = list(df[col].astype(str)[mask].head(10))
                 parts.append(f"  samples of {d['label']}: {ex}")
-        return "\n".join(parts)
+        return budget_units(parts, RESEARCHER_EVIDENCE_CHARS, unit="line",
+                            label="legacy_audit lines")
     if key == "pragmatic_intents":
         r = rng(seed)
         pool = df[df["len"] >= 6] if "len" in df.columns else df
         take = pool.iloc[r.choice(len(pool), size=min(300, len(pool)), replace=False)]
+        _tail = ("\n\n## Phrasing families already identified (these are the "
+                 "SURFACE-visible ones — your job is what they miss)\n"
+                 + "\n".join(f"- {g['name']}: {g['intent_hint']}" for g in templates["groups"]))
+        _head = "## Longer queries, where pragmatic intent is most visible\n"
         return (
-            "## Longer queries, where pragmatic intent is most visible\n"
-            + "\n".join(f"- {q}" for q in take[col].astype(str).tolist())
-            + "\n\n## Phrasing families already identified (these are the SURFACE-visible ones — "
-            "your job is what they miss)\n"
-            + "\n".join(f"- {g['name']}: {g['intent_hint']}" for g in templates["groups"])
+            _head
+            + budget_units([f"- {q}" for q in take[col].astype(str)],
+                           _scaffold_room(_head + _tail), unit="query",
+                           label="pragmatic_intents rows")
+            + _tail
         )
     if key == "risk_compliance":
-        parts = ["## Pre-screen results (patterns supplied by the domain profile)"]
-        for c in risk["categories"]:
-            parts.append(f"- {c['name']}: {c['n_hits']} hits ({c['share'] * 100:.2f}%), samples: {c['samples'][:6]}")
+        # EVERY CATEGORY MUST APPEAR, so the samples and the random queries are
+        # allocated together in ONE fair share rather than one section being
+        # rendered in full and the next losing whatever is left. Short rows —
+        # most of the random sample — keep their full text and release budget to
+        # the long ones, so a category whose hits are 8,000-character fiction
+        # prompts no longer costs the other seven categories their place.
+        # THE TWO SECTIONS SPLIT THE BLOCK BY FAIR SHARE, THEN THE SAMPLES DO.
+        #
+        # Giving the pre-screen samples the whole budget first was the previous
+        # attempt at this and it failed the same way `budget_text` did, just
+        # later: 48 samples fair-sharing 23,500 characters let `self_harm` keep
+        # 14,638 and `circumvention` 9,639, which left nothing for the random
+        # queries and put the block back over budget once the list quoting was
+        # paid for. Neither section may starve the other, and neither an absolute
+        # length nor a fixed split says so — a fair share of what each section
+        # ASKS FOR does, and adapts to any corpus.
+        #
+        # The result is RENDERED and measured rather than predicted. Predicting
+        # cost sample-by-sample means modelling `repr()` quoting and escaping,
+        # which differs by script; rendering is exact and converges in one or two
+        # passes.
+        _per_cat = [[str(x) for x in c["samples"][:6]] for c in risk["categories"]]
+        _flat = [x for group in _per_cat for x in group]
+        _header = "## Pre-screen results (patterns supplied by the domain profile)"
+        _q_header = "\n## Random queries — look for risk the pre-screen patterns MISSED"
         idx = deterministic_subsample(len(df), 200, seed)
-        parts.append("\n## Random queries — look for risk the pre-screen patterns MISSED")
-        parts += [f"- {q}" for q in df[col].astype(str).iloc[idx].tolist()]
-        return "\n".join(parts)
+        _q_lines = [f"- {q}" for q in df[col].astype(str).iloc[idx]]
+
+        def _render(samples: list[str], q_budget: int) -> str:
+            parts, at = [_header], 0
+            for c, group in zip(risk["categories"], _per_cat):
+                got = samples[at:at + len(group)]
+                at += len(group)
+                parts.append(f"- {c['name']}: {c['n_hits']} hits "
+                             f"({c['share'] * 100:.2f}%), samples: {got}")
+            parts.append(_q_header)
+            return "\n".join(parts) + "\n" + budget_units(
+                _q_lines, max(1, q_budget), unit="query",
+                label="risk_compliance random queries")
+
+        want_samples = sum(len(x) for x in _flat)
+        want_queries = sum(len(x) + 1 for x in _q_lines)
+        room = max(1, RESEARCHER_EVIDENCE_CHARS - len(_header) - len(_q_header) - 2)
+        share_samples, share_queries = fair_caps([want_samples, want_queries], room)
+
+        out = _render(_flat, share_queries)
+        for _ in range(4):                     # rendered, measured, corrected
+            if len(out) <= RESEARCHER_EVIDENCE_CHARS:
+                break
+            share_samples -= (len(out) - RESEARCHER_EVIDENCE_CHARS) + 64
+            out = _render(fair_excerpts(_flat, max(1, share_samples), unit="sample",
+                                        label="risk_compliance samples"),
+                          share_queries)
+        return out
     return ""
 
 
@@ -700,13 +792,32 @@ def p2b_gold(state: PipelineState, deps: Deps) -> dict[str, Any]:
         # gets `None` and has to render "未测量", which is the true statement.
         # A 0.0 would read as catastrophic disagreement and a 1.0 as perfect
         # agreement; both are claims about a comparison nobody made.
+        # `n_submitted` IS NOT OPTIONAL HERE, AND OMITTING IT DISARMED THE
+        # COVERAGE GUARD ENTIRELY.
+        #
+        # `n_sub = agree.get("n_submitted", agree["n"])` twenty lines below means
+        # a dict without the key computes `coverage = n / n = 1.0` — structurally,
+        # always, whatever failed. Measured on `ai04`: one annotator batch was
+        # lost after three attempts and 225 of 3,000 gold rows came back
+        # UNLABELED, and the gate reported 「覆盖率 100%」. At 60% coverage it would
+        # have reported 100% and PASSED, which is precisely the failure the
+        # comment above the coverage computation was written about — reintroduced
+        # by the single-annotator path added for fast mode.
+        #
+        # `n` must count rows that came back with a REAL label, not rows that came
+        # back: `_annotate_both` fills a lost row with the UNLABELED sentinel, so
+        # `len(labels_a)` is the submitted count wearing the answered count's name.
+        _n_labelled = sum(1 for lab in labels_a
+                          if str(lab.get("label", "")) != UNLABELED)
         agree = {"kappa": None, "raw_agreement": None, "n_disagreements": None,
-                 "n": len(labels_a), "n_annotators": 1,
+                 "n": _n_labelled, "n_submitted": len(queries), "n_annotators": 1,
                  "why_absent": ("mode=fast labelled with a single annotator "
                                 f"({getattr(cfg.taxonomy, 'primary_annotator', 'a')}); "
                                 "agreement needs two independent readings")}
-        deps.emit(f"  {len(labels_a)} rows labelled by one annotator — "
-                  "kappa undefined, no referee, no disagreements")
+        deps.emit(f"  {_n_labelled}/{len(queries)} rows labelled by one annotator — "
+                  "kappa undefined, no referee, no disagreements"
+                  + ("" if _n_labelled == len(queries) else
+                     f"  ⚠ {len(queries) - _n_labelled} row(s) came back unlabelled"))
     else:
         agree = agreement([l["label"] for l in labels_a], [l["label"] for l in labels_b])
         deps.emit(f"  raw agreement {agree['raw_agreement']:.3f}, kappa {agree['kappa']:.3f}, "

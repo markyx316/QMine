@@ -1531,3 +1531,174 @@ def test_loose_key_matching_is_refused_when_it_would_collide():
     assert "loose_ok" in src, "the loose key must be gated on injectivity"
     assert "len(set(loose_q)) == len(loose_q)" in src, "queries must map uniquely"
     assert "len(set(loose_g)) == len(loose_g)" in src, "and so must the returned keys"
+
+
+def _synth_risk(sample_len: int, n_cat: int = 3):
+    return {"categories": [{"name": f"cat_{i}", "n_hits": 5, "share": 0.001,
+                            "samples": ["x" * sample_len] * 6} for i in range(n_cat)]}
+
+
+def _synth_corpus(n: int, row_len: int, outlier: int = 0):
+    import pandas as pd
+
+    rows = ["q" * row_len for _ in range(n)]
+    if outlier:
+        rows[0] = "z" * outlier
+    return pd.DataFrame({"query": rows, "len": [len(r) for r in rows]})
+
+
+_SYNTH_TEMPLATES = {"groups": [{"name": "g", "n_hits": 1, "share": 0.01,
+                                "examples": ["a"], "intent_hint": "h"}]}
+
+
+def _synth_cfg():
+    from types import SimpleNamespace
+
+    return SimpleNamespace(data=SimpleNamespace(text_column="query",
+                                                reference_label_columns=[]))
+
+
+def test_one_long_row_cannot_crowd_a_risk_category_out_of_the_safety_brief():
+    """Measured on `ai02`: four of eight risk categories never reached the researcher.
+
+    The risk_compliance evidence came to 37,205 characters against a 24,000
+    budget, so `budget_text` kept the first 22,000 and a 2,000 tail. `self_harm`'s
+    six samples alone were **22,244 characters** — two of them 8,194 — because on
+    a conversational corpus its hits are long fiction prompts (median hit length
+    565 characters against the corpus's 11). The cut landed inside `self_harm`,
+    and `medical_self_diagnosis`, `financial_advice`, `legal_outcome_prediction`
+    and `circumvention` — **440 characters between them** — were dropped entirely
+    from the brief of the one researcher whose whole assignment is safety.
+    """
+    from qmine.graph.nodes.topdown import _evidence_for_angle
+    from qmine.memory.context import RESEARCHER_EVIDENCE_CHARS
+
+    risk = {"categories": [
+        {"name": "cat_first", "n_hits": 3, "share": 0.001, "samples": ["short one"]},
+        {"name": "cat_enormous", "n_hits": 4, "share": 0.002,
+         "samples": ["写一篇同人文 " + "长" * 9000 for _ in range(6)]},
+        {"name": "cat_last", "n_hits": 2, "share": 0.001, "samples": ["also short"]},
+    ]}
+    ev = _evidence_for_angle("risk_compliance", _synth_corpus(500, 11), {},
+                             _SYNTH_TEMPLATES, risk, _synth_cfg(), 7)
+
+    for name in ("cat_first", "cat_enormous", "cat_last"):
+        assert name in ev, (
+            f"{name!r} never reaches the safety researcher — one category's long "
+            f"samples pushed it out of the block")
+    assert len(ev) <= RESEARCHER_EVIDENCE_CHARS, (
+        "the block must fit the budget `agents/roles.py` holds it to, or "
+        "`budget_text` starts dropping whole categories again")
+
+
+def test_no_evidence_block_carries_a_row_length_tuned_to_one_corpus():
+    """An earlier fix capped every row at a flat 300 characters. That is the bug.
+
+    300 was chosen against a corpus whose median row is 10 characters. On a
+    corpus of contracts or code — median row 800 — it would gut every row while
+    fixing nothing, which is exactly what
+    `test_gates_do_not_import_thresholds_that_only_fit_one_corpus` exists to
+    catch. Every share is derived from the budget and the item count instead, so
+    the guard is that each branch DELEGATES to one of the three budgeting
+    helpers rather than slicing text itself.
+
+    Note the sample SIZES (400 rows, 200 rows, 6 samples) are deliberately not
+    what this checks: how many rows to draw is a sampling decision and does not
+    change with row length. What must not come back is a character cap.
+    """
+    import inspect
+    import re
+
+    from qmine.graph.nodes import topdown
+
+    src = inspect.getsource(topdown._evidence_for_angle)
+    code = re.sub(r"^\s*#.*$", "", src, flags=re.M)
+
+    # no module-level character cap
+    mod_src = inspect.getsource(topdown)
+    assert "_ROW_EXCERPT_CHARS" not in mod_src, (
+        "a flat per-row character cap is back — it cannot fit both a "
+        "10-character query log and an 800-character contract corpus")
+
+    # every branch that embeds corpus rows hands them to a budgeting helper
+    for angle in ("log_reading", "legacy_audit", "pragmatic_intents", "risk_compliance"):
+        block = code.split(f'"{angle}"', 1)[-1].split("if key ==", 1)[0]
+        assert ("budget_units(" in block or "fair_excerpts(" in block
+                or "fair_caps(" in block), (
+            f"the {angle!r} branch embeds corpus rows without giving them to a "
+            f"budgeting helper, so one long row can crowd out everything else")
+    # and the budget itself is the shared prompt constant, not a local number
+    assert "RESEARCHER_EVIDENCE_CHARS" in code
+
+
+def test_a_long_row_corpus_is_thinned_not_shredded():
+    """The two list kinds need OPPOSITE strategies, and getting it backwards is silent.
+
+    A SAMPLE of 400 contract rows fair-shared into 112-character fragments gives
+    400 mutilated rows and nothing readable. `budget_units` gives 29 whole
+    contracts and says how many it withheld. A list where every entry must appear
+    — the risk categories — needs the opposite, and gets `fair_excerpts`.
+    """
+    from qmine.graph.nodes.topdown import _evidence_for_angle
+    from qmine.memory.context import RESEARCHER_EVIDENCE_CHARS
+
+    df = _synth_corpus(2000, 800)
+    ev = _evidence_for_angle("log_reading", df, {}, _SYNTH_TEMPLATES,
+                             _synth_risk(800), _synth_cfg(), 1)
+    rows = [ln for ln in ev.split("\n") if ln.startswith("- ")]
+    assert rows, "the block must still show some rows"
+    assert len(rows[0]) - 2 == 800, (
+        "a sampled row must be shown WHOLE — shredding 400 rows into fragments "
+        "is worse than showing fewer complete ones")
+    assert len(rows) < 400, "and there must be fewer of them, since they cannot all fit"
+    assert "withheld" in ev, "the count withheld must be stated, not silent"
+    assert len(ev) <= RESEARCHER_EVIDENCE_CHARS
+
+
+def test_every_risk_category_survives_whatever_the_corpus_looks_like():
+    """One code path, six corpus shapes this project has and has not seen."""
+    from qmine.graph.nodes.topdown import _evidence_for_angle
+    from qmine.memory.context import RESEARCHER_EVIDENCE_CHARS
+
+    shapes = [
+        ("search log", _synth_corpus(2000, 11), _synth_risk(20)),
+        ("conversational + outlier", _synth_corpus(2000, 11, outlier=8000), _synth_risk(8194)),
+        ("contracts", _synth_corpus(2000, 800), _synth_risk(800)),
+        ("code", _synth_corpus(2000, 2000), _synth_risk(2000)),
+        ("one 50k row", _synth_corpus(2000, 11, outlier=50000), _synth_risk(50000)),
+        ("30 categories", _synth_corpus(2000, 11), _synth_risk(400, n_cat=30)),
+    ]
+    for name, df, risk in shapes:
+        ev = _evidence_for_angle("risk_compliance", df, {}, _SYNTH_TEMPLATES,
+                                 risk, _synth_cfg(), 1)
+        missing = [c["name"] for c in risk["categories"] if c["name"] not in ev]
+        assert not missing, f"{name}: {len(missing)} risk categories never reach the researcher"
+        assert len(ev) <= RESEARCHER_EVIDENCE_CHARS, f"{name}: block is over budget"
+
+
+def test_fair_excerpts_is_a_no_op_when_everything_already_fits():
+    """The property that makes it safe to adopt everywhere.
+
+    Every corpus this project ran before this change has a maximum row of 28 to
+    64 characters, so nothing was ever near the budget. Verified separately
+    against the pre-change code on 50 angle-corpus combinations, all identical;
+    this pins the property the verification rested on.
+    """
+    from qmine.memory.context import fair_excerpts
+
+    items = ["short", "also short", "tiny"]
+    assert fair_excerpts(items, 10_000) == items
+    assert fair_excerpts(items, sum(len(i) for i in items)) == items
+    assert fair_excerpts([], 10) == []
+
+
+def test_fair_allocation_lets_short_items_release_budget_to_long_ones():
+    """Max-min fairness, not an equal cut: a cut would waste what short rows leave."""
+    from qmine.memory.context import fair_caps
+
+    caps = fair_caps([5, 5, 5, 985], 300)
+    assert caps[:3] == [5, 5, 5], "an item under its share keeps its full length"
+    assert caps[3] == 285, "and what it did not use is redistributed, not lost"
+    assert sum(caps) <= 300
+
+

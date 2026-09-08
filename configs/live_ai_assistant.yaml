@@ -1,0 +1,46 @@
+# The pooled AI-assistant corpus: head + tail strata of ONE period, 33 verticals.
+#
+# Build the input first — the two source exports are NOT usable as they ship:
+#
+#   python tools/prepare_assistant_corpus.py \
+#       --head ~/Downloads/ai助手_Top1000query.xlsx \
+#       --tail ~/Downloads/ai助手_随机1000query.xlsx \
+#       -o data/raw/ai_assistant_pooled.parquet
+#
+# That tool's docstring carries the reasoning behind every column below.
+#
+# `extends: live.yaml` because `--config` REPLACES the default rather than merging
+# it, so without this line the whole provider policy is silently dropped.
+extends: live.yaml
+
+data:
+  # ONE file, already pooled. NOT `--input head.xlsx,tail.xlsx`: several inputs
+  # mean SNAPSHOTS AT DIFFERENT TIMES, and these two are the same period sampled
+  # two ways. p1 reads the stratum tag out of the column named below exactly as
+  # it would read a snapshot tag it had added itself.
+  input_path: data/raw/ai_assistant_pooled.parquet
+  text_column: query
+
+  # `pv_norm`, NOT `search_num`. Each category's top-1,000 has its own PV floor
+  # (measured: 3 to 419), so raw traffic is not comparable across categories —
+  # under it two of the 33 hold 55% of pooled weight and the single string
+  # `变清晰` holds 17%, which would make every weighted metric in the run mostly
+  # a statement about that one string. `pv_norm` normalises within
+  # (stratum, category), so a traffic share reads as "share of a typical
+  # category's stratum traffic". `search_num` is in the file if you want raw.
+  weight_column: pv_norm
+
+  # THE FIRST CORPUS HERE WITH A REAL REFERENCE TAXONOMY. The house exports carry
+  # `query_1st_category` holding one constant value per file — a filename, which
+  # p1 drops. These are 33 first-level and 213 second-level classes that VARY row
+  # to row and reach 100% of the corpus, so `k_locator: auto` will locate K
+  # against them rather than against the phrasing seeds (which reach 5.1%). That
+  # is the designed behaviour and the right one here.
+  #
+  # Reference only, never supervision — and read `l1` knowing it is noisy exactly
+  # where the traffic is: `👌 好的，继续吧` is filed under 32 of the 33 categories.
+  reference_label_columns: [l1, l2]
+
+  # The two groups p10b compares, and what they differ BY.
+  snapshot_column: stratum
+  comparison_axis: stratum

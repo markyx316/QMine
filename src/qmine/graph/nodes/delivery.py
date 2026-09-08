@@ -264,6 +264,20 @@ def p10_deploy(state: PipelineState, deps: Deps) -> dict[str, Any]:
     for c in cfg.data.reference_label_columns:
         if c in df.columns:
             out[f"ref_{c}"] = df[c]
+    # THE DRIFT DOCUMENT POINTS READERS AT THIS COLUMN AND IT WAS NEVER WRITTEN.
+    #
+    # 「原始数据: `labels_full.csv`（逐行标签，含分层列）」 is the last line of every
+    # drift/stratum report, and it was false on ALL SIX pooled runs on disk
+    # (fin/med/edu/film/ppl-pool, filmdrift) plus `ai04`: none of their
+    # `labels_full.csv` carries a snapshot column. A reader who followed that
+    # pointer to check a share, or to re-slice the comparison a different way,
+    # could not — the one column the whole document is about was missing.
+    #
+    # Additive and self-limiting: `build_frame` only creates `snapshot` when the
+    # run actually pooled several inputs, so a single-snapshot run gains nothing
+    # and its `labels_full.csv` is byte-identical to before.
+    if "snapshot" in df.columns:
+        out["snapshot"] = df["snapshot"]
     out["run_id"] = deps.run_id
     out["generation"] = deps.store.generation
 
@@ -531,9 +545,18 @@ def _drift_document(state: PipelineState, deps: Deps, refs: dict[str, Any]) -> N
     try:
         from ...report.zh_drift import build as build_drift
 
+        # THE FILENAME IS PART OF THE CLAIM. A run whose two groups differ by
+        # SAMPLING METHOD shipping a file called 「快照对比_漂移分析」 tells a
+        # reader that behaviour moved over time before they open it — and the
+        # numbers inside cannot undo a filename. `time` keeps the name it has
+        # always had; nothing about existing runs changes.
+        _axis = str(getattr(deps.cfg.data, "comparison_axis", "time"))
+        _name, _summary = (
+            ("分层对比_头尾结构差异", "两个抽样分层在同一套标签下的差异")
+            if _axis == "stratum" else
+            ("快照对比_漂移分析", "两个快照在同一套标签下的差异"))
         refs["report_drift"] = deps.store.put_markdown(
-            "快照对比_漂移分析", build_drift(state, deps), producer="p11",
-            summary="两个快照在同一套标签下的差异")
+            _name, build_drift(state, deps), producer="p11", summary=_summary)
     except Exception as exc:  # noqa: BLE001
         deps.emit(f"  ⚠ drift document not written ({type(exc).__name__}: {exc}) — "
                   "drift_analysis.json still holds every number")

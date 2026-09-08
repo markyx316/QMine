@@ -133,6 +133,21 @@ class DataConfig(BaseModel):
     #: ask the clustering to find a K that separates one period from the other,
     #: which is both meaningless and the opposite of a shared frame.
     snapshot_column: str = "_snapshot"
+    #: WHAT THE TWO POOLED GROUPS DIFFER BY. Pooling is what makes them
+    #: comparable; this says what the comparison MEANS, and it is not cosmetic.
+    #:
+    #: `ops/drift.py` is axis-agnostic — it compares the composition of two
+    #: groups and nothing in it knows about time. `report/zh_drift.py` is not:
+    #: it says 「不是趋势」, 「同月同日不等于季节可比」, 「时段性事件」. Every one
+    #: of those sentences is FALSE about groups that differ by sampling method
+    #: rather than by date, and a reader who takes them at face value concludes
+    #: behaviour changed over time when it did not.
+    #:
+    #: `"time"` is the default and is exactly the behaviour that shipped before
+    #: this field existed. `"stratum"` is for two samples of ONE period drawn
+    #: differently — the AI-assistant head (top-N by PV) and tail (random)
+    #: exports, where the honest comparison is head-vs-tail structure.
+    comparison_axis: Literal["time", "stratum"] = "time"
     sample_size: int | None = Field(default=None, description="None = use all rows.")
     min_query_len: int = 1
     max_query_len: int = 200

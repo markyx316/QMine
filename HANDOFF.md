@@ -12,123 +12,143 @@
 
 ---
 
-## 1. Status — last updated 2026-09-03
+## 1. Status — last updated 2026-09-07
 
-# Multi-snapshot pooling and drift analysis (phase `p10b`) are built, wired into BOTH modes, and validated on real data.
-
-Give `--input` several comma-separated paths and they are stacked into one
-corpus, tagged by snapshot; one taxonomy and one tree label every period; `p10b`
-splits the finished labels and compares. Single-input runs are untouched — no
-snapshot column, no phase, no extra deliverable (verified).
-
-**Why pooling rather than two runs and a diff — measured, not assumed.** `fin01`
-(金融 2025-07) and `fin02` (金融 2026-07) were run separately and produced **20 and
-19 classes sharing ZERO codes** — `LOOKUP_FX_RATE` vs `FX_RATE_LOOKUP`, parallel
-but not joinable. Leaves are worse (count, boundaries and names all move). A
-cross-run diff therefore measures the pipeline's own variance, not the corpus's.
+# `ai04` DELIVERED: the multi-vertical AI-assistant corpus is mined end-to-end in fast mode, with the stratum comparison shipping under its own name. Two defects were found and fixed during the run.
 
 | | |
 |---|---|
-| Tests | **709** passing, exit 0; `ruff --select F src/qmine/ tools/` clean |
-| New phase | `p10b_drift`, between p10 and p11, in `PHASE_NODES` + `SEQUENTIAL_TAIL` |
-| New modules | `ops/drift.py`, `report/zh_drift.py` |
-| New deliverable | `快照对比_漂移分析.md` — generated **entirely from `drift_analysis.json`**, no model call, so it ships in **full AND fast** |
-| New config | `data.input_paths`, `data.snapshot_column` (both additive) |
-| Gate | `p10b_snapshots_share_one_frame`, **warn-only** |
-| Rule file | `.claude/rules/multi-snapshot.md` |
+| Tests | **739** passing, exit 0; `ruff --select F src/qmine/ tools/` clean (was 716) |
+| Run | `ai04`, `mode=fast`, `provider=routed`, not halted, **448 calls / $7.91 / 3h31m** |
+| Corpus | `data/raw/ai_assistant_pooled.parquet` — 65,986 rows, 33 L1 / 213 L2 reference |
+| Delivered | **24 top-down intents**, **154 leaves**, 121 families (156 leaves pre-governance; 56 governance ops, 6 declined) |
+| Held-out reproduction | **96.9%** (95% CI 0.966-0.972, n=13,198) |
+| Gold | 3,000 rows, **coverage 92.50%** — 225 rows came back UNLABELED (the gate said 100%; see below) |
+| Deliverables | 3 fast-mode reference documents + `分层对比_头尾结构差异.md` + `垂类交叉表.md/.csv` |
+| verify_run vs live42 control | `ai04` **PASS 19 / N-A 6 / SKIP 2 / FAIL 1**; control PASS 20 / FAIL 6 / SKIP 2 |
 
-**What it measures.** Within-snapshot shares only, by row AND by traffic weight —
-never raw counts (one medical pair fell 9.74M → 5.21M in weight; on raw counts
-every class "declined"). `emergent`/`receded` are reported apart from `stable`,
-because a class present in one period has no share *change*. Under 30 rows on
-both sides → `too_thin_to_compare`. Effect size is Cramér's V; **no p-value on
-traffic share** — traffic is the population, and `z_row_share` has exactly one
-call site, on row counts.
+### Post-run corrections to `ai04`, and the one thing that was general
 
-**Two metrics added from the literature review**, both validated on film-pool:
-`total_variation` (20.33% by traffic — "this much traffic would have to be
-reassigned to turn 2026 back into 2025"), and **delta concentration** (HHI over
-the per-query delta), which separates a broad shift from a single entity. The
-latter is the most actionable column in the report: 影视 streaming −13.6pp is
-spread over **6,201 distinct queries** (HHI 0.004 — structural, 2025 dramas aging
-out), while live-TV +11.0pp has one query at 23% (all top-5 are cctv5 variants).
+The maintainer read the delivered tables and found three problems. Deciding which
+belonged in SOURCE and which in a post-run step was settled by measurement, not
+preference — is it wrong on every corpus, or only on this export?
 
-**Two defects the first real render caught, both fixed.** (1) The concentrated
-bucket was labelled 「疑似单一事件」 — refuted immediately by the cctv5 case, which
-is one *entity* across many surface forms, not one event; it now names the
-measurement and ships the query list as evidence. (2) The family axis rendered
-bare ids `11` and `15`; names now come from `_shape.family_names` (leaf-membership
-join — an id join mismatched 19 of 19 on live38), degrading to `#11` rather than
-raising.
+**GENERAL, so fixed in source.** Every drift/stratum report ends 「原始数据:
+`labels_full.csv`（逐行标签，含分层列）」 and **that column was never written** —
+false on all six pooled runs on disk (fin/med/edu/film/ppl-pool, filmdrift) as
+well as `ai04`. `p10` now carries `snapshot` into the delivered labels when the
+run has one; additive, so single-snapshot runs are unchanged.
 
-**A false regression, twice believed.** Three `test_render_command.py` tests
-failed in two long suite runs and passed in isolation. Cause: they call
-`inspect.getsource(p11_report)`, which re-reads `delivery.py` from disk at the
-imported function's line numbers — so editing that file mid-suite makes the
-assertion read the wrong text. Not a code defect. **Do not run the suite while
-editing source.**
+**CORPUS-SPECIFIC, so post-run** (`tools/postprocess_assistant_run.py`, writes to
+`<gen>/postprocessed/`, non-destructive):
 
-**Cost/time, measured, for anyone sizing a run:** full 50k — `live39` 3.4 h/$5.52,
-`live40` 4.0 h/$7.01, `live44` 9.8 h/$61.09 (841 calls vs 696, 8x the bill: one
-expensive model). Fast 10k — **1.35-2.40 h / $3.19-$4.23** (`fin03`, `fin01`);
-quote the range, not the better one. Five pooled 20k fast runs: fin-pool 2.11 h/
-$4.49, film-pool 1.07 h/$3.50, med-pool 1.55 h/$3.87, edu-pool 1.47 h/$3.67,
-ppl-pool 1.29 h/$3.01 — all **21 PASS / 6 N/A / 0 FAIL**.
+* **Sort order.** The delivered table came out in corpus order — stratum then
+  query — which reads as alphabetical and scatters each category. Re-sorted to
+  (category, sub-category, stratum, descending traffic), with the stratum order
+  STATED (`top1k` before `random1k`); sorting those two by name puts the random
+  sample first, which is backwards for every reader.
+* **Stratum names.** `head`/`tail` -> `top1k`/`random1k`. `tail` is a CONCLUSION
+  about where rows sit; the file is a RANDOM sample, which is how it was drawn.
+  `tools/prepare_assistant_corpus.py` now emits the new tags (`HEAD_TAG` /
+  `RANDOM_TAG`) so future runs never carry the old ones.
+* **What the comparison MEANS**, appended to the document as a computed addendum.
 
-**A full run ships 10 markdown documents, 6 CSVs and a notebook** (plus the drift
-document on a pooled run). The docs and the fast-mode banner said "13" until
-recently; the banner no longer states a full-mode count at all, because a hard
-number there goes stale silently inside every shipped document.
+### What the stratum comparison actually compares — and one caveat that was wrong
 
-### What the live44 examination found, and where it landed
+`top1k` is a **census** of each category's 1,000 highest-traffic queries, complete
+above that category's own floor (**3 to 419 raw PV**, measured). `random1k` is a
+**uniform sample of distinct queries** (raw PV median **1**, mean **1.29** — a
+PV-weighted draw would lift the mean far above that). So the comparison is
+*"the composition of the highest-traffic band vs the composition of the query
+vocabulary"*. Only **115 of 33,000 random rows (0.35%)** fall inside the head
+band and 17 of 33 categories have none, so it FUNCTIONS as head-vs-rest — a
+measured property of this export, not a guarantee.
 
-Seven defects, **none of which `verify_run.py` caught** — all came from reading
-the deliverables. All seven are fixed:
+**This inverts the document's own reading advice.** 「请按 Δ流量的大小读」 is right
+when both sides are censuses. Here the random side's traffic share is a
+high-variance estimate: one query holds a median **3.4%** of a category's sample
+traffic and up to **36.4%** (交通出行), with 4 of 33 categories above 10%. **Read
+the ROW share; treat Δ流量 as indicative.**
 
-| | defect | fix |
-|---|---|---|
-| D1 | `00_索引.md` claimed 21 L1 classes; the taxonomy has 20 | index counts derive from the taxonomy; `_WHAT_FOR` may not contain a digit |
-| D2 | `heldout_reproduction` published under one name with two values (0.9853 pre-governance / 0.9748 delivered) | both now name their partition |
-| D3 | `20 L1 intents across 1 axes` — an English sentence — on 7 lines of 3 Chinese deliverables | decision choice is symbolic (`L1 = 20, axes = 1`), like `alpha = 0.1` |
-| D4 | `taxonomy.axes` empty while D003 counted 1 axis | registry derives from the nodes |
-| D5 | delivery auditor shown **39%** of the deliverables | `budget_units` — whole documents, count in log and in-band |
-| D6 | 2 of its 3 findings deleted on a citation technicality | `citable_namespace` — resolver AND check evaluator |
-| D7 | maintainer failed 3x (44 min, `out 0`), `✔ completed`, disclosed nowhere | the failure is emitted |
+And 「不能推回总体」 was too strong. Correctly: within a category the random sample
+IS an unbiased estimate of row composition (±1.4pp at 5%, ±3.1pp at 50%, n=1,000);
+it cannot be combined ACROSS categories (sizes unknown, capture-recapture fails),
+and its traffic share cannot be read as population traffic.
 
-**D1 and D2 are the sharpest result of the run.** The pre-delivery audit — the
-last check before shipping — found both, and the pipeline discarded both. It did
-that while having been shown 39% of the material. Whatever else is wrong is
-likely in the 61% it never read.
+**A bug I shipped into that addendum and caught by reading the output:** the first
+version computed the overlap from `weight`, which is normalised WITHIN (stratum,
+category) — two different scales — and reported **100%** overlap where the truth
+is 0.35%. It is the exact incomparability this corpus preparation exists to
+handle. It now computes from raw counts via `--source-corpus`, or states that it
+did not compute the figure. Pinned by
+`test_the_stratum_addendum_will_not_state_an_overlap_it_cannot_compute`.
 
-### Family names and duplicate leaves (raised 2026-09-01, both fixed)
+### `_AXIS["stratum"]` was over-fitted to this corpus, and is now frame-agnostic
 
-**Delivered families had no names.** `混合·主要成分「词语含义查询」45%` was being
-used AS a family's title — in headings, table cells, a Mermaid node and a CSV
-column. Cause: the tree auditor names the **Phase 7** tree, governance then
-merged 18 families into 14 and isolated them back out to 23, and a delivered
-family routinely spans several audit families, so no audit name is simply "its"
-name. p8 now names the delivered partition directly (`FamilyNamerAgent`,
-`families_final`), the same way it already re-names the leaves governance
-changed. `_shape.family_names` prefers those; the composition label survives
-only as the fallback when naming fails.
+It said 「头部按流量取 TopN，尾部是随机抽样」 — this export's design, written into
+the shipped vocabulary, where it would mis-describe any other stratum pair (two
+devices, two collection methods). The shipped text now says only what is true of
+every stratum comparison; what each frame IS lives in the post-run addendum,
+computed from the run's own data. The `time` branch remains byte-identical to the
+pre-change module.
 
-**The tree could only ever fragment.** `PrescriptionKind` had `merge_families`
-but **no `merge_leaves`**, so the auditor's `duplicate_leaf_pairs` was a
-write-only measurement. live44 listed **14 duplicate pairs** with cosines and
-reasons — including leaves 12/14 ("汉字读音查询重复，任务无法区分") and 27/29
-("偏旁部首查询重复，仅提问方向相反") — prescribed nothing on any of them, and
-shipped a tree with **two leaves carrying byte-identical names in the same
-family**. Governance even split leaf 30 into {30, 50} while the auditor had
-flagged {25, 30} as duplicates, and both halves got the same name.
+### The stratum axis works end to end
 
-`merge_leaves` now exists with an executor (folds into the smallest id, so
-re-runs are stable), and the auditor prompt requires every listed pair to get a
-disposition — a merge or a documented `keep_as_is`.
+`分层对比_头尾结构差异.md` shipped under the stratum name, and contains **zero**
+occurrences of 不是趋势 / 同月同日 / 时段性事件 / 两期的抽样方式必须一致 / 漂移.
+The inverted caveat is replaced by its opposite (「抽样口径不同正是本报告的自变量」)
+and the real estimand limit is stated (「不能推回总体」). Measured: head and tail
+share **159 queries, a Jaccard of 0.2%**; Cramér's V **0.3232**.
 
-**Still open on this:** the duplicate audit runs in p7, *before* p8 creates new
-leaves, so a duplicate governance itself introduces (30/50) is never audited.
-Same shape as every other "gate before the operation that breaks its invariant".
-See §2.
+### The `UNLABELED` sentinel is counted as a CLASS in three places
+
+`ops.classify.UNLABELED` fills a row no annotator or classifier could label. It is
+not a class, and three separate readers treat it as one:
+
+1. **`p2b_kappa`'s coverage** — hidden entirely; the gate reported 100% while 225
+   of 3,000 gold rows held the sentinel (fixed, below).
+2. **`verify_run.py`'s phantom-class check** — surfaces it, but under the label
+   "referee typos", which is the wrong diagnosis for the right observation.
+3. **The class COUNT.** `taxonomy.json` has **24** nodes; `labels_full.csv` has
+   **25** distinct `td_l1` because ONE row carries `UNLABELED`, and
+   `分层对比_头尾结构差异.md` therefore says 「共 25 类」. The delivered taxonomy is
+   24. `tools/run_evidence.py` reports 24 and is right.
+
+Only (1) is fixed. (2) and (3) are cosmetic on this run — one row — but the same
+sentinel would inflate a class count by however many rows a real outage lost.
+
+### The one FAIL, and why it is the same defect as the coverage bug
+
+`❌ [gold] no phantom classes from referee typos — 1 phantom classes: ['UNLABELED']`.
+Not a referee typo: `UNLABELED` is the sentinel filling the **250 gold+pilot rows
+the annotator lost**. Two independent instruments, one cause — the p2b gate hid it
+behind a tautological 100%, the mechanical verifier surfaced it as a phantom
+class. Fixed in the gate (see below); the verifier's message could be clearer
+about the distinction but was not touched.
+
+### What a reader must not take at face value
+
+* **Coherence 3.37/5, 26 of 156 leaves below 3.0** — worse than the 3.90-4.06 of
+  previous corpora, and it is the CORPUS, not the clustering. The four worst
+  leaves are 过滤无意义表情符号与乱码输入, 短词查询 (工作/房子/塑料/海豚),
+  识别日常口语片段并应答, 杂项查询意图识别 — the acknowledgement, emoji and
+  short-fragment population. 86 of 156 leaves sit at 4-5; the mean is dragged by a
+  noise floor a search log does not have.
+* **59 of 156 leaves (38%) are risk-flagged.** Plausible given an entire 成人色情
+  vertical plus the fiction/roleplay population, but unread by a human and fast
+  mode dropped the adversarial validation that would probe it.
+* **ECE 0.0807, 11.4 sd above this run's calibrated null (0.0190 ± 0.0054).** The
+  classifier's confidence is miscalibrated, which matters because rows under a
+  0.02 margin route to a fallback on that confidence.
+* **`ai04`'s deliverables carry the false 「覆盖率 100%」**, written to state before
+  the fix. `qmine render ai04` into a new generation is the cheap correction;
+  whether the gate line regenerates on render is UNVERIFIED.
+
+### Cost of getting here
+
+`ai01` $2.31 (halted for fast mode; found the alpha knife-edge), `ai02` $0.37
+(halted: truncation defect), `ai03` $0.55 (halted: lost the log_reading angle),
+`ai04` $7.91 delivered. **$11.14 total.**
 
 ## 2. Open questions — EDIT THIS SECTION, DO NOT APPEND
 
@@ -137,6 +157,46 @@ session's log below. A struck-through entry is a maintenance failure, not a
 record.
 
 ### P1 — worth doing next
+
+0t. **`--fast` is SILENTLY IGNORED on `--resume`, and a config file's `mode:` is
+   silently overruled.** Both measured 2026-09-07, both the same failure class as
+   `test_an_unset_cli_flag_does_not_overrule_the_config` (which pins
+   `text_column` and `reference_columns` and does not cover `mode`).
+
+   - **On resume:** the `if resume and run_id:` branch never calls `_load_config`.
+     It loads `config.resolved.yaml` and applies exactly two things —
+     `cfg.run_root` and `cfg.taxonomy.reuse_taxonomy_from`. So
+     `qmine run --resume --run-id X --fast` resumes in **full** mode and pays for
+     the second-opinion layer the flag asked to skip. The `reuse_taxonomy` line
+     right there carries a comment explaining that this exact branch swallowed
+     that flag once already; `mode` is the same bug, un-fixed.
+   - **From a config file:** `cli.run` always passes `mode="fast" if fast else
+     "full"`, never `None`, so the override loop always fires. Verified: a config
+     saying `mode: fast` loads as `mode='full'` when `--fast` is absent.
+
+   **The two halves need OPPOSITE fixes, and an earlier draft of this entry got
+   the resume half wrong.** `mode="fast"` is not a display flag: a pydantic model
+   validator (`config.py:641`) applies it at CONSTRUCTION, setting
+   `taxonomy.annotators = 1`, zeroing `kappa_repair_rounds` and
+   `max_taxonomy_redraws`, and switching off `observe_phases`,
+   `validate_adversarial`, `final_report`, `delivery_audit` and
+   `interpret_results`. Honouring `--fast` on a resume would therefore apply
+   those to a run that has already executed phases under the other setting — a
+   run whose first half annotated with two annotators and second half with one,
+   whose summary then claims `mode: fast`. That is worse than ignoring it.
+
+   So: **the resume branch should REFUSE `--fast` (or warn loudly and continue
+   full), not honour it** — the silence is the defect, not the ignoring. The
+   config half is a plain bug with a clean fix: give `--fast` a tri-state default
+   so an unset flag stops overruling a config file, exactly as `text_column` and
+   `reference_columns` already do.
+
+   Note the RENDER path gets this right already (`runner.py:613`): it restores
+   `mode` from the previous run's summary and re-validates, so a fast run's
+   re-render stays fast.
+
+   **Consequence today:** the ONLY way to get a fast run is `--fast` on the
+   command line of a FRESH run id.
 
 0i. **`model_overrides` silently ignores a suffixed role.** Routing resolves
    `researcher_log_reading` to its BASE role `researcher` before looking up a
@@ -572,6 +632,30 @@ record.
 
 ## 3. Durable notes — worth not re-learning
 
+- **`researcher_log_reading` on `moonshotai/kimi-k3` fails an attempt ROUTINELY and
+  recovers; ~5% of runs it does not.** Measured over the 38 runs on disk:
+  **36 produced the angle, 2 exhausted all three attempts** (`ai03`, `med03`).
+  Failing attempt 0 and succeeding on attempt 1 is normal — live34/35/36/42/43/44,
+  med01/02 and `ai01` all did it. The failure mode is `ValueError: no parseable
+  structured output` while already in plain-JSON mode, i.e. the model emits
+  malformed JSON, not a timeout and not a schema-support problem.
+
+  **So a single failure is not evidence of a wrong pairing.** Before re-pinning
+  this role, re-measure the base rate; `glm-5.3-flash` is documented in
+  `live.yaml` as failing DETERMINISTICALLY on this angle (903s, reproduced three
+  times), so the obvious alternative is known-bad and a swap is a real risk.
+
+  `max_repair = 2` (3 attempts) is **hardcoded** at `llm/registry.py:779`, not a
+  config knob. Raising it for researchers would convert most of the remaining
+  failures — the config's warning against retry amplification is about TIMEOUTS
+  (re-issuing an identical request with an identical deadline), which does not
+  apply to a parse failure that demonstrably succeeds on retry. Not done.
+
+  Losing this angle is not cosmetic: it is the only researcher whose sole job is
+  reading raw rows with no other framing, and on `ai01` it produced
+  `续写虚构剧情并接续角色扮演 → continue_fiction_roleplay`, an intent no other angle
+  found. Halt and relaunch rather than let a taxonomy be built without it.
+
 - `runs/*/llm_cache` is keyed on `(role, provider, model, system, user, schema)` and
   **not** on `max_tokens` — so token-budget changes do not invalidate it. Copying a
   cache directory into a new run is a legitimate way to skip replayable work.
@@ -583,6 +667,139 @@ record.
   `update_state`. Rewind by graph **position** (`as_node=<predecessor>`) instead.
 - Verify a live run really used live agents: `run_summary.json` →
   `llm_usage.provider` must read `routed`, not `offline`.
+
+---
+
+## 4. Session (2026-09-07) — a multi-vertical assistant corpus, and the axis the drift report assumed
+
+Two new exports arrived: `ai助手_Top1000query.xlsx` and `ai助手_随机1000query.xlsx`,
+33,000 rows each, **33 first-level and 213 second-level categories in one file**.
+Everything this project had been run on before was a single vertical.
+
+### What the corpus actually is (measured before anything was configured)
+
+| | measured |
+|---|---|
+| shared query strings between the two files | **159**, a Jaccard of **0.2%** |
+| seven strings' share of pooled head traffic | **15.97%**, each appearing in **29–32 of the 33 categories** |
+| acknowledgement family | 1,065 rows; **17.0%** of raw head PV, **28.9%** under equal-category weighting; median **30.1%** per category, **71.9%** in 生活和情感 |
+| head PV in queries ≤6 characters | **72.4%** (the tail's mass is at 8–20 chars) |
+| per-category top-N traffic floor | **3 (招商加盟) to 419 (书籍文档)** |
+| raw PV held by 2 of the 33 categories | **55%**; one string (`变清晰`) holds **17%** |
+| fiction-marker enrichment among risk hits | **2.0% of rows → 15% of hits**, a 7.5× lift |
+
+Three conclusions, each of which changed a configuration decision:
+
+1. **The two files are sampling STRATA of one period, not two periods.**
+2. **The head is largely not queries.** `总结全文概要`, `变清晰`, `去水印`,
+   `👌 好的，继续吧`, `嗯` — tool-panel buttons, suggested-reply chips and bare
+   conversational turns. A string in 32 of 33 topical categories is not topical.
+3. **Raw traffic is not comparable across categories** — the file is a union of 33
+   censuses cut at 33 different depths.
+
+### A failed method, reported rather than shipped
+
+Reweighting to the population needs each category's total traffic. The
+capture–recapture bridge — what share of the random sample sits at or above the
+head floor — **fails**: 17 of 33 categories have ZERO random rows above their
+floor, 28 have fewer than five, so the estimator returns 1,000,000 distinct
+queries off a single row. **Cross-category traffic comparison is not recoverable
+from these two files.** Same discipline as the abandoned power-law fit.
+
+### The comparison axis (`data.comparison_axis`)
+
+`ops/drift.py` never knew about time — it compares two groups' composition.
+`report/zh_drift.py` did, in prose: 「不是趋势」, 「同月同日不等于季节可比」,
+「时段性事件」. All false about a head/tail split, and **one inverts**:
+「两期的抽样方式必须一致」 warns that differing sampling would masquerade as a real
+change, but here the differing sampling IS the independent variable — a reader
+applying it concludes the document is confounded when it is measuring exactly
+what it set out to.
+
+`time` is the default and is **byte-identical to the pre-change module**, verified
+against the original file over seven payload shapes (full / no purity / clean
+purity / no churn / no labels / empty class lists / no snapshot tags). One
+16-character clause was dropped during the parameterisation and restored; the
+diff caught it. `stratum` ships `分层对比_头尾结构差异.md` instead.
+
+### What shipped
+
+| | |
+|---|---|
+| Tests | **734** passing, exit 0; `ruff --select F src/qmine/ tools/` clean (was 716) |
+| New config field | `data.comparison_axis: "time" \| "stratum"`, default `time` |
+| New tool | `tools/prepare_assistant_corpus.py` — pools, tags the stratum, normalises weight within (stratum, category), flags acknowledgements |
+| New tool | `tools/vertical_crosstab.py` — delivered classes × source categories; the payoff for pooling 33 verticals, which nothing was delivering |
+| New profile | `configs/domains/ai_assistant_zh.yaml` — 12 seeds (overlap ≤3.8%, eight at 0), 8 risk categories |
+| New config | `configs/live_ai_assistant.yaml` |
+| New doc | `docs/AI_ASSISTANT_CORPUS.md` |
+| Changed | `report/zh_drift.py` (`_AXIS`, `_caveats`), `graph/nodes/delivery.py` (deliverable name), `tools/check_domain_profile.py` (reads parquet) |
+
+**The first corpus here with a real reference taxonomy.** Every previous export
+carried `query_1st_category` holding one constant value — a filename, which p1
+drops. `l1`/`l2` vary row to row and reach 100%, so `k_locator: auto` locates K
+against them rather than against the 5.1%-reach phrasing seeds.
+
+### Two rows a human should look at
+
+- `minor_sexualisation` fires **once**: a self-identified 15-year-old asking about
+  her own body measurement, which the export's taxonomy files under
+  生活和情感/两性知识 — a general sex-education bucket with no minor-specific
+  handling.
+- `self_harm` fires 16 times and **zero are first-person** — fiction (老九门,
+  喜羊羊), history (杜聿明), news, an abstract law question. On this corpus it is a
+  pure false-positive generator. It is kept broad anyway: unlike `finance_zh`'s
+  澳门 note, a false negative here is a person in crisis getting a plot summary.
+
+### The live run, and why it was halted
+
+`ai01` was launched full-mode and **halted by the maintainer at 12:29** — an
+errand, plus the decision to run this corpus in `--fast` instead. Not a failure.
+~28 minutes, **$2.31**, 10 priced calls, `provider=routed`. `p0`/`p1`/`p3`
+complete; `p2a`'s calls all returned and are cached but the phase artifact was
+never written. See §1 for the exact relaunch command and why `ai01`'s spend is
+not transferable.
+
+Four things it established that the offline smoke run could not:
+
+1. **The reference taxonomy works as a reference.** `p1_reference_columns_declared`
+   PASSED on `l1, l2`. The legacy-audit researcher, which does nothing without
+   them, returned intents the source taxonomy lacks — `按字数要求生成文本 →
+   word_count_writing`.
+2. **The web-using researchers named this corpus's own problems** rather than
+   generic ones: `续写虚构剧情并接续角色扮演 → continue_fiction_roleplay`,
+   `对图像去衣或生成性化图像 → sexualised_image_request` — the latter matching a
+   risk category seeded independently from measurement.
+3. **The architect found the acknowledgement family without being told**, and
+   described it as the measurement does: 「这些短句的功能是推进或结束当前对话状态，
+   属于明确的会话管理轮次」. 24 nodes, 57 rules after merge. That is independent
+   confirmation of this session's largest finding.
+4. **The observer found the alpha decision is knife-edge here.** Two CONFIRMED
+   checks: `contenders` held one member, so the stability tiebreak its own
+   rationale claims never occurred; and alpha=0.0 sat outside the tie band by
+   **0.0067 (~0.3% relative)** while scoring HIGHER on stability (0.6151 vs the
+   winner's 0.5919). This is open question **8** ("the alpha decision is decided
+   by the GRID, not by the corpus") appearing again on a sixth corpus.
+
+### Two flags that are accepted and ignored (open question 0t)
+
+Found while working out how to relaunch in fast mode, measured both ways:
+`--fast` on `--resume` never reaches the config (the resume branch does not call
+`_load_config` and applies only `run_root` and `reuse_taxonomy`), and a config
+file's `mode: fast` is overruled by the CLI's non-None default. **Deliberately
+not fixed** — the maintainer was away, and the correct command avoids both — but
+it is the same bug `test_an_unset_cli_flag_does_not_overrule_the_config` was
+written for, on a third flag.
+
+### Not done / next
+
+- **Relaunch as `ai02 --fast`.** Command in §1.
+- CLAUDE.md is **225 lines** against its own 200-line target. It was 220 before
+  this session; three table rows were added. Moving area-specific entries into
+  `.claude/rules/` is overdue and was not attempted here.
+- `tools/vertical_crosstab.py` has only ever run against an offline smoke run,
+  so its family names have only been seen in `[offline-heuristic]` form. The
+  naming join itself is exercised; the output has not been read on real names.
 
 ---
 
