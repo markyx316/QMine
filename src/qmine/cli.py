@@ -4,7 +4,10 @@ from __future__ import annotations
 
 import json
 import logging
+import os
+import sys
 import time
+import warnings
 from pathlib import Path
 from typing import Any, Optional
 
@@ -1137,6 +1140,88 @@ def doctor() -> None:
               ", ".join(f"{k} ({av.env_seen.get(k, '?')})" for k in configured)
               or "no provider keys found — runs fall back to the offline stand-in")
 
+    # THE CHAT FRONT DOOR, END TO END. Each row names the exact fix, because the
+    # failure that costs a day here is a harness that starts fine with no QMine
+    # tools in it — everything looks healthy and the assistant answers from
+    # memory about a program it cannot reach.
+    import shutil
+    import subprocess as _sp
+
+    try:
+        import importlib.metadata as _md
+
+        t.add_row("mcp SDK", "[green]ok[/green]", _md.version("mcp"))
+    except Exception:  # noqa: BLE001
+        t.add_row("mcp SDK", "[yellow]missing[/yellow]",
+                  "pip install -e '.[mcp]'  — only `qmine mcp` needs it")
+
+    try:
+        from .mcp.server import build_app
+
+        _app, _qm = build_app("runs")
+        t.add_row("qmine mcp", "[green]ok[/green]",
+                  f"{len(_qm.specs)} tools; spend is "
+                  + ("ALLOWED" if _qm.authority.allow_spend else "refused (default)"))
+    except SystemExit as exc:
+        t.add_row("qmine mcp", "[yellow]unavailable[/yellow]", str(exc)[:70])
+    except Exception as exc:  # noqa: BLE001
+        t.add_row("qmine mcp", "[red]broken[/red]", f"{type(exc).__name__}: {exc}"[:70])
+
+    node = shutil.which("node")
+    if node:
+        try:
+            v = _sp.run([node, "--version"], capture_output=True, text=True,
+                        timeout=20).stdout.strip()
+        except Exception:  # noqa: BLE001
+            v = "?"
+        t.add_row("node (for dsh)", "[green]ok[/green]", f"{v} at {node}")
+    else:
+        t.add_row("node (for dsh)", "[yellow]missing[/yellow]",
+                  "needed only for the DeepSeek Harness web UI; install Node 20+")
+
+    try:
+        import yaml as _yaml
+
+        cfg = _yaml.safe_load(_dsh_config("runs"))
+        entry = cfg[0]["insert"][0]["config"]
+        ok = Path(entry["command"]).exists() and Path(entry["cwd"]).is_dir()
+        t.add_row("dsh config", "[green]ok[/green]" if ok else "[yellow]paths[/yellow]",
+                  ("generated config is valid; write it with "
+                   "`qmine mcp --print-dsh-config > qmine.patch.yml`") if ok else
+                  f"command or cwd missing: {entry['command']}")
+    except Exception as exc:  # noqa: BLE001
+        t.add_row("dsh config", "[red]broken[/red]", f"{type(exc).__name__}: {exc}"[:70])
+
+    # THE PRESET IS WHAT THE ASSISTANT KNOWS. Without it the harness still boots
+    # and every tool still works — it is the assistant's standing knowledge that
+    # is missing, and nothing in the UI says so. That is exactly the failure this
+    # row exists to make visible.
+    try:
+        rendered = _dsh_preset()
+        skills = sorted(p.parent.name for p in DSH_SKILLS_DIR.glob("*/SKILL.md"))
+        persona_chars = len((DSH_PRESET_DIR / "persona.md").read_text(encoding="utf-8"))
+        assert "__QMINE_" not in rendered["agent.cordis.yml"]
+        assert skills, "no skills"
+        blurb = (f"persona {persona_chars:,} chars + {len(skills)} skills "
+                 f"({', '.join(s.removeprefix('qmine-') for s in skills)})")
+        # AUTHORED IS NOT INSTALLED. Verified: with the default preset absent,
+        # dsh boots, logs nothing, and hands the session the shipped coding
+        # agent — the tools all work and only the knowledge is gone. `make chat`
+        # reinstalls every launch, but anyone booting dsh by hand would never
+        # find out, so the check is for the INSTALLED copy, not the source.
+        home = Path(os.environ.get("DSH_HOME") or Path.home() / "dsh" / "home")
+        live = home / ".agent-presets" / "qmine" / "agent.cordis.yml"
+        if not live.exists():
+            t.add_row("dsh preset", "[yellow]not installed[/yellow]",
+                      f"{blurb}; run `qmine mcp --install-preset {home}/.agent-presets`")
+        elif live.read_text(encoding="utf-8") != rendered["agent.cordis.yml"]:
+            t.add_row("dsh preset", "[yellow]stale[/yellow]",
+                      f"{blurb}; installed copy differs — `make chat` rewrites it")
+        else:
+            t.add_row("dsh preset", "[green]ok[/green]", f"{blurb}; installed at {live.parent}")
+    except Exception as exc:  # noqa: BLE001
+        t.add_row("dsh preset", "[red]broken[/red]", f"{type(exc).__name__}: {exc}"[:70])
+
     try:
         from matplotlib import font_manager
 
@@ -1186,7 +1271,7 @@ def demo(
                         if isinstance(default, (typer.models.OptionInfo,
                                                 typer.models.ArgumentInfo))
                         else default)
-    # EXPLICITLY OFFLINE. `demo` is the documented ~4-minute wiring check, and
+    # EXPLICITLY OFFLINE. `demo` is the documented ~2-minute wiring check, and
     # the default config now routes to real models — so without this, `make demo`
     # would quietly become a paid run on 8,000 rows. What it checks is that the
     # phases connect, which the stand-in exercises perfectly well.
@@ -1270,6 +1355,181 @@ def render(
                          f"${u.get('estimated_cost_usd', 0)}")
     console.print(t)
     console.print("\n".join(f"  {d}" for d in out["documents"]))
+
+
+@app.command("mcp")
+def mcp_cmd(
+    run_root: str = typer.Option("runs", "--run-root"),
+    print_config: bool = typer.Option(
+        False, "--print-dsh-config",
+        help="Print the DeepSeek Harness patch entry for this checkout, with absolute "
+             "paths already filled in, instead of serving. Append it to your "
+             "cordis.patch.yml."),
+    allow_spend: bool = typer.Option(
+        False, "--allow-spend",
+        help="Let the model START A PAID RUN from the conversation. Off by default: "
+             "the server returns the command for a person to run instead. Equivalent "
+             "to QMINE_MCP_ALLOW_SPEND=1."),
+    install_preset: Optional[str] = typer.Option(
+        None, "--install-preset", metavar="DIR",
+        help="Write the QMine agent preset into DIR/qmine/ (normally "
+             "$DSH_HOME/.agent-presets) instead of serving. This is what gives the "
+             "chat model standing knowledge of the project."),
+) -> None:
+    """Serve QMine over MCP on stdio, for a chat harness to call.
+
+    Gives a harness the whole program as tools: measure raw exports, plan and build
+    a pooled corpus, propose a run — and, once a run has finished, ask questions
+    about the study and get cited, bounded, quote-guarded answers instead of a
+    190KB report nobody can put in a conversation.
+
+    Read tools run freely. Tools that write files are allowed but only inside
+    permitted roots. Starting a paid run is REFUSED unless it was allowed from
+    outside the conversation, because a model can repeat any token a tool hands it.
+    """
+    if allow_spend:
+        os.environ["QMINE_MCP_ALLOW_SPEND"] = "1"
+    if print_config:
+        # `print`, NOT `console.print`: rich wraps at the terminal width, and a
+        # wrapped absolute path in a YAML file is a config that parses into the
+        # wrong directory. Machine-readable output does not go through the
+        # pretty printer.
+        print(_dsh_config(run_root))
+        return
+    if install_preset:
+        for name, body in _dsh_preset().items():
+            dest = Path(install_preset) / "qmine" / name
+            dest.parent.mkdir(parents=True, exist_ok=True)
+            dest.write_text(body, encoding="utf-8")
+            # NOT `console`: this function declares `global console` further
+            # down for the stdio swap, and touching the name before that
+            # declaration is a SyntaxError that breaks importing the CLI at all.
+            typer.echo(f"wrote {dest}")
+        return
+    # STDOUT IS THE PROTOCOL. MCP speaks JSON-RPC over stdout, so a single stray
+    # line there — `loaded 5 key(s) from ...`, a warning, a progress bar — is not
+    # a cosmetic blemish, it is a corrupted frame and a client that never
+    # finishes its handshake. Everything human-readable goes to stderr for the
+    # whole life of the process, and `.env` is loaded only after the swap.
+    import contextlib
+
+    global console
+    _human = Console(stderr=True)
+    console = _human
+    with contextlib.redirect_stdout(sys.stderr):
+        _load_env()
+        warnings.filterwarnings("ignore")
+    from .mcp.server import main as serve
+
+    raise typer.Exit(serve(run_root))
+
+
+#: Where the authored preset lives in the checkout. The persona is a separate
+#: markdown file because it is the PRODUCT — it wants to be read, reviewed and
+#: diffed as prose, not as an indented YAML block scalar.
+DSH_PRESET_DIR = Path(__file__).resolve().parents[2] / "integrations" / "dsh" / "presets" / "qmine"
+DSH_SKILLS_DIR = Path(__file__).resolve().parents[2] / "integrations" / "dsh" / "skills"
+
+
+def _dsh_preset() -> dict[str, str]:
+    """The QMine agent preset, rendered for THIS checkout.
+
+    WHY A PRESET AND NOT MORE PATCH. The web profile ships `persona`'s
+    host-plane twin, `agent-instructions`, `skill-filesystem` and `tool-skill`
+    all `disabled: true` and re-enables them per agent PRESET. The agent plane
+    is therefore the only place a deployment can give its assistant standing
+    knowledge, and a host patch that re-enabled those rows would apply to the
+    coding preset too. Verified against dsh 0.1.5-rc.2 with `--dump-config`.
+
+    WHY RENDERED RATHER THAN COPIED. `customSkillDirs` entries are resolved
+    against the harness process's own cwd, which is the harness directory and
+    not this checkout, so a relative root silently finds nothing. The authored
+    file therefore carries tokens and this function fills them in — the same
+    reason `_dsh_config` is emitted rather than documented.
+    """
+    persona = (DSH_PRESET_DIR / "persona.md").read_text(encoding="utf-8")
+    composition = (DSH_PRESET_DIR / "agent.cordis.yml").read_text(encoding="utf-8")
+    meta = (DSH_PRESET_DIR / "preset.yml").read_text(encoding="utf-8")
+
+    # The persona is a YAML block scalar under `prefix: |-`, so every line is
+    # indented to the block's level. A line that is not indented would end the
+    # scalar and be read as a new mapping key — silently truncating the
+    # assistant's knowledge at whatever paragraph happened to start at column 0.
+    indent = " " * 6
+    block = "\n".join(indent + ln if ln.strip() else "" for ln in persona.rstrip().splitlines())
+
+    assert "__QMINE_PERSONA__" in composition, "preset template lost its persona token"
+    assert "__QMINE_SKILLS_DIR__" in composition, "preset template lost its skills token"
+    composition = composition.replace("__QMINE_PERSONA__", block)
+    composition = composition.replace("__QMINE_SKILLS_DIR__", str(DSH_SKILLS_DIR))
+    assert "__QMINE_" not in composition, "a token survived rendering"
+    return {"preset.yml": meta, "agent.cordis.yml": composition}
+
+
+def _dsh_config(run_root: str) -> str:
+    """The DeepSeek Harness patch entry for THIS checkout.
+
+    THE `insert:` WRAPPER IS NOT OPTIONAL. `cordis.patch.yml` is a list of
+    LOADER PATCHES, not a list of plugins: a bare `- id: … name: … config: …`
+    is read as an OVERRIDE of an entry that already exists, and dsh answers
+    `patch: entry "mcp-qmine" not found`, warns, and skips it — leaving a
+    harness that starts fine with no QMine tools in it. Adding a plugin needs a
+    patch whose `insert` holds the entry and which carries no `id`, so it
+    appends at the top level (`dsh-app-boot/lib/index.js`: `else
+    data.push(...insert)`). Verified against dsh 0.1.5-rc.2 with
+    `dsh --profile web --patch … --dump-config`.
+
+    Emitted rather than documented because the three things people get wrong are
+    that wrapper, the absolute paths, and `failOnStartupError` — whose default
+    is `false`, meaning a harness whose server failed to start comes up with
+    zero QMine tools and says nothing.
+    """
+    here = Path(__file__).resolve().parents[2]
+    exe = here / ".venv" / "bin" / "qmine"
+    return f"""# QMine for DeepSeek Harness. Append to $DSH_HOME/profiles/<profile>/cordis.patch.yml
+# (that file starts as `[]` — replace it with this, or append these lines to the list),
+# or pass with `dsh web --patch /path/to/this.yml`. Then check it took:
+#   dsh --profile web --patch <this> --dump-config | grep mcp-qmine
+#
+# `insert:` with NO `id` appends a new plugin. A bare entry would be read as an
+# OVERRIDE of an existing id, and dsh would warn "entry not found" and skip it.
+- insert:
+    - id: mcp-qmine
+      name: '@deepseek-ai/dsh-mcp-client'
+      config:
+        serverName: qmine          # tools arrive as mcp__qmine__<name>
+        transport: stdio
+        command: '{exe if exe.exists() else "qmine"}'
+        args: ['mcp', '--run-root', '{run_root}']
+        cwd: '{here}'
+        env:
+          HF_HOME: '{here / ".hf"}'
+          # Uncomment to let the conversation START A PAID RUN. Off by default.
+          # QMINE_MCP_ALLOW_SPEND: '1'
+        # A tool call may rebuild a whole comparison; the 60s default is too short.
+        toolCallTimeoutMs: 900000
+        # NOT the default `false`. With false, a server that fails to start leaves
+        # the harness running with zero QMine tools and no error anywhere.
+        failOnStartupError: true
+        reconnect:
+          enabled: true
+          maxAttempts: 10
+
+# Open new sessions into the QMine preset rather than the shipped coding agent.
+# A bare entry OVERRIDES an existing id (`agent-presets` is in every profile),
+# and an override REPLACES the config object instead of merging into it — which
+# is why `default` is the whole config here and not an addition to it.
+#
+# The preset must exist before this takes effect: write it with
+#   qmine mcp --install-preset "$DSH_HOME/.agent-presets"
+# `make chat` does both every launch, so they cannot drift apart. A missing
+# preset is not fatal — the harness falls back and lists the reason — but the
+# assistant then starts with no knowledge of this project, which is the whole
+# thing this preset exists to prevent.
+- id: agent-presets
+  config:
+    default: qmine"""
+
 
 
 @app.command()

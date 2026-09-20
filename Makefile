@@ -4,7 +4,7 @@ PY   := $(VENV)/bin/python
 QM   := $(VENV)/bin/qmine
 export HF_HOME := $(CURDIR)/.hf
 
-.PHONY: help install install-min doctor demo full test test-fast lint clean clean-runs
+.PHONY: help install install-min doctor demo full test test-fast lint clean clean-runs chat chat-setup
 
 help:
 	@grep -E '^[a-z-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN{FS=":.*?## "}{printf "  \033[36m%-14s\033[0m %s\n",$$1,$$2}'
@@ -22,7 +22,35 @@ install-min:  ## core only — runs offline on a hashing encoder
 doctor:  ## check packages, credentials, fonts, profiles
 	$(QM) doctor
 
-demo:  ## bundled K12 corpus, 8k rows, shrunken grids (~3 min)
+# The chat web app. `dsh` is upstream DeepSeek Harness, installed unmodified;
+# QMine attaches to it over MCP. DSH_DIR is where it lives — override if yours
+# is elsewhere. The patch is REGENERATED every time so it can never go stale
+# against a moved checkout or a renamed venv.
+DSH_DIR ?= $(HOME)/dsh
+DSH_PORT ?= 3080
+
+chat-setup:  ## install/refresh the DeepSeek Harness web app in $(DSH_DIR)
+	@mkdir -p $(DSH_DIR)
+	@cd $(DSH_DIR) && npm install --no-fund --no-audit @deepseek-ai/dsh
+	@$(QM) mcp --print-dsh-config > $(DSH_DIR)/qmine.patch.yml
+	@$(QM) mcp --install-preset $(DSH_DIR)/home/.agent-presets
+	@echo "→ $(DSH_DIR)/qmine.patch.yml written. Now: make chat"
+
+chat:  ## open the chat web app with QMine attached (needs `make chat-setup` once)
+	@test -x $(DSH_DIR)/node_modules/.bin/dsh || { echo "no harness at $(DSH_DIR) — run: make chat-setup"; exit 1; }
+	@$(QM) mcp --print-dsh-config > $(DSH_DIR)/qmine.patch.yml
+	@# The PRESET is what the chat model knows before anyone asks it anything —
+	@# the persona, the workspace instructions and the skills. Rewritten every
+	@# launch alongside the patch, because the patch names `qmine` as the default
+	@# composition and a stale or missing preset means an assistant that has to
+	@# inventory the project from scratch.
+	@$(QM) mcp --install-preset $(DSH_DIR)/home/.agent-presets
+	@# QMine/.env is sourced so dsh's OWN provider adapters find the same keys the
+	@# mining run uses — its DeepSeek adapter defaults to DEEPSEEK_API_KEY. The key
+	@# stays in .env; nothing is copied into the harness's own credential store.
+	@cd $(DSH_DIR) && set -a; [ -f "$(CURDIR)/.env" ] && . "$(CURDIR)/.env"; set +a; DSH_HOME=$(DSH_DIR)/home ./node_modules/.bin/dsh web --patch ./qmine.patch.yml --port $(DSH_PORT)
+
+demo:  ## bundled K12 corpus, 8k rows, shrunken grids (~2 min)
 	$(QM) demo
 
 full:  ## bundled K12 corpus, all 50k rows, full grids, OFFLINE (~25 min)

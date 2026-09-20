@@ -14,246 +14,51 @@
 
 ## 1. Status — last updated 2026-09-20
 
-> **2026-09-20：后处理与语料准备成为程序的功能，另加一个对话入口。全量 823 通过（747 + 76）。**
-> 三个新包，全部是新增 + 三处必要接线，已有测试一个没改：
-> `src/qmine/pooled/`（跨快照对比，阶段 `p10c` + `qmine compare`）、
-> `src/qmine/prepare/`（`qmine prepare`、`run --prepare`）、`src/qmine/chat/`（`qmine chat`）。
-> **`analysis/pooled5/` 与所有已交付的运行、产物一个字节没动**，那批脚本仍是各自那次交付的证据。
-> 对着 health-pool3 逐项复算：137 个类的条数与占比逐个相同，TVD / 秩相关 / Cramér's V 四位小数一致；
-> 自助法区间端点差 ≤0.0016（种子按「测什么」派生，标签串不同，结论不变）。
-> 途中在 `src/` 里修了七个真缺陷（property 当方法调、护栏拼 alternation 失效为放行、表与卡片各自舍入、
-> CSV 往返的 `nan` 印进报告、整类不引用单个汉字命中而误拦 28.6% 的语料、无效的 ArtifactKind 被吞掉、
-> 重渲染的代次认领它没有的文件），加上对抗式复核提出、逐条反驳后仍成立的 15 条，全部修掉；
-> 每一条都带回归测试，55 个变异体逐一验过全被杀。
-> 另按用户「绝不引具名医生」的长期规矩，把具名医生放进第二层通用硬规则（`configs/` 最终没动）。
-> 详见文末当日 session。
-
-> **2026-09-16：人物8 / 影视8 / 医疗随机 三个域跑完并交付，途中在 `src/` 里修了三个真缺陷。**
-> 三份语料：`人物8_pooled5.parquet` 43,802 行、`影视8_pooled5.parquet` 43,933 行（各 8 个快照，新增语音随机 1k），
-> `医疗随机_pooled5.parquet` 20,316 行（传统搜索随机 1w + 健康管家随机 1w，都是 2026-09-14 单日导出）。
-> 新档案 `configs/domains/{people_zh_v2,film_tv_zh_v2}.yaml`（19 / 21 个种子，覆盖 27.95% / 32.68%）。
-> 三次运行都是 fast、routed、未 halt；人物域把 Zhipu 的角色全部改路由到 Kimi，全程 0 次内容过滤。
-> **交付运行：人物8 用 `runs/ppl-pool8b/gen01`（全新单次跑完，无 resume），影视8 / 医疗随机 用各自的 gen01。**
-> `ppl-pool8` 整个 run id 作废：gen01 有幻影类，gen02 体系漂了，gen03 是两次 resume 的产物——
-> 只有 14 个闸门（少了 `p2a_pilot_agreement` / `p2a_taxonomy_shape`，因为 `--reuse-taxonomy` 跳过了 p2a）、
-> 6 个 decision、`elapsed_s` 只记了 resume 之后那一段。ppl-pool8b 这三项分别是 16 / 7 / 5,318 秒。
-> 交付形状：人物 21 L1 / 53 L2 / 37 族 / 37 叶；影视 17 / 54 / 52 / 58；医疗随机 20 / 51 / 33 / 33。
-> 三份报告 `未匹配数字 0 · 问题引文 0`。按用户要求，人物 / 影视**不跑叙述工作流**（报告的散文段留空，表与图完整），
-> 且例子表**印真实 query**。
->
-> **三个源码缺陷（都带回归测试，全量 747 通过、`ruff --select F` clean）：**
-> 1. `graph/nodes/topdown.py::_active_learning_round` 没有 round 1 的两道保护。标注员漏标的 22 行以
->    `final="UNLABELED"` 进了金标，22 行过了 5 折支撑下限，于是 18 类的体系训出 19 类分类器，幻影类落到 11 行语料、
->    进了 5 份交付文档。修好后 macro-F1 0.526 → 0.557。只有 ppl-pool8 中招（其余 7 次运行实测 0 行）。
-> 2. 同一文件 `_require_both_branches` 给 `Deps.gate()` 传了不存在的 `blocking=True`。这是**只有出错时才走的分支**，
->    它的测试用 `**kw` 的假 deps，所以一直是绿的；gen03 真的在汇合点撞上缺分支时，运行死在 TypeError 而不是那道闸门。
->    测试的假对象现在绑定真签名。
-> 3. `config.py` 的 fast 校验器只在开关「本来是开的」时才往 `fast_skipped` 里追加，于是每一次 `--resume` 重建出的清单
->    只有 4 项。横幅是由这份清单生成的，gen03 的三份参考文档因此声称双标注、观察员、对抗验证、交付前审核都**跑过**。
->    改为按 mode 推导，并断言重复校验幂等。
->
-> **后处理侧（不动 `src/`）：** `pooled5_common.run_dir` 新增 `P5_GEN_<批次>` 代次覆盖；
-> `p5_postprocess_run_xlsx` 增 `DOMAIN_SRC_COLS["医疗随机"]`；`p5_snapshot_classes` 的产品层按语料时间口径改列名
-> （单日语料用 `当日PV`），并把 `EXTRA_QUOTE_BLOCK["医疗随机"]` 指到 医疗8 那条实测正则、`SCREENED_QUOTE_BLOCK`
-> 扩到四个域；`p5_snapshot_report` 增 `PREP_TEXT` 按域分流数据准备一节。
-> 引文护栏用 `p5_quote_hardrule_scan.py`（三条硬规则 + 医疗域加具名医生一条）复核：人物 9 命中 / 影视 9 / 医疗随机 76，
-> **三个域都是「已印进交付文档 0」**；命中串仍写进各域的 `privacy_screen/quote_block.json` 作为换例子时的保险。
-> 887 份既有交付文件哈希不变（唯一变的是按批次重写的 `work/snapshot_classes_all.json`，只写不读）。
-
-
-> **2026-09-15（晚）：医疗8（med-pool8）跑完并交付，纯后处理，`src/` 未动。**
-> fast、routed、未 halt、229 次调用、1 小时 53 分；`verify_run` 本运行 PASS 21 / FAIL 0（对照 ppl-pool5 PASS 9 / FAIL 3）。
-> 交付 17 L1 / 55 L2 / 41 叶 / 37 族，留出复现 0.9704。报告 `runs/med-pool8/gen01/postprocessed/medical_zh_v2_意图与聚类叶_跨快照对比.zh.md`
-> （叙述经两名独立复核员三轮对抗复核，「未匹配数字 0 · 问题引文 0」）。**本次最重要的发现是引文护栏的漏洞**：前五层正则 / 名单护栏
-> 在报告与工作簿的例子里漏了 38 个违规串；改为逐串阅读印出来的串（Claude 必读、DeepSeek 并集，轮次推进到收敛，再做独立第二遍），
-> 不可引名单 634 串，印出的 2,080 个语料串全部被 Claude 读过。测试 744 通过；已交付的 782 个文件除一个只写不读的汇总外哈希不变。
-
-> **2026-09-15（傍晚）：fin8 深挖报告已交付，纯后处理，`src/` 未动。**
-> `runs/fin-pool8/gen01/postprocessed/finance_zh_v2_意图内部结构与代表性样例.zh.md` + `.xlsx` + `img/意图结构_*.png`。
-> 回答三件事：主报告卡片例子（流量前 3）覆盖中位只有 32.8%，构成显式取例到 80.5%；同一意图跨快照的差别拆成
-> 「关于什么」（叶构成）与「要什么」（三个宽意图的盲标子功能，DeepSeek 跨模型 κ 0.963–0.986）；叶 × 子功能交叉回答
-> 「核实还是决策」（裁决意图 68.7% 是核实规则套到自己身上，直接要建议 3.8%）。叶优于家族（实测）。med-pool8 仍在跑。
-
-> **2026-09-15：修了一个披露层的源码缺陷（不改 K，不改任何数字）。**
-> `ops/cluster.py: reference_sensitivity(sweep, k, *, locator_column)` 现在只把**真正定位 K 的那一列**标为
-> `decides`（稳定性兜底时谁都不标）；`p5_k_references_agree` 闸门的 `observed.deciding_reference` 不再写死
-> `phrasing_groups`。声明的参考列定位 K 的运行（ai04、aiwire01、health-pool2、三个 k12_zh、live41 gen01/gen03、
-> live42、live44 —— 69 份 granularity.json 里 10 份）同一产物曾自相矛盾。实测：24 份措辞群定位的已存 sweep 用新旧代码
-> 重算**逐字节相同**，10 份受影响的只差两个 decides 与注记末句。新增 3 个测试（在原代码镜像里全部失败，5 个变异体各至少
-> 被一个抓到）；全量 **744 通过、exit 0**，`ruff --select F src/qmine/ tools/` clean。已存产物不重写（`qmine render`
-> 修不了，只有新 generation 重跑 p5 才会带上修复）。同类的姊妹缺陷记在 §2 第 20、21 条。详见文末当日 session。
-
-> **2026-09-13（深夜）：新增两个垂类 书籍文档 / 软件，全套跑完并交付。**
-> 语料 `data/raw/pooled5/{书籍文档,软件}_pooled5.parquet`（21,786 / 21,920 行，各 4 个快照，无语音）；
-> 领域档案 `configs/domains/{books_docs_zh,software_apps_zh}.yaml`（每个占比都是实测）；
-> 运行 `book-pool5` / `soft-pool5`，fast、routed、未 halt，`verify_run.py` 各 21 PASS / 0 FAIL；
-> 交付在各自 `postprocessed/`，跨批次表在 `work/cross_new2/`（**没有碰五域的 `work/cross/`**）。
-> **最硬的一条**：软件 `生成露骨性图像编辑` 是七个领域里**唯一**的「仅助手」类（51 行，搜索期望
-> 530.04，P(0)=0.0000）。**方法层面的一条**：领域档案是 hypothesis-first 写的，两个域的 agent
-> 都找到了它的盲区，最大的一类都比档案里已写的类大。详见本文件末尾当日 session。
-> 测试 741 通过、exit 0；ruff clean；**`src/` 未改动**（发现一个 openpyxl 公式缺陷，按约束只做后置修复）。
-
-> **2026-09-13（晚）：逐类 × 逐快照对照报告已交付**，每个领域一份，写在各运行自己的
-> `runs/<id>/gen01/postprocessed/` 里（`*_意图与聚类叶_跨快照对比.zh.md` + `.xlsx` + `img/`）。
-> 它回答的是主报告没回答的那一层：**每一个意图、每一个聚类叶在五个快照上各占多少、哪些类只出现在
-> 某个快照**。脚本在 `analysis/pooled5/p5_snapshot_{classes,figs,report,verify}.py`。
-> **纯后置分析，`src/` 与 `tests/` 本次一行未动**（两者的 mtime 仍是 09-12，上一次会话的风控哨兵修复）；
-> 全套测试 **741 通过、exit 0**，`ruff --select F src/qmine/ tools/` clean。
-> 关键口径：0 条必须配可检出性判定（助手 n≈1,000 时 0 条的上界仍有 0.39%）；「独占某快照」几乎
-> 恒为 0，改用「与其余每一个快照逐一比较都显著更高」的**特征类**。详见本文件末尾的当日 session。
-
-> **2026-09-13:** five POOLED-5 runs delivered (`fin/med/edu/film-pool5`, `ppl-pool5b`) — each
-> domain's 2025 search + 2026 search + assistant head + assistant tail + (finance/medical) voice
-> mined as ONE corpus so one taxonomy labels every source. Reports:
-> `docs/POOLED5_2026_五域同体系对比.zh.md` + `docs/POOLED5_2026_领域深挖.zh.md`, figures in
-> `docs/img/pooled5/`, reproduction package in `analysis/pooled5/`. Source-tagged copies of each
-> run's own workbook are in `runs/<id>/gen01/postprocessed/`; the originals are untouched.
-> **One pipeline fix shipped** (`naming.py`: the risk sentinel's fallback is a real `RiskReport`,
-> so a provider content filter degrades instead of halting p7 — `tests/test_risk_sentinel_degradation.py`).
-> **One fix deliberately NOT shipped**: the p2c branch-join guard, see open question 0v — its
-> diagnosis is false on a resume, so making it authoritative would have been worse than the crash.
-> Tests **741** pass, exit 0; `ruff --select F src/qmine/ tools/` clean.
-
-> **2026-09-10:** post-run analyses only, no pipeline source changed. Delivered `docs/SEARCH_VS_ASSISTANT_2026.zh.md`, its companion `docs/SEARCH_VS_ASSISTANT_2026_领域深挖.zh.md`, and the reproduction package `analysis/sva2026/`. New analysis tools: `tools/clean_assistant_functional.py` (v3), `tools/unified_intent_frame.py`, `tools/label_unified_intent.py`. Tests: **739 pass** (full suite, `-x`, no failures); `ruff --select F src/qmine/ tools/` clean. Details are in the 2026-09-10 session log below. The `ai04` status that follows is unchanged.
-
-
-# `ai04` DELIVERED: the multi-vertical AI-assistant corpus is mined end-to-end in fast mode, with the stratum comparison shipping under its own name. Two defects were found and fixed during the run.
+**稳定。四个层次都能独立使用，只有 Mine 花钱。**
 
 | | |
 |---|---|
-| Tests | **739** passing, exit 0; `ruff --select F src/qmine/ tools/` clean (was 716) |
-| Run | `ai04`, `mode=fast`, `provider=routed`, not halted, **448 calls / $7.91 / 3h31m** |
-| Corpus | `data/raw/ai_assistant_pooled.parquet` — 65,986 rows, 33 L1 / 213 L2 reference |
-| Delivered | **24 top-down intents**, **154 leaves**, 121 families (156 leaves pre-governance; 56 governance ops, 6 declined) |
-| Held-out reproduction | **96.9%** (95% CI 0.966-0.972, n=13,198) |
-| Gold | 3,000 rows, **coverage 92.50%** — 225 rows came back UNLABELED (the gate said 100%; see below) |
-| Deliverables | 3 fast-mode reference documents + `分层对比_头尾结构差异.md` + `垂类交叉表.md/.csv` |
-| verify_run vs live42 control | `ai04` **PASS 19 / N-A 6 / SKIP 2 / FAIL 1**; control PASS 20 / FAIL 6 / SKIP 2 |
+| 测试 | **873** 通过 / 0 失败（约 3.5 分钟）；`ruff --select F src/qmine/ tools/` clean |
+| 四层 | prepare · mine · compare · ask — 只有 **mine** 花钱、花几个小时 |
+| 对话入口 | `make chat-setup` 一次，之后 `make chat`；对 dsh 0.1.5-rc.2 端到端验证过 |
+| 运行目录 | `runs/` 下 96 个；其中只有 `health-pool3/gen01` 建过跨快照对比 |
+| 区域规则 | `.claude/rules/` 12 个，按 `paths:` 绑定的文件才加载 |
+| 未解决 | 见 §2；最新一条是引用护栏漏掉 `机构 + 人名` 这一形状 |
 
-### Post-run corrections to `ai04`, and the one thing that was general
+**最近一次会话（2026-09-20 夜）做完的事。** 对话入口的模型此前对本项目一无所知，每次都要
+列目录现学。查实 dsh 的三条通道只有一条通得了（MCP 的 `instructions` 字段
+`dsh-mcp-client` 根本不读；host 层改动会波及编码 preset），于是新增
+`integrations/dsh/presets/qmine/`（persona 7,034 字符）+ `integrations/dsh/skills/` 五个技能
++ `AGENTS.md`；`qmine mcp --install-preset DIR` 渲染绝对路径，`make chat` 与 `chat-setup`
+每次重装，`qmine doctor` 的 `dsh preset` 行报 ok / stale / not installed / broken。
+实测中抓到一个真缺陷：模型正确拒绝引用具名医生，然后举了一条当例子说明它拒绝了什么——
+persona 补了「护栏放行不等于可引」与「绝不示范你略去的东西」，重测时模型在 think 里点名
+这是 rule 9 的陷阱并拒绝。同一次会话把 CLAUDE.md / 两份 README / GUIDE / AGENTS
+对齐到当前事实（见本节之后的会话日志）。
 
-The maintainer read the delivered tables and found three problems. Deciding which
-belonged in SOURCE and which in a post-run step was settled by measurement, not
-preference — is it wrong on every corpus, or only on this export?
-
-**GENERAL, so fixed in source.** Every drift/stratum report ends 「原始数据:
-`labels_full.csv`（逐行标签，含分层列）」 and **that column was never written** —
-false on all six pooled runs on disk (fin/med/edu/film/ppl-pool, filmdrift) as
-well as `ai04`. `p10` now carries `snapshot` into the delivered labels when the
-run has one; additive, so single-snapshot runs are unchanged.
-
-**CORPUS-SPECIFIC, so post-run** (`tools/postprocess_assistant_run.py`, writes to
-`<gen>/postprocessed/`, non-destructive):
-
-* **Sort order.** The delivered table came out in corpus order — stratum then
-  query — which reads as alphabetical and scatters each category. Re-sorted to
-  (category, sub-category, stratum, descending traffic), with the stratum order
-  STATED (`top1k` before `random1k`); sorting those two by name puts the random
-  sample first, which is backwards for every reader.
-* **Stratum names.** `head`/`tail` -> `top1k`/`random1k`. `tail` is a CONCLUSION
-  about where rows sit; the file is a RANDOM sample, which is how it was drawn.
-  `tools/prepare_assistant_corpus.py` now emits the new tags (`HEAD_TAG` /
-  `RANDOM_TAG`) so future runs never carry the old ones.
-* **What the comparison MEANS**, appended to the document as a computed addendum.
-
-### What the stratum comparison actually compares — and one caveat that was wrong
-
-`top1k` is a **census** of each category's 1,000 highest-traffic queries, complete
-above that category's own floor (**3 to 419 raw PV**, measured). `random1k` is a
-**uniform sample of distinct queries** (raw PV median **1**, mean **1.29** — a
-PV-weighted draw would lift the mean far above that). So the comparison is
-*"the composition of the highest-traffic band vs the composition of the query
-vocabulary"*. Only **115 of 33,000 random rows (0.35%)** fall inside the head
-band and 17 of 33 categories have none, so it FUNCTIONS as head-vs-rest — a
-measured property of this export, not a guarantee.
-
-**This inverts the document's own reading advice.** 「请按 Δ流量的大小读」 is right
-when both sides are censuses. Here the random side's traffic share is a
-high-variance estimate: one query holds a median **3.4%** of a category's sample
-traffic and up to **36.4%** (交通出行), with 4 of 33 categories above 10%. **Read
-the ROW share; treat Δ流量 as indicative.**
-
-And 「不能推回总体」 was too strong. Correctly: within a category the random sample
-IS an unbiased estimate of row composition (±1.4pp at 5%, ±3.1pp at 50%, n=1,000);
-it cannot be combined ACROSS categories (sizes unknown, capture-recapture fails),
-and its traffic share cannot be read as population traffic.
-
-**A bug I shipped into that addendum and caught by reading the output:** the first
-version computed the overlap from `weight`, which is normalised WITHIN (stratum,
-category) — two different scales — and reported **100%** overlap where the truth
-is 0.35%. It is the exact incomparability this corpus preparation exists to
-handle. It now computes from raw counts via `--source-corpus`, or states that it
-did not compute the figure. Pinned by
-`test_the_stratum_addendum_will_not_state_an_overlap_it_cannot_compute`.
-
-### `_AXIS["stratum"]` was over-fitted to this corpus, and is now frame-agnostic
-
-It said 「头部按流量取 TopN，尾部是随机抽样」 — this export's design, written into
-the shipped vocabulary, where it would mis-describe any other stratum pair (two
-devices, two collection methods). The shipped text now says only what is true of
-every stratum comparison; what each frame IS lives in the post-run addendum,
-computed from the run's own data. The `time` branch remains byte-identical to the
-pre-change module.
-
-### The stratum axis works end to end
-
-`分层对比_头尾结构差异.md` shipped under the stratum name, and contains **zero**
-occurrences of 不是趋势 / 同月同日 / 时段性事件 / 两期的抽样方式必须一致 / 漂移.
-The inverted caveat is replaced by its opposite (「抽样口径不同正是本报告的自变量」)
-and the real estimand limit is stated (「不能推回总体」). Measured: head and tail
-share **159 queries, a Jaccard of 0.2%**; Cramér's V **0.3232**.
-
-### The `UNLABELED` sentinel is counted as a CLASS in three places
-
-`ops.classify.UNLABELED` fills a row no annotator or classifier could label. It is
-not a class, and three separate readers treat it as one:
-
-1. **`p2b_kappa`'s coverage** — hidden entirely; the gate reported 100% while 225
-   of 3,000 gold rows held the sentinel (fixed, below).
-2. **`verify_run.py`'s phantom-class check** — surfaces it, but under the label
-   "referee typos", which is the wrong diagnosis for the right observation.
-3. **The class COUNT.** `taxonomy.json` has **24** nodes; `labels_full.csv` has
-   **25** distinct `td_l1` because ONE row carries `UNLABELED`, and
-   `分层对比_头尾结构差异.md` therefore says 「共 25 类」. The delivered taxonomy is
-   24. `tools/run_evidence.py` reports 24 and is right.
-
-Only (1) is fixed. (2) and (3) are cosmetic on this run — one row — but the same
-sentinel would inflate a class count by however many rows a real outage lost.
-
-### The one FAIL, and why it is the same defect as the coverage bug
-
-`❌ [gold] no phantom classes from referee typos — 1 phantom classes: ['UNLABELED']`.
-Not a referee typo: `UNLABELED` is the sentinel filling the **250 gold+pilot rows
-the annotator lost**. Two independent instruments, one cause — the p2b gate hid it
-behind a tautological 100%, the mechanical verifier surfaced it as a phantom
-class. Fixed in the gate (see below); the verifier's message could be clearer
-about the distinction but was not touched.
-
-### What a reader must not take at face value
-
-* **Coherence 3.37/5, 26 of 156 leaves below 3.0** — worse than the 3.90-4.06 of
-  previous corpora, and it is the CORPUS, not the clustering. The four worst
-  leaves are 过滤无意义表情符号与乱码输入, 短词查询 (工作/房子/塑料/海豚),
-  识别日常口语片段并应答, 杂项查询意图识别 — the acknowledgement, emoji and
-  short-fragment population. 86 of 156 leaves sit at 4-5; the mean is dragged by a
-  noise floor a search log does not have.
-* **59 of 156 leaves (38%) are risk-flagged.** Plausible given an entire 成人色情
-  vertical plus the fiction/roleplay population, but unread by a human and fast
-  mode dropped the adversarial validation that would probe it.
-* **ECE 0.0807, 11.4 sd above this run's calibrated null (0.0190 ± 0.0054).** The
-  classifier's confidence is miscalibrated, which matters because rows under a
-  0.02 margin route to a fallback on that confidence.
-* **`ai04`'s deliverables carry the false 「覆盖率 100%」**, written to state before
-  the fix. `qmine render ai04` into a new generation is the cheap correction;
-  whether the gate line regenerates on render is UNVERIFIED.
-
-### Cost of getting here
-
-`ai01` $2.31 (halted for fast mode; found the alpha knife-edge), `ai02` $0.37
-(halted: truncation defect), `ai03` $0.55 (halted: lost the log_reading angle),
-`ai04` $7.91 delivered. **$11.14 total.**
+> **§1 是覆盖写的，不是追加。** 2026-09-10 到 2026-09-20 之间曾经堆在这里的十四条
+> 带日期条目已原样移到下面的
+> [状态归档（2026-09-10 → 2026-09-20）](#状态归档2026-09-10--2026-09-20)，一个字没删。
 
 ## 2. Open questions — EDIT THIS SECTION, DO NOT APPEND
+
+### 引用护栏漏掉 `机构 + 人名` 这一形状（已量化，未改正则）
+
+`NAMED_DOCTOR` 预设只认带职称后缀的写法（`…医生$` / `…大夫$` / `…主任医师…医生$`）。
+在 health-pool3（20,316 行）上实测：预设会拦 **22 行（0.11%）**；而
+`(?:医院|保健院|卫生院|诊所|中心)[一-鿿]{2,3}$` 这种「机构 + 2–3 字人名、无职称」的形状有
+**160 行（0.79%）**，被现有预设命中的是 **0 行**。
+
+**没有直接放宽正则，是因为量过了**：这 160 行里 67 行落在重复出现的尾巴上
+（`靠谱吗` / `有哪些` / `排名` / `电话` / `哪家好` / `地址` / `简介` / `官网` / `在哪里` 等 11 个），
+都是普通名词——裸用这条模式假阳性约 42%，而「作者没挣来的拒绝」会直接删掉示例格。
+另外 health-pool3 的 `config.resolved.yaml` 根本没有 `pooled:` 段，所以 `NAMED_DOCTOR`
+这次连开都没开。
+
+下一步（按顺序）：(a) 在医疗 domain profile 里默认打开 `NAMED_DOCTOR`；
+(b) 若要覆盖这一形状，先建一个人名词典或用「尾巴出现次数 == 1」当判据，
+在四个语料上量假阳性再说，不要靠正则硬猜。
+提示词那一层已经独立兜住了（persona 第 8/9 条 + `qmine-answer-from-a-study` 第 4/5 检查）。
 
 **逐串筛查名单是按域建的，而两个医疗域的内容是重叠的。**（2026-09-17）
 `SCREENED_QUOTE_BLOCK` 每个域一份名单。做科室层报告时实测到：`女性到达顶峰什么症状` 在 医疗8 的名单上
@@ -261,8 +66,13 @@ about the distinction but was not touched.
 两份语料是同一个垂类，写法本来就重叠，一串在这边被判为不可引、在那边却可引，这个不一致是结构性的。
 科室层报告里已经按两域名单的并集处理（只影响那一份新报告）；**没有动任何一个域自己的护栏配置**，
 因为那会改变 医疗随机 已交付报告的重渲染结果。
-要不要改：把 `screened_quote_block(domain)` 改成按「同垂类域组」取并集（医疗8 + 医疗随机 + 健康），
-然后重渲染这三个域的报告并逐条核对例子变化。收益是口径一致，代价是三份已交付报告的例子会变。
+**这个组该怎么取，已经量化（2026-09-20 复核）。** 现有名单：医疗3 **769** 串、医疗8 **634**、
+医疗随机 **75**；健康 **没有名单**（`analysis/pooled5/work/` 下没有它的 `quote_block.json`），
+所以原先写的「医疗8 + 医疗随机 + 健康」既漏了最大的一份、又把一个空集当成了成员。
+实测集合关系：**医疗3 ⊋ 医疗8（634/634 全包含）且 医疗3 ⊋ 医疗随机（75/75 全包含）**，
+三者并集 = **769** = 医疗3 自己那一份。也就是说「取并集」等价于「所有医疗域都用医疗3 的名单」。
+代价也随之明确：医疗随机 会新增 **694** 串不可引（769 − 75），这是会改变它已交付报告例子的量级。
+要不要改：把 `screened_quote_block(domain)` 改成按同垂类域组取并集，然后重渲染并逐条核对例子变化。
 
 **`p2c_both_branches_arrived` 会停机，但闸门台账把它记成 `warned`。**（2026-09-16）
 它不在 `cfg.gates.blocking` 里，所以 `Deps.gate` 算出来是 `status='warned', blocking=False,
@@ -286,47 +96,37 @@ record.
 
 ### P1 — worth doing next
 
-0v. **The concurrent-branch join guard misdiagnoses a resume, and its own gate call is a
-   latent TypeError. Both are still there — deliberately — and they have to be fixed
-   together.** Measured 2026-09-12 on `ppl-pool5` gen02 (a `--resume` after
-   `new-generation`), the only time this guard has fired in 84 runs on disk:
+0v. **The concurrent-branch join guard MISDIAGNOSES a resume.** Measured 2026-09-12 on
+   `ppl-pool5` gen02 (a `--resume` after `new-generation`), the only time this guard has
+   fired in 84 runs on disk:
 
    ```
    20:58:23  !! 分支缺失: p2b_gold 从未运行, 但流程已到达汇合点
-   20:58:23  node p2c_classifier failed
-             TypeError: Deps.gate() got an unexpected keyword argument 'blocking'
    20:59:59  ✔ p2b_gold completed in 95.3s          <- 96 seconds LATER
    ```
 
-   - **The diagnosis is false.** `gen02/run_summary.json` lists `p2b` in
-     `completed_phases`; `gold.csv` and `gold_agreement.json` are on disk. The branch had
-     not "never run" — it had not FINISHED when p2c reached the join.
-     `_require_both_branches` (`graph/nodes/topdown.py:2739`) reads `phase_status`, which
-     records completion, so at a concurrent fan-in it cannot separate *never ran* from
-     *still running*.
-   - **The gate call cannot work either.** `deps.gate(..., blocking=True)` —
-     `Deps.gate` (`graph/deps.py:282`) has no `blocking` parameter; it derives blocking
-     from `name in cfg.gates.blocking`. So the guard raises from inside itself and the
-     remediation it carries ("open a new generation and run it in one go; the cache
-     replays paid calls") never reaches the operator. `_wrap` turns the crash into
-     `halt_kind="crash"` plus a lesson pointing at the wrong thing
-     ("p2c_classifier is not robust to this input").
-   - **Why nothing was fixed.** Repairing only the gate call was tried and then reverted
-     on 2026-09-12: it upgrades a FALSE diagnosis into a clean, authoritative halt whose
-     remediation tells the operator to spend a fresh generation on a branch that was 96
-     seconds from finishing. A crash at least reads as "this is not understood". Putting
-     the gate in `cfg.gates.blocking` was tried too and reverted: an independent audit
-     found it would list `p2c_both_branches_arrived` under
-     `declared_gates_never_evaluated` in **every healthy run's summary**.
+   `gen02/run_summary.json` lists `p2b` in `completed_phases`; `gold.csv` and
+   `gold_agreement.json` are on disk. The branch had not "never run" — it had not
+   FINISHED when p2c reached the join. `_require_both_branches`
+   (`graph/nodes/topdown.py:2740`) reads `phase_status`, which records COMPLETION, so at
+   a concurrent fan-in it cannot separate *never ran* from *still running*. The halt and
+   its remediation are therefore authoritative about the wrong thing: they tell the
+   operator to spend a fresh generation on a branch that was 96 seconds from finishing.
+
+   - **Resolved since, and not to be re-reported:** the `blocking=True` TypeError in the
+     same function was repaired (the call at `topdown.py:2765` no longer passes it, and
+     the comment above it records the incident). The test fake in
+     `tests/test_concurrent_branches.py:423` still takes `**kw`, but it now calls
+     `inspect.signature(Deps.gate).bind(...)` first, so a keyword the real method would
+     reject raises there — the hole is closed by binding the real signature, not by
+     tightening the fake. What remains open is the PREMISE, not the plumbing.
+   - **Operating rule until it is fixed:** open a new generation and run it ONCE, never
+     restart mid-flight. That is what the halt's own remediation says, and on a genuinely
+     missing branch it is correct.
    - **The order to fix it in:** first establish how `phase_status` is written at the
      fan-in on a resumed run (does the join node ever run before a sibling branch
      completes in a NON-resumed run?), then make the premise able to say "not finished
-     yet"; only then make the gate speak authoritatively.
-   - **Test note:** `tests/test_concurrent_branches.py`'s fake `_gate` takes `**kw` and
-     derives `halts_run` from a `blocking=` argument the real API rejects — which is why
-     the TypeError was invisible to the suite. A fake that accepts more than the real
-     thing cannot catch a call the real thing rejects. The clean way to close that hole is
-     the real `Deps` from `conftest.py:54`, not a hand-synced fake.
+     yet"; only then let the gate speak authoritatively.
 
 0t. **`--fast` is SILENTLY IGNORED on `--resume`, and a config file's `mode:` is
    silently overruled.** Both measured 2026-09-07, both the same failure class as
@@ -595,27 +395,6 @@ record.
    change (`propose_grid` returns a flat list, so selection cannot tell a proposed
    value from a configured one). Applying it as written flips live40 to a worse K.
    Still open — only the overclaim was fixed, not the wiring.
-
-0s. **FIXED 2026-09-02 — `merge_leaves` no longer voids a risk isolation.**
-   med04 shipped leaves 14 and 24 merged away AND "isolated", so two risk
-   clusters ([21,10,14] and [43,24,35]) were unisolated and ghost families 42/33
-   held no rows — the artifact said 36 families where 34 had content.
-
-   Two changes, both verified against med04's real conflict:
-   - `execute_prescriptions` reconciles AFTER the prescription loop: a leaf that
-     is both merged and isolated has its MERGE declined with a reason, because
-     isolation is a SAFETY action and merging a QUALITY one. Redirecting the
-     isolation to the survivor was rejected — it would isolate the survivor's
-     other rows on a guess.
-   - `isolate_leaves` now takes `leaf_labels` and REFUSES an empty leaf,
-     recording why. Defence in depth for any other path that empties one.
-
-   The cascade is right: both leaves stay live, the isolation moves real rows, no
-   ghost family, and the surviving duplicate routes to
-   `p8_leaves_are_distinguishable` — the safety action wins and the quality
-   problem goes to the quality mechanism.
-   Tests: `test_a_leaf_merge_never_voids_a_pending_risk_isolation`,
-   `test_declining_a_merge_still_counts_as_settled`.
 
 0n. **The observer's `decisions` channel is per-phase and narrow, so an agent
    that saw a decision id in an ARTIFACT cannot cite it.** med04 dropped four
@@ -903,6 +682,409 @@ record.
   `llm_usage.provider` must read `routed`, not `offline`.
 
 ---
+
+## 状态归档（2026-09-10 → 2026-09-20）
+
+> 这些条目原本堆在 §1 Status 里，违反了「§1 每次会话覆盖写」的约定。原样移到这里保存，
+> 内容一字未改；要读「现在是什么状态」请看 §1，要读「当时发生了什么」读这里和下面的会话日志。
+
+
+> **2026-09-20（六）：前门的模型现在「上来就懂」——装的是 agent preset，不是提示词补丁。**
+> 起因：真跟 dsh 聊了几句，发现它对本项目一无所知，每次都要列目录现学。
+> 查实三条通道，只有一条通：
+> ① MCP 的 `instructions` 字段 **dsh 永远读不到**（`dsh-mcp-client` 只桥接 Tools，
+> 包里 "instructions" 出现 0 次）；② web profile 把 `agent-instructions` /
+> `skill-filesystem` / `tool-skill` / `persona` 的 host 孪生体统统 `disabled: true`，
+> 改 host 会波及编码 preset；③ **agent preset** 才是每个 agent 自己的那层。
+> 于是新增 `integrations/dsh/presets/qmine/`（persona.md 6.9k 字 + 由上游 `standard`
+> 只换两行派生的 composition）与 `integrations/dsh/skills/` 五个技能，
+> `qmine mcp --install-preset` 渲染绝对路径，`make chat` 每次重装并把 default 指过去。
+> 实测冷启动：问「你是谁、我有两份日志怎么办」→ 不再列 QMine 目录，直接载
+> `qmine-prepare-datasets`、讲对四层与十个命名操作、并回头问「是哪两份」。
+> **顺带在实测中抓到一个真缺陷**（见 §2）：模型正确地拒绝引用具名医生，然后
+> 把其中一条**举例说明它拒绝了什么**——护栏放过的行、只有提示词拦得住。
+> persona 加了第 9 条「绝不示范你略去的东西」+「护栏放行不等于可引」，重测：
+> 用户明着要求「告诉我那些行长什么样」，模型在 think 里点名这是 rule 9 的陷阱并拒绝。
+> 全量 872 通过，16 个变异全杀。
+
+> **2026-09-20（五）：聊天前门在本机装好了，且变成一条命令。**
+> `~/dsh` 持久安装（上游 npm，未改动）；`make chat-setup` / `make chat` 进 Makefile。
+> `make chat` 每次重新生成配置（防过期）并 source `QMine/.env`，dsh 的 DeepSeek 适配器
+> 因此直接拿到已有密钥、首启不再要 key。实测 `http://127.0.0.1:3080`，进程树
+> `sh → node dsh web → qmine mcp`，界面里 `mcp-qmine ● Enabled`。
+> 唯一手动步骤：首次选 workspace 目录（macOS 原生对话框）。
+
+> **2026-09-20（四）：运行中的可见性 + 一份别人照着能装起来的文档。全量 850 通过。**
+> 查实：`dsh-mcp-client` 的 lib 里 "progress" 出现 **0 次**——MCP 有进度通知，这个 client 不消费，
+> 所以**进度只能轮询**。运行时 `run.log` / `usage.json` / `index.jsonl` / `findings.json` /
+> **`dashboard.html`** 都在实时写，只有 `run_summary.json` 等到最后（所以它就是「完没完」的判据）。
+> `qmine_status` 改为结构化读数（阶段、闸门、**已花多少**、产物数、dashboard 路径、`as_of` + 防陈旧告诫）；
+> 新增 `qmine_partial` 在**运行中**读中间产物回答问题，没就绪的点名在等哪个阶段。
+> 真起了一次运行验证：45 秒后能看到 P2a、3 通过 1 告警、1 次调用 2584 token，
+> 并能答出语料 20,000 行——同时拒绝报告结果。
+> `qmine doctor` 扩到覆盖整条前门；README 新增 `## The chat front door` 与文档入口。
+
+> **2026-09-20（再续）：真装了 dsh 0.1.5-rc.2 跑通，并发现上一轮的配置是错的。**
+> `cordis.patch.yml` 是 loader patch 列表，裸条目会被当成「覆盖已有条目」→ 告警、跳过、
+> **零工具且界面不说**；必须用不带 `id` 的 `insert:`。生成器已修，测试钉住。
+> 端到端验证：`--dump-config` 见到条目 → `dsh web` 起得来 → `ps` 里 `qmine mcp` 的父进程就是 dsh
+> → 界面 Plugin list 显示 `mcp-qmine ● Enabled`。
+> 另修一个真缺陷：`qmine_start_run` 过去会阻塞一次工具调用几个小时；改为分离启动并新增 `qmine_status`。
+> 澄清：**两层模型互不相干**——dsh 的聊天模型只挑工具，挖掘仍按角色走 QMine 自己的多供应商路由；
+> dsh 也不限 DeepSeek（anthropic/openai/moonshotai/zai/Bedrock/Azure/任意 OpenAI 兼容端点）。
+> 全量 843 通过。
+
+> **2026-09-20（续）：`qmine mcp` 把整个程序暴露成聊天应用可调用的工具；新增面向使用者的 `GUIDE.md`。**
+> DeepSeek Harness 去仓库核实过（真、MIT、Cordis、`dsh-mcp-client` **只桥 Tools**、
+> `failOnStartupError` 默认 false 会静默注册 0 个工具）。**不自建 web UI**——dsh 就是那个 app，
+> 我们出工具；否则统计、七层护栏、权限模型要有两份拷贝。
+> 16 个工具分「做事」与「问结果」两组；一份 190KB 报告的测量结论压到约 3,700 字符。
+> 三条结构性设计：任何工具都不返回整个文件且截断必须自报；三档权限落在 server 侧且
+> **spend 只能在会话之外授权**（递回去的 token 模型读得到）；护栏在边界对每个吐出的字符串再跑一遍无状态层。
+> 途中修了四个真缺陷（stdout 即协议、rich 折行毁掉 YAML 里的绝对路径、numpy 标量泄漏、
+> `str(None)=='None'` 让省略的可选参数看起来像被指定了——**只有真跑传输才暴露**）。
+> 18 个新测试、14 个变异体全杀；真 MCP 客户端跑通握手，全量 841 通过。
+
+> **2026-09-20：后处理与语料准备成为程序的功能，另加一个对话入口。全量 823 通过（747 + 76）。**
+> 三个新包，全部是新增 + 三处必要接线，已有测试一个没改：
+> `src/qmine/pooled/`（跨快照对比，阶段 `p10c` + `qmine compare`）、
+> `src/qmine/prepare/`（`qmine prepare`、`run --prepare`）、`src/qmine/chat/`（`qmine chat`）。
+> **`analysis/pooled5/` 与所有已交付的运行、产物一个字节没动**，那批脚本仍是各自那次交付的证据。
+> 对着 health-pool3 逐项复算：137 个类的条数与占比逐个相同，TVD / 秩相关 / Cramér's V 四位小数一致；
+> 自助法区间端点差 ≤0.0016（种子按「测什么」派生，标签串不同，结论不变）。
+> 途中在 `src/` 里修了七个真缺陷（property 当方法调、护栏拼 alternation 失效为放行、表与卡片各自舍入、
+> CSV 往返的 `nan` 印进报告、整类不引用单个汉字命中而误拦 28.6% 的语料、无效的 ArtifactKind 被吞掉、
+> 重渲染的代次认领它没有的文件），加上对抗式复核提出、逐条反驳后仍成立的 15 条，全部修掉；
+> 每一条都带回归测试，55 个变异体逐一验过全被杀。
+> 另按用户「绝不引具名医生」的长期规矩，把具名医生放进第二层通用硬规则（`configs/` 最终没动）。
+> 详见文末当日 session。
+
+> **2026-09-16：人物8 / 影视8 / 医疗随机 三个域跑完并交付，途中在 `src/` 里修了三个真缺陷。**
+> 三份语料：`人物8_pooled5.parquet` 43,802 行、`影视8_pooled5.parquet` 43,933 行（各 8 个快照，新增语音随机 1k），
+> `医疗随机_pooled5.parquet` 20,316 行（传统搜索随机 1w + 健康管家随机 1w，都是 2026-09-14 单日导出）。
+> 新档案 `configs/domains/{people_zh_v2,film_tv_zh_v2}.yaml`（19 / 21 个种子，覆盖 27.95% / 32.68%）。
+> 三次运行都是 fast、routed、未 halt；人物域把 Zhipu 的角色全部改路由到 Kimi，全程 0 次内容过滤。
+> **交付运行：人物8 用 `runs/ppl-pool8b/gen01`（全新单次跑完，无 resume），影视8 / 医疗随机 用各自的 gen01。**
+> `ppl-pool8` 整个 run id 作废：gen01 有幻影类，gen02 体系漂了，gen03 是两次 resume 的产物——
+> 只有 14 个闸门（少了 `p2a_pilot_agreement` / `p2a_taxonomy_shape`，因为 `--reuse-taxonomy` 跳过了 p2a）、
+> 6 个 decision、`elapsed_s` 只记了 resume 之后那一段。ppl-pool8b 这三项分别是 16 / 7 / 5,318 秒。
+> 交付形状：人物 21 L1 / 53 L2 / 37 族 / 37 叶；影视 17 / 54 / 52 / 58；医疗随机 20 / 51 / 33 / 33。
+> 三份报告 `未匹配数字 0 · 问题引文 0`。按用户要求，人物 / 影视**不跑叙述工作流**（报告的散文段留空，表与图完整），
+> 且例子表**印真实 query**。
+>
+> **三个源码缺陷（都带回归测试，全量 747 通过、`ruff --select F` clean）：**
+> 1. `graph/nodes/topdown.py::_active_learning_round` 没有 round 1 的两道保护。标注员漏标的 22 行以
+>    `final="UNLABELED"` 进了金标，22 行过了 5 折支撑下限，于是 18 类的体系训出 19 类分类器，幻影类落到 11 行语料、
+>    进了 5 份交付文档。修好后 macro-F1 0.526 → 0.557。只有 ppl-pool8 中招（其余 7 次运行实测 0 行）。
+> 2. 同一文件 `_require_both_branches` 给 `Deps.gate()` 传了不存在的 `blocking=True`。这是**只有出错时才走的分支**，
+>    它的测试用 `**kw` 的假 deps，所以一直是绿的；gen03 真的在汇合点撞上缺分支时，运行死在 TypeError 而不是那道闸门。
+>    测试的假对象现在绑定真签名。
+> 3. `config.py` 的 fast 校验器只在开关「本来是开的」时才往 `fast_skipped` 里追加，于是每一次 `--resume` 重建出的清单
+>    只有 4 项。横幅是由这份清单生成的，gen03 的三份参考文档因此声称双标注、观察员、对抗验证、交付前审核都**跑过**。
+>    改为按 mode 推导，并断言重复校验幂等。
+>
+> **后处理侧（不动 `src/`）：** `pooled5_common.run_dir` 新增 `P5_GEN_<批次>` 代次覆盖；
+> `p5_postprocess_run_xlsx` 增 `DOMAIN_SRC_COLS["医疗随机"]`；`p5_snapshot_classes` 的产品层按语料时间口径改列名
+> （单日语料用 `当日PV`），并把 `EXTRA_QUOTE_BLOCK["医疗随机"]` 指到 医疗8 那条实测正则、`SCREENED_QUOTE_BLOCK`
+> 扩到四个域；`p5_snapshot_report` 增 `PREP_TEXT` 按域分流数据准备一节。
+> 引文护栏用 `p5_quote_hardrule_scan.py`（三条硬规则 + 医疗域加具名医生一条）复核：人物 9 命中 / 影视 9 / 医疗随机 76，
+> **三个域都是「已印进交付文档 0」**；命中串仍写进各域的 `privacy_screen/quote_block.json` 作为换例子时的保险。
+> 887 份既有交付文件哈希不变（唯一变的是按批次重写的 `work/snapshot_classes_all.json`，只写不读）。
+
+
+> **2026-09-15（晚）：医疗8（med-pool8）跑完并交付，纯后处理，`src/` 未动。**
+> fast、routed、未 halt、229 次调用、1 小时 53 分；`verify_run` 本运行 PASS 21 / FAIL 0（对照 ppl-pool5 PASS 9 / FAIL 3）。
+> 交付 17 L1 / 55 L2 / 41 叶 / 37 族，留出复现 0.9704。报告 `runs/med-pool8/gen01/postprocessed/medical_zh_v2_意图与聚类叶_跨快照对比.zh.md`
+> （叙述经两名独立复核员三轮对抗复核，「未匹配数字 0 · 问题引文 0」）。**本次最重要的发现是引文护栏的漏洞**：前五层正则 / 名单护栏
+> 在报告与工作簿的例子里漏了 38 个违规串；改为逐串阅读印出来的串（Claude 必读、DeepSeek 并集，轮次推进到收敛，再做独立第二遍），
+> 不可引名单 634 串，印出的 2,080 个语料串全部被 Claude 读过。测试 744 通过；已交付的 782 个文件除一个只写不读的汇总外哈希不变。
+
+> **2026-09-15（傍晚）：fin8 深挖报告已交付，纯后处理，`src/` 未动。**
+> `runs/fin-pool8/gen01/postprocessed/finance_zh_v2_意图内部结构与代表性样例.zh.md` + `.xlsx` + `img/意图结构_*.png`。
+> 回答三件事：主报告卡片例子（流量前 3）覆盖中位只有 32.8%，构成显式取例到 80.5%；同一意图跨快照的差别拆成
+> 「关于什么」（叶构成）与「要什么」（三个宽意图的盲标子功能，DeepSeek 跨模型 κ 0.963–0.986）；叶 × 子功能交叉回答
+> 「核实还是决策」（裁决意图 68.7% 是核实规则套到自己身上，直接要建议 3.8%）。叶优于家族（实测）。med-pool8 仍在跑。
+
+> **2026-09-15：修了一个披露层的源码缺陷（不改 K，不改任何数字）。**
+> `ops/cluster.py: reference_sensitivity(sweep, k, *, locator_column)` 现在只把**真正定位 K 的那一列**标为
+> `decides`（稳定性兜底时谁都不标）；`p5_k_references_agree` 闸门的 `observed.deciding_reference` 不再写死
+> `phrasing_groups`。声明的参考列定位 K 的运行（ai04、aiwire01、health-pool2、三个 k12_zh、live41 gen01/gen03、
+> live42、live44 —— 69 份 granularity.json 里 10 份）同一产物曾自相矛盾。实测：24 份措辞群定位的已存 sweep 用新旧代码
+> 重算**逐字节相同**，10 份受影响的只差两个 decides 与注记末句。新增 3 个测试（在原代码镜像里全部失败，5 个变异体各至少
+> 被一个抓到）；全量 **744 通过、exit 0**，`ruff --select F src/qmine/ tools/` clean。已存产物不重写（`qmine render`
+> 修不了，只有新 generation 重跑 p5 才会带上修复）。同类的姊妹缺陷记在 §2 第 20、21 条。详见文末当日 session。
+
+> **2026-09-13（深夜）：新增两个垂类 书籍文档 / 软件，全套跑完并交付。**
+> 语料 `data/raw/pooled5/{书籍文档,软件}_pooled5.parquet`（21,786 / 21,920 行，各 4 个快照，无语音）；
+> 领域档案 `configs/domains/{books_docs_zh,software_apps_zh}.yaml`（每个占比都是实测）；
+> 运行 `book-pool5` / `soft-pool5`，fast、routed、未 halt，`verify_run.py` 各 21 PASS / 0 FAIL；
+> 交付在各自 `postprocessed/`，跨批次表在 `work/cross_new2/`（**没有碰五域的 `work/cross/`**）。
+> **最硬的一条**：软件 `生成露骨性图像编辑` 是七个领域里**唯一**的「仅助手」类（51 行，搜索期望
+> 530.04，P(0)=0.0000）。**方法层面的一条**：领域档案是 hypothesis-first 写的，两个域的 agent
+> 都找到了它的盲区，最大的一类都比档案里已写的类大。详见本文件末尾当日 session。
+> 测试 741 通过、exit 0；ruff clean；**`src/` 未改动**（发现一个 openpyxl 公式缺陷，按约束只做后置修复）。
+
+> **2026-09-13（晚）：逐类 × 逐快照对照报告已交付**，每个领域一份，写在各运行自己的
+> `runs/<id>/gen01/postprocessed/` 里（`*_意图与聚类叶_跨快照对比.zh.md` + `.xlsx` + `img/`）。
+> 它回答的是主报告没回答的那一层：**每一个意图、每一个聚类叶在五个快照上各占多少、哪些类只出现在
+> 某个快照**。脚本在 `analysis/pooled5/p5_snapshot_{classes,figs,report,verify}.py`。
+> **纯后置分析，`src/` 与 `tests/` 本次一行未动**（两者的 mtime 仍是 09-12，上一次会话的风控哨兵修复）；
+> 全套测试 **741 通过、exit 0**，`ruff --select F src/qmine/ tools/` clean。
+> 关键口径：0 条必须配可检出性判定（助手 n≈1,000 时 0 条的上界仍有 0.39%）；「独占某快照」几乎
+> 恒为 0，改用「与其余每一个快照逐一比较都显著更高」的**特征类**。详见本文件末尾的当日 session。
+
+> **2026-09-13:** five POOLED-5 runs delivered (`fin/med/edu/film-pool5`, `ppl-pool5b`) — each
+> domain's 2025 search + 2026 search + assistant head + assistant tail + (finance/medical) voice
+> mined as ONE corpus so one taxonomy labels every source. Reports:
+> `docs/POOLED5_2026_五域同体系对比.zh.md` + `docs/POOLED5_2026_领域深挖.zh.md`, figures in
+> `docs/img/pooled5/`, reproduction package in `analysis/pooled5/`. Source-tagged copies of each
+> run's own workbook are in `runs/<id>/gen01/postprocessed/`; the originals are untouched.
+> **One pipeline fix shipped** (`naming.py`: the risk sentinel's fallback is a real `RiskReport`,
+> so a provider content filter degrades instead of halting p7 — `tests/test_risk_sentinel_degradation.py`).
+> **One fix deliberately NOT shipped**: the p2c branch-join guard, see open question 0v — its
+> diagnosis is false on a resume, so making it authoritative would have been worse than the crash.
+> Tests **741** pass, exit 0; `ruff --select F src/qmine/ tools/` clean.
+
+> **2026-09-10:** post-run analyses only, no pipeline source changed. Delivered `docs/SEARCH_VS_ASSISTANT_2026.zh.md`, its companion `docs/SEARCH_VS_ASSISTANT_2026_领域深挖.zh.md`, and the reproduction package `analysis/sva2026/`. New analysis tools: `tools/clean_assistant_functional.py` (v3), `tools/unified_intent_frame.py`, `tools/label_unified_intent.py`. Tests: **739 pass** (full suite, `-x`, no failures); `ruff --select F src/qmine/ tools/` clean. Details are in the 2026-09-10 session log below. The `ai04` status that follows is unchanged.
+
+
+# `ai04` DELIVERED: the multi-vertical AI-assistant corpus is mined end-to-end in fast mode, with the stratum comparison shipping under its own name. Two defects were found and fixed during the run.
+
+| | |
+|---|---|
+| Tests | **739** passing, exit 0; `ruff --select F src/qmine/ tools/` clean (was 716) |
+| Run | `ai04`, `mode=fast`, `provider=routed`, not halted, **448 calls / $7.91 / 3h31m** |
+| Corpus | `data/raw/ai_assistant_pooled.parquet` — 65,986 rows, 33 L1 / 213 L2 reference |
+| Delivered | **24 top-down intents**, **154 leaves**, 121 families (156 leaves pre-governance; 56 governance ops, 6 declined) |
+| Held-out reproduction | **96.9%** (95% CI 0.966-0.972, n=13,198) |
+| Gold | 3,000 rows, **coverage 92.50%** — 225 rows came back UNLABELED (the gate said 100%; see below) |
+| Deliverables | 3 fast-mode reference documents + `分层对比_头尾结构差异.md` + `垂类交叉表.md/.csv` |
+| verify_run vs live42 control | `ai04` **PASS 19 / N-A 6 / SKIP 2 / FAIL 1**; control PASS 20 / FAIL 6 / SKIP 2 |
+
+### Post-run corrections to `ai04`, and the one thing that was general
+
+The maintainer read the delivered tables and found three problems. Deciding which
+belonged in SOURCE and which in a post-run step was settled by measurement, not
+preference — is it wrong on every corpus, or only on this export?
+
+**GENERAL, so fixed in source.** Every drift/stratum report ends 「原始数据:
+`labels_full.csv`（逐行标签，含分层列）」 and **that column was never written** —
+false on all six pooled runs on disk (fin/med/edu/film/ppl-pool, filmdrift) as
+well as `ai04`. `p10` now carries `snapshot` into the delivered labels when the
+run has one; additive, so single-snapshot runs are unchanged.
+
+**CORPUS-SPECIFIC, so post-run** (`tools/postprocess_assistant_run.py`, writes to
+`<gen>/postprocessed/`, non-destructive):
+
+* **Sort order.** The delivered table came out in corpus order — stratum then
+  query — which reads as alphabetical and scatters each category. Re-sorted to
+  (category, sub-category, stratum, descending traffic), with the stratum order
+  STATED (`top1k` before `random1k`); sorting those two by name puts the random
+  sample first, which is backwards for every reader.
+* **Stratum names.** `head`/`tail` -> `top1k`/`random1k`. `tail` is a CONCLUSION
+  about where rows sit; the file is a RANDOM sample, which is how it was drawn.
+  `tools/prepare_assistant_corpus.py` now emits the new tags (`HEAD_TAG` /
+  `RANDOM_TAG`) so future runs never carry the old ones.
+* **What the comparison MEANS**, appended to the document as a computed addendum.
+
+### What the stratum comparison actually compares — and one caveat that was wrong
+
+`top1k` is a **census** of each category's 1,000 highest-traffic queries, complete
+above that category's own floor (**3 to 419 raw PV**, measured). `random1k` is a
+**uniform sample of distinct queries** (raw PV median **1**, mean **1.29** — a
+PV-weighted draw would lift the mean far above that). So the comparison is
+*"the composition of the highest-traffic band vs the composition of the query
+vocabulary"*. Only **115 of 33,000 random rows (0.35%)** fall inside the head
+band and 17 of 33 categories have none, so it FUNCTIONS as head-vs-rest — a
+measured property of this export, not a guarantee.
+
+**This inverts the document's own reading advice.** 「请按 Δ流量的大小读」 is right
+when both sides are censuses. Here the random side's traffic share is a
+high-variance estimate: one query holds a median **3.4%** of a category's sample
+traffic and up to **36.4%** (交通出行), with 4 of 33 categories above 10%. **Read
+the ROW share; treat Δ流量 as indicative.**
+
+And 「不能推回总体」 was too strong. Correctly: within a category the random sample
+IS an unbiased estimate of row composition (±1.4pp at 5%, ±3.1pp at 50%, n=1,000);
+it cannot be combined ACROSS categories (sizes unknown, capture-recapture fails),
+and its traffic share cannot be read as population traffic.
+
+**A bug I shipped into that addendum and caught by reading the output:** the first
+version computed the overlap from `weight`, which is normalised WITHIN (stratum,
+category) — two different scales — and reported **100%** overlap where the truth
+is 0.35%. It is the exact incomparability this corpus preparation exists to
+handle. It now computes from raw counts via `--source-corpus`, or states that it
+did not compute the figure. Pinned by
+`test_the_stratum_addendum_will_not_state_an_overlap_it_cannot_compute`.
+
+### `_AXIS["stratum"]` was over-fitted to this corpus, and is now frame-agnostic
+
+It said 「头部按流量取 TopN，尾部是随机抽样」 — this export's design, written into
+the shipped vocabulary, where it would mis-describe any other stratum pair (two
+devices, two collection methods). The shipped text now says only what is true of
+every stratum comparison; what each frame IS lives in the post-run addendum,
+computed from the run's own data. The `time` branch remains byte-identical to the
+pre-change module.
+
+### The stratum axis works end to end
+
+`分层对比_头尾结构差异.md` shipped under the stratum name, and contains **zero**
+occurrences of 不是趋势 / 同月同日 / 时段性事件 / 两期的抽样方式必须一致 / 漂移.
+The inverted caveat is replaced by its opposite (「抽样口径不同正是本报告的自变量」)
+and the real estimand limit is stated (「不能推回总体」). Measured: head and tail
+share **159 queries, a Jaccard of 0.2%**; Cramér's V **0.3232**.
+
+### The `UNLABELED` sentinel is counted as a CLASS in three places
+
+`ops.classify.UNLABELED` fills a row no annotator or classifier could label. It is
+not a class, and three separate readers treat it as one:
+
+1. **`p2b_kappa`'s coverage** — hidden entirely; the gate reported 100% while 225
+   of 3,000 gold rows held the sentinel (fixed, below).
+2. **`verify_run.py`'s phantom-class check** — surfaces it, but under the label
+   "referee typos", which is the wrong diagnosis for the right observation.
+3. **The class COUNT.** `taxonomy.json` has **24** nodes; `labels_full.csv` has
+   **25** distinct `td_l1` because ONE row carries `UNLABELED`, and
+   `分层对比_头尾结构差异.md` therefore says 「共 25 类」. The delivered taxonomy is
+   24. `tools/run_evidence.py` reports 24 and is right.
+
+Only (1) is fixed. (2) and (3) are cosmetic on this run — one row — but the same
+sentinel would inflate a class count by however many rows a real outage lost.
+
+### The one FAIL, and why it is the same defect as the coverage bug
+
+`❌ [gold] no phantom classes from referee typos — 1 phantom classes: ['UNLABELED']`.
+Not a referee typo: `UNLABELED` is the sentinel filling the **250 gold+pilot rows
+the annotator lost**. Two independent instruments, one cause — the p2b gate hid it
+behind a tautological 100%, the mechanical verifier surfaced it as a phantom
+class. Fixed in the gate (see below); the verifier's message could be clearer
+about the distinction but was not touched.
+
+### What a reader must not take at face value
+
+* **Coherence 3.37/5, 26 of 156 leaves below 3.0** — worse than the 3.90-4.06 of
+  previous corpora, and it is the CORPUS, not the clustering. The four worst
+  leaves are 过滤无意义表情符号与乱码输入, 短词查询 (工作/房子/塑料/海豚),
+  识别日常口语片段并应答, 杂项查询意图识别 — the acknowledgement, emoji and
+  short-fragment population. 86 of 156 leaves sit at 4-5; the mean is dragged by a
+  noise floor a search log does not have.
+* **59 of 156 leaves (38%) are risk-flagged.** Plausible given an entire 成人色情
+  vertical plus the fiction/roleplay population, but unread by a human and fast
+  mode dropped the adversarial validation that would probe it.
+* **ECE 0.0807, 11.4 sd above this run's calibrated null (0.0190 ± 0.0054).** The
+  classifier's confidence is miscalibrated, which matters because rows under a
+  0.02 margin route to a fallback on that confidence.
+* **`ai04`'s deliverables carry the false 「覆盖率 100%」**, written to state before
+  the fix. `qmine render ai04` into a new generation is the cheap correction;
+  whether the gate line regenerates on render is UNVERIFIED.
+
+### Cost of getting here
+
+`ai01` $2.31 (halted for fast mode; found the alpha knife-edge), `ai02` $0.37
+(halted: truncation defect), `ai03` $0.55 (halted: lost the log_reading angle),
+`ai04` $7.91 delivered. **$11.14 total.**
+
+
+## 4. Session (2026-09-20, 夜二) — 把 CLAUDE.md / 两份 README / GUIDE / HANDOFF 对齐到事实
+
+**做法**：五个维度并行审计（CLAUDE.md 事实性、CLAUDE.md 篇幅与归属、README 语感、跨文档一致性、
+HANDOFF 契约），每个维度再各配一个对抗式验证 agent。**43 条确认 / 11 条被驳回**——被驳回的多是
+「把口味当缺陷」，以及两处审计员自己看错了行号。
+
+**最有价值的一条是测出来的，不是吵出来的。** 两个验证 agent 为 `make demo` 到底是 3 还是 4 分钟
+各执一词（一个引 Makefile，一个引 `cli.py` 的注释）。实跑一次：**115.47 秒**，19 个阶段跑完、
+65 个产物、未停机。两边都是错的。四处文档 + `cli.py` 的注释统一改成 **~2 分钟**
+（注意这是热缓存；首次运行要下载编码器，会更久）。
+
+**CLAUDE.md**：207 → **199 行**（它自己的上限是 200）。测试数 `~750` → `~870`；补上
+`make live` / `make doctor` / `make chat-setup` / `make chat`（此前整个 Web 前门在命令块里没有条目）；
+`qmine mcp` 条目从 6 行压到 4 行；pooled / prepare / generations 三段各自压掉与其规则文件重复的部分；
+把「不消费产出的 agent 不要加」整段**移进** `.claude/rules/agent-authority.md`，
+把 grounding false positive 整段删掉（`report-generators.md` 里本来就有更完整的版本，含 live42 的因果表）；
+新增「三份说明文件，三个读者」（CLAUDE.md 改程序的人 / GUIDE.md 用程序的人 /
+AGENTS.md + preset 对话助手），以及不变量表新增一行
+`test_the_standing_rules_forbid_illustrating_what_was_withheld`。
+
+**QMine/README.md**：834 → 816 行。删掉「## The chat front door」里 17 行的手工安装配方——
+它复制了三行之后就链接过去的那份文档（保留了只在这里出现过的「选工作区目录」那句）；
+把「The split is deliberate」这类没有可证伪内容的开场，改成本文档其他地方一贯的
+「粗体主张 + 数字」写法；补上 18 tools、目录条目、`AGENTS.md` / `skills/` 的仓库结构条目、
+`qmine doctor` 现在还检查什么。
+
+**README.zh.md** 落后一整个产品层：新增「对话入口」整节、仓库结构补上 prepare / pooled / chat / mcp /
+integrations / GUIDE / AGENTS / skills、测试数 `711` → `~870`、补上语言切换行、
+并修掉创新点第 6 条被写成 H2 因而逃出该节的格式缺陷。
+
+**HANDOFF.md**：§1 此前是 **296 行、14 条带日期的块引用**堆叠，直接违反它自己「§1 每次覆盖写」的约定。
+改成一张当前状态表 + 最近一次会话的摘要；那 296 行**一字未删**地移到
+「状态归档（2026-09-10 → 2026-09-20）」，脚本里用「原 §1 每一非空行都必须仍在文件中」做断言。
+§2：已修好的 `0s`（merge_leaves 与风险隔离冲突）按契约从 §2 删除、移进 2026-09-02 的会话小节；
+`0v` 重写——`blocking=True` 的 TypeError 早已修好（`topdown.py:2765` 不再传它），
+测试假替身虽仍收 `**kw`，但现在先 `inspect.signature(Deps.gate).bind(...)`，所以洞是堵上的，
+**还开着的只有前提**（`phase_status` 记录的是完成，分不出「没跑」和「还在跑」）；
+逐串筛查名单那条补上实测集合关系：医疗3 **769** ⊋ 医疗8 **634**、⊋ 医疗随机 **75**，
+并集 = 769 = 医疗3 自己，改成取并集等于让医疗随机新增 **694** 串不可引，而它原先写的组成员「健康」
+根本没有名单。
+
+**未动**：`src/` 只改了一行注释（demo 的分钟数），`tests/` 未动，`configs/`、`analysis/` 与
+所有已交付运行零改动。
+
+## 4. Session (2026-09-20, 夜) — 前门的「先验知识」：preset、persona、skills
+
+**问题**：web app 起来了、工具也都在，但对面的模型对 QMine 一无所知。第一句话问下去，
+它开始列目录、翻文件，自己现场盘点这个项目是什么——这不是前门该有的样子。
+
+**先查通道，再写字。** dsh 0.1.5-rc.2 上实测：
+
+| 通道 | 结论 |
+|---|---|
+| MCP server 的 `instructions=` | **完全不到模型手里**。`dsh-mcp-client` 只桥接 Tools，整个包里 "instructions" 出现 0 次。保留该字段，因为 Claude Desktop / Cursor 会读 |
+| 工具描述 | 到，而且一直在用（本来就写着各自的陷阱） |
+| `persona` 的 prefix/suffix | 到，进 system prompt，前缀稳定所以走 KV cache |
+| `AGENTS.md` 链 | 到，但 host 层 `disabled: true`，要 preset 里挂 |
+| skills 目录 + `skill` 工具 | 同上；catalog 常驻、正文按需 |
+
+关键发现：web profile 把 `agent-instructions`、`skill-filesystem`、`tool-skill`、
+`skill-badge`、`compaction-basic`、`tool-bash`、`tool-fs` 等 26 项在 **host 层**全部
+`disabled: true`，再由 **agent preset** 逐个打开。所以给 agent 装常驻知识，
+preset 是唯一的口子；改 host 会连编码 preset 一起改。
+
+**做法**（按「最小高信号 token + 按需检索」分层）：
+
+- `integrations/dsh/presets/qmine/persona.md` — 常驻那层。QMine 是什么、四层各自花不花钱、
+  东西在哪、工具怎么选、**十条「把对的数字说错」**、怎么干活。~6.9k 字符。
+- `integrations/dsh/skills/` — 五个按需技能：`answer-from-a-study`、`compare-snapshots`、
+  `prepare-datasets`、`start-a-run`、`explain-the-method`。catalog 一行常驻，正文载入才算钱。
+- `QMine/AGENTS.md` — 磁盘地图。只有当 workspace 正好是本 checkout 时才载入，
+  所以**不能承重**：实测用户的 workspace 是他自己的数据目录，不是 QMine 目录。
+- `agent.cordis.yml` **由上游 `standard` preset 派生**，只换 persona 和 skill 根两行，
+  其余（realm、sandbox 接缝、compaction 组、delegation 组）原样照搬——那些是本项目
+  无从重新推导的管道。脚本里 `assert old in s` 挡住上游改动后的静默漂移。
+
+**三个当场踩到的坑**：配置 override 是**整体替换**不是合并（`- id: system-prompt` 只写一个键，
+其余键全没了）；`customSkillDirs` 相对路径按 **harness 进程的 cwd** 解析，不是 checkout，
+而「技能根不存在」是合法空状态、不报错；skill 发现**只有一层深**。
+
+**实测两轮**（这一段才是重点）：
+
+1. 冷启动问「你是谁 / 我有两份日志怎么办」→ 不再盘点 QMine，直接载
+   `qmine-prepare-datasets`，讲对两条路线、四层、十个命名操作、轴是假设，
+   glob 的是**用户自己的** workspace（7 个 xlsx），然后回头问「你说的是哪两份」。
+2. 问 health-pool3 发现了什么 → 18 次工具调用 / 26 秒，开头先说 `mode: fast` → kappa 缺席、
+   `axis: stratum` → 不许说「涨了」，每个 TVD 都带同源噪声上界，引用都标了来源表。
+
+第 2 轮同时暴露了一个真缺陷，见 §2：它正确地不引用具名医生，**然后举了一条当例子**。
+护栏放行了那行（`机构+人名`，没有职称后缀，任何现有模式都不匹配），所以唯一能拦的就是提示词。
+persona 补了第 9 条与「护栏是地板不是许可」，重测时用户明着索要「那些行长什么样」，
+模型在 think 里写下「这是 rule 9 的陷阱」并拒绝。
+
+**其它**：为了让前门有东西可读，跑了 `qmine compare health-pool3`（不花钱、只往
+`gen01/pooled/` 新增目录，不改任何既有交付物）——在此之前 94 个 run **没有一个**建过跨快照对比，
+`qmine_findings` 对所有 run 都返回 not_found。`qmine doctor` 加了 `dsh preset` 一行。
+
+**测试**：新增 `tests/test_front_door_knowledge.py`（22 条），12 个变异全杀；
+`test_the_dsh_patch_adds_a_plugin_rather_than_overriding_one` 改写成「新插件要 `insert:`，
+覆盖只能针对确实存在的 id」，4 个变异全杀。全量 **872 通过**。
 
 ## 4. Session (2026-09-07) — a multi-vertical assistant corpus, and the axis the drift report assumed
 
@@ -3643,6 +3825,32 @@ $11.75 / 295 calls and stays as evidence.
 
 ## Session 2026-09-02 — fast mode
 
+### `merge_leaves` no longer voids a risk isolation
+
+Moved out of §2 (was item `0s`) on 2026-09-20, per §2's own rule that a resolved
+item is deleted there and recorded in the session that resolved it.
+
+med04 shipped leaves 14 and 24 merged away AND "isolated", so two risk
+   clusters ([21,10,14] and [43,24,35]) were unisolated and ghost families 42/33
+   held no rows — the artifact said 36 families where 34 had content.
+
+   Two changes, both verified against med04's real conflict:
+   - `execute_prescriptions` reconciles AFTER the prescription loop: a leaf that
+     is both merged and isolated has its MERGE declined with a reason, because
+     isolation is a SAFETY action and merging a QUALITY one. Redirecting the
+     isolation to the survivor was rejected — it would isolate the survivor's
+     other rows on a guess.
+   - `isolate_leaves` now takes `leaf_labels` and REFUSES an empty leaf,
+     recording why. Defence in depth for any other path that empties one.
+
+   The cascade is right: both leaves stay live, the isolation moves real rows, no
+   ghost family, and the surviving duplicate routes to
+   `p8_leaves_are_distinguishable` — the safety action wins and the quality
+   problem goes to the quality mechanism.
+   Tests: `test_a_leaf_merge_never_voids_a_pending_risk_isolation`,
+   `test_declining_a_merge_still_counts_as_settled`.
+
+
 **What was asked:** a mode that returns results faster by skipping the
 double-checking, delivering three files (two per-route reference documents and
 one fully-labelled dataset) without reducing the evidence a user can audit.
@@ -5569,3 +5777,216 @@ patient or record data」）。**这条路不够**：一次运行的 resolved co
 **没做**：`pooled` 只写进 `runs/<id>/<gen>/pooled/`，不碰任何已交付目录；
 产品层的盲标（三视角 + 码本）没有进程序——它需要人写码本并做校准，机械方案只做得到词表能做到的部分，
 在 医疗3 上是 98.5% 保留率 vs 手工的 98.2%，差的 38 行正是盲标那一层。
+
+---
+
+## 2026-09-20（续）—— QMine 以 MCP 暴露给聊天应用；补一份面向使用者的 GUIDE
+
+### 先澄清三件用户当场问到的事（写进了 `QMine/GUIDE.md`，245 行）
+
+`CLAUDE.md` 是给**改这个程序的人**看的，之前没有一份给**用这个程序的人**看的。
+新的 `GUIDE.md` 讲四层（准备 / 挖掘 / 对比 / 提问）、「有人带着数据集来了该怎么走」的分步路径、
+`qmine chat` 能做和不能做什么、盲标产品层到底是什么，以及最常被读错的五件事。
+
+### DeepSeek Harness：先去核实，再设计
+
+用户给的 `github.com/deepseek-ai/deepseek-harness` **是真的**：2026-08-13 发布，MIT，
+Node/TypeScript，Cordis 驱动的「everything is a plugin」，`npx @deepseek-ai/dsh web` 起在 3080。
+关键的几条（都去仓库和文档核过，不是照着印象写的）：
+
+- `packages/mcp/mcp-client` 提供 `@deepseek-ai/dsh-mcp-client`，**只桥接 MCP 的 Tools 能力**
+  （Resources / Prompts 在 8 月这版明确推迟）。工具以 `mcp__<serverName>__<toolName>` 出现。
+- 配置写在 `cordis.patch.yml`，一个 MCP server 一个插件实例；
+  `failOnStartupError` **默认 false**——server 起不来时，harness 照常启动、注册 0 个工具、**不报错**。
+- 架构原则 "Model-visible ⟺ logged"：凡是进入模型请求的东西都必须能从 session log 重建。
+
+**所以不自己写 web UI。** dsh 已经是那个 web app，它提供聊天界面、模型适配器、session log 与 agent loop；
+我们提供工具。把统计、七层引用护栏、权限模型再用 TypeScript 写一遍，等于让「结果可不可信」这套规则有两份拷贝。
+
+### `qmine mcp`：16 个工具，两组
+
+**做事**（沿用 `qmine chat` 的动作目录）：inspect / plan / prepare / estimate / start_run /
+build_comparison / list_runs / overview / capabilities。
+
+**问结果**（这一组是新的，也正是用户要的「交付完还能接着聊」）：
+`qmine_findings`（一份 190KB 报告的**测量结论压到约 3,700 字符**，每个距离都带同源噪声上界）、
+`qmine_class`、`qmine_examples`（过护栏的真实行）、`qmine_table`（带过滤/投影/排序/上限）、
+`qmine_tables`、`qmine_document`（按节，从不整篇）、`qmine_glossary`。
+
+### 三条结构性的设计，都是这层特有的
+
+1. **上下文就是这层的主要工程问题。** 没有任何工具返回整个文件。每个读取都有预算，返回时带
+   `rows_matched` / `rows_in_table` / `truncated`——被截断的表若不说自己被截断了，就会被当成整张表读。
+2. **agent loop 不再是我们的了。** `qmine chat` 的确认在自己的循环里；走 MCP 之后，模型看得见的工具就是
+   它叫得动的工具。所以三档权限落在 **server 侧**：read 直接跑；write 只能写进许可的根目录；
+   **spend 默认拒绝**，返回给人执行的命令。要允许，只能在会话**之外**设 `QMINE_MCP_ALLOW_SPEND=1`——
+   因为**经由工具结果递回去的 token，模型读得到也复述得出来**，建在它上面的审批流是演戏。
+3. **护栏在边界再跑一遍。** 表是在七层下写的，但聊天面从另一条路径拿到同一批数据就是绕过它们，
+   而有绕法的护栏不是护栏。`answers.scrub` 对每个吐出去的字符串重跑**无状态的那几层**
+   （硬规则 / 共现 / 声明正则 / 逐串名单），命中就换成标记——**不是留白**。
+
+### 途中的四个真缺陷
+
+1. **stdout 就是协议。** MCP 走 stdout 说 JSON-RPC，而 `_load_env()` 会往 stdout 打
+   `loaded 5 key(s) from ...`——一帧就废了，客户端永远握不上手。改成整个进程期间 console 走 stderr，
+   `.env` 在 `redirect_stdout` 里加载。
+2. **`--print-dsh-config` 用 `console.print`**，rich 按终端宽度折行——折行后的绝对路径写进 YAML，
+   就是一份指向错目录的配置。机器可读的输出不走美化打印。
+3. **numpy 标量泄漏**：pandas 单元格是 numpy 标量，`json.dumps` 直接拒绝，报错从一个在 REPL 里好好的工具里冒出来。
+   `answers.native` 统一转换，并且**在 clip 之前**——clip 会序列化。
+4. **`str(None)` 是 `'None'` 这四个字符。** 走 MCP 时，**省略掉的可选参数是「键在、值为 null」**，
+   于是 `str(a.get(k, ""))` 得到 `"None"`，所有「调用方指定了吗」的判断全部答是——
+   `qmine_document` 就去找一个叫 `None` 的文件。**只有真跑一遍传输才看得见**：直接调用时那个键根本不存在，
+   走的是 `""` 默认值。17 处可选参数统一走 `_opt()`。
+   顺带修掉一个默认值选得不对：`00_索引.md` 排在所有中文文件名前面，于是「给我看那份文档」给的是索引而不是研究。
+
+另：`mcp` 2.x 把 `FastMCP` 改名成 `MCPServer` 且去掉了低层装饰器，`add_tool` 按**带类型的函数签名**推 schema，
+所以工具写成真函数而不是 JSON Schema 字典；`build_app` 在「声明了但没提供」时直接抛——
+声明而不提供的工具，模型在能力清单里读得到、永远叫不动。
+
+### 验证
+
+18 个新测试（`tests/test_mcp_surface.py`），**14 个变异体逐一验过全部被杀**；全量 **841 通过**。
+用真正的 MCP 客户端跑通 stdio 握手：16 个工具、`qmine_findings` 3,697 字符、spend 被拒。
+`qmine mcp --print-dsh-config` 生成的 YAML 用 `yaml.safe_load` 解过，路径存在，
+`failOnStartupError: true`、`toolCallTimeoutMs: 900000` 都不是默认值（默认值分别会导致静默零工具与中途超时）。
+新增 `integrations/dsh/`（README + 示例 patch）。`analysis/pooled5/` 与已交付运行仍一个字节未动。
+
+**没做**：没有自建 web UI（dsh 就是）；MCP 只桥接 Tools，所以词表也做成了工具；
+盲标产品层仍然不在程序里，理由写在 GUIDE.md 第 5 节。
+
+---
+
+## 2026-09-20（再续）—— 真把 dsh 装起来跑了一遍，发现上一轮写的配置是错的
+
+上一轮的 dsh 配置是**照着仓库文档推出来的**，没有真跑过。这一轮装了 `@deepseek-ai/dsh@0.1.5-rc.2`
+（Node 24，本地装在 /tmp，未改动任何上游代码），结果第一条就撞墙：
+
+```
+dsh: [qmine.patch.yml] patch: entry "mcp-qmine" not found
+```
+
+**`cordis.patch.yml` 是一串 loader patch，不是一串插件。** 裸写的
+`- id: … name: … config: …` 会被当成「覆盖一个已存在的条目」，找不到就告警、跳过——
+于是 harness 正常启动、**一个 QMine 工具都没有**、界面上什么都不说。
+新增插件必须用 `insert:` 且**不带 `id`**（`dsh-app-boot/lib/index.js`：`else data.push(...insert)`）。
+生成器与示例都改了，并加了测试钉住（变异体验过会失败）。
+
+**这正是我自己写进 README 的那个失败模式**（`failOnStartupError` 默认 false 会静默零工具），
+只不过它发生在更前面一层——配置根本没被应用。只有真跑一遍才看得见。
+
+### 端到端验证（这次是真的）
+
+1. `dsh --profile web --patch qmine.patch.yml --dump-config` 里能看到 `mcp-qmine`；
+2. `dsh web --patch … --no-open --port 3099` 起得来；
+3. `ps` 里 `qmine mcp` 的**父进程就是 dsh**（PID 38977 ← 38975）——而且 `failOnStartupError: true`，
+   握手失败会直接中止启动，没中止就说明 `initialize` + `tools/list` 成功了；
+4. 界面 Settings → Plugins → Plugin list 搜 `qmine`：`mcp-client / mcp-qmine ● Enabled`（Global plugins）。
+
+### 顺带确认/澄清的几件事
+
+- **聊天模型不限 DeepSeek。** dsh 自带 `anthropic` / `openai` / `deepseek` / `moonshotai` / `zai` /
+  Bedrock / Azure，外加任意 OpenAI 兼容端点（`llm-pi-ai`），key 存在 `$DSH_HOME/.credentials.yaml`。
+- **两层模型互不相干。** dsh 的聊天模型只负责「读懂话、挑工具、照着工具返回的东西写答案」；
+  挖掘运行仍是子进程，读 `QMine/.env`、按**角色**（architect / annotator_a / referee / namer / …）
+  走 QMine 自己的路由。聊天模型永远不会去标一行数据。这一点写进了 `GUIDE.md` 与 `integrations/dsh/README.md`。
+- **dsh 自己也有审批层**（`dsh-user-approval`、`dsh-permission-presets`、Settings → General → Permission）。
+  与我们的 server 侧三档权限是**互补**：我们的那道无论前面换成哪个 harness 都在，它那道无论后面换成哪个 server 都在。
+- dsh 首次启动会弹「Internal Testing Notice」：0.1 仍在面向 Harness 开发者测试，核心插件与基础 API
+  未来几个月会快速演进。**所以配置是「生成」而不是「手写」的**，升级后重新生成即可。
+- 保险在于 **MCP server 与 harness 无关**：Claude Desktop / Cursor / VS Code / Codex 都能直接用。
+  换前端只改一个配置文件，不动 QMine 一行代码。
+
+### 另一个真设计缺陷（这一轮修掉）
+
+`qmine_start_run` 原来是 `subprocess.run(..., timeout=None)`——**一次工具调用等几个小时**。
+dsh 的 `toolCallTimeoutMs` 默认 60 秒，我设的 15 分钟也只是一次运行的零头：
+调用会超时返回失败，而子进程还在跑——「运行真的在进行」和「对话以为它失败了」两头都占。
+改成 `start_new_session` 分离启动，立刻返回 run id + pid + 日志路径；
+新增 `qmine_status` 工具（之前 `start_run` 让模型去 poll 它，而它根本不存在）：
+报告阶段、日志尾巴、多久没动静，并且在没有 `run_summary.json` 时明确说**不要报告结果**。
+
+### 验证
+
+工具 16 → 17；新增 4 个测试（共 20 个），**16 个变异体逐一验过全部被杀**；全量 **843 通过**，ruff clean。
+`analysis/pooled5/` 与已交付运行仍一字节未动；dsh 装在 /tmp，未改上游任何代码。
+
+---
+
+## 2026-09-20（四）—— 运行中的可见性，以及一份别人照着能装起来的文档
+
+### 先把两个能力问题查清楚（都去装好的包里查，不看博客）
+
+- **`dsh-mcp-client` 的 lib 里 "progress" 出现 0 次**。MCP 规范里有
+  `notifications/progress` + `progressToken`，但这个 client **不消费**。
+  所以运行中的进度**只能轮询，推不过去**——这一条写进了 README、GUIDE 和规则文件，
+  免得以后有人以为加个通知就能实时。
+- `dsh-jobs` 的「完成时在会话内通知、无需轮询」只服务 dsh **自己的**工具（`ctx.jobs`），
+  MCP 桥接进来的工具注册不了 job。
+- `dsh-client-ui-deliverables` 渲染的是「mutation 工具自己报的 `locations`」，
+  也只认 dsh 自己的工具；不过它会把**结语散文里的行内代码路径**变成可点击的链接——
+  所以工具返回值里给出的路径是有用的，模型复述出来就能点开。
+
+### 运行中真正能看到什么（`runs/<id>/` 在跑的时候就在写）
+
+`run.log`（每个阶段、每道闸门、每次完成）、`usage.json`（调用数/token/耗时/按角色）、
+`index.jsonl`（每写一个产物一行）、`findings.json`、以及 **`dashboard.html`**——
+一整页浏览器可看的实时面板，**不管终端在干什么都会写**。
+只有 `run_summary.json` 是等到最后才写的，所以「它到底完了没有」的判据就是它在不在。
+
+新增 `src/qmine/mcp/progress.py`：
+- **`qmine_status`** 改成结构化读数：当前阶段（带中文/英文标签）、已完成阶段及各自耗时、
+  到目前为止的闸门（通过/告警/失败分开）、**到目前为止花了多少**（调用数、token、分钟、最忙的角色）、
+  已写出多少产物、未关闭的 finding、以及 `dashboard.html` 的路径。
+  每份读数都带 `as_of` 和一句「这是快照，别过十分钟再当成现在的说，重新叫一次」。
+- **`qmine_partial`**（新）：**运行中**读一个中间产物回答问题——
+  p1 之后的语料审计、p2a 之后的意图类目、p3 之后的表征对拍、p456 之后的 K、p7 之后的族与叶。
+  还没写出来的，回答里**点名它在等哪个阶段**（比「找不到」有用得多）；
+  每一份都标着「这是中间产物，后面的阶段会改它（p8 会重写树）」。
+
+实测（真起了一次运行、跑到一半、再停掉）：
+起 → `start_run` 立刻返回 `pid`；45 秒后 `qmine_status` 给出
+`P2a taxonomy — 5 researchers fanning out`、已完成 p0/p1 及秒数、3 通过 1 告警、
+1 次模型调用 2584 token、7 个产物、`answerable now: corpus`、dashboard 路径、
+并且 `do_not_report_results: True`。同时 `qmine_partial what=corpus` 答出
+`n_rows 20000 / n_unique 19998 / duplicate_rate 0.0001`，而 `what=taxonomy` 回答
+「在等 p2a」。
+
+### 文档（用户问的「别人怎么装」）
+
+- `qmine doctor` **扩到覆盖整条聊天前门**：mcp SDK 版本、`qmine mcp` 能不能真的 build 出工具面
+  （带工具数与 spend 是否开启）、node 版本、生成的 dsh 配置是否有效且路径存在。
+  每一行都给出确切的修法。测试是**真跑 doctor** 而不是 grep 源码——
+  grep 版在「只留 import、删掉调用」的变异体上是绿的。
+- `QMine/README.md` 新增 `## The chat front door`：从零开始的四步安装、
+  「两层模型互不相干」、运行中怎么看进度、模型能动什么；
+  并在 repository layout 里补上 `prepare/ pooled/ chat/ mcp/ integrations/dsh/ GUIDE.md`；
+  「research pipeline, not a product」那条改成如实说明——现在有本地聊天前门，但仍然没有托管服务。
+- 顶层 `README.md` 首屏给出 `GUIDE.md` 与 `integrations/dsh/README.md` 两个入口。
+- `GUIDE.md` 第 4 节补上运行中可见性与那两条限制。
+
+### 验证
+
+工具 17 → 18；新增 7 个测试（共 27 个），**7 个变异体全杀**；全量 **850 通过**，ruff clean。
+顺手修了一个小但会误导模型的缺陷：`qmine_partial` 的提示里写的是 `qmine_progress`（模块名），
+而可调用的工具叫 `qmine_status`——现在有测试断言**提示里出现的每个 `qmine_*` 都必须是真能叫的工具**。
+
+---
+
+## 2026-09-20（五）—— 把聊天前门变成「一条命令」，并在本机装好
+
+上一轮 dsh 装在 `/tmp/dshtry`（重启即失），配置文件也只在那里。这一轮做成可持久、可重复的：
+
+- `~/dsh/` 持久安装（上游 npm，未改一行），`~/dsh/qmine.patch.yml` 为生成的接入条目。
+- Makefile 新增 **`make chat-setup`**（装/刷新 harness + 写接入条目）与 **`make chat`**（开）。
+  `make chat` **每次启动都重新生成配置**——这样 checkout 搬家、venv 改名都不会留下一份过期配置；
+  并且 `source` 了 `QMine/.env`，于是 dsh 自带的 DeepSeek 适配器直接拿到已有的 `DEEPSEEK_API_KEY`
+  （实测：首启不再弹「Add an API key」）。密钥仍然只待在 `.env` 里，没有被抄进 harness 的凭据库。
+  `DSH_DIR` / `DSH_PORT` 可覆盖。
+- 本机实测跑通：`make chat` → `http://127.0.0.1:3080/?token=…`；
+  进程树 `sh → node dsh web → qmine mcp`；界面 Plugin list 搜 `qmine` 显示
+  `mcp-client / mcp-qmine ● Enabled`。
+- 唯一一步手动：首次使用要**选一个 workspace 目录**，那是 macOS 原生对话框
+  （`dsh-host-directory-picker-native`），浏览器自动化驱动不了，也不该驱动。README 里写明了。
+
+README 的 `## The chat front door` 改成先给两条 make 命令、再给手动长版；GUIDE 同步。

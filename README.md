@@ -58,12 +58,14 @@ not need this.
 - **Deliverables are written in Chinese** by default. `report_language` switches
   the reports; the machine-readable CSVs are language-neutral.
 - It is a **research pipeline, not a product.** There is no hosted service and no
-  uptime promise. The open questions are kept in the open, dated, in
+  uptime promise. There *is* a chat front door you can run locally — see
+  [The chat front door](#the-chat-front-door) — but it is a local harness talking
+  to a local server, not something anyone operates for you. The open questions are kept in the open, dated, in
   [`HANDOFF.md` §2](HANDOFF.md) — including the ones with no fix yet.
 
 ```bash
 make install                 # builds .venv and installs the `qmine` entry point into it
-make demo                    # 8k rows, offline stand-in, ~4 min — checks the wiring, spends nothing
+make demo                    # 8k rows, offline stand-in, ~2 min — checks the wiring, spends nothing
 .venv/bin/qmine models       # the routing plan and a cost estimate — still spends nothing
 make live RUN=my-first-run   # the real thing: 50k rows, real models, 3-4 h, $5-$7
 ```
@@ -79,6 +81,7 @@ onto your `PATH`. Either `source .venv/bin/activate` once, or call
 - [What it produces](#what-it-produces) — the files you get
 - [What you do with the output](#what-you-do-with-the-output) — the schema, and three uses
 - [Using it](#using-it) — commands, and the two speeds
+- [The chat front door](#the-chat-front-door) — drive it, and question its results, by talking to it
 - [How it works](#how-it-works) — the twelve phases
 - [Comparing two time periods](#comparing-two-time-periods) — pooled snapshots and drift
 - [What is new here](#what-is-new-here) — six things a scripted pipeline does not do
@@ -188,7 +191,7 @@ cp .env.example .env         # DEEPSEEK / ZHIPU / QWEN / OPENROUTER keys — all
                              # optional: TAVILY_API_KEY or BRAVE_API_KEY for web research
 
 .venv/bin/qmine models                 # the routing plan and cost estimate — spends nothing
-make demo                    # 8k rows, offline stand-in, ~4 min
+make demo                    # 8k rows, offline stand-in, ~2 min
 make live RUN=live45         # the full corpus on real models
 make fast RUN=live46         # same analysis, no second-opinion layer, 3 documents
 .venv/bin/qmine watch live45           # attach the dashboard to a run, live or finished
@@ -307,12 +310,134 @@ make live RUN=x LIVE_INPUT=data/queries.csv LIVE_DOMAIN=finance_zh \
                 LIVE_TEXT=query LIVE_REFS=          # empty if you have no legacy labels
 ```
 
+[`GUIDE.md`](GUIDE.md) is the **user-facing companion** to all of this: the four
+layers (prepare / mine / compare / ask), the step-by-step path for someone
+arriving with a pile of exports, what the chat front door can and cannot do, what
+the blind product-layer audit is, and the five things people most often get
+wrong. Send a new user there first.
+
 Deeper references live in [`docs/`](docs/): [`ARCHITECTURE.md`](docs/ARCHITECTURE.md)
 for the graph and state model, [`MODEL_ROUTING.md`](docs/MODEL_ROUTING.md) for how
 roles are assigned to providers and priced, [`LANGUAGE_AND_DOMAIN.md`](docs/LANGUAGE_AND_DOMAIN.md)
 for domain profiles and the report language, and [`PLAYBOOK_MAPPING.md`](docs/PLAYBOOK_MAPPING.md)
 for how each phase maps to the source methodology. [`docs/research/`](docs/research/)
 holds the dossiers behind the design decisions.
+
+---
+
+## The chat front door
+
+You can drive all of this by talking to it, and — the part that only exists once
+a run is finished — **ask questions about the results**. Two ways in, and they
+share one tool surface:
+
+| | what it is | when |
+|---|---|---|
+| `qmine chat` | a terminal conversation | you are already in a shell |
+| `qmine mcp` | the program as [MCP](https://modelcontextprotocol.io) tools for a chat **web app** | you want a browser, history, and a model that reads your results |
+
+**Nothing is forked.** `qmine mcp` speaks plain MCP over stdio, so any MCP client
+can drive it — [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness)
+(a self-hosted chat web UI), Claude Desktop, Cursor, VS Code, Codex. The harness
+supplies the chat app, the model adapter, the session log and context compaction;
+QMine supplies 18 tools.
+
+### Set it up on a fresh machine
+
+Two commands, then it is one command forever after:
+
+```bash
+make chat-setup          # installs the harness into ~/dsh, wires QMine in, writes the preset
+make chat                # opens the web app with QMine attached
+```
+
+`make chat` rewrites the harness config **and** the agent preset on every launch,
+so neither can go stale against a moved checkout or a renamed venv, and it sources
+`.env` so the harness's own adapter finds the key the mining run already uses.
+`DSH_DIR` and `DSH_PORT` override where and on which port. On first use the
+harness asks you to **choose a workspace folder** — a native dialog; point it at
+this checkout, and the assistant picks up `AGENTS.md` with it.
+
+Then confirm it took, rather than assuming: **Settings → Plugins → Plugin list →
+search `qmine`** reads `mcp-client / mcp-qmine ● Enabled`, and `.venv/bin/qmine
+doctor` names the exact fix for anything missing. Doing it by hand, and the one
+config syntax that silently produces a harness with no QMine tools in it, are in
+[`integrations/dsh/README.md`](integrations/dsh/README.md).
+
+For Claude Desktop, Cursor or any other MCP client, point it at the same command
+— `<QMine>/.venv/bin/qmine mcp --run-root runs`, with `cwd` set to the QMine
+checkout and `HF_HOME` set to `<QMine>/.hf`.
+
+### What the assistant knows before you ask
+
+**It is told what QMine is, rather than working it out.** `make chat`
+installs QMine's own **agent preset** into `$DSH_HOME/.agent-presets/qmine/` and
+makes it the default composition — the session picker shows it as **QMine
+研究助手** — so a cold session answers from the method instead of listing
+directories to work out what the project is. Three channels carry it:
+
+| channel | what it holds | when it costs tokens |
+|---|---|---|
+| **persona** | the four layers, which tool answers which question, and the ten ways to state a correct number wrongly | every request — 7,034 characters as a stable prefix, so it caches |
+| **five skills** | read a study · compare snapshots · prepare datasets · start a run · explain the method | a one-line summary always; the body only when the model loads it |
+| **workspace `AGENTS.md`** | what is on disk in this checkout | only when the workspace is the checkout |
+
+**What goes in the persona, and what is left to a skill.** Anything that changes
+whether a *sentence* is true — a distance below its noise ceiling, a `stratum`
+axis that is not a timeline, a `fast` run's absent κ, a zero without its
+detectability — is in the always-on persona, because by the time a skill could be
+loaded the sentence is already being written. Procedures are skills.
+
+Both are authored in the repo, not generated:
+[`presets/qmine/persona.md`](integrations/dsh/presets/qmine/persona.md) is the
+prose, `agent.cordis.yml` the composition, and the five skills are in
+[`integrations/dsh/skills/`](integrations/dsh/skills/). Edit either and re-run
+`make chat`. It has to be a preset: the `instructions` field an MCP server
+advertises never reaches the model (the harness bridges **tools only**), and the
+web profile disables workspace instructions and skills at the host level, where
+re-enabling them would change the coding preset too —
+[`integrations/dsh/README.md`](integrations/dsh/README.md) has the verification.
+
+### Two model layers that never meet
+
+The **chat model** (one model, chosen in the harness — not restricted to
+DeepSeek; adapters ship for Anthropic, OpenAI, Kimi, GLM, Bedrock, Azure and any
+OpenAI-compatible endpoint) reads your sentence, picks a tool, and writes the
+answer from what the tool returned.
+
+**QMine's own routing is untouched.** A run is a subprocess that reads
+`QMine/.env` and matches each *agent role* — architect, annotator_a, referee,
+namer, risk_sentinel — to a model exactly as `qmine run` always has. The chat
+model never annotates a row. Set the chat model for conversation quality and
+`.env` for mining quality.
+
+### Watching a run from the chat
+
+A run takes hours, so `qmine_start_run` launches it **detached** and returns a
+run id immediately. From then on the conversation can ask:
+
+- **where is it** — `qmine_status` gives the current phase, every gate so far,
+  model calls and tokens spent so far, which artifacts exist, open findings, and
+  the path to `runs/<id>/dashboard.html` — a live page written throughout the
+  run that you can keep open in a browser tab, and which refreshes far faster
+  than anyone would poll a chatbot;
+- **what has it decided so far** — `qmine_partial` reads one intermediate
+  artifact mid-run: the corpus audit after p1, the intent classes after p2a, the
+  encoder bake-off after p3, the families and leaves after p7.
+
+Two limits. The chat model learns the state **only when it polls** — MCP has a progress-notification facility but `dsh-mcp-client` does not
+consume it, so nothing is pushed. And every reading is a snapshot: the tools
+stamp `as_of` and instruct the model to call again rather than restate an old
+number as current. A run with no `run_summary.json` has not finished, and the
+tools refuse to describe its results.
+
+### What the model may set in motion
+
+Read tools run freely. Tools that write files are allowed but only inside
+permitted roots. **Starting a paid run is refused** — it returns the exact
+command for a person to run — unless `QMINE_MCP_ALLOW_SPEND=1` was set in the
+environment that launched the server, which is deliberately something you do
+outside the conversation.
 
 ---
 
@@ -645,9 +770,17 @@ src/qmine/agents/     the agent roles, and the guardrail on each one
 src/qmine/ops/        the measured operations no agent can override
 src/qmine/report/     report, reference-shelf and notebook generators
 src/qmine/llm/        provider routing, the fetched model catalogue, budgets
+src/qmine/prepare/    pool several raw exports into one corpus, reviewably
+src/qmine/pooled/     the cross-snapshot comparison (phase p10c, `qmine compare`)
+src/qmine/chat/       the terminal conversation (`qmine chat`)
+src/qmine/mcp/        the program as MCP tools for a chat web app (`qmine mcp`)
 configs/              run configs; live.yaml is the default and routes to real models
+integrations/dsh/     the chat front door: the MCP entry, the agent preset, five skills
 docs/                 architecture, routing, domain profiles, playbook mapping
 docs/research/        the dossiers behind the design decisions
+GUIDE.md              the user-facing guide: which workflow, and the common mistakes
+AGENTS.md             workspace instructions for the chat front door's assistant
+skills/               Claude Code skills — drive QMine from a coding agent instead
 tests/                one test per defect — the docstring names which
 tools/verify_run.py   mechanical checks over a finished run
 tools/run_evidence.py aggregates every complete live run into one table
@@ -656,7 +789,7 @@ HANDOFF.md            dated log of state, findings and open questions
 runs/<id>/gen01/      artifacts and deliverables (git-ignored — runs stay local)
 ```
 
-**~750 tests.** Each one records the defect it was written after, and its docstring
+**~870 tests.** Each one records the defect it was written after, and its docstring
 names that defect — `tests/` is the real index of the invariants this pipeline
 holds.
 
@@ -673,8 +806,10 @@ known to be broken or unresolved — it is kept current, and an item there is a
 known gap rather than a surprise.
 
 `.venv/bin/qmine doctor` reports installed packages, which provider credentials it
-found, and whether matplotlib can find a CJK font (without one the figures render
-boxes). It does **not** probe any model — for that use `.venv/bin/qmine models`,
+found, whether matplotlib can find a CJK font (without one the figures render
+boxes), and the whole chat front door — the MCP SDK, node, the generated dsh
+config, and whether the agent preset is installed and current. It does **not**
+probe any model — for that use `.venv/bin/qmine models`,
 which resolves the routing plan and prices it without spending anything.
 
 **Licence:** none is declared yet. Until one is added, treat this as

@@ -1,5 +1,7 @@
 # QMine — 一个查询意图挖掘智能体团队
 
+[English](README.md) | 中文
+
 **将原始搜索日志转化为可验证的意图分类体系、标注语料库，以及每一项决策的依据。**
 
 QMine 是一个基于 [LangGraph](https://github.com/langchain-ai/langgraph) 的智能体团队，它对**同一语料库执行两条独立的分析路径**——一条是由研究人员与盲标注人员构建的自上而下的意图分类体系，另一条是基于向量嵌入生成的自下而上的聚类树；随后在统一框架下对两者进行度量，并报告二者的一致之处。
@@ -43,6 +45,7 @@ make live RUN=my-first-run   # 正式运行：5万条数据，真实模型，3-4
 - [产出内容](#产出内容) — 你会得到的文件
 - [输出结果的用途](#输出结果的用途) — 数据结构与三种应用场景
 - [使用方法](#使用方法) — 命令与两种运行速度
+- [对话入口](#对话入口) — 用对话驱动它，并追问它的结果
 - [工作原理](#工作原理) — 十二个阶段
 - [跨时间段对比](#跨时间段对比) — 合并快照与漂移分析
 - [创新点](#创新点) — 脚本化管线做不到的六件事
@@ -202,6 +205,47 @@ make live RUN=x LIVE_INPUT=data/queries.csv LIVE_DOMAIN=finance_zh \
 
 更多详细参考见 [docs/](docs/) 目录：[ARCHITECTURE](docs/ARCHITECTURE.md) 介绍图结构与状态模型，[MODEL_ROUTING](docs/MODEL_ROUTING.md) 介绍角色如何分配给提供商及定价，[LANGUAGE_AND_DOMAIN](docs/LANGUAGE_AND_DOMAIN.md) 介绍领域配置与报告语言，[PLAYBOOK_MAPPING](docs/PLAYBOOK_MAPPING.md) 介绍每个阶段对应的方法论来源。[docs/research/](docs/research/) 包含设计决策背后的调研档案。
 
+## 对话入口
+
+上面每一条都是命令。你也可以直接跟它说话——并且在一次运行结束之后，**追问结果本身**。
+两个入口，共用同一套工具：
+
+| | 是什么 | 什么时候用 |
+|---|---|---|
+| `qmine chat` | 终端里的对话 | 你本来就在 shell 里 |
+| `qmine mcp` | 把程序作为 [MCP](https://modelcontextprotocol.io) 工具提供给**聊天网页应用** | 你想要浏览器、历史记录，以及一个会读你结果的模型 |
+
+**没有 fork 任何东西。** `qmine mcp` 走标准 MCP（stdio），任何 MCP 客户端都能驱动它——
+[DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness)（自托管的聊天网页应用）、
+Claude Desktop、Cursor、VS Code、Codex。网页应用负责对话界面、模型适配、会话记录与上下文压缩；
+QMine 负责 18 个工具。
+
+```bash
+make chat-setup              # 只需一次：把网页应用装到 ~/dsh
+make chat                    # 之后每次都是这一条
+```
+
+`make chat` 每次启动都会重写 MCP 配置**和**智能体 preset，所以两者都不会因为你移动了
+checkout 或改了 venv 名字而失效；它还会 source `.env`，让网页应用自己的适配器拿到挖掘运行
+已经在用的那把密钥。首次使用时它会让你**选一个工作区目录**——选本 checkout，助手就会连
+`AGENTS.md` 一起读到。
+
+**两层模型，互不相交。** 对话模型（在网页应用里选，不限于 DeepSeek）负责读懂你的话、挑一个
+工具、用工具返回的内容写答案。**QMine 自己的路由完全没变**：一次运行仍然是读 `.env` 的子进程，
+按**智能体角色**——architect、annotator_a、referee、namer、risk_sentinel——各自匹配模型，
+和 `qmine run` 一直以来一样。对话模型从不标注任何一行。
+
+**助手在你提问之前就知道 QMine 是什么。** `make chat` 会装上 QMine 自己的**智能体 preset**：
+persona（7,034 字符，常驻）写明四个层次、哪个工具回答哪类问题，以及把一个正确的数字说错的十种方式；
+五个技能（读一份研究 · 对比快照 · 准备数据集 · 发起运行 · 解释方法）只在模型载入时才计入上下文。
+详见 [`integrations/dsh/README.md`](integrations/dsh/README.md)。
+
+**它能启动什么。** 只读工具自由运行；写文件的工具只能写进许可目录；**发起付费运行会被拒绝**——
+它会把该执行的命令原样交给你——除非启动服务的环境里设了 `QMINE_MCP_ALLOW_SPEND=1`，
+而那是刻意放在对话之外的一步。
+
+---
+
 ## 工作原理
 
 每一个参数选择、它击败的候选方案，以及最终决策的度量指标——都在这张 `live44` 的图里：
@@ -320,7 +364,7 @@ flowchart TB
 **5. “已确认”不等于“有缺陷”，管线会明确区分。**
 机器确认的发现会被独立复核。某次运行中，13 个机器确认的发现里只有 **2 个**是真实缺陷——其余大多是对比了两个度量不同群体的字段。校验只能证明断言不成立，不能说明结论是否正确。报告框架和观察者提示都携带了这个实测比率。
 
-## **6. 两个时间段一次性标注，再做对比。**
+**6. 两个时间段一次性标注，再做对比。**
 追踪漂移最直观的方法是分时间段运行管线再对比结果。但这行不通：同样 2 万条数据运行两次，得到的聚类树分别是 **12 个叶节点和 34 个叶节点**，因此两次运行的差值既包含语料的变化，也叠加了管线自身的方差（见[运行结果](docs/RESULTS.md)）。QMine 将快照合并为**一个**语料库，从合并数据中一次性生成**一个**分类体系和**一个**聚类树，之后才按快照拆分对比。每个类别在两个时间段的含义一致，因为它是基于两份数据一次性定义的。参见[跨时间段对比](#跨时间段对比)。
 
 ## 为什么不直接调用前沿大模型？
@@ -363,9 +407,17 @@ src/qmine/agents/     智能体角色，及每个角色的防护机制
 src/qmine/ops/        可度量的操作，智能体无法覆盖
 src/qmine/report/     报告、参考库和 Notebook 生成器
 src/qmine/llm/        提供商路由、模型目录、预算管理
+src/qmine/prepare/    把多份原始导出合并成一份语料，过程可复核
+src/qmine/pooled/     跨快照对比（阶段 p10c，`qmine compare`）
+src/qmine/chat/       终端对话（`qmine chat`）
+src/qmine/mcp/        把整个程序作为 MCP 工具提供给聊天网页应用（`qmine mcp`）
 configs/              运行配置；live.yaml 是默认配置，路由到真实模型
+integrations/dsh/     对话入口：MCP 配置、智能体 preset 与五个技能
 docs/                 架构、路由、领域配置、方法论映射
 docs/research/        设计决策背后的调研档案
+GUIDE.md              面向使用者的指南：该走哪条流程，以及常见误读
+AGENTS.md             对话入口助手的工作区说明
+skills/               Claude Code 技能 — 从编码智能体里驱动 QMine
 tests/                每个缺陷对应一个测试 — 文档说明对应哪个缺陷
 tools/verify_run.py   对已完成运行的机械检查
 tools/run_evidence.py 汇总所有正式运行数据到一张表
@@ -374,7 +426,7 @@ HANDOFF.md            状态、发现与未解决问题的日志，带日期
 runs/<id>/gen01/      产物与交付成果（git 忽略 — 运行数据保存在本地）
 ```
 
-**711 个测试。** 每个测试都记录了它是为哪个缺陷编写的，文档说明对应缺陷——`tests/` 目录是本管线不变量的真实索引。
+**约 870 个测试。** 每个测试都记录了它是为哪个缺陷编写的，文档说明对应缺陷——`tests/` 目录是本管线不变量的真实索引。
 
 ```
 HF_HOME=$(pwd)/.hf .venv/bin/python -m pytest tests/ -q

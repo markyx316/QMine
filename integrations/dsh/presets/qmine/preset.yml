@@ -1,0 +1,8 @@
+# Shown in the harness's preset picker. `order` puts QMine above the shipped
+# coding presets, because in this deployment it is the front door and the
+# coding agent is the exception.
+name: QMine 研究助手
+description: >-
+  QMine 查询挖掘系统的对话门面：读已完成的研究、比较多个快照、检查与准备数据集、
+  按需发起挖掘运行。已预先了解本项目的结构、术语与结论表述规则。
+order: 0

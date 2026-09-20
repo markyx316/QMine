@@ -1,0 +1,28 @@
+# Example only — generate the real one, with your absolute paths filled in:
+#   .venv/bin/qmine mcp --print-dsh-config > qmine.patch.yml
+#
+# THE `insert:` WRAPPER IS NOT OPTIONAL. `cordis.patch.yml` is a list of loader
+# PATCHES, not a list of plugins. A bare `- id: … name: … config: …` is read as
+# an OVERRIDE of an entry that already exists; dsh answers
+#   dsh: [qmine.patch.yml] patch: entry "mcp-qmine" not found
+# then warns, skips it, and starts a harness with no QMine tools in it.
+# A patch whose `insert` holds the entry and which carries NO `id` appends at
+# the top level. Verified against dsh 0.1.5-rc.2.
+- insert:
+    - id: mcp-qmine
+      name: '@deepseek-ai/dsh-mcp-client'
+      config:
+        serverName: qmine          # tools arrive as mcp__qmine__<name>
+        transport: stdio
+        command: '/ABSOLUTE/PATH/TO/QMine/.venv/bin/qmine'
+        args: ['mcp', '--run-root', 'runs']
+        cwd: '/ABSOLUTE/PATH/TO/QMine'
+        env:
+          HF_HOME: '/ABSOLUTE/PATH/TO/QMine/.hf'
+          # Uncomment to let the conversation START A PAID run. Off by default.
+          # QMINE_MCP_ALLOW_SPEND: '1'
+        toolCallTimeoutMs: 900000
+        failOnStartupError: true
+        reconnect:
+          enabled: true
+          maxAttempts: 10

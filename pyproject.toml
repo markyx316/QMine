@@ -35,11 +35,13 @@ embeddings = ["sentence-transformers>=5.0", "torch>=2.2"]
 zh = ["jieba>=0.42"]
 # Notebook delivery and 2-D projections.
 report = ["nbformat>=5.10", "nbclient>=0.10", "ipykernel>=6.29", "umap-learn>=0.5", "openpyxl>=3.1"]
+# `qmine mcp` — serve the program to a chat harness over the Model Context Protocol.
+mcp = ["mcp>=2.0"]
 dev = ["pytest>=8.0", "pytest-timeout>=2.3"]
 all = [
   "sentence-transformers>=5.0", "torch>=2.2", "jieba>=0.42",
   "nbformat>=5.10", "nbclient>=0.10", "ipykernel>=6.29", "umap-learn>=0.5",
-  "openpyxl>=3.1", "pytest>=8.0",
+  "openpyxl>=3.1", "pytest>=8.0", "mcp>=2.0",
 ]
 
 [project.scripts]
