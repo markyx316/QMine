@@ -1,0 +1,410 @@
+loaded 5 key(s) from /Users/mayouxuan/Documents/Claude/Search Query Mining Agent
+Team/QMine/.env
+reusing taxonomy from ppl-pool8/gen01
+resuming ppl-pool8 generation 3 from runs/ppl-pool8/checkpoints.sqlite (config 
+5e329925c4d9fd8b)
+  dashboard → runs/ppl-pool8/dashboard.html
+13:24:25 INFO    qmine.llm: provider quirks recalled from .cache/model_quirks.json: 15 model(s) start in plain-JSON mode, 6 with a raised output cap — not rediscovered this run
+13:24:25 INFO    qmine.llm: routing plan: 19 roles, estimated $4.03, catalogue ['litellm', 'openrouter']
+13:24:25 INFO    qmine.llm:   role assignments for this run (model · lab · est. calls · est. $):
+13:24:25 INFO    qmine.llm:     annotator_a             deepseek:deepseek-v4-flash  lab=deepseek  128 calls  $2.074
+13:24:25 INFO    qmine.llm:     namer                   deepseek:deepseek-v4-pro  lab=deepseek  60 calls  $1.188
+13:24:25 INFO    qmine.llm:     researcher_log_reading  openrouter:moonshotai/kimi-k3  lab=moonshot  5 calls  $0.478
+13:24:25 INFO    qmine.llm:     taxonomy_architect      deepseek:deepseek-v4-pro  lab=deepseek  2 calls  $0.158
+13:24:25 INFO    qmine.llm:     l2_interpreter          openrouter:deepseek/deepseek-v4.1-flash  lab=deepseek  20 calls  $0.065
+13:24:25 INFO    qmine.llm:     tree_auditor            deepseek:deepseek-v4-pro  lab=deepseek  1 calls  $0.040
+13:24:25 INFO    qmine.llm:     proposer                deepseek:deepseek-v4-pro  lab=deepseek  2 calls  $0.025
+13:24:25 INFO    qmine.llm:     adversary               openrouter:moonshotai/kimi-k3  lab=moonshot  0 calls  $0.000
+13:24:25 INFO    qmine.llm:     delivery_auditor        openrouter:moonshotai/kimi-k3  lab=moonshot  0 calls  $0.000
+13:24:25 INFO    qmine.llm:     domain_scout            deepseek:deepseek-v4-pro  lab=deepseek  1 calls  $0.000
+13:24:25 INFO    qmine.llm:     interpreter             deepseek:deepseek-v4-pro  lab=deepseek  0 calls  $0.000
+13:24:25 INFO    qmine.llm:     maintainer              openrouter:moonshotai/kimi-k3  lab=moonshot  1 calls  $0.000
+13:24:25 INFO    qmine.llm:     observer                openrouter:moonshotai/kimi-k3  lab=moonshot  0 calls  $0.000
+13:24:25 INFO    qmine.llm:     reporter                deepseek:deepseek-v4-pro  lab=deepseek  0 calls  $0.000
+13:24:25 INFO    qmine.llm:     researcher              openrouter:moonshotai/kimi-k3  lab=moonshot  5 calls  $0.000
+13:24:25 INFO    qmine.llm:     risk_sentinel           openrouter:moonshotai/kimi-k3  lab=moonshot  1 calls  $0.000
+13:24:25 INFO    qmine.llm:     taxonomy_critic         deepseek:deepseek-v4-pro  lab=deepseek  0 calls  $0.000
+13:24:25 INFO    qmine.llm:     annotator_b             qwen:qwen3.8-flash  lab=qwen  0 calls  $0.000
+13:24:25 INFO    qmine.llm:     referee                 openrouter:moonshotai/kimi-k3  lab=moonshot  0 calls  $0.000
+13:24:25 INFO    qmine.llm:     annotator/referee labs: a=deepseek, b=qwen, referee=moonshot — independent
+13:24:25 INFO    qmine.llm:     ! taxonomy_architect: pinned with NO FALLBACK — nothing reachable meets this role's 200,000-token context need in another lab, so a single provider outage silently removes this role from the run
+13:24:25 INFO    qmine.llm:     ! tree_auditor: pinned with NO FALLBACK — nothing reachable meets this role's 200,000-token context need in another lab, so a single provider outage silently removes this role from the run
+13:24:25 INFO    qmine.llm:     ! delivery_auditor: pinned with NO FALLBACK — nothing reachable meets this role's 200,000-token context need in another lab, so a single provider outage silently removes this role from the run
+13:24:25 INFO    qmine.llm:     ! domain_scout: deepseek:deepseek-v4-pro publishes NO PRICE in the catalogue — the pin overrides `_eligible`'s exclusion of unpriced models. Its estimate reads $0.00 and the spend ledger will under-report: the cost is UNKNOWN, not free.
+13:24:25 INFO    qmine.llm:     ! maintainer: openrouter:moonshotai/kimi-k3 publishes NO PRICE in the catalogue — the pin overrides `_eligible`'s exclusion of unpriced models. Its estimate reads $0.00 and the spend ledger will under-report: the cost is UNKNOWN, not free.
+13:24:25 INFO    qmine.llm:     ! observer: pinned with NO FALLBACK — nothing reachable meets this role's 200,000-token context need in another lab, so a single provider outage silently removes this role from the run
+13:24:25 INFO    qmine.llm:     ! reporter: deepseek:deepseek-v4-pro publishes NO PRICE in the catalogue — the pin overrides `_eligible`'s exclusion of unpriced models. Its estimate reads $0.00 and the spend ledger will under-report: the cost is UNKNOWN, not free.
+13:24:25 INFO    qmine.llm:     ! researcher: openrouter:moonshotai/kimi-k3 publishes NO PRICE in the catalogue — the pin overrides `_eligible`'s exclusion of unpriced models. Its estimate reads $0.00 and the spend ledger will under-report: the cost is UNKNOWN, not free.
+13:24:25 INFO    qmine.llm:     ! risk_sentinel: openrouter:moonshotai/kimi-k3 publishes NO PRICE in the catalogue — the pin overrides `_eligible`'s exclusion of unpriced models. Its estimate reads $0.00 and the spend ledger will under-report: the cost is UNKNOWN, not free.
+13:24:25 INFO    qmine.llm:     ! taxonomy_critic: pinned with NO FALLBACK — nothing reachable meets this role's 128,000-token context need in another lab, so a single provider outage silently removes this role from the run
+13:24:25 INFO    qmine.llm:     ! annotator_b: qwen:qwen3.8-flash publishes NO PRICE in the catalogue — the pin overrides `_eligible`'s exclusion of unpriced models. Its estimate reads $0.00 and the spend ledger will under-report: the cost is UNKNOWN, not free.
+13:24:25 INFO    qmine.llm:     ! referee: openrouter:moonshotai/kimi-k3 publishes NO PRICE in the catalogue — the pin overrides `_eligible`'s exclusion of unpriced models. Its estimate reads $0.00 and the spend ledger will under-report: the cost is UNKNOWN, not free.
+13:24:25 INFO    qmine.llm: probing native structured output on 1 model(s) so a real call does not pay for the discovery
+13:24:25 INFO    langchain_openai.chat_models._client_utils: langchain-openai detected HTTP_PROXY, HTTPS_PROXY and no explicit `http_socket_options` / `http_client` / `http_async_client` / `openai_proxy`; skipping the custom `httpx` transport so httpx's env-proxy auto-detection applies. Pass `http_socket_options=[...]` to opt back into kernel-level TCP keepalive tuning on top of the env proxy.
+13:24:27 INFO    httpx2: HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+13:24:28 INFO    qmine: resume: generation 3 has no checkpoint of its own — running its graph from the start; artifacts and llm_cache carry over
+13:24:28 INFO    qmine.graph: P0 foundation — run ppl-pool8, generation 3
+13:24:31 INFO    qmine.graph: gate p0_provider: PASSED — real agents: provider=routed
+13:24:31 INFO    qmine.graph: ✔ p0_foundation completed in 2.8s
+13:24:31 INFO    qmine.graph: P1 audit — profiling corpus
+13:24:31 INFO    qmine.graph:   2 snapshot(s) in this corpus: AI助手=3,838, 搜索=39,964
+13:24:31 INFO    qmine.graph:   ⚠ this corpus carries 2 label-like column(s) that no `--reference-columns` flag declared: source, l2
+13:24:31 INFO    qmine.graph: gate p1_reference_columns_declared: WARNED — the corpus carries source, l2 and the run declared NONE — the gold set and pilot are UNSTRATIFIED by legacy label and the blindness firewall is armed without those values
+13:24:32 INFO    qmine.graph: gate p1_minority_language_risk: WARNED — minority scripts total 0.9% — small enough that they will be swallowed into a single junk cluster at a normal K, and large enough that losing them matters. Either route them to their own sub-tree or accept that their intents will not be resolved. Do NOT simply hope a multilingual encoder fixes it.
+13:24:32 INFO    qmine.graph: gate p1_template_coverage: PASSED — 19 phrasing families cover 12,241 rows (27.9% of the corpus; the share is reported, not gated — it is a property of the corpus)
+13:24:32 INFO    qmine.graph: ✔ p1_audit completed in 0.6s
+13:24:32 INFO    qmine.graph: P3a encoder bake-off — 4 candidates
+13:24:32 INFO    qmine.graph:   reusing taxonomy from runs/ppl-pool8/gen01/taxonomy.json
+13:24:32 INFO    qmine.graph: P2a taxonomy — REUSED from ppl-pool8/gen01: 18 L1 intents, 45 rules; researchers, architect and critic skipped
+13:24:32 INFO    sentence_transformers.base.model: No device provided, using mps
+13:24:32 INFO    qmine.graph: ✔ p2a_taxonomy completed in 0.0s
+13:24:32 INFO    httpx: HTTP Request: HEAD https://huggingface.co/BAAI/bge-small-zh-v1.5/resolve/main/modules.json "HTTP/1.1 307 Temporary Redirect"
+13:24:33 INFO    httpx: HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/BAAI/bge-small-zh-v1.5/7999e1d3359715c523056ef9478215996d62a620/modules.json "HTTP/1.1 200 OK"
+13:24:33 INFO    httpx: HTTP Request: HEAD https://huggingface.co/BAAI/bge-small-zh-v1.5/resolve/main/config_sentence_transformers.json "HTTP/1.1 307 Temporary Redirect"
+Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+13:24:33 WARNING huggingface_hub.utils._http: Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+13:24:33 INFO    httpx: HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/BAAI/bge-small-zh-v1.5/7999e1d3359715c523056ef9478215996d62a620/config_sentence_transformers.json "HTTP/1.1 200 OK"
+13:24:33 INFO    sentence_transformers.base.model: Loading SentenceTransformer model from BAAI/bge-small-zh-v1.5.
+13:24:34 INFO    httpx: HTTP Request: HEAD https://huggingface.co/BAAI/bge-small-zh-v1.5/resolve/main/config_sentence_transformers.json "HTTP/1.1 307 Temporary Redirect"
+13:24:34 INFO    httpx: HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/BAAI/bge-small-zh-v1.5/7999e1d3359715c523056ef9478215996d62a620/config_sentence_transformers.json "HTTP/1.1 200 OK"
+13:24:34 INFO    httpx: HTTP Request: HEAD https://huggingface.co/BAAI/bge-small-zh-v1.5/resolve/main/README.md "HTTP/1.1 307 Temporary Redirect"
+13:24:34 INFO    httpx: HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/BAAI/bge-small-zh-v1.5/7999e1d3359715c523056ef9478215996d62a620/README.md "HTTP/1.1 200 OK"
+13:24:35 INFO    httpx: HTTP Request: HEAD https://huggingface.co/BAAI/bge-small-zh-v1.5/resolve/main/modules.json "HTTP/1.1 307 Temporary Redirect"
+13:24:35 INFO    httpx: HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/BAAI/bge-small-zh-v1.5/7999e1d3359715c523056ef9478215996d62a620/modules.json "HTTP/1.1 200 OK"
+13:24:35 INFO    httpx: HTTP Request: HEAD https://huggingface.co/BAAI/bge-small-zh-v1.5/resolve/main/sentence_bert_config.json "HTTP/1.1 307 Temporary Redirect"
+13:24:35 INFO    httpx: HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/BAAI/bge-small-zh-v1.5/7999e1d3359715c523056ef9478215996d62a620/sentence_bert_config.json "HTTP/1.1 200 OK"
+13:24:36 INFO    httpx: HTTP Request: HEAD https://huggingface.co/BAAI/bge-small-zh-v1.5/resolve/main/adapter_config.json "HTTP/1.1 404 Not Found"
+13:24:36 INFO    httpx: HTTP Request: HEAD https://huggingface.co/BAAI/bge-small-zh-v1.5/resolve/main/config.json "HTTP/1.1 307 Temporary Redirect"
+13:24:36 INFO    httpx: HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/BAAI/bge-small-zh-v1.5/7999e1d3359715c523056ef9478215996d62a620/config.json "HTTP/1.1 200 OK"
+  P0 foundation — run ppl-pool8, generation 3
+  gate p0_provider: PASSED — real agents: provider=routed
+  ✔ p0_foundation completed in 2.8s
+  P1 audit — profiling corpus
+    2 snapshot(s) in this corpus: AI助手=3,838, 搜索=39,964
+    ⚠ this corpus carries 2 label-like column(s) that no `--reference-columns` flag declared: source, l2
+  gate p1_reference_columns_declared: WARNED — the corpus carries source, l2 and the run declared NONE — the gold set and pilot are UNSTRATIFIED by legacy label and the blindness firewall is armed without those values
+  gate p1_minority_language_risk: WARNED — minority scripts total 0.9% — small enough that they will be swallowed into a single junk cluster at a normal K, and large enough that losing them matters. Either route them to their own sub-tree or accept that their intents will not be resolved. Do NOT simply hope a multilingual encoder fixes it.
+  gate p1_template_coverage: PASSED — 19 phrasing families cover 12,241 rows (27.9% of the corpus; the share is reported, not gated — it is a property of the corpus)
+  ✔ p1_audit completed in 0.6s
+  P3a encoder bake-off — 4 candidates
+    reusing taxonomy from runs/ppl-pool8/gen01/taxonomy.json
+  P2a taxonomy — REUSED from ppl-pool8/gen01: 18 L1 intents, 45 rules; researchers, architect and critic skipped
+  ✔ p2a_taxonomy completed in 0.0s
+Loading weights:   0%|          | 0/71 [00:00<?, ?it/s]Loading weights: 100%|██████████| 71/71 [00:00<00:00, 15432.22it/s]
+13:24:37 INFO    httpx: HTTP Request: HEAD https://huggingface.co/BAAI/bge-small-zh-v1.5/resolve/main/processor_config.json "HTTP/1.1 404 Not Found"
+13:24:37 INFO    httpx: HTTP Request: HEAD https://huggingface.co/BAAI/bge-small-zh-v1.5/resolve/main/preprocessor_config.json "HTTP/1.1 404 Not Found"
+13:24:37 INFO    httpx: HTTP Request: HEAD https://huggingface.co/BAAI/bge-small-zh-v1.5/resolve/main/video_preprocessor_config.json "HTTP/1.1 404 Not Found"
+13:24:38 INFO    httpx: HTTP Request: HEAD https://huggingface.co/BAAI/bge-small-zh-v1.5/resolve/main/preprocessor_config.json "HTTP/1.1 404 Not Found"
+13:24:38 INFO    httpx: HTTP Request: HEAD https://huggingface.co/BAAI/bge-small-zh-v1.5/resolve/main/tokenizer_config.json "HTTP/1.1 307 Temporary Redirect"
+13:24:38 INFO    httpx: HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/BAAI/bge-small-zh-v1.5/7999e1d3359715c523056ef9478215996d62a620/tokenizer_config.json "HTTP/1.1 200 OK"
+13:24:38 INFO    httpx: HTTP Request: HEAD https://huggingface.co/BAAI/bge-small-zh-v1.5/resolve/main/config.json "HTTP/1.1 307 Temporary Redirect"
+13:24:39 INFO    httpx: HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/BAAI/bge-small-zh-v1.5/7999e1d3359715c523056ef9478215996d62a620/config.json "HTTP/1.1 200 OK"
+13:24:39 INFO    httpx: HTTP Request: HEAD https://huggingface.co/BAAI/bge-small-zh-v1.5/resolve/main/config.json "HTTP/1.1 307 Temporary Redirect"
+13:24:39 INFO    httpx: HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/BAAI/bge-small-zh-v1.5/7999e1d3359715c523056ef9478215996d62a620/config.json "HTTP/1.1 200 OK"
+13:24:39 INFO    httpx: HTTP Request: HEAD https://huggingface.co/BAAI/bge-small-zh-v1.5/resolve/main/tokenizer_config.json "HTTP/1.1 307 Temporary Redirect"
+13:24:40 INFO    httpx: HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/BAAI/bge-small-zh-v1.5/7999e1d3359715c523056ef9478215996d62a620/tokenizer_config.json "HTTP/1.1 200 OK"
+13:24:40 INFO    httpx: HTTP Request: GET https://huggingface.co/api/models/BAAI/bge-small-zh-v1.5/tree/main/additional_chat_templates?recursive=false&expand=false "HTTP/1.1 404 Not Found"
+13:24:40 INFO    httpx: HTTP Request: GET https://huggingface.co/api/models/BAAI/bge-small-zh-v1.5/tree/main?recursive=true&expand=false "HTTP/1.1 200 OK"
+13:24:41 INFO    httpx: HTTP Request: HEAD https://huggingface.co/BAAI/bge-small-zh-v1.5/resolve/main/1_Pooling/config.json "HTTP/1.1 307 Temporary Redirect"
+13:24:41 INFO    httpx: HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/BAAI/bge-small-zh-v1.5/7999e1d3359715c523056ef9478215996d62a620/1_Pooling%2Fconfig.json "HTTP/1.1 200 OK"
+13:24:41 INFO    httpx: HTTP Request: GET https://huggingface.co/api/models/BAAI/bge-small-zh-v1.5 "HTTP/1.1 200 OK"
+13:24:48 INFO    sentence_transformers.base.model: No device provided, using mps
+13:24:49 INFO    httpx: HTTP Request: HEAD https://huggingface.co/BAAI/bge-base-zh-v1.5/resolve/main/modules.json "HTTP/1.1 307 Temporary Redirect"
+13:24:49 INFO    httpx: HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/BAAI/bge-base-zh-v1.5/f03589ceff5aac7111bd60cfc7d497ca17ecac65/modules.json "HTTP/1.1 200 OK"
+13:24:49 INFO    httpx: HTTP Request: HEAD https://huggingface.co/BAAI/bge-base-zh-v1.5/resolve/main/config_sentence_transformers.json "HTTP/1.1 307 Temporary Redirect"
+13:24:49 INFO    httpx: HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/BAAI/bge-base-zh-v1.5/f03589ceff5aac7111bd60cfc7d497ca17ecac65/config_sentence_transformers.json "HTTP/1.1 200 OK"
+13:24:49 INFO    sentence_transformers.base.model: Loading SentenceTransformer model from BAAI/bge-base-zh-v1.5.
+13:24:50 INFO    httpx: HTTP Request: HEAD https://huggingface.co/BAAI/bge-base-zh-v1.5/resolve/main/config_sentence_transformers.json "HTTP/1.1 307 Temporary Redirect"
+13:24:50 INFO    httpx: HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/BAAI/bge-base-zh-v1.5/f03589ceff5aac7111bd60cfc7d497ca17ecac65/config_sentence_transformers.json "HTTP/1.1 200 OK"
+13:24:50 INFO    httpx: HTTP Request: HEAD https://huggingface.co/BAAI/bge-base-zh-v1.5/resolve/main/README.md "HTTP/1.1 307 Temporary Redirect"
+13:24:50 INFO    httpx: HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/BAAI/bge-base-zh-v1.5/f03589ceff5aac7111bd60cfc7d497ca17ecac65/README.md "HTTP/1.1 200 OK"
+13:24:51 INFO    httpx: HTTP Request: HEAD https://huggingface.co/BAAI/bge-base-zh-v1.5/resolve/main/modules.json "HTTP/1.1 307 Temporary Redirect"
+13:24:51 INFO    httpx: HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/BAAI/bge-base-zh-v1.5/f03589ceff5aac7111bd60cfc7d497ca17ecac65/modules.json "HTTP/1.1 200 OK"
+13:24:51 INFO    httpx: HTTP Request: HEAD https://huggingface.co/BAAI/bge-base-zh-v1.5/resolve/main/sentence_bert_config.json "HTTP/1.1 307 Temporary Redirect"
+13:24:51 INFO    httpx: HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/BAAI/bge-base-zh-v1.5/f03589ceff5aac7111bd60cfc7d497ca17ecac65/sentence_bert_config.json "HTTP/1.1 200 OK"
+13:24:52 INFO    httpx: HTTP Request: HEAD https://huggingface.co/BAAI/bge-base-zh-v1.5/resolve/main/adapter_config.json "HTTP/1.1 404 Not Found"
+13:24:52 INFO    httpx: HTTP Request: HEAD https://huggingface.co/BAAI/bge-base-zh-v1.5/resolve/main/config.json "HTTP/1.1 307 Temporary Redirect"
+13:24:52 INFO    httpx: HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/BAAI/bge-base-zh-v1.5/f03589ceff5aac7111bd60cfc7d497ca17ecac65/config.json "HTTP/1.1 200 OK"
+13:24:52 INFO    httpx: HTTP Request: HEAD https://huggingface.co/BAAI/bge-base-zh-v1.5/resolve/main/model.safetensors "HTTP/1.1 404 Not Found"
+Loading weights:   0%|          | 0/199 [00:00<?, ?it/s]Loading weights: 100%|██████████| 199/199 [00:00<00:00, 47416.15it/s]
+13:24:53 INFO    httpx: HTTP Request: GET https://huggingface.co/api/models/BAAI/bge-base-zh-v1.5 "HTTP/1.1 200 OK"
+13:24:53 INFO    httpx: HTTP Request: GET https://huggingface.co/api/models/BAAI/bge-base-zh-v1.5/commits/main "HTTP/1.1 200 OK"
+13:24:53 INFO    httpx: HTTP Request: HEAD https://huggingface.co/BAAI/bge-base-zh-v1.5/resolve/main/processor_config.json "HTTP/1.1 404 Not Found"
+13:24:53 INFO    httpx: HTTP Request: GET https://huggingface.co/api/models/BAAI/bge-base-zh-v1.5/discussions?p=0 "HTTP/1.1 200 OK"
+13:24:53 INFO    httpx: HTTP Request: HEAD https://huggingface.co/BAAI/bge-base-zh-v1.5/resolve/main/preprocessor_config.json "HTTP/1.1 404 Not Found"
+13:24:54 INFO    httpx: HTTP Request: GET https://huggingface.co/api/models/BAAI/bge-base-zh-v1.5/commits/refs%2Fpr%2F1 "HTTP/1.1 200 OK"
+13:24:54 INFO    httpx: HTTP Request: HEAD https://huggingface.co/BAAI/bge-base-zh-v1.5/resolve/main/video_preprocessor_config.json "HTTP/1.1 404 Not Found"
+13:24:54 INFO    httpx: HTTP Request: HEAD https://huggingface.co/BAAI/bge-base-zh-v1.5/resolve/refs%2Fpr%2F1/model.safetensors.index.json "HTTP/1.1 404 Not Found"
+13:24:54 INFO    httpx: HTTP Request: HEAD https://huggingface.co/BAAI/bge-base-zh-v1.5/resolve/main/preprocessor_config.json "HTTP/1.1 404 Not Found"
+13:24:54 INFO    httpx: HTTP Request: HEAD https://huggingface.co/BAAI/bge-base-zh-v1.5/resolve/refs%2Fpr%2F1/model.safetensors "HTTP/1.1 302 Found"
+13:24:54 INFO    httpx: HTTP Request: HEAD https://huggingface.co/BAAI/bge-base-zh-v1.5/resolve/main/tokenizer_config.json "HTTP/1.1 307 Temporary Redirect"
+13:24:55 INFO    httpx: HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/BAAI/bge-base-zh-v1.5/f03589ceff5aac7111bd60cfc7d497ca17ecac65/tokenizer_config.json "HTTP/1.1 200 OK"
+13:24:55 INFO    httpx: HTTP Request: HEAD https://huggingface.co/BAAI/bge-base-zh-v1.5/resolve/main/config.json "HTTP/1.1 307 Temporary Redirect"
+13:24:55 INFO    httpx: HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/BAAI/bge-base-zh-v1.5/f03589ceff5aac7111bd60cfc7d497ca17ecac65/config.json "HTTP/1.1 200 OK"
+13:24:55 INFO    httpx: HTTP Request: HEAD https://huggingface.co/BAAI/bge-base-zh-v1.5/resolve/main/config.json "HTTP/1.1 307 Temporary Redirect"
+13:24:56 INFO    httpx: HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/BAAI/bge-base-zh-v1.5/f03589ceff5aac7111bd60cfc7d497ca17ecac65/config.json "HTTP/1.1 200 OK"
+13:24:56 INFO    httpx: HTTP Request: HEAD https://huggingface.co/BAAI/bge-base-zh-v1.5/resolve/main/tokenizer_config.json "HTTP/1.1 307 Temporary Redirect"
+13:24:56 INFO    httpx: HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/BAAI/bge-base-zh-v1.5/f03589ceff5aac7111bd60cfc7d497ca17ecac65/tokenizer_config.json "HTTP/1.1 200 OK"
+13:24:56 INFO    httpx: HTTP Request: GET https://huggingface.co/api/models/BAAI/bge-base-zh-v1.5/tree/main/additional_chat_templates?recursive=false&expand=false "HTTP/1.1 404 Not Found"
+13:24:57 INFO    httpx: HTTP Request: GET https://huggingface.co/api/models/BAAI/bge-base-zh-v1.5/tree/main?recursive=true&expand=false "HTTP/1.1 200 OK"
+13:24:57 INFO    httpx: HTTP Request: HEAD https://huggingface.co/BAAI/bge-base-zh-v1.5/resolve/main/1_Pooling/config.json "HTTP/1.1 307 Temporary Redirect"
+13:24:57 INFO    httpx: HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/BAAI/bge-base-zh-v1.5/f03589ceff5aac7111bd60cfc7d497ca17ecac65/1_Pooling%2Fconfig.json "HTTP/1.1 200 OK"
+13:24:57 INFO    httpx: HTTP Request: GET https://huggingface.co/api/models/BAAI/bge-base-zh-v1.5 "HTTP/1.1 200 OK"
+13:25:19 INFO    sentence_transformers.base.model: No device provided, using mps
+13:25:20 INFO    httpx: HTTP Request: HEAD https://huggingface.co/shibing624/text2vec-base-chinese/resolve/main/modules.json "HTTP/1.1 307 Temporary Redirect"
+13:25:20 INFO    httpx: HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/shibing624/text2vec-base-chinese/183bb99aa7af74355fb58d16edf8c13ae7c5433e/modules.json "HTTP/1.1 200 OK"
+13:25:20 INFO    httpx: HTTP Request: HEAD https://huggingface.co/shibing624/text2vec-base-chinese/resolve/main/config_sentence_transformers.json "HTTP/1.1 404 Not Found"
+13:25:20 INFO    sentence_transformers.base.model: Loading SentenceTransformer model from shibing624/text2vec-base-chinese.
+13:25:21 INFO    httpx: HTTP Request: HEAD https://huggingface.co/shibing624/text2vec-base-chinese/resolve/main/config_sentence_transformers.json "HTTP/1.1 404 Not Found"
+13:25:21 INFO    httpx: HTTP Request: HEAD https://huggingface.co/shibing624/text2vec-base-chinese/resolve/main/README.md "HTTP/1.1 307 Temporary Redirect"
+13:25:21 INFO    httpx: HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/shibing624/text2vec-base-chinese/183bb99aa7af74355fb58d16edf8c13ae7c5433e/README.md "HTTP/1.1 200 OK"
+13:25:21 INFO    httpx: HTTP Request: HEAD https://huggingface.co/shibing624/text2vec-base-chinese/resolve/main/modules.json "HTTP/1.1 307 Temporary Redirect"
+13:25:22 INFO    httpx: HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/shibing624/text2vec-base-chinese/183bb99aa7af74355fb58d16edf8c13ae7c5433e/modules.json "HTTP/1.1 200 OK"
+13:25:22 INFO    httpx: HTTP Request: HEAD https://huggingface.co/shibing624/text2vec-base-chinese/resolve/main/sentence_bert_config.json "HTTP/1.1 307 Temporary Redirect"
+13:25:22 INFO    httpx: HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/shibing624/text2vec-base-chinese/183bb99aa7af74355fb58d16edf8c13ae7c5433e/sentence_bert_config.json "HTTP/1.1 200 OK"
+13:25:22 INFO    httpx: HTTP Request: HEAD https://huggingface.co/shibing624/text2vec-base-chinese/resolve/main/adapter_config.json "HTTP/1.1 404 Not Found"
+13:25:23 INFO    httpx: HTTP Request: HEAD https://huggingface.co/shibing624/text2vec-base-chinese/resolve/main/config.json "HTTP/1.1 307 Temporary Redirect"
+13:25:23 INFO    httpx: HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/shibing624/text2vec-base-chinese/183bb99aa7af74355fb58d16edf8c13ae7c5433e/config.json "HTTP/1.1 200 OK"
+Loading weights:   0%|          | 0/199 [00:00<?, ?it/s]Loading weights: 100%|██████████| 199/199 [00:00<00:00, 10739.27it/s]
+13:25:23 INFO    httpx: HTTP Request: HEAD https://huggingface.co/shibing624/text2vec-base-chinese/resolve/main/processor_config.json "HTTP/1.1 404 Not Found"
+13:25:24 INFO    httpx: HTTP Request: HEAD https://huggingface.co/shibing624/text2vec-base-chinese/resolve/main/preprocessor_config.json "HTTP/1.1 404 Not Found"
+13:25:24 INFO    httpx: HTTP Request: HEAD https://huggingface.co/shibing624/text2vec-base-chinese/resolve/main/video_preprocessor_config.json "HTTP/1.1 404 Not Found"
+13:25:24 INFO    httpx: HTTP Request: HEAD https://huggingface.co/shibing624/text2vec-base-chinese/resolve/main/preprocessor_config.json "HTTP/1.1 404 Not Found"
+13:25:25 INFO    httpx: HTTP Request: HEAD https://huggingface.co/shibing624/text2vec-base-chinese/resolve/main/tokenizer_config.json "HTTP/1.1 307 Temporary Redirect"
+13:25:25 INFO    httpx: HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/shibing624/text2vec-base-chinese/183bb99aa7af74355fb58d16edf8c13ae7c5433e/tokenizer_config.json "HTTP/1.1 200 OK"
+13:25:25 INFO    httpx: HTTP Request: HEAD https://huggingface.co/shibing624/text2vec-base-chinese/resolve/main/config.json "HTTP/1.1 307 Temporary Redirect"
+13:25:25 INFO    httpx: HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/shibing624/text2vec-base-chinese/183bb99aa7af74355fb58d16edf8c13ae7c5433e/config.json "HTTP/1.1 200 OK"
+13:25:26 INFO    httpx: HTTP Request: HEAD https://huggingface.co/shibing624/text2vec-base-chinese/resolve/main/config.json "HTTP/1.1 307 Temporary Redirect"
+13:25:26 INFO    httpx: HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/shibing624/text2vec-base-chinese/183bb99aa7af74355fb58d16edf8c13ae7c5433e/config.json "HTTP/1.1 200 OK"
+13:25:26 INFO    httpx: HTTP Request: HEAD https://huggingface.co/shibing624/text2vec-base-chinese/resolve/main/tokenizer_config.json "HTTP/1.1 307 Temporary Redirect"
+13:25:26 INFO    httpx: HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/shibing624/text2vec-base-chinese/183bb99aa7af74355fb58d16edf8c13ae7c5433e/tokenizer_config.json "HTTP/1.1 200 OK"
+13:25:27 INFO    httpx: HTTP Request: GET https://huggingface.co/api/models/shibing624/text2vec-base-chinese/tree/main/additional_chat_templates?recursive=false&expand=false "HTTP/1.1 404 Not Found"
+13:25:27 INFO    httpx: HTTP Request: GET https://huggingface.co/api/models/shibing624/text2vec-base-chinese/tree/main?recursive=true&expand=false "HTTP/1.1 200 OK"
+13:25:27 INFO    httpx: HTTP Request: HEAD https://huggingface.co/shibing624/text2vec-base-chinese/resolve/main/1_Pooling/config.json "HTTP/1.1 307 Temporary Redirect"
+13:25:28 INFO    httpx: HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/shibing624/text2vec-base-chinese/183bb99aa7af74355fb58d16edf8c13ae7c5433e/1_Pooling%2Fconfig.json "HTTP/1.1 200 OK"
+13:25:28 INFO    httpx: HTTP Request: GET https://huggingface.co/api/models/shibing624/text2vec-base-chinese "HTTP/1.1 200 OK"
+13:25:45 INFO    sentence_transformers.base.model: No device provided, using mps
+13:25:45 INFO    httpx: HTTP Request: HEAD https://huggingface.co/intfloat/multilingual-e5-small/resolve/main/modules.json "HTTP/1.1 307 Temporary Redirect"
+13:25:46 INFO    httpx: HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/intfloat/multilingual-e5-small/614241f622f53c4eeff9890bdc4f31cfecc418b3/modules.json "HTTP/1.1 200 OK"
+13:25:46 INFO    httpx: HTTP Request: HEAD https://huggingface.co/intfloat/multilingual-e5-small/resolve/main/config_sentence_transformers.json "HTTP/1.1 404 Not Found"
+13:25:46 INFO    sentence_transformers.base.model: Loading SentenceTransformer model from intfloat/multilingual-e5-small.
+13:25:46 INFO    httpx: HTTP Request: HEAD https://huggingface.co/intfloat/multilingual-e5-small/resolve/main/config_sentence_transformers.json "HTTP/1.1 404 Not Found"
+13:25:47 INFO    httpx: HTTP Request: HEAD https://huggingface.co/intfloat/multilingual-e5-small/resolve/main/README.md "HTTP/1.1 307 Temporary Redirect"
+13:25:47 INFO    httpx: HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/intfloat/multilingual-e5-small/614241f622f53c4eeff9890bdc4f31cfecc418b3/README.md "HTTP/1.1 200 OK"
+13:25:47 INFO    httpx: HTTP Request: HEAD https://huggingface.co/intfloat/multilingual-e5-small/resolve/main/modules.json "HTTP/1.1 307 Temporary Redirect"
+13:25:47 INFO    httpx: HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/intfloat/multilingual-e5-small/614241f622f53c4eeff9890bdc4f31cfecc418b3/modules.json "HTTP/1.1 200 OK"
+13:25:48 INFO    httpx: HTTP Request: HEAD https://huggingface.co/intfloat/multilingual-e5-small/resolve/main/sentence_bert_config.json "HTTP/1.1 307 Temporary Redirect"
+13:25:48 INFO    httpx: HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/intfloat/multilingual-e5-small/614241f622f53c4eeff9890bdc4f31cfecc418b3/sentence_bert_config.json "HTTP/1.1 200 OK"
+13:25:48 INFO    httpx: HTTP Request: HEAD https://huggingface.co/intfloat/multilingual-e5-small/resolve/main/adapter_config.json "HTTP/1.1 404 Not Found"
+13:25:49 INFO    httpx: HTTP Request: HEAD https://huggingface.co/intfloat/multilingual-e5-small/resolve/main/config.json "HTTP/1.1 307 Temporary Redirect"
+13:25:49 INFO    httpx: HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/intfloat/multilingual-e5-small/614241f622f53c4eeff9890bdc4f31cfecc418b3/config.json "HTTP/1.1 200 OK"
+Loading weights:   0%|          | 0/199 [00:00<?, ?it/s]Loading weights: 100%|██████████| 199/199 [00:00<00:00, 8648.05it/s]
+13:25:49 INFO    httpx: HTTP Request: HEAD https://huggingface.co/intfloat/multilingual-e5-small/resolve/main/processor_config.json "HTTP/1.1 404 Not Found"
+13:25:50 INFO    httpx: HTTP Request: HEAD https://huggingface.co/intfloat/multilingual-e5-small/resolve/main/preprocessor_config.json "HTTP/1.1 404 Not Found"
+13:25:50 INFO    httpx: HTTP Request: HEAD https://huggingface.co/intfloat/multilingual-e5-small/resolve/main/video_preprocessor_config.json "HTTP/1.1 404 Not Found"
+13:25:50 INFO    httpx: HTTP Request: HEAD https://huggingface.co/intfloat/multilingual-e5-small/resolve/main/preprocessor_config.json "HTTP/1.1 404 Not Found"
+13:25:51 INFO    httpx: HTTP Request: HEAD https://huggingface.co/intfloat/multilingual-e5-small/resolve/main/tokenizer_config.json "HTTP/1.1 307 Temporary Redirect"
+13:25:51 INFO    httpx: HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/intfloat/multilingual-e5-small/614241f622f53c4eeff9890bdc4f31cfecc418b3/tokenizer_config.json "HTTP/1.1 200 OK"
+13:25:51 INFO    httpx: HTTP Request: HEAD https://huggingface.co/intfloat/multilingual-e5-small/resolve/main/config.json "HTTP/1.1 307 Temporary Redirect"
+13:25:51 INFO    httpx: HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/intfloat/multilingual-e5-small/614241f622f53c4eeff9890bdc4f31cfecc418b3/config.json "HTTP/1.1 200 OK"
+13:25:52 INFO    httpx: HTTP Request: HEAD https://huggingface.co/intfloat/multilingual-e5-small/resolve/main/config.json "HTTP/1.1 307 Temporary Redirect"
+13:25:52 INFO    httpx: HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/intfloat/multilingual-e5-small/614241f622f53c4eeff9890bdc4f31cfecc418b3/config.json "HTTP/1.1 200 OK"
+13:25:52 INFO    httpx: HTTP Request: HEAD https://huggingface.co/intfloat/multilingual-e5-small/resolve/main/tokenizer_config.json "HTTP/1.1 307 Temporary Redirect"
+13:25:53 INFO    httpx: HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/intfloat/multilingual-e5-small/614241f622f53c4eeff9890bdc4f31cfecc418b3/tokenizer_config.json "HTTP/1.1 200 OK"
+13:25:53 INFO    httpx: HTTP Request: HEAD https://huggingface.co/intfloat/multilingual-e5-small/resolve/main/tokenizer_config.json "HTTP/1.1 307 Temporary Redirect"
+13:25:54 INFO    httpx: HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/intfloat/multilingual-e5-small/614241f622f53c4eeff9890bdc4f31cfecc418b3/tokenizer_config.json "HTTP/1.1 200 OK"
+13:25:54 INFO    httpx: HTTP Request: GET https://huggingface.co/api/models/intfloat/multilingual-e5-small/tree/main/additional_chat_templates?recursive=false&expand=false "HTTP/1.1 404 Not Found"
+13:25:54 INFO    httpx: HTTP Request: GET https://huggingface.co/api/models/intfloat/multilingual-e5-small/tree/main?recursive=true&expand=false "HTTP/1.1 200 OK"
+13:25:55 INFO    httpx: HTTP Request: GET https://huggingface.co/api/models/intfloat/multilingual-e5-small "HTTP/1.1 200 OK"
+13:25:56 INFO    httpx: HTTP Request: HEAD https://huggingface.co/intfloat/multilingual-e5-small/resolve/main/1_Pooling/config.json "HTTP/1.1 307 Temporary Redirect"
+13:25:56 INFO    httpx: HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/intfloat/multilingual-e5-small/614241f622f53c4eeff9890bdc4f31cfecc418b3/1_Pooling%2Fconfig.json "HTTP/1.1 200 OK"
+13:25:57 INFO    httpx: HTTP Request: GET https://huggingface.co/api/models/intfloat/multilingual-e5-small "HTTP/1.1 200 OK"
+13:26:06 INFO    qmine.graph:   chose intfloat/multilingual-e5-small on stability; silhouette would have chosen intfloat/multilingual-e5-small
+13:26:06 INFO    sentence_transformers.base.model: No device provided, using mps
+13:26:07 INFO    httpx: HTTP Request: HEAD https://huggingface.co/intfloat/multilingual-e5-small/resolve/main/modules.json "HTTP/1.1 307 Temporary Redirect"
+13:26:07 INFO    httpx: HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/intfloat/multilingual-e5-small/614241f622f53c4eeff9890bdc4f31cfecc418b3/modules.json "HTTP/1.1 200 OK"
+13:26:07 INFO    httpx: HTTP Request: HEAD https://huggingface.co/intfloat/multilingual-e5-small/resolve/main/config_sentence_transformers.json "HTTP/1.1 404 Not Found"
+13:26:07 INFO    sentence_transformers.base.model: Loading SentenceTransformer model from intfloat/multilingual-e5-small.
+13:26:08 INFO    httpx: HTTP Request: HEAD https://huggingface.co/intfloat/multilingual-e5-small/resolve/main/config_sentence_transformers.json "HTTP/1.1 404 Not Found"
+13:26:08 INFO    httpx: HTTP Request: HEAD https://huggingface.co/intfloat/multilingual-e5-small/resolve/main/README.md "HTTP/1.1 307 Temporary Redirect"
+13:26:08 INFO    httpx: HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/intfloat/multilingual-e5-small/614241f622f53c4eeff9890bdc4f31cfecc418b3/README.md "HTTP/1.1 200 OK"
+13:26:08 INFO    httpx: HTTP Request: HEAD https://huggingface.co/intfloat/multilingual-e5-small/resolve/main/modules.json "HTTP/1.1 307 Temporary Redirect"
+13:26:09 INFO    httpx: HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/intfloat/multilingual-e5-small/614241f622f53c4eeff9890bdc4f31cfecc418b3/modules.json "HTTP/1.1 200 OK"
+13:26:09 INFO    httpx: HTTP Request: HEAD https://huggingface.co/intfloat/multilingual-e5-small/resolve/main/sentence_bert_config.json "HTTP/1.1 307 Temporary Redirect"
+13:26:09 INFO    httpx: HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/intfloat/multilingual-e5-small/614241f622f53c4eeff9890bdc4f31cfecc418b3/sentence_bert_config.json "HTTP/1.1 200 OK"
+13:26:09 INFO    httpx: HTTP Request: HEAD https://huggingface.co/intfloat/multilingual-e5-small/resolve/main/adapter_config.json "HTTP/1.1 404 Not Found"
+13:26:10 INFO    httpx: HTTP Request: HEAD https://huggingface.co/intfloat/multilingual-e5-small/resolve/main/config.json "HTTP/1.1 307 Temporary Redirect"
+13:26:10 INFO    httpx: HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/intfloat/multilingual-e5-small/614241f622f53c4eeff9890bdc4f31cfecc418b3/config.json "HTTP/1.1 200 OK"
+    chose intfloat/multilingual-e5-small on stability; silhouette would have chosen intfloat/multilingual-e5-small
+Loading weights:   0%|          | 0/199 [00:00<?, ?it/s]Loading weights: 100%|██████████| 199/199 [00:00<00:00, 8323.86it/s]
+13:26:10 INFO    httpx: HTTP Request: HEAD https://huggingface.co/intfloat/multilingual-e5-small/resolve/main/processor_config.json "HTTP/1.1 404 Not Found"
+13:26:11 INFO    httpx: HTTP Request: HEAD https://huggingface.co/intfloat/multilingual-e5-small/resolve/main/preprocessor_config.json "HTTP/1.1 404 Not Found"
+13:26:11 INFO    httpx: HTTP Request: HEAD https://huggingface.co/intfloat/multilingual-e5-small/resolve/main/video_preprocessor_config.json "HTTP/1.1 404 Not Found"
+13:26:11 INFO    httpx: HTTP Request: HEAD https://huggingface.co/intfloat/multilingual-e5-small/resolve/main/preprocessor_config.json "HTTP/1.1 404 Not Found"
+13:26:12 INFO    httpx: HTTP Request: HEAD https://huggingface.co/intfloat/multilingual-e5-small/resolve/main/tokenizer_config.json "HTTP/1.1 307 Temporary Redirect"
+13:26:12 INFO    httpx: HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/intfloat/multilingual-e5-small/614241f622f53c4eeff9890bdc4f31cfecc418b3/tokenizer_config.json "HTTP/1.1 200 OK"
+13:26:12 INFO    httpx: HTTP Request: HEAD https://huggingface.co/intfloat/multilingual-e5-small/resolve/main/config.json "HTTP/1.1 307 Temporary Redirect"
+13:26:13 INFO    httpx: HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/intfloat/multilingual-e5-small/614241f622f53c4eeff9890bdc4f31cfecc418b3/config.json "HTTP/1.1 200 OK"
+13:26:13 INFO    httpx: HTTP Request: HEAD https://huggingface.co/intfloat/multilingual-e5-small/resolve/main/config.json "HTTP/1.1 307 Temporary Redirect"
+13:26:13 INFO    httpx: HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/intfloat/multilingual-e5-small/614241f622f53c4eeff9890bdc4f31cfecc418b3/config.json "HTTP/1.1 200 OK"
+13:26:13 INFO    httpx: HTTP Request: HEAD https://huggingface.co/intfloat/multilingual-e5-small/resolve/main/tokenizer_config.json "HTTP/1.1 307 Temporary Redirect"
+13:26:14 INFO    httpx: HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/intfloat/multilingual-e5-small/614241f622f53c4eeff9890bdc4f31cfecc418b3/tokenizer_config.json "HTTP/1.1 200 OK"
+13:26:14 INFO    httpx: HTTP Request: HEAD https://huggingface.co/intfloat/multilingual-e5-small/resolve/main/tokenizer_config.json "HTTP/1.1 307 Temporary Redirect"
+13:26:14 INFO    httpx: HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/intfloat/multilingual-e5-small/614241f622f53c4eeff9890bdc4f31cfecc418b3/tokenizer_config.json "HTTP/1.1 200 OK"
+13:26:14 INFO    httpx: HTTP Request: GET https://huggingface.co/api/models/intfloat/multilingual-e5-small/tree/main/additional_chat_templates?recursive=false&expand=false "HTTP/1.1 404 Not Found"
+13:26:15 INFO    httpx: HTTP Request: GET https://huggingface.co/api/models/intfloat/multilingual-e5-small/tree/main?recursive=true&expand=false "HTTP/1.1 200 OK"
+13:26:16 INFO    httpx: HTTP Request: GET https://huggingface.co/api/models/intfloat/multilingual-e5-small "HTTP/1.1 200 OK"
+13:26:17 INFO    httpx: HTTP Request: HEAD https://huggingface.co/intfloat/multilingual-e5-small/resolve/main/1_Pooling/config.json "HTTP/1.1 307 Temporary Redirect"
+13:26:18 INFO    httpx: HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/intfloat/multilingual-e5-small/614241f622f53c4eeff9890bdc4f31cfecc418b3/1_Pooling%2Fconfig.json "HTTP/1.1 200 OK"
+13:26:18 INFO    httpx: HTTP Request: GET https://huggingface.co/api/models/intfloat/multilingual-e5-small "HTTP/1.1 200 OK"
+13:26:19 INFO    qmine.graph:   encoded (43802, 384) (cache hit)
+13:26:19 INFO    qmine.graph: P3b sparse block — char TF-IDF → SVD
+13:26:21 INFO    qmine.graph:   grid proposer[alpha]: +[0.7, 0.85] (0 rejected) — 该语料约28%的查询落入19个固定短语模式，且模式名显示关系查询、属性查询、职务查询、任期查询等模板化意图，说明短语相似度在该语料中携带真实意图信号，值得探索比当前网格上限0.5更强的短语权重。同时，
+13:26:21 INFO    qmine.graph: P3c alpha sweep — [0.0, 0.1, 0.2, 0.3, 0.5, 0.7, 0.85]
+13:27:20 INFO    qmine.graph: ✔ p3_represent completed in 168.6s
+13:27:20 INFO    qmine.graph: P4 algorithm battery — 3 K values × 6 algorithms
+13:28:53 INFO    qmine.graph:   winner: kmeans_k20 (stability 0.8288)
+13:28:53 INFO    qmine.graph:   grid proposer[family_k]: +[5, 6, 7] (0 rejected) — family_k 是顶层聚类数。该语料是汉语为主的人物垂直域，语言单一，不需要为多语言流量保留额外独立聚类；去重后 38056 条、重复率约 13%，没有大量重复模板来支撑高 K 聚类；19 个 ph
+13:28:53 INFO    qmine.graph: P5 granularity — K sweep over 17 values
+13:32:38 INFO    qmine.graph:   参照系 `phrasing_groups`: 触及 90% 的簇 (行覆盖 28%) @ k=20
+13:32:38 INFO    qmine.graph:   K 由 `phrasing_groups` 定位 (触及率最高)
+13:32:47 INFO    qmine.graph:   located K=20 (by intent_alignment_ami); DeepAligned leaf estimate 10; converged=False
+13:32:47 INFO    qmine.graph:   locator scored against 19 phrasing classes covering 0.2795 of rows
+13:32:47 INFO    qmine.graph: P6 hierarchy — 20 families, then local leaf selection
+13:34:28 INFO    qmine.graph:   built 20 families / 64 leaves — 3 个家族无内部结构未再分, 2 个 silhouette 的选择被稳定性否决
+13:34:32 INFO    qmine.graph:   refined to 24 leaves in 5 rounds (converged=False)
+13:34:32 INFO    qmine.graph:   minority-language facet: 1 family(ies) resolved into 6 sub-intents (a column, not leaves — the hybrid space cannot express intent within a minority language)
+13:34:32 INFO    qmine.graph:   held-out structure reproduction 0.978
+13:34:32 INFO    qmine.graph: gate p6_heldout_reproduction: PASSED — held-out rows land in the same cluster 97.8% of the time (95% CI 0.975-0.981, n=8761) — met
+13:34:32 INFO    qmine.graph: ✔ p456_tree completed in 431.4s
+13:34:32 INFO    qmine.graph: !! 分支缺失: p2b_gold 从未运行, 但流程已到达汇合点
+13:34:32 ERROR   qmine.graph: node p2c_classifier failed
+Traceback (most recent call last):
+  File "/Users/mayouxuan/Documents/Claude/Search Query Mining Agent Team/QMine/src/qmine/graph/build.py", line 149, in node
+    out = fn(state, deps) or {}
+          ^^^^^^^^^^^^^^^
+  File "/Users/mayouxuan/Documents/Claude/Search Query Mining Agent Team/QMine/src/qmine/graph/nodes/topdown.py", line 2790, in p2c_classifier
+    stop = _require_both_branches(state, deps)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/mayouxuan/Documents/Claude/Search Query Mining Agent Team/QMine/src/qmine/graph/nodes/topdown.py", line 2758, in _require_both_branches
+    gate = deps.gate(
+           ^^^^^^^^^^
+TypeError: Deps.gate() got an unexpected keyword argument 'blocking'
+13:34:32 INFO    qmine.graph: !! p2c_classifier failed: TypeError: Deps.gate() got an unexpected keyword argument 'blocking'
+13:34:32 INFO    qmine.graph: P2b gold — 3000 queries (6.8% of corpus, derived from corpus size), double-blind annotation
+13:34:32 INFO    qmine.graph:   single annotator (a) — no agreement measured
+13:34:32 INFO    qmine.graph:   annotator[a] 12/120 batches · 300 rows
+13:34:32 INFO    qmine.graph:   annotator[a] 24/120 batches · 600 rows
+13:34:32 INFO    qmine.graph:   annotator[a] 36/120 batches · 900 rows
+13:34:32 INFO    qmine.graph:   annotator[a] 48/120 batches · 1200 rows
+13:34:32 INFO    qmine.graph:   annotator[a] 60/120 batches · 1500 rows
+13:34:32 INFO    qmine.graph:   annotator[a] 72/120 batches · 1800 rows
+13:34:32 INFO    qmine.graph:   annotator[a] 84/120 batches · 2100 rows
+13:34:32 INFO    qmine.graph:   annotator[a] 96/120 batches · 2400 rows
+13:34:32 INFO    qmine.graph:   annotator[a] 108/120 batches · 2700 rows
+13:34:32 INFO    qmine.graph:   annotator[a] labelled 3000/3000
+13:34:32 INFO    qmine.graph:   3000/3000 rows labelled by one annotator — kappa undefined, no referee, no disagreements
+13:34:35 INFO    qmine.graph:   single annotator (a) — no agreement measured
+13:34:38 INFO    qmine.graph:   ⚠ annotator[a] batch lost 25 rows after 3 attempts: ValueError: returned 25/25 labels (1 queries unlabelled)
+13:34:38 INFO    qmine.graph:   annotator[a] labelled 178/200  ⚠ 22 rows unlabelled — kappa will be computed on the remainder and the shortfall reported
+13:34:38 INFO    qmine.graph:   ⚠ active-learning round: 22 row(s) missing a label, 0 row(s) off-schema and unrepairable — excluded from the gold set rather than shipped as a phantom class
+13:34:38 INFO    qmine.graph:   active learning added 200 boundary rows
+13:34:38 INFO    qmine.graph: gate p2b_kappa: SKIPPED — 标注一致性未测量 —— fast 模式由单个标注员 (a) 标注 3000 行, 没有第二份独立判读可供比较; 覆盖率 100%
+13:34:38 INFO    qmine.graph:   rule triggers: 26 executable, 19 semantic (7 rejected as unusable)
+13:34:38 INFO    qmine.graph:   annotator balance: UNDECIDABLE — only 0 contested row(s) adjudicated, 20 needed to say anything
+13:34:38 INFO    qmine.graph: gate p2b_annotator_symmetry: SKIPPED — UNDECIDABLE — only 0 contested row(s) were adjudicated, 20 needed. This is NOT a finding that the annotators are comparable; it is an absence of evidence either way
+13:34:38 INFO    qmine.graph: gate p2b_rules_match_their_evidence: SKIPPED — 规则与证据的比对未运行 —— 本次没有任何被裁定的行可供检验 (单标注员时无争议行; 已写入 26 条词面规则 / 19 条语义规则, 但都没有被检验过)
+13:34:38 INFO    qmine.graph:   taxonomy_v2 persisted: 45 rules (0 drafted by the referee), guide unchanged
+13:34:38 INFO    qmine.graph: ✔ p2b_gold completed in 6.5s
+    encoded (43802, 384) (cache hit)
+  P3b sparse block — char TF-IDF → SVD
+    grid proposer[alpha]: +[0.7, 0.85] (0 rejected) — 该语料约28%的查询落入19个固定短语模式，且模式名显示关系查询、属性查询、职务查询、任期查询等模板化意图，说明短语相似度在该语料中携带真实意图信号，值得探索比当前网格上限0.5更强的短语权重。同时，
+  P3c alpha sweep — [0.0, 0.1, 0.2, 0.3, 0.5, 0.7, 0.85]
+  ✔ p3_represent completed in 168.6s
+  P4 algorithm battery — 3 K values × 6 algorithms
+    winner: kmeans_k20 (stability 0.8288)
+    grid proposer[family_k]: +[5, 6, 7] (0 rejected) — family_k 是顶层聚类数。该语料是汉语为主的人物垂直域，语言单一，不需要为多语言流量保留额外独立聚类；去重后 38056 条、重复率约 13%，没有大量重复模板来支撑高 K 聚类；19 个 ph
+  P5 granularity — K sweep over 17 values
+    参照系 `phrasing_groups`: 触及 90% 的簇 (行覆盖 28%) @ k=20
+    K 由 `phrasing_groups` 定位 (触及率最高)
+    located K=20 (by intent_alignment_ami); DeepAligned leaf estimate 10; converged=False
+    locator scored against 19 phrasing classes covering 0.2795 of rows
+  P6 hierarchy — 20 families, then local leaf selection
+    built 20 families / 64 leaves — 3 个家族无内部结构未再分, 2 个 silhouette 的选择被稳定性否决
+    refined to 24 leaves in 5 rounds (converged=False)
+    minority-language facet: 1 family(ies) resolved into 6 sub-intents (a column, not leaves — the hybrid space cannot express intent within a minority language)
+    held-out structure reproduction 0.978
+  gate p6_heldout_reproduction: PASSED — held-out rows land in the same cluster 97.8% of the time (95% CI 0.975-0.981, n=8761) — met
+  ✔ p456_tree completed in 431.4s
+  !! 分支缺失: p2b_gold 从未运行, 但流程已到达汇合点
+  !! p2c_classifier failed: TypeError: Deps.gate() got an unexpected keyword argument 'blocking'
+  P2b gold — 3000 queries (6.8% of corpus, derived from corpus size), double-blind annotation
+    single annotator (a) — no agreement measured
+    annotator[a] 12/120 batches · 300 rows
+    annotator[a] 24/120 batches · 600 rows
+    annotator[a] 36/120 batches · 900 rows
+    annotator[a] 48/120 batches · 1200 rows
+    annotator[a] 60/120 batches · 1500 rows
+    annotator[a] 72/120 batches · 1800 rows
+    annotator[a] 84/120 batches · 2100 rows
+    annotator[a] 96/120 batches · 2400 rows
+    annotator[a] 108/120 batches · 2700 rows
+    annotator[a] labelled 3000/3000
+    3000/3000 rows labelled by one annotator — kappa undefined, no referee, no disagreements
+    single annotator (a) — no agreement measured
+    ⚠ annotator[a] batch lost 25 rows after 3 attempts: ValueError: returned 25/25 labels (1 queries unlabelled)
+    annotator[a] labelled 178/200  ⚠ 22 rows unlabelled — kappa will be computed on the remainder and the shortfall reported
+    ⚠ active-learning round: 22 row(s) missing a label, 0 row(s) off-schema and unrepairable — excluded from the gold set rather than shipped as a phantom class
+    active learning added 200 boundary rows
+  gate p2b_kappa: SKIPPED — 标注一致性未测量 —— fast 模式由单个标注员 (a) 标注 3000 行, 没有第二份独立判读可供比较; 覆盖率 100%
+    rule triggers: 26 executable, 19 semantic (7 rejected as unusable)
+    annotator balance: UNDECIDABLE — only 0 contested row(s) adjudicated, 20 needed to say anything
+  gate p2b_annotator_symmetry: SKIPPED — UNDECIDABLE — only 0 contested row(s) were adjudicated, 20 needed. This is NOT a finding that the annotators are comparable; it is an absence of evidence either way
+  gate p2b_rules_match_their_evidence: SKIPPED — 规则与证据的比对未运行 —— 本次没有任何被裁定的行可供检验 (单标注员时无争议行; 已写入 26 条词面规则 / 19 条语义规则, 但都没有被检验过)
+    taxonomy_v2 persisted: 45 rules (0 drafted by the referee), guide unchanged
+  ✔ p2b_gold completed in 6.5s
+───────────────────────────────── run summary ──────────────────────────────────
+┏━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃ field           ┃ value                                                      ┃
+┡━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┩
+│ run_id          │ ppl-pool8                                                  │
+│ generation      │ 3                                                          │
+│ elapsed_s       │ 609.9                                                      │
+│ halted          │ True                                                       │
+│ halt_reason     │ p2c_classifier: TypeError: Deps.gate() got an unexpected   │
+│                 │ keyword argument 'blocking'                                │
+│ n_decisions     │ 4                                                          │
+│ n_prescriptions │ 0                                                          │
+│ phases          │ p0, p1, p2a, p3, p4, p5, p6, p2b                           │
+│ artifacts       │ 21                                                         │
+│ llm             │ routed · 132 calls · 132 cached · $0.0                     │
+│ output          │ /Users/mayouxuan/Documents/Claude/Search Query Mining      │
+│                 │ Agent Team/QMine/runs/ppl-pool8/gen03                      │
+└─────────────────┴────────────────────────────────────────────────────────────┘
+┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃ gate                           ┃ status  ┃ message                           ┃
+┡━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┩
+│ p1_template_coverage           │ passed  │ 19 phrasing families cover 12,241 │
+│                                │         │ rows (27.9% of the corpus; the    │
+│                                │         │ share                             │
+│ p1_minority_language_risk      │ warned  │ minority scripts total 0.9% —     │
+│                                │         │ small enough that they will be    │
+│                                │         │ swallowed                         │
+│ p1_reference_columns_declared  │ warned  │ the corpus carries source, l2 and │
+│                                │         │ the run declared NONE — the gold  │
+│                                │         │ set                               │
+│ p6_heldout_reproduction        │ passed  │ held-out rows land in the same    │
+│                                │         │ cluster 97.8% of the time (95% CI │
+│                                │         │ 0.975                             │
+│ p2b_kappa                      │ skipped │ 标注一致性未测量 —— fast          │
+│                                │         │ 模式由单个标注员 (a) 标注 3000    │
+│                                │         │ 行, 没有第二份独立判读可供比较;   │
+│                                │         │ 覆盖率 100%                       │
+│ p2b_rules_match_their_evidence │ skipped │ 规则与证据的比对未运行 ——         │
+│                                │         │ 本次没有任何被裁定的行可供检验    │
+│                                │         │ (单标注员时无争议行; 已写入 26    │
+│                                │         │ 条词面规则 / 19 条语义规则, 但都  │
+│ p2b_annotator_symmetry         │ skipped │ UNDECIDABLE — only 0 contested    │
+│                                │         │ row(s) were adjudicated, 20       │
+│                                │         │ needed. Thi                       │
+└────────────────────────────────┴─────────┴───────────────────────────────────┘

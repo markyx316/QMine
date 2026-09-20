@@ -1,0 +1,12 @@
+{
+ "model": "deepseek-v4-pro",
+ "distinct_strings": 182,
+ "batches": 2,
+ "flagged_strings": 3,
+ "by_code": {
+  "ILLEGAL_REPRO": 1,
+  "NAMED_PERSON": 1,
+  "NAMED_PRIVATE_FACILITY": 1
+ },
+ "flagged_in_report": 0
+}

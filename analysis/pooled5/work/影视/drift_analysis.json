@@ -1,0 +1,2290 @@
+{
+  "snapshots": [
+    "AI助手",
+    "搜索"
+  ],
+  "inventory": [
+    {
+      "snapshot": "AI助手",
+      "rows": 1937,
+      "distinct_queries": 1911,
+      "weight_total": 20000.0
+    },
+    {
+      "snapshot": "搜索",
+      "rows": 19997,
+      "distinct_queries": 17151,
+      "weight_total": 20000.0
+    }
+  ],
+  "query_churn": {
+    "comparable": true,
+    "snapshot_a": "AI助手",
+    "snapshot_b": "搜索",
+    "distinct_a": 1911,
+    "distinct_b": 17151,
+    "shared": 216,
+    "jaccard": 0.0115,
+    "shared_weight_share_a": 0.1437,
+    "shared_weight_share_b": 0.0895
+  },
+  "by_label": {
+    "td_l1": {
+      "comparable": true,
+      "snapshot_a": "AI助手",
+      "snapshot_b": "搜索",
+      "rows_a": 1937,
+      "rows_b": 19997,
+      "n_classes": 17,
+      "cramers_v": 0.4806,
+      "total_variation_weight": 0.4159,
+      "total_variation_rows": 0.4137,
+      "n_comparisons": 14,
+      "stable": [
+        {
+          "label": "LORE_QA_DISCUSSION",
+          "rows_a": 379,
+          "rows_b": 63,
+          "row_share_a": 0.19566,
+          "row_share_b": 0.00315,
+          "row_share_delta_pp": -19.251,
+          "weight_share_a": 0.16314,
+          "weight_share_b": 0.00182,
+          "weight_share_delta_pp": -16.133,
+          "z_row_share": -57.57,
+          "delta_concentration": {
+            "n_distinct_queries": 440,
+            "top1_share_of_delta": 0.0284,
+            "top5_share_of_delta": 0.0678,
+            "hhi_of_delta": 0.0036,
+            "top_queries": [
+              {
+                "query": "好看的动画片有什么？",
+                "delta": -93.73
+              },
+              {
+                "query": "悬案原型案件是什么",
+                "delta": -56.27
+              },
+              {
+                "query": "好看吗？",
+                "delta": -25.39
+              },
+              {
+                "query": "星卡梦少女12花神:正月山茶花神，跟迎春花神是cp，性格开朗，跟石榴花神，梅花花神是铁哥们，喜欢跟迎春花神捉弄菊花花神。2月迎春花神，跟菊花花神是闺蜜，两人跟忍冬花神关系也不错，拥有对外威严，跟忍冬花神关系最好，对12花神很关照。3月桃花花神，性格散漫，跟芙蓉花神，茉莉花神关系比较好，不爱待在自己的地方，喜欢去给其他花神帮忙。4月牡丹花神，个子1米1，继任凤凰花神之后的花神之首，对外威严，当然跟忍冬花神关系很好，跟莲花花神关系也挺好的。5月石榴花神，跟莲花花神是cp，有点健忘，但对莲花花神很关照。6月莲花花神，性格稳当，挺靠谱的，善于隐藏自己，会把牡丹花神处理后事。7月茉莉花神，一身白衣，性格纯真。8月凤凰花神，原型是上古神兽凤凰，从不轻易现出真身，自带女皇威严，对其他花神很关照，喜欢去菊花和迎春那里凑热闹，早年在跟黑星卡师在战斗中牺牲。九月菊花花神，12花神中的团宠，和梅花花神是cp，跟芙蓉花神是情敌，身高仅1米6，也挺矮的，拥有跟死去之人魂魄对话的能力，但也因此被黑星卡师盯上，暴躁的魂魄会拿她撒气，却从没跟别人说过，会写其他花神的同人文，被抓后会立马跑路，但大多时候花语公主在场没有跑掉，送礼时喜欢送菊花茶，菊花蜜，心比较细腻，但是没有显露出来。（这家伙有低血糖）10月芙蓉花神，喜欢梅花花神，会给菊花花神下绊子，但大多时候被迎春花神发现没有成功，迎春花神也会帮她保密。冬月忍冬花神，性格冷淡，高冷，身上有着一股生人勿近的气息，但其实对月儿很关照，跟花语公主最亲近，每次开会游玩的时候总会站在最边上的角落，希望被别人忘记，但每次都会被牡丹花神，菊花花神，迎春花神精准的揪出来，怕冷，嘴也挺毒的，但是没有小姚毒。腊月梅花花神，面对芙蓉花神的示好，会故意接受，其实是想看菊花花神吃醋，老是被凤凰花神追着要切磋。（山茶花神，石榴花神，梅花花神这三位是男花神）（我这里提到的花语公主都只初代花语公主）（秦晓月月儿是12花神和花语公主最深的秘密）帮忙整理一下",
+                "delta": -24.12
+              },
+              {
+                "query": "张予曦演了哪些电视剧？",
+                "delta": -24.12
+              }
+            ]
+          }
+        },
+        {
+          "label": "CLIP_QUOTE_DERIVATIVE",
+          "rows_a": 220,
+          "rows_b": 309,
+          "row_share_a": 0.11358,
+          "row_share_b": 0.01545,
+          "row_share_delta_pp": -9.813,
+          "weight_share_a": 0.13876,
+          "weight_share_b": 0.01103,
+          "weight_share_delta_pp": -12.772,
+          "z_row_share": -26.88,
+          "delta_concentration": {
+            "n_distinct_queries": 483,
+            "top1_share_of_delta": 0.2235,
+            "top5_share_of_delta": 0.2865,
+            "hhi_of_delta": 0.0537,
+            "top_queries": [
+              {
+                "query": "请帮我生成一个视频：美女，比例为1:1。",
+                "delta": -651.13
+              },
+              {
+                "query": "脱缰凯新校长情景剧全集",
+                "delta": -57.5
+              },
+              {
+                "query": "有视频吗",
+                "delta": -46.59
+              },
+              {
+                "query": "「AI视频」一家三口温馨比心",
+                "delta": -41.37
+              },
+              {
+                "query": "「AI视频」活久见之猫咪亲亲",
+                "delta": -38.06
+              }
+            ]
+          }
+        },
+        {
+          "label": "BARE_TITLE_LOOKUP",
+          "rows_a": 608,
+          "rows_b": 8655,
+          "row_share_a": 0.31389,
+          "row_share_b": 0.43281,
+          "row_share_delta_pp": 11.893,
+          "weight_share_a": 0.32851,
+          "weight_share_b": 0.38342,
+          "weight_share_delta_pp": 5.491,
+          "z_row_share": 10.12,
+          "delta_concentration": {
+            "n_distinct_queries": 7130,
+            "top1_share_of_delta": 0.0218,
+            "top5_share_of_delta": 0.0674,
+            "hhi_of_delta": 0.0019,
+            "top_queries": [
+              {
+                "query": "早春晴朗电视剧",
+                "delta": -287.78
+              },
+              {
+                "query": "以法之名",
+                "delta": 222.8
+              },
+              {
+                "query": "逆爱",
+                "delta": 187.35
+              },
+              {
+                "query": "什么电影",
+                "delta": -108.17
+              },
+              {
+                "query": "《早春晴朗》电视剧",
+                "delta": -81.93
+              }
+            ]
+          }
+        },
+        {
+          "label": "PLOT_SYNOPSIS_ENDING",
+          "rows_a": 86,
+          "rows_b": 184,
+          "row_share_a": 0.0444,
+          "row_share_b": 0.0092,
+          "row_share_delta_pp": -3.52,
+          "weight_share_a": 0.03861,
+          "weight_share_b": 0.00689,
+          "weight_share_delta_pp": -3.172,
+          "z_row_share": -13.41,
+          "delta_concentration": {
+            "n_distinct_queries": 266,
+            "top1_share_of_delta": 0.0443,
+            "top5_share_of_delta": 0.1948,
+            "hhi_of_delta": 0.0148,
+            "top_queries": [
+              {
+                "query": "《醒来》的结局是什么",
+                "delta": -40.34
+              },
+              {
+                "query": "他为什么依然单身剧情简介",
+                "delta": -40.19
+              },
+              {
+                "query": "《醒来》的剧情简介是什么",
+                "delta": -34.28
+              },
+              {
+                "query": "《醒来》大结局是什么",
+                "delta": -33.47
+              },
+              {
+                "query": "醒来剧情介绍",
+                "delta": -28.99
+              }
+            ]
+          }
+        },
+        {
+          "label": "IDENTIFY_TITLE_FROM_FRAGMENT",
+          "rows_a": 65,
+          "rows_b": 41,
+          "row_share_a": 0.03356,
+          "row_share_b": 0.00205,
+          "row_share_delta_pp": -3.151,
+          "weight_share_a": 0.03203,
+          "weight_share_b": 0.00101,
+          "weight_share_delta_pp": -3.101,
+          "z_row_share": -19.09,
+          "delta_concentration": {
+            "n_distinct_queries": 106,
+            "top1_share_of_delta": 0.1338,
+            "top5_share_of_delta": 0.3039,
+            "hhi_of_delta": 0.0342,
+            "top_queries": [
+              {
+                "query": "帝工企业犯罪组织是什么",
+                "delta": -88.42
+              },
+              {
+                "query": "这个剧名是什么啊",
+                "delta": -48.23
+              },
+              {
+                "query": "牛来是什么电影？",
+                "delta": -24.12
+              },
+              {
+                "query": "这是什么电影？",
+                "delta": -21.68
+              },
+              {
+                "query": "这是哪部电影",
+                "delta": -18.33
+              }
+            ]
+          }
+        },
+        {
+          "label": "BROADCAST_FACTS",
+          "rows_a": 58,
+          "rows_b": 207,
+          "row_share_a": 0.02994,
+          "row_share_b": 0.01035,
+          "row_share_delta_pp": -1.959,
+          "weight_share_a": 0.02804,
+          "weight_share_b": 0.00749,
+          "weight_share_delta_pp": -2.055,
+          "z_row_share": -7.54,
+          "delta_concentration": {
+            "n_distinct_queries": 256,
+            "top1_share_of_delta": 0.1367,
+            "top5_share_of_delta": 0.2312,
+            "hhi_of_delta": 0.0279,
+            "top_queries": [
+              {
+                "query": "电视剧重器一共多少集",
+                "delta": -96.46
+              },
+              {
+                "query": "第几集",
+                "delta": -18.41
+              },
+              {
+                "query": "百家真人生活秀是什么",
+                "delta": -17.78
+              },
+              {
+                "query": "图片是第几集",
+                "delta": -16.08
+              },
+              {
+                "query": "梓渝有哪些代表作品",
+                "delta": -14.4
+              }
+            ]
+          }
+        },
+        {
+          "label": "WORK_CAST_LOOKUP",
+          "rows_a": 61,
+          "rows_b": 306,
+          "row_share_a": 0.03149,
+          "row_share_b": 0.0153,
+          "row_share_delta_pp": -1.619,
+          "weight_share_a": 0.03076,
+          "weight_share_b": 0.01163,
+          "weight_share_delta_pp": -1.913,
+          "z_row_share": -5.3,
+          "delta_concentration": {
+            "n_distinct_queries": 345,
+            "top1_share_of_delta": 0.0782,
+            "top5_share_of_delta": 0.237,
+            "hhi_of_delta": 0.02,
+            "top_queries": [
+              {
+                "query": "给我《醒来》的完整演员表",
+                "delta": -65.77
+              },
+              {
+                "query": "醒来演员表",
+                "delta": -62.64
+              },
+              {
+                "query": "给我提供《醒来》的完整演员表",
+                "delta": -28.92
+              },
+              {
+                "query": "电视剧醒来全部演员表",
+                "delta": -22.93
+              },
+              {
+                "query": "重器演员表",
+                "delta": -18.96
+              }
+            ]
+          }
+        },
+        {
+          "label": "SITE_PORTAL_NAV",
+          "rows_a": 62,
+          "rows_b": 1024,
+          "row_share_a": 0.03201,
+          "row_share_b": 0.05121,
+          "row_share_delta_pp": 1.92,
+          "weight_share_a": 0.04117,
+          "weight_share_b": 0.05487,
+          "weight_share_delta_pp": 1.37,
+          "z_row_share": 3.72,
+          "delta_concentration": {
+            "n_distinct_queries": 800,
+            "top1_share_of_delta": 0.1285,
+            "top5_share_of_delta": 0.2277,
+            "hhi_of_delta": 0.0227,
+            "top_queries": [
+              {
+                "query": "视频",
+                "delta": -204.92
+              },
+              {
+                "query": "《影视》续集",
+                "delta": -71.57
+              },
+              {
+                "query": "在线观看网址",
+                "delta": -32.15
+              },
+              {
+                "query": "抖音",
+                "delta": 30.45
+              },
+              {
+                "query": "我想看刘一朵的视频",
+                "delta": -24.12
+              }
+            ]
+          }
+        },
+        {
+          "label": "PLATFORM_ACCOUNT_SUPPORT",
+          "rows_a": 30,
+          "rows_b": 58,
+          "row_share_a": 0.01549,
+          "row_share_b": 0.0029,
+          "row_share_delta_pp": -1.259,
+          "weight_share_a": 0.01425,
+          "weight_share_b": 0.00158,
+          "weight_share_delta_pp": -1.267,
+          "z_row_share": -8.37,
+          "delta_concentration": {
+            "n_distinct_queries": 78,
+            "top1_share_of_delta": 0.1523,
+            "top5_share_of_delta": 0.2792,
+            "hhi_of_delta": 0.0439,
+            "top_queries": [
+              {
+                "query": "你别控制我抖音",
+                "delta": -48.23
+              },
+              {
+                "query": "我最近搜索了哪些视频",
+                "delta": -16.08
+              },
+              {
+                "query": "抖音极速版红包福袋抢不到了怎么回事",
+                "delta": -8.04
+              },
+              {
+                "query": "我登录抖音的时候，用手机号注册登录进去了，但是呢，他一直要我身份验证，也不让我跳过身份验证",
+                "delta": -8.04
+              },
+              {
+                "query": "我的抖音视频播放量有1.7万，怎么没收益？",
+                "delta": -8.04
+              }
+            ]
+          }
+        },
+        {
+          "label": "PERSON_TO_WORKS",
+          "rows_a": 26,
+          "rows_b": 144,
+          "row_share_a": 0.01342,
+          "row_share_b": 0.0072,
+          "row_share_delta_pp": -0.622,
+          "weight_share_a": 0.0133,
+          "weight_share_b": 0.00348,
+          "weight_share_delta_pp": -0.982,
+          "z_row_share": -2.98,
+          "delta_concentration": {
+            "n_distinct_queries": 151,
+            "top1_share_of_delta": 0.1483,
+            "top5_share_of_delta": 0.3358,
+            "hhi_of_delta": 0.0418,
+            "top_queries": [
+              {
+                "query": "吴谨言的代表作品有哪些",
+                "delta": -49.75
+              },
+              {
+                "query": "徐正溪最新出演的作品有哪些",
+                "delta": -17.42
+              },
+              {
+                "query": "古天乐电影大全",
+                "delta": -16.08
+              },
+              {
+                "query": "刘宇宁的代表作品有哪些",
+                "delta": -15.95
+              },
+              {
+                "query": "叶童的代表作品有哪些",
+                "delta": -13.48
+              }
+            ]
+          }
+        },
+        {
+          "label": "APP_INSTALL_SUPPORT",
+          "rows_a": 21,
+          "rows_b": 289,
+          "row_share_a": 0.01084,
+          "row_share_b": 0.01445,
+          "row_share_delta_pp": 0.361,
+          "weight_share_a": 0.00819,
+          "weight_share_b": 0.01381,
+          "weight_share_delta_pp": 0.563,
+          "z_row_share": 1.29,
+          "delta_concentration": {
+            "n_distinct_queries": 252,
+            "top1_share_of_delta": 0.0377,
+            "top5_share_of_delta": 0.1568,
+            "hhi_of_delta": 0.0143,
+            "top_queries": [
+              {
+                "query": "下载抖音",
+                "delta": -13.38
+              },
+              {
+                "query": "快播",
+                "delta": 13.3
+              },
+              {
+                "query": "看片",
+                "delta": 10.34
+              },
+              {
+                "query": "生成视频的网站免费",
+                "delta": -9.7
+              },
+              {
+                "query": "免费电影",
+                "delta": 8.91
+              }
+            ]
+          }
+        },
+        {
+          "label": "ACCESS_SPECIFIC_EPISODE",
+          "rows_a": 25,
+          "rows_b": 447,
+          "row_share_a": 0.01291,
+          "row_share_b": 0.02235,
+          "row_share_delta_pp": 0.945,
+          "weight_share_a": 0.01558,
+          "weight_share_b": 0.01999,
+          "weight_share_delta_pp": 0.441,
+          "z_row_share": 2.74,
+          "delta_concentration": {
+            "n_distinct_queries": 468,
+            "top1_share_of_delta": 0.1469,
+            "top5_share_of_delta": 0.2564,
+            "hhi_of_delta": 0.0292,
+            "top_queries": [
+              {
+                "query": "有没有第1集的具体剧情视频",
+                "delta": -104.5
+              },
+              {
+                "query": "黑罗刹并非被杀死而是被活活烧死而在大理寺少卿游的第27集中也提到过黑罗刹被火火烧死的原因",
+                "delta": -24.12
+              },
+              {
+                "query": "喜羊羊奇侠大营救的金筷子长老没想到那个和一条蛇长老虽然他们是陷害喜羊羊的最终凶手和幕后黑手不过他们的戏码不错嘛在第五十集演出来的那个苦肉计还致敬了老三国这也是让观众们觉得非常不错的地方像极了周瑜打黄盖老三国的第35集致敬盗了也因此很多人喜欢",
+                "delta": -24.12
+              },
+              {
+                "query": "主角电视剧40集观看完整版高清",
+                "delta": 17.17
+              },
+              {
+                "query": "家业电视剧1-40集完整版",
+                "delta": 12.44
+              }
+            ]
+          }
+        },
+        {
+          "label": "CHANNEL_RESOURCE_ACCESS",
+          "rows_a": 27,
+          "rows_b": 308,
+          "row_share_a": 0.01394,
+          "row_share_b": 0.0154,
+          "row_share_delta_pp": 0.146,
+          "weight_share_a": 0.01633,
+          "weight_share_b": 0.01513,
+          "weight_share_delta_pp": -0.12,
+          "z_row_share": 0.5,
+          "delta_concentration": {
+            "n_distinct_queries": 333,
+            "top1_share_of_delta": 0.1654,
+            "top5_share_of_delta": 0.3134,
+            "hhi_of_delta": 0.0386,
+            "top_queries": [
+              {
+                "query": "日本免费高清观看电视剧百度云下载",
+                "delta": -103.94
+              },
+              {
+                "query": "YY影院在线观看免费观看电视剧百度",
+                "delta": -34.13
+              },
+              {
+                "query": "千香免费观看全集电视剧百度网",
+                "delta": 20.36
+              },
+              {
+                "query": "法国空姐2019(多塞尔航空)抢先版百度",
+                "delta": 19.61
+              },
+              {
+                "query": "早春晴朗1-24集完整百度云",
+                "delta": -18.96
+              }
+            ]
+          }
+        },
+        {
+          "label": "ADULT_RESTRICTED_ACCESS",
+          "rows_a": 22,
+          "rows_b": 192,
+          "row_share_a": 0.01136,
+          "row_share_b": 0.0096,
+          "row_share_delta_pp": -0.176,
+          "weight_share_a": 0.0073,
+          "weight_share_b": 0.00655,
+          "weight_share_delta_pp": -0.076,
+          "z_row_share": -0.75,
+          "delta_concentration": {
+            "n_distinct_queries": 175,
+            "top1_share_of_delta": 0.0492,
+            "top5_share_of_delta": 0.1779,
+            "hhi_of_delta": 0.0193,
+            "top_queries": [
+              {
+                "query": "灰太狼和红太狼拦住刀疤脸人贩子和瘦高个人贩子和矮胖子人贩子和男人贩子和女人贩子终于成功救下被困的小灰灰再来一遍",
+                "delta": -12.71
+              },
+              {
+                "query": "打屁股",
+                "delta": 9.11
+              },
+              {
+                "query": "暴虐龙放屁大树角视",
+                "delta": -8.04
+              },
+              {
+                "query": "日本夏凡深夜剧",
+                "delta": -8.04
+              },
+              {
+                "query": "买玉交学费的搞笑视频",
+                "delta": -8.04
+              }
+            ]
+          }
+        }
+      ],
+      "emergent": [
+        {
+          "label": "ACCESS_WATCH",
+          "rows_a": 226,
+          "rows_b": 7181,
+          "row_share_a": 0.11668,
+          "row_share_b": 0.3591,
+          "row_share_delta_pp": 24.243,
+          "weight_share_a": 0.11447,
+          "weight_share_b": 0.38819,
+          "weight_share_delta_pp": 27.372,
+          "z_row_share": 21.54,
+          "delta_concentration": {
+            "n_distinct_queries": 7087,
+            "top1_share_of_delta": 0.022,
+            "top5_share_of_delta": 0.0704,
+            "hhi_of_delta": 0.0021,
+            "top_queries": [
+              {
+                "query": "以法之名张译电视剧在线观看免费高清",
+                "delta": 217.72
+              },
+              {
+                "query": "书卷一梦电视剧免费观看完整版",
+                "delta": 175.32
+              },
+              {
+                "query": "日剧韩剧在线观看大全",
+                "delta": -110.58
+              },
+              {
+                "query": "桃花映江山电视剧免费观看",
+                "delta": 104.86
+              },
+              {
+                "query": "早春晴朗电视剧免费观看全集在线播放男主叫什么",
+                "delta": -89.65
+              }
+            ]
+          }
+        },
+        {
+          "label": "LIVE_TV_SCHEDULE",
+          "rows_a": 20,
+          "rows_b": 560,
+          "row_share_a": 0.01033,
+          "row_share_b": 0.028,
+          "row_share_delta_pp": 1.768,
+          "weight_share_a": 0.00915,
+          "weight_share_b": 0.07223,
+          "weight_share_delta_pp": 6.308,
+          "z_row_share": 4.63,
+          "delta_concentration": {
+            "n_distinct_queries": 447,
+            "top1_share_of_delta": 0.1825,
+            "top5_share_of_delta": 0.358,
+            "hhi_of_delta": 0.0484,
+            "top_queries": [
+              {
+                "query": "cctv5在线直播",
+                "delta": 272.88
+              },
+              {
+                "query": "cctv5",
+                "delta": 80.21
+              },
+              {
+                "query": "中央五台cctv5在线直播",
+                "delta": 73.2
+              },
+              {
+                "query": "cctv5节目直播",
+                "delta": 54.46
+              },
+              {
+                "query": "CCTV5",
+                "delta": 54.39
+              }
+            ]
+          }
+        },
+        {
+          "label": "UNCENSORED_VERSION",
+          "rows_a": 1,
+          "rows_b": 29,
+          "row_share_a": 0.00052,
+          "row_share_b": 0.00145,
+          "row_share_delta_pp": 0.093,
+          "weight_share_a": 0.0004,
+          "weight_share_b": 0.00088,
+          "weight_share_delta_pp": 0.048,
+          "z_row_share": 1.06,
+          "delta_concentration": {
+            "n_distinct_queries": 29,
+            "top1_share_of_delta": 0.3125,
+            "top5_share_of_delta": 0.5628,
+            "hhi_of_delta": 0.1294,
+            "top_queries": [
+              {
+                "query": "范冰冰黎明原版和删减版区别",
+                "delta": -8.04
+              },
+              {
+                "query": "校园之外美剧第一季无删减在线看",
+                "delta": 3.45
+              },
+              {
+                "query": "权力的游戏第一季无删减美剧",
+                "delta": 1.06
+              },
+              {
+                "query": "为人民服务中文版完整版",
+                "delta": 0.97
+              },
+              {
+                "query": "斯巴达克斯未测减除版",
+                "delta": 0.95
+              }
+            ]
+          }
+        }
+      ],
+      "receded": [],
+      "too_thin_to_compare": []
+    },
+    "bu_leaf_name": {
+      "comparable": true,
+      "snapshot_a": "AI助手",
+      "snapshot_b": "搜索",
+      "rows_a": 1937,
+      "rows_b": 19997,
+      "n_classes": 19,
+      "cramers_v": 0.3915,
+      "total_variation_weight": 0.4458,
+      "total_variation_rows": 0.3809,
+      "n_comparisons": 11,
+      "stable": [
+        {
+          "label": "影视动漫剧情信息查询",
+          "rows_a": 489,
+          "rows_b": 366,
+          "row_share_a": 0.25245,
+          "row_share_b": 0.0183,
+          "row_share_delta_pp": -23.415,
+          "weight_share_a": 0.23708,
+          "weight_share_b": 0.01103,
+          "weight_share_delta_pp": -22.605,
+          "z_row_share": -50.84,
+          "delta_concentration": {
+            "n_distinct_queries": 838,
+            "top1_share_of_delta": 0.0211,
+            "top5_share_of_delta": 0.0802,
+            "hhi_of_delta": 0.0036,
+            "top_queries": [
+              {
+                "query": "有没有第1集的具体剧情视频",
+                "delta": -104.5
+              },
+              {
+                "query": "电视剧重器一共多少集",
+                "delta": -96.46
+              },
+              {
+                "query": "帝工企业犯罪组织是什么",
+                "delta": -88.42
+              },
+              {
+                "query": "悬案原型案件是什么",
+                "delta": -56.27
+              },
+              {
+                "query": "他是谁",
+                "delta": -52.39
+              }
+            ]
+          }
+        },
+        {
+          "label": "视频内容查询与生成",
+          "rows_a": 238,
+          "rows_b": 655,
+          "row_share_a": 0.12287,
+          "row_share_b": 0.03275,
+          "row_share_delta_pp": -9.012,
+          "weight_share_a": 0.15095,
+          "weight_share_b": 0.02714,
+          "weight_share_delta_pp": -12.381,
+          "z_row_share": -19.16,
+          "delta_concentration": {
+            "n_distinct_queries": 756,
+            "top1_share_of_delta": 0.1914,
+            "top5_share_of_delta": 0.2887,
+            "hhi_of_delta": 0.0428,
+            "top_queries": [
+              {
+                "query": "请帮我生成一个视频：美女，比例为1:1。",
+                "delta": -651.13
+              },
+              {
+                "query": "视频",
+                "delta": -204.92
+              },
+              {
+                "query": "有视频吗",
+                "delta": -46.59
+              },
+              {
+                "query": "「AI视频」一家三口温馨比心",
+                "delta": -41.37
+              },
+              {
+                "query": "「AI视频」活久见之猫咪亲亲",
+                "delta": -38.06
+              }
+            ]
+          }
+        },
+        {
+          "label": "影视剧演员表查询",
+          "rows_a": 62,
+          "rows_b": 278,
+          "row_share_a": 0.03201,
+          "row_share_b": 0.0139,
+          "row_share_delta_pp": -1.811,
+          "weight_share_a": 0.03087,
+          "weight_share_b": 0.00973,
+          "weight_share_delta_pp": -2.114,
+          "z_row_share": -6.16,
+          "delta_concentration": {
+            "n_distinct_queries": 317,
+            "top1_share_of_delta": 0.0817,
+            "top5_share_of_delta": 0.2475,
+            "hhi_of_delta": 0.0213,
+            "top_queries": [
+              {
+                "query": "给我《醒来》的完整演员表",
+                "delta": -65.77
+              },
+              {
+                "query": "醒来演员表",
+                "delta": -62.64
+              },
+              {
+                "query": "给我提供《醒来》的完整演员表",
+                "delta": -28.92
+              },
+              {
+                "query": "电视剧醒来全部演员表",
+                "delta": -22.93
+              },
+              {
+                "query": "重器演员表",
+                "delta": -18.96
+              }
+            ]
+          }
+        },
+        {
+          "label": "动漫资源与剧情查询",
+          "rows_a": 162,
+          "rows_b": 1330,
+          "row_share_a": 0.08363,
+          "row_share_b": 0.06651,
+          "row_share_delta_pp": -1.712,
+          "weight_share_a": 0.07021,
+          "weight_share_b": 0.05041,
+          "weight_share_delta_pp": -1.98,
+          "z_row_share": -2.86,
+          "delta_concentration": {
+            "n_distinct_queries": 1195,
+            "top1_share_of_delta": 0.0426,
+            "top5_share_of_delta": 0.0884,
+            "hhi_of_delta": 0.0048,
+            "top_queries": [
+              {
+                "query": "好看的动画片有什么？",
+                "delta": -93.73
+              },
+              {
+                "query": "囧次元",
+                "delta": 32.81
+              },
+              {
+                "query": "这是什么动漫",
+                "delta": -27.12
+              },
+              {
+                "query": "《少女的秘密心事》动漫",
+                "delta": -20.35
+              },
+              {
+                "query": "小猪佩奇",
+                "delta": -20.21
+              }
+            ]
+          }
+        },
+        {
+          "label": "电视剧与短剧查询推荐",
+          "rows_a": 97,
+          "rows_b": 1089,
+          "row_share_a": 0.05008,
+          "row_share_b": 0.05446,
+          "row_share_delta_pp": 0.438,
+          "weight_share_a": 0.06476,
+          "weight_share_b": 0.04772,
+          "weight_share_delta_pp": -1.704,
+          "z_row_share": 0.81,
+          "delta_concentration": {
+            "n_distinct_queries": 1092,
+            "top1_share_of_delta": 0.134,
+            "top5_share_of_delta": 0.2556,
+            "hhi_of_delta": 0.0243,
+            "top_queries": [
+              {
+                "query": "早春晴朗电视剧",
+                "delta": -287.78
+              },
+              {
+                "query": "《早春晴朗》电视剧",
+                "delta": -81.93
+              },
+              {
+                "query": "电视剧奸细",
+                "delta": -72.35
+              },
+              {
+                "query": "《影视》续集",
+                "delta": -71.57
+              },
+              {
+                "query": "富婆爱上穷小伙影视剧全集",
+                "delta": -35.24
+              }
+            ]
+          }
+        },
+        {
+          "label": "电影资源查询（合并后目标）",
+          "rows_a": 123,
+          "rows_b": 1252,
+          "row_share_a": 0.0635,
+          "row_share_b": 0.06261,
+          "row_share_delta_pp": -0.089,
+          "weight_share_a": 0.0642,
+          "weight_share_b": 0.05032,
+          "weight_share_delta_pp": -1.388,
+          "z_row_share": -0.15,
+          "delta_concentration": {
+            "n_distinct_queries": 1133,
+            "top1_share_of_delta": 0.0521,
+            "top5_share_of_delta": 0.1368,
+            "hhi_of_delta": 0.0077,
+            "top_queries": [
+              {
+                "query": "什么电影",
+                "delta": -108.17
+              },
+              {
+                "query": "这是什么电影",
+                "delta": -74.51
+              },
+              {
+                "query": "二战片《尼曼行动》",
+                "delta": -48.23
+              },
+              {
+                "query": "牛来 电影",
+                "delta": -28.7
+              },
+              {
+                "query": "美国动作片《一击》",
+                "delta": -24.21
+              }
+            ]
+          }
+        },
+        {
+          "label": "影视视频资源查询（合并后目标）",
+          "rows_a": 213,
+          "rows_b": 2393,
+          "row_share_a": 0.10996,
+          "row_share_b": 0.11967,
+          "row_share_delta_pp": 0.97,
+          "weight_share_a": 0.10767,
+          "weight_share_b": 0.09595,
+          "weight_share_delta_pp": -1.172,
+          "z_row_share": 1.26,
+          "delta_concentration": {
+            "n_distinct_queries": 1988,
+            "top1_share_of_delta": 0.0201,
+            "top5_share_of_delta": 0.0765,
+            "hhi_of_delta": 0.0036,
+            "top_queries": [
+              {
+                "query": "她是谁",
+                "delta": -78.55
+              },
+              {
+                "query": "千香",
+                "delta": 61.97
+              },
+              {
+                "query": "花开锦绣",
+                "delta": -54.41
+              },
+              {
+                "query": "我爱你",
+                "delta": -53.29
+              },
+              {
+                "query": "锦绣芳华",
+                "delta": 50.81
+              }
+            ]
+          }
+        },
+        {
+          "label": "短剧免费观看查询",
+          "rows_a": 29,
+          "rows_b": 148,
+          "row_share_a": 0.01497,
+          "row_share_b": 0.0074,
+          "row_share_delta_pp": -0.757,
+          "weight_share_a": 0.01695,
+          "weight_share_b": 0.00809,
+          "weight_share_delta_pp": -0.887,
+          "z_row_share": -3.56,
+          "delta_concentration": {
+            "n_distinct_queries": 168,
+            "top1_share_of_delta": 0.1177,
+            "top5_share_of_delta": 0.3876,
+            "hhi_of_delta": 0.0411,
+            "top_queries": [
+              {
+                "query": "脱缰凯新校长情景剧全集",
+                "delta": -57.5
+              },
+              {
+                "query": "莫离电视剧",
+                "delta": 41.11
+              },
+              {
+                "query": "短剧",
+                "delta": -34.52
+              },
+              {
+                "query": "乡村情景剧相亲片段",
+                "delta": -32.15
+              },
+              {
+                "query": "养育之恩大于天短剧合集",
+                "delta": -24.12
+              }
+            ]
+          }
+        },
+        {
+          "label": "查询影视节目观看入口",
+          "rows_a": 42,
+          "rows_b": 581,
+          "row_share_a": 0.02168,
+          "row_share_b": 0.02905,
+          "row_share_delta_pp": 0.737,
+          "weight_share_a": 0.01949,
+          "weight_share_b": 0.02399,
+          "weight_share_delta_pp": 0.45,
+          "z_row_share": 1.86,
+          "delta_concentration": {
+            "n_distinct_queries": 474,
+            "top1_share_of_delta": 0.032,
+            "top5_share_of_delta": 0.1263,
+            "hhi_of_delta": 0.0091,
+            "top_queries": [
+              {
+                "query": "红星照耀中国",
+                "delta": -25.81
+              },
+              {
+                "query": "#百家知识分享季#",
+                "delta": -21.13
+              },
+              {
+                "query": "法国空姐2019(多塞尔航空)抢先版百度",
+                "delta": 19.61
+              },
+              {
+                "query": "我要看",
+                "delta": -18.85
+              },
+              {
+                "query": "奥德赛",
+                "delta": -16.38
+              }
+            ]
+          }
+        },
+        {
+          "label": "日韩泰剧在线观看",
+          "rows_a": 64,
+          "rows_b": 872,
+          "row_share_a": 0.03304,
+          "row_share_b": 0.04361,
+          "row_share_delta_pp": 1.057,
+          "weight_share_a": 0.03403,
+          "weight_share_b": 0.038,
+          "weight_share_delta_pp": 0.396,
+          "z_row_share": 2.2,
+          "delta_concentration": {
+            "n_distinct_queries": 889,
+            "top1_share_of_delta": 0.0806,
+            "top5_share_of_delta": 0.1704,
+            "hhi_of_delta": 0.0122,
+            "top_queries": [
+              {
+                "query": "日剧韩剧在线观看大全",
+                "delta": -110.58
+              },
+              {
+                "query": "爱情契约泰剧免费观看",
+                "delta": 36.21
+              },
+              {
+                "query": "日韩剧欧美在线观看电视剧",
+                "delta": -35.33
+              },
+              {
+                "query": "在线观看免费高清完整版韩剧",
+                "delta": -27.3
+              },
+              {
+                "query": "检察官的提案韩剧免费观看全集",
+                "delta": 24.45
+              }
+            ]
+          }
+        },
+        {
+          "label": "视频平台官方应用下载与官网入口查询",
+          "rows_a": 66,
+          "rows_b": 423,
+          "row_share_a": 0.03407,
+          "row_share_b": 0.02115,
+          "row_share_delta_pp": -1.292,
+          "weight_share_a": 0.0305,
+          "weight_share_b": 0.02704,
+          "weight_share_delta_pp": -0.346,
+          "z_row_share": -3.68,
+          "delta_concentration": {
+            "n_distinct_queries": 395,
+            "top1_share_of_delta": 0.0546,
+            "top5_share_of_delta": 0.1501,
+            "hhi_of_delta": 0.0113,
+            "top_queries": [
+              {
+                "query": "你别控制我抖音",
+                "delta": -48.23
+              },
+              {
+                "query": "抖音",
+                "delta": 30.45
+              },
+              {
+                "query": "哔哩哔哩",
+                "delta": 23.74
+              },
+              {
+                "query": "链接",
+                "delta": -15.8
+              },
+              {
+                "query": "bilibili",
+                "delta": 14.27
+              }
+            ]
+          }
+        }
+      ],
+      "emergent": [
+        {
+          "label": "免费电视剧全集在线观看查询",
+          "rows_a": 88,
+          "rows_b": 3313,
+          "row_share_a": 0.04543,
+          "row_share_b": 0.16567,
+          "row_share_delta_pp": 12.024,
+          "weight_share_a": 0.05256,
+          "weight_share_b": 0.19945,
+          "weight_share_delta_pp": 14.689,
+          "z_row_share": 13.96,
+          "delta_concentration": {
+            "n_distinct_queries": 3241,
+            "top1_share_of_delta": 0.035,
+            "top5_share_of_delta": 0.1117,
+            "hhi_of_delta": 0.0046,
+            "top_queries": [
+              {
+                "query": "书卷一梦电视剧免费观看完整版",
+                "delta": 175.32
+              },
+              {
+                "query": "桃花映江山电视剧免费观看",
+                "delta": 104.86
+              },
+              {
+                "query": "日本免费高清观看电视剧百度云下载",
+                "delta": -103.94
+              },
+              {
+                "query": "早春晴朗电视剧免费观看全集在线播放男主叫什么",
+                "delta": -89.65
+              },
+              {
+                "query": "锦绣芳华电视剧在线观看免费高清版全集",
+                "delta": 85.33
+              }
+            ]
+          }
+        },
+        {
+          "label": "影视剧免费在线观看查询",
+          "rows_a": 10,
+          "rows_b": 467,
+          "row_share_a": 0.00516,
+          "row_share_b": 0.02335,
+          "row_share_delta_pp": 1.819,
+          "weight_share_a": 0.00387,
+          "weight_share_b": 0.06158,
+          "weight_share_delta_pp": 5.771,
+          "z_row_share": 5.24,
+          "delta_concentration": {
+            "n_distinct_queries": 445,
+            "top1_share_of_delta": 0.1713,
+            "top5_share_of_delta": 0.4451,
+            "hhi_of_delta": 0.065,
+            "top_queries": [
+              {
+                "query": "以法之名",
+                "delta": 222.8
+              },
+              {
+                "query": "以法之名张译电视剧在线观看免费高清",
+                "delta": 217.72
+              },
+              {
+                "query": "以法之名在线观看完整版免费",
+                "delta": 52.98
+              },
+              {
+                "query": "以法之名全集",
+                "delta": 44.97
+              },
+              {
+                "query": "检察官的提案",
+                "delta": 40.37
+              }
+            ]
+          }
+        },
+        {
+          "label": "CCTV5直播观看（合并后目标）",
+          "rows_a": 15,
+          "rows_b": 457,
+          "row_share_a": 0.00774,
+          "row_share_b": 0.02285,
+          "row_share_delta_pp": 1.511,
+          "weight_share_a": 0.00716,
+          "weight_share_b": 0.06298,
+          "weight_share_delta_pp": 5.582,
+          "z_row_share": 4.38,
+          "delta_concentration": {
+            "n_distinct_queries": 385,
+            "top1_share_of_delta": 0.2071,
+            "top5_share_of_delta": 0.4061,
+            "hhi_of_delta": 0.0603,
+            "top_queries": [
+              {
+                "query": "cctv5在线直播",
+                "delta": 272.88
+              },
+              {
+                "query": "cctv5",
+                "delta": 80.21
+              },
+              {
+                "query": "中央五台cctv5在线直播",
+                "delta": 73.2
+              },
+              {
+                "query": "cctv5节目直播",
+                "delta": 54.46
+              },
+              {
+                "query": "CCTV5",
+                "delta": 54.39
+              }
+            ]
+          }
+        },
+        {
+          "label": "影视文学动漫作品名称查询",
+          "rows_a": 142,
+          "rows_b": 2774,
+          "row_share_a": 0.07331,
+          "row_share_b": 0.13872,
+          "row_share_delta_pp": 6.541,
+          "weight_share_a": 0.06452,
+          "weight_share_b": 0.11435,
+          "weight_share_delta_pp": 4.982,
+          "z_row_share": 8.1,
+          "delta_concentration": {
+            "n_distinct_queries": 2091,
+            "top1_share_of_delta": 0.0216,
+            "top5_share_of_delta": 0.0867,
+            "hhi_of_delta": 0.0034,
+            "top_queries": [
+              {
+                "query": "努尔哈赤",
+                "delta": -71.07
+              },
+              {
+                "query": "藏锋",
+                "delta": -68.74
+              },
+              {
+                "query": "书卷一梦",
+                "delta": 67.29
+              },
+              {
+                "query": "色戒",
+                "delta": 42.66
+              },
+              {
+                "query": "桃花映江山",
+                "delta": 35.18
+              }
+            ]
+          }
+        },
+        {
+          "label": "查询《逆爱》电视剧在线观看资源（合并后目标）",
+          "rows_a": 6,
+          "rows_b": 363,
+          "row_share_a": 0.0031,
+          "row_share_b": 0.01815,
+          "row_share_delta_pp": 1.506,
+          "weight_share_a": 0.00209,
+          "weight_share_b": 0.04386,
+          "weight_share_delta_pp": 4.176,
+          "z_row_share": 4.92,
+          "delta_concentration": {
+            "n_distinct_queries": 358,
+            "top1_share_of_delta": 0.2068,
+            "top5_share_of_delta": 0.3871,
+            "hhi_of_delta": 0.0568,
+            "top_queries": [
+              {
+                "query": "逆爱",
+                "delta": 187.35
+              },
+              {
+                "query": "逆爱2025全集免费观看",
+                "delta": 67.87
+              },
+              {
+                "query": "逆爱台剧双男主电视剧免费观看全集高清",
+                "delta": 43.78
+              },
+              {
+                "query": "逆爱电视剧在线观看免费",
+                "delta": 28.48
+              },
+              {
+                "query": "逆爱双男主电视剧免费观看全集",
+                "delta": 23.25
+              }
+            ]
+          }
+        },
+        {
+          "label": "免费影视在线观看查询",
+          "rows_a": 51,
+          "rows_b": 1766,
+          "row_share_a": 0.02633,
+          "row_share_b": 0.08831,
+          "row_share_delta_pp": 6.198,
+          "weight_share_a": 0.02617,
+          "weight_share_b": 0.06466,
+          "weight_share_delta_pp": 3.849,
+          "z_row_share": 9.45,
+          "delta_concentration": {
+            "n_distinct_queries": 1703,
+            "top1_share_of_delta": 0.0197,
+            "top5_share_of_delta": 0.084,
+            "hhi_of_delta": 0.0038,
+            "top_queries": [
+              {
+                "query": "YY影院在线观看免费观看电视剧百度",
+                "delta": -34.13
+              },
+              {
+                "query": "在线观看网址",
+                "delta": -32.15
+              },
+              {
+                "query": "心动的信号9免费观看",
+                "delta": -32.15
+              },
+              {
+                "query": "猎虎3电影在线观看免费播放",
+                "delta": -24.12
+              },
+              {
+                "query": "《我的健身教练》完整版在线观看",
+                "delta": -23.33
+              }
+            ]
+          }
+        },
+        {
+          "label": "在线观看动漫全集（合并后目标）",
+          "rows_a": 35,
+          "rows_b": 1324,
+          "row_share_a": 0.01807,
+          "row_share_b": 0.06621,
+          "row_share_delta_pp": 4.814,
+          "weight_share_a": 0.01506,
+          "weight_share_b": 0.05344,
+          "weight_share_delta_pp": 3.837,
+          "z_row_share": 8.39,
+          "delta_concentration": {
+            "n_distinct_queries": 1269,
+            "top1_share_of_delta": 0.0182,
+            "top5_share_of_delta": 0.0796,
+            "hhi_of_delta": 0.0039,
+            "top_queries": [
+              {
+                "query": "乐园侵触之死亡岛第一季动漫在线观看",
+                "delta": -24.12
+              },
+              {
+                "query": "狮王凯撒纪录片全集",
+                "delta": -24.12
+              },
+              {
+                "query": "哪吒2魔童闹海免费观看完整版",
+                "delta": 22.5
+              },
+              {
+                "query": "吞噬星空免费观看全集在线高清",
+                "delta": 18.83
+              },
+              {
+                "query": "鬼灭之刃最新一集",
+                "delta": -16.08
+              }
+            ]
+          }
+        },
+        {
+          "label": "电视节目表查询",
+          "rows_a": 5,
+          "rows_b": 146,
+          "row_share_a": 0.00258,
+          "row_share_b": 0.0073,
+          "row_share_delta_pp": 0.472,
+          "weight_share_a": 0.00187,
+          "weight_share_b": 0.0103,
+          "weight_share_delta_pp": 0.844,
+          "z_row_share": 2.4,
+          "delta_concentration": {
+            "n_distinct_queries": 109,
+            "top1_share_of_delta": 0.1902,
+            "top5_share_of_delta": 0.4854,
+            "hhi_of_delta": 0.0762,
+            "top_queries": [
+              {
+                "query": "cctv5 节目表",
+                "delta": 41.26
+              },
+              {
+                "query": "cctv5节目表",
+                "delta": 37.05
+              },
+              {
+                "query": "CCTv5十台节目表",
+                "delta": 10.92
+              },
+              {
+                "query": "哪个卫视看",
+                "delta": -8.04
+              },
+              {
+                "query": "江苏电视台今天节目预告",
+                "delta": -8.04
+              }
+            ]
+          }
+        }
+      ],
+      "receded": [],
+      "too_thin_to_compare": []
+    },
+    "bu_family_final": {
+      "comparable": true,
+      "snapshot_a": "AI助手",
+      "snapshot_b": "搜索",
+      "rows_a": 1937,
+      "rows_b": 19997,
+      "n_classes": 16,
+      "cramers_v": 0.353,
+      "total_variation_weight": 0.4458,
+      "total_variation_rows": 0.3809,
+      "n_comparisons": 9,
+      "stable": [
+        {
+          "label": "#4 影视动漫剧情与演员表查询",
+          "rows_a": 580,
+          "rows_b": 792,
+          "row_share_a": 0.29943,
+          "row_share_b": 0.03961,
+          "row_share_delta_pp": -25.983,
+          "weight_share_a": 0.2849,
+          "weight_share_b": 0.02884,
+          "weight_share_delta_pp": -25.606,
+          "z_row_share": -45.09,
+          "delta_concentration": {
+            "n_distinct_queries": 1323,
+            "top1_share_of_delta": 0.0167,
+            "top5_share_of_delta": 0.0668,
+            "hhi_of_delta": 0.0029,
+            "top_queries": [
+              {
+                "query": "有没有第1集的具体剧情视频",
+                "delta": -104.5
+              },
+              {
+                "query": "电视剧重器一共多少集",
+                "delta": -96.46
+              },
+              {
+                "query": "帝工企业犯罪组织是什么",
+                "delta": -88.42
+              },
+              {
+                "query": "给我《醒来》的完整演员表",
+                "delta": -65.77
+              },
+              {
+                "query": "醒来演员表",
+                "delta": -62.64
+              }
+            ]
+          }
+        },
+        {
+          "label": "#2 视频内容查询与生成",
+          "rows_a": 238,
+          "rows_b": 655,
+          "row_share_a": 0.12287,
+          "row_share_b": 0.03275,
+          "row_share_delta_pp": -9.012,
+          "weight_share_a": 0.15095,
+          "weight_share_b": 0.02714,
+          "weight_share_delta_pp": -12.381,
+          "z_row_share": -19.16,
+          "delta_concentration": {
+            "n_distinct_queries": 756,
+            "top1_share_of_delta": 0.1914,
+            "top5_share_of_delta": 0.2887,
+            "hhi_of_delta": 0.0428,
+            "top_queries": [
+              {
+                "query": "请帮我生成一个视频：美女，比例为1:1。",
+                "delta": -651.13
+              },
+              {
+                "query": "视频",
+                "delta": -204.92
+              },
+              {
+                "query": "有视频吗",
+                "delta": -46.59
+              },
+              {
+                "query": "「AI视频」一家三口温馨比心",
+                "delta": -41.37
+              },
+              {
+                "query": "「AI视频」活久见之猫咪亲亲",
+                "delta": -38.06
+              }
+            ]
+          }
+        },
+        {
+          "label": "#11 动漫资源与剧情查询",
+          "rows_a": 162,
+          "rows_b": 1330,
+          "row_share_a": 0.08363,
+          "row_share_b": 0.06651,
+          "row_share_delta_pp": -1.712,
+          "weight_share_a": 0.07021,
+          "weight_share_b": 0.05041,
+          "weight_share_delta_pp": -1.98,
+          "z_row_share": -2.86,
+          "delta_concentration": {
+            "n_distinct_queries": 1195,
+            "top1_share_of_delta": 0.0426,
+            "top5_share_of_delta": 0.0884,
+            "hhi_of_delta": 0.0048,
+            "top_queries": [
+              {
+                "query": "好看的动画片有什么？",
+                "delta": -93.73
+              },
+              {
+                "query": "囧次元",
+                "delta": 32.81
+              },
+              {
+                "query": "这是什么动漫",
+                "delta": -27.12
+              },
+              {
+                "query": "《少女的秘密心事》动漫",
+                "delta": -20.35
+              },
+              {
+                "query": "小猪佩奇",
+                "delta": -20.21
+              }
+            ]
+          }
+        },
+        {
+          "label": "#10 电视剧与短剧查询推荐",
+          "rows_a": 97,
+          "rows_b": 1089,
+          "row_share_a": 0.05008,
+          "row_share_b": 0.05446,
+          "row_share_delta_pp": 0.438,
+          "weight_share_a": 0.06476,
+          "weight_share_b": 0.04772,
+          "weight_share_delta_pp": -1.704,
+          "z_row_share": 0.81,
+          "delta_concentration": {
+            "n_distinct_queries": 1092,
+            "top1_share_of_delta": 0.134,
+            "top5_share_of_delta": 0.2556,
+            "hhi_of_delta": 0.0243,
+            "top_queries": [
+              {
+                "query": "早春晴朗电视剧",
+                "delta": -287.78
+              },
+              {
+                "query": "《早春晴朗》电视剧",
+                "delta": -81.93
+              },
+              {
+                "query": "电视剧奸细",
+                "delta": -72.35
+              },
+              {
+                "query": "《影视》续集",
+                "delta": -71.57
+              },
+              {
+                "query": "富婆爱上穷小伙影视剧全集",
+                "delta": -35.24
+              }
+            ]
+          }
+        },
+        {
+          "label": "#7 电影资源查询",
+          "rows_a": 123,
+          "rows_b": 1252,
+          "row_share_a": 0.0635,
+          "row_share_b": 0.06261,
+          "row_share_delta_pp": -0.089,
+          "weight_share_a": 0.0642,
+          "weight_share_b": 0.05032,
+          "weight_share_delta_pp": -1.388,
+          "z_row_share": -0.15,
+          "delta_concentration": {
+            "n_distinct_queries": 1133,
+            "top1_share_of_delta": 0.0521,
+            "top5_share_of_delta": 0.1368,
+            "hhi_of_delta": 0.0077,
+            "top_queries": [
+              {
+                "query": "什么电影",
+                "delta": -108.17
+              },
+              {
+                "query": "这是什么电影",
+                "delta": -74.51
+              },
+              {
+                "query": "二战片《尼曼行动》",
+                "delta": -48.23
+              },
+              {
+                "query": "牛来 电影",
+                "delta": -28.7
+              },
+              {
+                "query": "美国动作片《一击》",
+                "delta": -24.21
+              }
+            ]
+          }
+        },
+        {
+          "label": "#8 影视视频资源查询",
+          "rows_a": 213,
+          "rows_b": 2393,
+          "row_share_a": 0.10996,
+          "row_share_b": 0.11967,
+          "row_share_delta_pp": 0.97,
+          "weight_share_a": 0.10767,
+          "weight_share_b": 0.09595,
+          "weight_share_delta_pp": -1.172,
+          "z_row_share": 1.26,
+          "delta_concentration": {
+            "n_distinct_queries": 1988,
+            "top1_share_of_delta": 0.0201,
+            "top5_share_of_delta": 0.0765,
+            "hhi_of_delta": 0.0036,
+            "top_queries": [
+              {
+                "query": "她是谁",
+                "delta": -78.55
+              },
+              {
+                "query": "千香",
+                "delta": 61.97
+              },
+              {
+                "query": "花开锦绣",
+                "delta": -54.41
+              },
+              {
+                "query": "我爱你",
+                "delta": -53.29
+              },
+              {
+                "query": "锦绣芳华",
+                "delta": 50.81
+              }
+            ]
+          }
+        },
+        {
+          "label": "#17 影视节目观看入口查询",
+          "rows_a": 42,
+          "rows_b": 581,
+          "row_share_a": 0.02168,
+          "row_share_b": 0.02905,
+          "row_share_delta_pp": 0.737,
+          "weight_share_a": 0.01949,
+          "weight_share_b": 0.02399,
+          "weight_share_delta_pp": 0.45,
+          "z_row_share": 1.86,
+          "delta_concentration": {
+            "n_distinct_queries": 474,
+            "top1_share_of_delta": 0.032,
+            "top5_share_of_delta": 0.1263,
+            "hhi_of_delta": 0.0091,
+            "top_queries": [
+              {
+                "query": "红星照耀中国",
+                "delta": -25.81
+              },
+              {
+                "query": "#百家知识分享季#",
+                "delta": -21.13
+              },
+              {
+                "query": "法国空姐2019(多塞尔航空)抢先版百度",
+                "delta": 19.61
+              },
+              {
+                "query": "我要看",
+                "delta": -18.85
+              },
+              {
+                "query": "奥德赛",
+                "delta": -16.38
+              }
+            ]
+          }
+        },
+        {
+          "label": "#16 日韩泰剧在线观看",
+          "rows_a": 64,
+          "rows_b": 872,
+          "row_share_a": 0.03304,
+          "row_share_b": 0.04361,
+          "row_share_delta_pp": 1.057,
+          "weight_share_a": 0.03403,
+          "weight_share_b": 0.038,
+          "weight_share_delta_pp": 0.396,
+          "z_row_share": 2.2,
+          "delta_concentration": {
+            "n_distinct_queries": 889,
+            "top1_share_of_delta": 0.0806,
+            "top5_share_of_delta": 0.1704,
+            "hhi_of_delta": 0.0122,
+            "top_queries": [
+              {
+                "query": "日剧韩剧在线观看大全",
+                "delta": -110.58
+              },
+              {
+                "query": "爱情契约泰剧免费观看",
+                "delta": 36.21
+              },
+              {
+                "query": "日韩剧欧美在线观看电视剧",
+                "delta": -35.33
+              },
+              {
+                "query": "在线观看免费高清完整版韩剧",
+                "delta": -27.3
+              },
+              {
+                "query": "检察官的提案韩剧免费观看全集",
+                "delta": 24.45
+              }
+            ]
+          }
+        },
+        {
+          "label": "#15 视频平台官方应用下载与官网入口查询",
+          "rows_a": 66,
+          "rows_b": 423,
+          "row_share_a": 0.03407,
+          "row_share_b": 0.02115,
+          "row_share_delta_pp": -1.292,
+          "weight_share_a": 0.0305,
+          "weight_share_b": 0.02704,
+          "weight_share_delta_pp": -0.346,
+          "z_row_share": -3.68,
+          "delta_concentration": {
+            "n_distinct_queries": 395,
+            "top1_share_of_delta": 0.0546,
+            "top5_share_of_delta": 0.1501,
+            "hhi_of_delta": 0.0113,
+            "top_queries": [
+              {
+                "query": "你别控制我抖音",
+                "delta": -48.23
+              },
+              {
+                "query": "抖音",
+                "delta": 30.45
+              },
+              {
+                "query": "哔哩哔哩",
+                "delta": 23.74
+              },
+              {
+                "query": "链接",
+                "delta": -15.8
+              },
+              {
+                "query": "bilibili",
+                "delta": 14.27
+              }
+            ]
+          }
+        }
+      ],
+      "emergent": [
+        {
+          "label": "#13 免费电视剧全集在线观看查询",
+          "rows_a": 88,
+          "rows_b": 3313,
+          "row_share_a": 0.04543,
+          "row_share_b": 0.16567,
+          "row_share_delta_pp": 12.024,
+          "weight_share_a": 0.05256,
+          "weight_share_b": 0.19945,
+          "weight_share_delta_pp": 14.689,
+          "z_row_share": 13.96,
+          "delta_concentration": {
+            "n_distinct_queries": 3241,
+            "top1_share_of_delta": 0.035,
+            "top5_share_of_delta": 0.1117,
+            "hhi_of_delta": 0.0046,
+            "top_queries": [
+              {
+                "query": "书卷一梦电视剧免费观看完整版",
+                "delta": 175.32
+              },
+              {
+                "query": "桃花映江山电视剧免费观看",
+                "delta": 104.86
+              },
+              {
+                "query": "日本免费高清观看电视剧百度云下载",
+                "delta": -103.94
+              },
+              {
+                "query": "早春晴朗电视剧免费观看全集在线播放男主叫什么",
+                "delta": -89.65
+              },
+              {
+                "query": "锦绣芳华电视剧在线观看免费高清版全集",
+                "delta": 85.33
+              }
+            ]
+          }
+        },
+        {
+          "label": "#5 电视频道直播与节目表查询",
+          "rows_a": 20,
+          "rows_b": 603,
+          "row_share_a": 0.01033,
+          "row_share_b": 0.03015,
+          "row_share_delta_pp": 1.983,
+          "weight_share_a": 0.00902,
+          "weight_share_b": 0.07328,
+          "weight_share_delta_pp": 6.426,
+          "z_row_share": 5.02,
+          "delta_concentration": {
+            "n_distinct_queries": 494,
+            "top1_share_of_delta": 0.1778,
+            "top5_share_of_delta": 0.3487,
+            "hhi_of_delta": 0.046,
+            "top_queries": [
+              {
+                "query": "cctv5在线直播",
+                "delta": 272.88
+              },
+              {
+                "query": "cctv5",
+                "delta": 80.21
+              },
+              {
+                "query": "中央五台cctv5在线直播",
+                "delta": 73.2
+              },
+              {
+                "query": "cctv5节目直播",
+                "delta": 54.46
+              },
+              {
+                "query": "CCTV5",
+                "delta": 54.39
+              }
+            ]
+          }
+        },
+        {
+          "label": "#12 影视剧免费在线观看查询",
+          "rows_a": 10,
+          "rows_b": 467,
+          "row_share_a": 0.00516,
+          "row_share_b": 0.02335,
+          "row_share_delta_pp": 1.819,
+          "weight_share_a": 0.00387,
+          "weight_share_b": 0.06158,
+          "weight_share_delta_pp": 5.771,
+          "z_row_share": 5.24,
+          "delta_concentration": {
+            "n_distinct_queries": 445,
+            "top1_share_of_delta": 0.1713,
+            "top5_share_of_delta": 0.4451,
+            "hhi_of_delta": 0.065,
+            "top_queries": [
+              {
+                "query": "以法之名",
+                "delta": 222.8
+              },
+              {
+                "query": "以法之名张译电视剧在线观看免费高清",
+                "delta": 217.72
+              },
+              {
+                "query": "以法之名在线观看完整版免费",
+                "delta": 52.98
+              },
+              {
+                "query": "以法之名全集",
+                "delta": 44.97
+              },
+              {
+                "query": "检察官的提案",
+                "delta": 40.37
+              }
+            ]
+          }
+        },
+        {
+          "label": "#9 影视文学动漫作品名称查询",
+          "rows_a": 142,
+          "rows_b": 2774,
+          "row_share_a": 0.07331,
+          "row_share_b": 0.13872,
+          "row_share_delta_pp": 6.541,
+          "weight_share_a": 0.06452,
+          "weight_share_b": 0.11435,
+          "weight_share_delta_pp": 4.982,
+          "z_row_share": 8.1,
+          "delta_concentration": {
+            "n_distinct_queries": 2091,
+            "top1_share_of_delta": 0.0216,
+            "top5_share_of_delta": 0.0867,
+            "hhi_of_delta": 0.0034,
+            "top_queries": [
+              {
+                "query": "努尔哈赤",
+                "delta": -71.07
+              },
+              {
+                "query": "藏锋",
+                "delta": -68.74
+              },
+              {
+                "query": "书卷一梦",
+                "delta": 67.29
+              },
+              {
+                "query": "色戒",
+                "delta": 42.66
+              },
+              {
+                "query": "桃花映江山",
+                "delta": 35.18
+              }
+            ]
+          }
+        },
+        {
+          "label": "#1 查询《逆爱》电视剧在线观看资源",
+          "rows_a": 6,
+          "rows_b": 363,
+          "row_share_a": 0.0031,
+          "row_share_b": 0.01815,
+          "row_share_delta_pp": 1.506,
+          "weight_share_a": 0.00209,
+          "weight_share_b": 0.04386,
+          "weight_share_delta_pp": 4.176,
+          "z_row_share": 4.92,
+          "delta_concentration": {
+            "n_distinct_queries": 358,
+            "top1_share_of_delta": 0.2068,
+            "top5_share_of_delta": 0.3871,
+            "hhi_of_delta": 0.0568,
+            "top_queries": [
+              {
+                "query": "逆爱",
+                "delta": 187.35
+              },
+              {
+                "query": "逆爱2025全集免费观看",
+                "delta": 67.87
+              },
+              {
+                "query": "逆爱台剧双男主电视剧免费观看全集高清",
+                "delta": 43.78
+              },
+              {
+                "query": "逆爱电视剧在线观看免费",
+                "delta": 28.48
+              },
+              {
+                "query": "逆爱双男主电视剧免费观看全集",
+                "delta": 23.25
+              }
+            ]
+          }
+        },
+        {
+          "label": "#14 免费影视完整版在线观看查询",
+          "rows_a": 51,
+          "rows_b": 1766,
+          "row_share_a": 0.02633,
+          "row_share_b": 0.08831,
+          "row_share_delta_pp": 6.198,
+          "weight_share_a": 0.02617,
+          "weight_share_b": 0.06466,
+          "weight_share_delta_pp": 3.849,
+          "z_row_share": 9.45,
+          "delta_concentration": {
+            "n_distinct_queries": 1703,
+            "top1_share_of_delta": 0.0197,
+            "top5_share_of_delta": 0.084,
+            "hhi_of_delta": 0.0038,
+            "top_queries": [
+              {
+                "query": "YY影院在线观看免费观看电视剧百度",
+                "delta": -34.13
+              },
+              {
+                "query": "在线观看网址",
+                "delta": -32.15
+              },
+              {
+                "query": "心动的信号9免费观看",
+                "delta": -32.15
+              },
+              {
+                "query": "猎虎3电影在线观看免费播放",
+                "delta": -24.12
+              },
+              {
+                "query": "《我的健身教练》完整版在线观看",
+                "delta": -23.33
+              }
+            ]
+          }
+        },
+        {
+          "label": "#6 动漫全集在线观看查询",
+          "rows_a": 35,
+          "rows_b": 1324,
+          "row_share_a": 0.01807,
+          "row_share_b": 0.06621,
+          "row_share_delta_pp": 4.814,
+          "weight_share_a": 0.01506,
+          "weight_share_b": 0.05344,
+          "weight_share_delta_pp": 3.837,
+          "z_row_share": 8.39,
+          "delta_concentration": {
+            "n_distinct_queries": 1269,
+            "top1_share_of_delta": 0.0182,
+            "top5_share_of_delta": 0.0796,
+            "hhi_of_delta": 0.0039,
+            "top_queries": [
+              {
+                "query": "乐园侵触之死亡岛第一季动漫在线观看",
+                "delta": -24.12
+              },
+              {
+                "query": "狮王凯撒纪录片全集",
+                "delta": -24.12
+              },
+              {
+                "query": "哪吒2魔童闹海免费观看完整版",
+                "delta": 22.5
+              },
+              {
+                "query": "吞噬星空免费观看全集在线高清",
+                "delta": 18.83
+              },
+              {
+                "query": "鬼灭之刃最新一集",
+                "delta": -16.08
+              }
+            ]
+          }
+        }
+      ],
+      "receded": [],
+      "too_thin_to_compare": []
+    }
+  },
+  "purity": {
+    "td_l1": {
+      "checked": true,
+      "n_groups": 17,
+      "n_single_snapshot": 3,
+      "single_snapshot": [
+        {
+          "label": "ACCESS_WATCH",
+          "share_of_AI助手": 0.031,
+          "rows": 7407
+        },
+        {
+          "label": "LIVE_TV_SCHEDULE",
+          "share_of_AI助手": 0.034,
+          "rows": 580
+        },
+        {
+          "label": "UNCENSORED_VERSION",
+          "share_of_AI助手": 0.033,
+          "rows": 30
+        }
+      ],
+      "share_min": 0.031,
+      "share_median": 0.103,
+      "share_max": 0.857
+    },
+    "bu_leaf_name": {
+      "checked": true,
+      "n_groups": 19,
+      "n_single_snapshot": 8,
+      "single_snapshot": [
+        {
+          "label": "CCTV5直播观看（合并后目标）",
+          "share_of_AI助手": 0.032,
+          "rows": 472
+        },
+        {
+          "label": "免费影视在线观看查询",
+          "share_of_AI助手": 0.028,
+          "rows": 1817
+        },
+        {
+          "label": "免费电视剧全集在线观看查询",
+          "share_of_AI助手": 0.026,
+          "rows": 3401
+        },
+        {
+          "label": "在线观看动漫全集（合并后目标）",
+          "share_of_AI助手": 0.026,
+          "rows": 1359
+        },
+        {
+          "label": "影视剧免费在线观看查询",
+          "share_of_AI助手": 0.021,
+          "rows": 477
+        },
+        {
+          "label": "影视文学动漫作品名称查询",
+          "share_of_AI助手": 0.049,
+          "rows": 2916
+        },
+        {
+          "label": "查询《逆爱》电视剧在线观看资源（合并后目标）",
+          "share_of_AI助手": 0.016,
+          "rows": 369
+        },
+        {
+          "label": "电视节目表查询",
+          "share_of_AI助手": 0.033,
+          "rows": 151
+        }
+      ],
+      "share_min": 0.016,
+      "share_median": 0.068,
+      "share_max": 0.572
+    },
+    "bu_family_final": {
+      "checked": true,
+      "n_groups": 16,
+      "n_single_snapshot": 7,
+      "single_snapshot": [
+        {
+          "label": "#1 查询《逆爱》电视剧在线观看资源",
+          "share_of_AI助手": 0.016,
+          "rows": 369
+        },
+        {
+          "label": "#12 影视剧免费在线观看查询",
+          "share_of_AI助手": 0.021,
+          "rows": 477
+        },
+        {
+          "label": "#13 免费电视剧全集在线观看查询",
+          "share_of_AI助手": 0.026,
+          "rows": 3401
+        },
+        {
+          "label": "#14 免费影视完整版在线观看查询",
+          "share_of_AI助手": 0.028,
+          "rows": 1817
+        },
+        {
+          "label": "#5 电视频道直播与节目表查询",
+          "share_of_AI助手": 0.032,
+          "rows": 623
+        },
+        {
+          "label": "#6 动漫全集在线观看查询",
+          "share_of_AI助手": 0.026,
+          "rows": 1359
+        },
+        {
+          "label": "#9 影视文学动漫作品名称查询",
+          "share_of_AI助手": 0.049,
+          "rows": 2916
+        }
+      ],
+      "share_min": 0.016,
+      "share_median": 0.068,
+      "share_max": 0.423
+    }
+  },
+  "note": "Shares are WITHIN-SNAPSHOT. The snapshots differ in total weight, so raw counts would report every class as declining. Both periods were labelled by ONE taxonomy and ONE tree in this run, which is what excludes 'the taxonomy changed' as an explanation."
+}

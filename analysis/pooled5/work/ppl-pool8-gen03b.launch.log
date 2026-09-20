@@ -1,0 +1,207 @@
+loaded 5 key(s) from /Users/mayouxuan/Documents/Claude/Search Query Mining Agent
+Team/QMine/.env
+reusing taxonomy from ppl-pool8/gen01
+resuming ppl-pool8 generation 3 from runs/ppl-pool8/checkpoints.sqlite (config 
+5e329925c4d9fd8b)
+  dashboard → runs/ppl-pool8/dashboard.html
+13:36:44 INFO    qmine.llm: provider quirks recalled from .cache/model_quirks.json: 15 model(s) start in plain-JSON mode, 6 with a raised output cap — not rediscovered this run
+13:36:44 INFO    qmine.llm: routing plan: 19 roles, estimated $4.03, catalogue ['litellm', 'openrouter']
+13:36:44 INFO    qmine.llm:   role assignments for this run (model · lab · est. calls · est. $):
+13:36:44 INFO    qmine.llm:     annotator_a             deepseek:deepseek-v4-flash  lab=deepseek  128 calls  $2.074
+13:36:44 INFO    qmine.llm:     namer                   deepseek:deepseek-v4-pro  lab=deepseek  60 calls  $1.188
+13:36:44 INFO    qmine.llm:     researcher_log_reading  openrouter:moonshotai/kimi-k3  lab=moonshot  5 calls  $0.478
+13:36:44 INFO    qmine.llm:     taxonomy_architect      deepseek:deepseek-v4-pro  lab=deepseek  2 calls  $0.158
+13:36:44 INFO    qmine.llm:     l2_interpreter          openrouter:deepseek/deepseek-v4.1-flash  lab=deepseek  20 calls  $0.065
+13:36:44 INFO    qmine.llm:     tree_auditor            deepseek:deepseek-v4-pro  lab=deepseek  1 calls  $0.040
+13:36:44 INFO    qmine.llm:     proposer                deepseek:deepseek-v4-pro  lab=deepseek  2 calls  $0.025
+13:36:44 INFO    qmine.llm:     adversary               openrouter:moonshotai/kimi-k3  lab=moonshot  0 calls  $0.000
+13:36:44 INFO    qmine.llm:     delivery_auditor        openrouter:moonshotai/kimi-k3  lab=moonshot  0 calls  $0.000
+13:36:44 INFO    qmine.llm:     domain_scout            deepseek:deepseek-v4-pro  lab=deepseek  1 calls  $0.000
+13:36:44 INFO    qmine.llm:     interpreter             deepseek:deepseek-v4-pro  lab=deepseek  0 calls  $0.000
+13:36:44 INFO    qmine.llm:     maintainer              openrouter:moonshotai/kimi-k3  lab=moonshot  1 calls  $0.000
+13:36:44 INFO    qmine.llm:     observer                openrouter:moonshotai/kimi-k3  lab=moonshot  0 calls  $0.000
+13:36:44 INFO    qmine.llm:     reporter                deepseek:deepseek-v4-pro  lab=deepseek  0 calls  $0.000
+13:36:44 INFO    qmine.llm:     researcher              openrouter:moonshotai/kimi-k3  lab=moonshot  5 calls  $0.000
+13:36:44 INFO    qmine.llm:     risk_sentinel           openrouter:moonshotai/kimi-k3  lab=moonshot  1 calls  $0.000
+13:36:44 INFO    qmine.llm:     taxonomy_critic         deepseek:deepseek-v4-pro  lab=deepseek  0 calls  $0.000
+13:36:44 INFO    qmine.llm:     annotator_b             qwen:qwen3.8-flash  lab=qwen  0 calls  $0.000
+13:36:44 INFO    qmine.llm:     referee                 openrouter:moonshotai/kimi-k3  lab=moonshot  0 calls  $0.000
+13:36:44 INFO    qmine.llm:     annotator/referee labs: a=deepseek, b=qwen, referee=moonshot — independent
+13:36:44 INFO    qmine.llm:     ! taxonomy_architect: pinned with NO FALLBACK — nothing reachable meets this role's 200,000-token context need in another lab, so a single provider outage silently removes this role from the run
+13:36:44 INFO    qmine.llm:     ! tree_auditor: pinned with NO FALLBACK — nothing reachable meets this role's 200,000-token context need in another lab, so a single provider outage silently removes this role from the run
+13:36:44 INFO    qmine.llm:     ! delivery_auditor: pinned with NO FALLBACK — nothing reachable meets this role's 200,000-token context need in another lab, so a single provider outage silently removes this role from the run
+13:36:44 INFO    qmine.llm:     ! domain_scout: deepseek:deepseek-v4-pro publishes NO PRICE in the catalogue — the pin overrides `_eligible`'s exclusion of unpriced models. Its estimate reads $0.00 and the spend ledger will under-report: the cost is UNKNOWN, not free.
+13:36:44 INFO    qmine.llm:     ! maintainer: openrouter:moonshotai/kimi-k3 publishes NO PRICE in the catalogue — the pin overrides `_eligible`'s exclusion of unpriced models. Its estimate reads $0.00 and the spend ledger will under-report: the cost is UNKNOWN, not free.
+13:36:44 INFO    qmine.llm:     ! observer: pinned with NO FALLBACK — nothing reachable meets this role's 200,000-token context need in another lab, so a single provider outage silently removes this role from the run
+13:36:44 INFO    qmine.llm:     ! reporter: deepseek:deepseek-v4-pro publishes NO PRICE in the catalogue — the pin overrides `_eligible`'s exclusion of unpriced models. Its estimate reads $0.00 and the spend ledger will under-report: the cost is UNKNOWN, not free.
+13:36:44 INFO    qmine.llm:     ! researcher: openrouter:moonshotai/kimi-k3 publishes NO PRICE in the catalogue — the pin overrides `_eligible`'s exclusion of unpriced models. Its estimate reads $0.00 and the spend ledger will under-report: the cost is UNKNOWN, not free.
+13:36:44 INFO    qmine.llm:     ! risk_sentinel: openrouter:moonshotai/kimi-k3 publishes NO PRICE in the catalogue — the pin overrides `_eligible`'s exclusion of unpriced models. Its estimate reads $0.00 and the spend ledger will under-report: the cost is UNKNOWN, not free.
+13:36:44 INFO    qmine.llm:     ! taxonomy_critic: pinned with NO FALLBACK — nothing reachable meets this role's 128,000-token context need in another lab, so a single provider outage silently removes this role from the run
+13:36:44 INFO    qmine.llm:     ! annotator_b: qwen:qwen3.8-flash publishes NO PRICE in the catalogue — the pin overrides `_eligible`'s exclusion of unpriced models. Its estimate reads $0.00 and the spend ledger will under-report: the cost is UNKNOWN, not free.
+13:36:44 INFO    qmine.llm:     ! referee: openrouter:moonshotai/kimi-k3 publishes NO PRICE in the catalogue — the pin overrides `_eligible`'s exclusion of unpriced models. Its estimate reads $0.00 and the spend ledger will under-report: the cost is UNKNOWN, not free.
+13:36:44 INFO    qmine.llm: probing native structured output on 1 model(s) so a real call does not pay for the discovery
+13:36:44 INFO    langchain_openai.chat_models._client_utils: langchain-openai detected HTTP_PROXY, HTTPS_PROXY and no explicit `http_socket_options` / `http_client` / `http_async_client` / `openai_proxy`; skipping the custom `httpx` transport so httpx's env-proxy auto-detection applies. Pass `http_socket_options=[...]` to opt back into kernel-level TCP keepalive tuning on top of the env proxy.
+13:36:46 INFO    httpx2: HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+13:36:55 INFO    qmine: resuming past a crash in p2c_classifier — rewound to p456_tree to retry it (p2c_classifier: TypeError: Deps.gate() got an unexpected keyword argument 'blocking')
+13:36:55 INFO    qmine.graph: P2c classifier — 3178 labelled rows
+13:36:57 INFO    qmine.graph:   CV accuracy 0.734, macro-F1 0.557, ECE 0.038
+13:36:57 INFO    qmine.graph: gate p2c_calibration: WARNED — ECE 0.0379 sits 5.4 sd above the perfectly-calibrated null for this run (0.0157 ± 0.0041)
+13:36:57 INFO    qmine.graph: ✔ p2c_classifier completed in 2.1s
+13:36:57 INFO    qmine.graph: P2d 对抗验证 —— fast 模式跳过 (纯复核, 不改变任何标签)
+13:36:57 INFO    qmine.graph: ✔ p2d_validate completed in 0.0s
+13:36:57 INFO    qmine.graph: P2e sub-intents — auditing 18 L1 classes
+13:36:58 INFO    qmine.graph:   6 class(es) are rule-dependent (kNN agreement below threshold)
+13:37:42 INFO    qmine.graph:   subdivided into 50 sub-intents
+13:37:44 INFO    qmine.graph: ✔ p2e_subintents completed in 46.1s
+13:37:44 INFO    qmine.graph: P7 prepare — building 24 naming cards
+13:37:44 INFO    qmine.graph:   firewall armed with 36 forbidden label terms
+13:37:45 INFO    qmine.graph: ✔ p7_prepare completed in 1.4s
+13:37:45 INFO    qmine.graph:   namer[2] named 5 clusters
+13:37:45 INFO    qmine.graph:   namer[1] named 5 clusters
+13:37:45 INFO    qmine.graph:   namer[0] named 5 clusters
+13:37:45 INFO    qmine.graph:   namer[3] named 5 clusters
+13:37:45 INFO    qmine.graph:   namer[4] named 4 clusters
+13:37:45 INFO    qmine.graph: P7 audit — 24 namings in
+13:37:45 INFO    qmine.graph:   auditor: 12 prescriptions; risk sentinel: 8 findings
+13:37:45 INFO    qmine.graph: gate p7_all_leaves_named: PASSED — all 24 leaves named
+13:37:45 INFO    qmine.graph: gate p7_coherence: PASSED — blind coherence: mean 4.04/5, 0/24 leaves (0%) below 3.0
+13:37:45 INFO    qmine.graph: gate p7_risk_independently_found: PASSED — risk content was flagged by an agent that was never told to look for it
+13:37:45 INFO    qmine.graph: ✔ p7_audit completed in 0.0s
+13:37:45 INFO    qmine.graph: P8 governance — executing 21 prescriptions
+13:37:48 INFO    qmine.graph:   5 leaf/leaves changed membership past 20% — their p7 name no longer describes them: [0, 8, 9, 14, 19]
+13:37:48 INFO    qmine.graph:   naming 7 leaf/leaves after governance (2 new, 5 re-named)
+13:37:49 INFO    qmine.graph:   named 7/7 leaves affected by governance
+13:37:49 INFO    qmine.graph: gate p8_leaves_are_distinguishable: PASSED — 每个交付叶都能凭名称与同家族的兄弟叶区分开
+13:37:49 INFO    qmine.graph:   named 22/22 delivered families
+13:37:49 INFO    qmine.graph: gate p8_governance_executed: PASSED — 14 executed, 7 explicitly declined
+13:37:49 INFO    qmine.graph: ✔ p8_governance completed in 3.9s
+13:37:49 INFO    qmine.graph: P9 uniform panel — re-measuring every candidate under one harness
+13:38:58 INFO    qmine.graph: ✔ p9_panel completed in 69.4s
+13:38:58 INFO    qmine.graph: P10 deployment — building the delivered table and centroid model
+13:38:58 INFO    qmine.graph: gate p10_delivered_leaves_named: PASSED — all 23 delivered leaves carry a name
+13:38:58 INFO    qmine.graph:   recovered 'minority_sub_intent' from artifact 'minority_sub_intent' (resumed run)
+13:38:59 INFO    qmine.graph:   K 定位参照校验: 参与投票的措辞群单一意图占比中位数 93.8% (随机基线 47.8%)
+13:38:59 INFO    qmine.graph:   路线一致性 (family, 22 簇 vs 18 类): AMI=0.2884, 17/22 单一意图占多数
+13:38:59 INFO    qmine.graph:   路线一致性 (leaf, 23 簇 vs 18 类): AMI=0.2881, 17/23 单一意图占多数
+13:38:59 INFO    qmine.graph:   路线对照: 9/22 个家族与自上而下 L1 高度一致 (≥80% 落在同一类目)
+13:38:59 INFO    qmine.graph: ✔ p10_deploy completed in 0.4s
+13:38:59 INFO    qmine.graph: P10b drift — comparing 2 snapshots: AI助手, 搜索
+13:38:59 INFO    qmine.graph: gate p10b_snapshots_share_one_frame: WARNED — 27 group(s) sit almost entirely in ONE snapshot — read them before trusting any share below; they were separated, not compared
+13:38:59 INFO    qmine.graph: ✔ p10b_drift completed in 0.3s
+13:38:59 INFO    qmine.graph: P11 reporting — assembling deliverables
+/Users/mayouxuan/Documents/Claude/Search Query Mining Agent Team/QMine/.venv/lib/python3.12/site-packages/umap/umap_.py:1952: UserWarning: n_jobs value 1 overridden to 1 by setting random_state. Use no seed for parallelism.
+  warn(
+13:39:12 INFO    qmine.graph:   fast 模式交付: 核心参考文档 (完整中间产物保留)
+13:39:17 INFO    qmine.graph:   工作簿: people_zh_v2_query_挖掘结果.xlsx (43,802 行 × 21 列, 10 个 sheet)
+13:39:17 INFO    qmine.graph: ✔ p11_report completed in 17.7s
+13:39:17 INFO    qmine.graph: P12 maintenance — baseline, novelty sentinel, rerun contract
+13:39:17 INFO    qmine.graph: ✔ p12_maintain completed in 0.0s
+  P2c classifier — 3178 labelled rows
+    CV accuracy 0.734, macro-F1 0.557, ECE 0.038
+  gate p2c_calibration: WARNED — ECE 0.0379 sits 5.4 sd above the perfectly-calibrated null for this run (0.0157 ± 0.0041)
+  ✔ p2c_classifier completed in 2.1s
+  P2d 对抗验证 —— fast 模式跳过 (纯复核, 不改变任何标签)
+  ✔ p2d_validate completed in 0.0s
+  P2e sub-intents — auditing 18 L1 classes
+    6 class(es) are rule-dependent (kNN agreement below threshold)
+    subdivided into 50 sub-intents
+  ✔ p2e_subintents completed in 46.1s
+  P7 prepare — building 24 naming cards
+    firewall armed with 36 forbidden label terms
+  ✔ p7_prepare completed in 1.4s
+    namer[2] named 5 clusters
+    namer[0] named 5 clusters
+    namer[3] named 5 clusters
+    namer[1] named 5 clusters
+    namer[4] named 4 clusters
+  P7 audit — 24 namings in
+    auditor: 12 prescriptions; risk sentinel: 8 findings
+  gate p7_all_leaves_named: PASSED — all 24 leaves named
+  gate p7_coherence: PASSED — blind coherence: mean 4.04/5, 0/24 leaves (0%) below 3.0
+  gate p7_risk_independently_found: PASSED — risk content was flagged by an agent that was never told to look for it
+  ✔ p7_audit completed in 0.0s
+  P8 governance — executing 21 prescriptions
+    5 leaf/leaves changed membership past 20% — their p7 name no longer describes them: [0, 8, 9, 14, 19]
+    naming 7 leaf/leaves after governance (2 new, 5 re-named)
+    named 7/7 leaves affected by governance
+  gate p8_leaves_are_distinguishable: PASSED — 每个交付叶都能凭名称与同家族的兄弟叶区分开
+    named 22/22 delivered families
+  gate p8_governance_executed: PASSED — 14 executed, 7 explicitly declined
+  ✔ p8_governance completed in 3.9s
+  P9 uniform panel — re-measuring every candidate under one harness
+  ✔ p9_panel completed in 69.4s
+  P10 deployment — building the delivered table and centroid model
+  gate p10_delivered_leaves_named: PASSED — all 23 delivered leaves carry a name
+    recovered 'minority_sub_intent' from artifact 'minority_sub_intent' (resumed run)
+    K 定位参照校验: 参与投票的措辞群单一意图占比中位数 93.8% (随机基线 47.8%)
+    路线一致性 (family, 22 簇 vs 18 类): AMI=0.2884, 17/22 单一意图占多数
+    路线一致性 (leaf, 23 簇 vs 18 类): AMI=0.2881, 17/23 单一意图占多数
+    路线对照: 9/22 个家族与自上而下 L1 高度一致 (≥80% 落在同一类目)
+  ✔ p10_deploy completed in 0.4s
+  P10b drift — comparing 2 snapshots: AI助手, 搜索
+  gate p10b_snapshots_share_one_frame: WARNED — 27 group(s) sit almost entirely in ONE snapshot — read them before trusting any share below; they were separated, not compared
+  ✔ p10b_drift completed in 0.3s
+  P11 reporting — assembling deliverables
+    fast 模式交付: 核心参考文档 (完整中间产物保留)
+    工作簿: people_zh_v2_query_挖掘结果.xlsx (43,802 行 × 21 列, 10 个 sheet)
+  ✔ p11_report completed in 17.7s
+  P12 maintenance — baseline, novelty sentinel, rerun contract
+  ✔ p12_maintain completed in 0.0s
+───────────────────────────────── run summary ──────────────────────────────────
+┏━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃ field           ┃ value                                                      ┃
+┡━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┩
+│ run_id          │ ppl-pool8                                                  │
+│ generation      │ 3                                                          │
+│ elapsed_s       │ 141.5                                                      │
+│ halted          │ False                                                      │
+│ n_decisions     │ 6                                                          │
+│ n_prescriptions │ 21                                                         │
+│ phases          │ p0, p1, p2a, p3, p4, p5, p6, p2b, p2c, p2d, p2e, p7, p8,   │
+│                 │ p9, p10, p10b, p11, p12                                    │
+│ artifacts       │ 51                                                         │
+│ llm             │ routed · 55 calls · 55 cached · $0.0                       │
+│ output          │ /Users/mayouxuan/Documents/Claude/Search Query Mining      │
+│                 │ Agent Team/QMine/runs/ppl-pool8/gen03                      │
+└─────────────────┴────────────────────────────────────────────────────────────┘
+┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃ gate                           ┃ status  ┃ message                           ┃
+┡━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┩
+│ p1_template_coverage           │ passed  │ 19 phrasing families cover 12,241 │
+│                                │         │ rows (27.9% of the corpus; the    │
+│                                │         │ share                             │
+│ p1_minority_language_risk      │ warned  │ minority scripts total 0.9% —     │
+│                                │         │ small enough that they will be    │
+│                                │         │ swallowed                         │
+│ p1_reference_columns_declared  │ warned  │ the corpus carries source, l2 and │
+│                                │         │ the run declared NONE — the gold  │
+│                                │         │ set                               │
+│ p6_heldout_reproduction        │ passed  │ held-out rows land in the same    │
+│                                │         │ cluster 97.8% of the time (95% CI │
+│                                │         │ 0.975                             │
+│ p2b_kappa                      │ skipped │ 标注一致性未测量 —— fast          │
+│                                │         │ 模式由单个标注员 (a) 标注 3000    │
+│                                │         │ 行, 没有第二份独立判读可供比较;   │
+│                                │         │ 覆盖率 100%                       │
+│ p2b_rules_match_their_evidence │ skipped │ 规则与证据的比对未运行 ——         │
+│                                │         │ 本次没有任何被裁定的行可供检验    │
+│                                │         │ (单标注员时无争议行; 已写入 26    │
+│                                │         │ 条词面规则 / 19 条语义规则, 但都  │
+│ p2b_annotator_symmetry         │ skipped │ UNDECIDABLE — only 0 contested    │
+│                                │         │ row(s) were adjudicated, 20       │
+│                                │         │ needed. Thi                       │
+│ p7_all_leaves_named            │ passed  │ all 24 leaves named               │
+│ p7_coherence                   │ passed  │ blind coherence: mean 4.04/5,     │
+│                                │         │ 0/24 leaves (0%) below 3.0        │
+│ p7_risk_independently_found    │ passed  │ risk content was flagged by an    │
+│                                │         │ agent that was never told to look │
+│                                │         │ for i                             │
+│ p8_governance_executed         │ passed  │ 14 executed, 7 explicitly         │
+│                                │         │ declined                          │
+│ p8_leaves_are_distinguishable  │ passed  │ 每个交付叶都能凭名称与同家族的兄… │
+│ p10_delivered_leaves_named     │ passed  │ all 23 delivered leaves carry a   │
+│                                │         │ name                              │
+│ p10b_snapshots_share_one_frame │ warned  │ 27 group(s) sit almost entirely   │
+│                                │         │ in ONE snapshot — read them       │
+│                                │         │ before tru                        │
+└────────────────────────────────┴─────────┴───────────────────────────────────┘

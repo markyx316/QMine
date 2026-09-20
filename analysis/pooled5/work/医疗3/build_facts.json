@@ -1,0 +1,58 @@
+{
+ "ai_audit_new": {
+  "audited": 1081,
+  "unanimous_product": 207,
+  "unanimous_user": 773,
+  "split_kept_as_user": 101,
+  "rule_only_rows": 10383,
+  "rule_removed_outside_audit": 5,
+  "wrapper_rows": 9837,
+  "wrapper_share%": 85.8
+ },
+ "new_snapshot": {
+  "rows_raw": 11464,
+  "rows_mined": 11252,
+  "removed": 212,
+  "tiers": {
+   "user": 11252,
+   "H1_intake_answer": 139,
+   "H5_doctor_card": 51,
+   "H2_feature_or_facet": 21,
+   "C1_content_free": 1
+  }
+ },
+ "assembled": {
+  "rows": 31568,
+  "by_source": {
+   "mai_2609t": 11252,
+   "mai_2609r": 10316,
+   "msearch_2609r": 10000
+  },
+  "old_rows_untouched": 20316,
+  "label_columns": [
+   "query",
+   "bu_leaf",
+   "bu_leaf_name",
+   "bu_user_need",
+   "bu_leaf_pre_governance",
+   "bu_family_pre_governance",
+   "bu_family_final",
+   "bu_margin",
+   "bu_ambiguous",
+   "td_l1",
+   "td_l1_name",
+   "td_user_need",
+   "td_confidence",
+   "td_margin",
+   "td_ambiguous",
+   "td_decided_by",
+   "td_l2",
+   "ref_legacy_l2",
+   "ref_legacy_dept",
+   "ref_legacy_type",
+   "snapshot",
+   "run_id",
+   "generation"
+  ]
+ }
+}

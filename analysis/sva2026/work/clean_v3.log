@@ -1,0 +1,26 @@
+
+== ASSISTANT ==
+                              rows        pv
+snapshot tier                               
+random1k C1_content_free        29       800
+         C2_feed_control       398       784
+         S3_card_passage        47        96
+         S4_suggested_chip     557       663
+         user                31969     40071
+top1k    C1_content_free       362    614621
+         C2_feed_control       456     11229
+         S1_system_repeated   1070  11140165
+         S2_system_template    216  11284138
+         S3_card_passage        85     19938
+         S4_suggested_chip     581    170400
+         S5_headline           904    276958
+         user                29312   6910621
+
+== SEARCH 2026 ==
+                  rows        pv
+tier                            
+C1_content_free     18     20466
+S5_headline         22     12691
+user             49959  51168789
+
+wrote /private/tmp/claude-501/-Users-mayouxuan-Documents-Claude-Search-Query-Mining-Agent-Team/3deba04e-73b1-4747-b7b7-4d1a40520650/scratchpad/clean_v3

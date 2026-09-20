@@ -1,0 +1,178 @@
+
+==================== 金融 ====================
+  EXACT: assistant top1k rows equal to a 2026 search top10k query: 496/953 = 52.0%
+     e.g. 今日金价(搜索第1名) | 黄金价格(搜索第2名) | 美股(搜索第9名) | 金价(搜索第4名) | 股市行情(搜索第6名) | paypal(搜索第1743名) | 美股实时行情(搜索第26名) | 国际金价(搜索第5名) | 上证指数(搜索第3名) | 元保保险(搜索第9490名)
+  EXACT: assistant random1k rows equal to a 2026 search top10k query: 1/1000 = 0.1%
+     e.g. 今日大盘价黄金多少(搜索第270名)
+  EXACT reverse: search top1000 queries that appear verbatim in the assistant: 339/1000
+  WRAP: assistant top1k rows that CONTAIN a search top1000 query (>=3 chars) plus >=2 more chars: 213/953 = 22.4%
+     added material among wrapped rows — first-person 0.0%, question 22.5%, output constraint 0.0%; the cores themselves: question 2.3%
+     median length: core 4 -> assistant 8
+     most-wrapped search cores: 工商银行(×35, 搜索第278名) | 农业银行(×27, 搜索第508名) | 黄金价格(×14, 搜索第2名) | 股市行情(×10, 搜索第6名) | 美国股市(×9, 搜索第76名) | 比特币(×7, 搜索第89名) | 今日金价(×6, 搜索第1名) | 蚂蚁庄园今日答案(×5, 搜索第88名)
+       [工商银行] -> 工商银行转账显示成功却没有到账
+       [农业银行] -> 农业银行卡自动代扣
+       [黄金价格] -> 世界黄金协会预测黄金价格
+       [工商银行] -> 工商银行卡余额不足扣不了管理费怎么办
+       [招商银行] -> 招商银行股票
+       [农业银行] -> 农业银行账户正常余额为零
+       [金价多少钱一克] -> 今天金价多少钱一克
+       [伦敦金] -> 伦敦金实时行情
+       [东方财富网] -> 东方财富网首页
+       [股市行情] -> 全球股市行情指数一览
+  WRAP: assistant random1k rows that CONTAIN a search top1000 query (>=3 chars) plus >=2 more chars: 75/1000 = 7.5%
+     added material among wrapped rows — first-person 2.7%, question 69.3%, output constraint 0.0%; the cores themselves: question 0.0%
+     median length: core 4 -> assistant 14
+     most-wrapped search cores: 农业银行(×9, 搜索第508名) | 支付宝(×5, 搜索第242名) | 比特币(×5, 搜索第89名) | 建设银行(×4, 搜索第567名) | 工商银行(×4, 搜索第278名) | 杭电股份(×3, 搜索第638名) | 中国银行(×3, 搜索第291名) | 云闪付(×2, 搜索第654名)
+       [华能国际股票] -> 华能国际股票最高价是哪一年
+       [昊华科技股票] -> 昊华科技股票最近走势怎么样
+       [杭电股份] -> 杭电股份2026年目标价预测是多少
+       [长江证券] -> 长江证券回购方案具体执行时间表
+       [支付宝] -> 支付宝到账50
+       [云闪付] -> 广西百色的云闪付红包何时过期
+       [比特币] -> 把价值1400万比特币卖到三大平台，你再算算用几天能全部提现到银行卡
+       [比特币] -> 比特币怎么持有
+       [兴发集团股票] -> 兴发集团股票下半年能不能大涨
+       [建设银行] -> 建设银行长虹路支行何时营业
+
+==================== 医疗 ====================
+  EXACT: assistant top1k rows equal to a 2026 search top10k query: 254/959 = 26.5%
+     e.g. 黄精药材有什么功效(搜索第3名) | 男性生殖有小疙瘩是怎么回事(搜索第2339名) | 补肾吃什么东西效果最好(搜索第1473名) | 试管婴儿费用大概多少(搜索第3246名) | 怀孕(搜索第1110名) | 拍胸片是否脱上衣(搜索第7584名) | 痒(搜索第8748名) | hpv是什么东西(搜索第17名) | 血糖正常值(搜索第5679名) | 黄精(搜索第89名)
+  EXACT: assistant random1k rows equal to a 2026 search top10k query: 1/1000 = 0.1%
+     e.g. 藿香正气丸的作用与功效(搜索第6594名)
+  EXACT reverse: search top1000 queries that appear verbatim in the assistant: 81/1000
+  WRAP: assistant top1k rows that CONTAIN a search top1000 query (>=3 chars) plus >=2 more chars: 31/959 = 3.2%
+     added material among wrapped rows — first-person 0.0%, question 45.2%, output constraint 0.0%; the cores themselves: question 0.0%
+     median length: core 3 -> assistant 8
+     most-wrapped search cores: bmi(×9, 搜索第447名) | 糖尿病(×6, 搜索第377名) | hpv(×5, 搜索第851名) | 荨麻疹(×2, 搜索第435名) | 带状疱疹(×2, 搜索第263名) | 布洛芬(×2, 搜索第803名) | 马齿苋(×2, 搜索第391名) | 黄皮果的功效与作用(×1, 搜索第40名)
+       [糖尿病] -> 糖尿病吃什么食物最好
+       [bmi] -> 女性的bmi大好还是小好
+       [hpv] -> hpv是性病吗
+       [布洛芬] -> 布洛芬缓释胶囊
+       [糖尿病] -> 糖尿病症状
+       [bmi] -> 女性bmi越小越好吗
+       [hpv] -> hpv是什么病?
+       [bmi] -> bmi怎么计算
+       [耳石症] -> 耳石症有什么症状
+       [bmi] -> bmi计算器
+  WRAP: assistant random1k rows that CONTAIN a search top1000 query (>=3 chars) plus >=2 more chars: 14/1000 = 1.4%
+     added material among wrapped rows — first-person 0.0%, question 64.3%, output constraint 0.0%; the cores themselves: question 0.0%
+     median length: core 3 -> assistant 14
+     most-wrapped search cores: 糖尿病(×8, 搜索第377名) | 带状疱疹(×2, 搜索第263名) | 布洛芬(×2, 搜索第803名) | 二甲双胍的正确吃法(×1, 搜索第822名) | 阿司匹林(×1, 搜索第827名)
+       [糖尿病] -> 糖尿病患者晚间嘴很干严重吗？
+       [糖尿病] -> 糖尿病人一天能吃多少克单糖
+       [带状疱疹] -> 带状疱疹后遗症神经痛多久会好
+       [糖尿病] -> 你是糖尿病的，别有糖尿病，多吃点，这个还行啊，把糖尿病都吃了，他愿意吃那
+       [糖尿病] -> 长期服用二甲双胍的糖尿病患者需要补注意补充什么a维生素c维生素b12c维生素dd钙片是哪一种？
+       [糖尿病] -> 糖尿病会感觉饿吗
+       [糖尿病] -> 糖尿病人对咖啡十分敏感是为什么
+       [糖尿病] -> 糖尿病治疗仪能降血糖吗
+       [阿司匹林] -> 没吃过布洛芬阿司匹林
+       [布洛芬] -> 艾巴金布洛芬片的价格是多少
+
+==================== 教育 ====================
+  EXACT: assistant top1k rows equal to a 2026 search top10k query: 157/903 = 17.4%
+     e.g. 翻译(搜索第3名) | S(搜索第5556名) | 我(搜索第131名) | 这个(搜索第2300名) | 拼音(搜索第2869名) | 一(搜索第340名) | 有(搜索第2723名) | 南京理工大学(搜索第26名) | 拼豆图纸(搜索第15名) | 作文(搜索第1420名)
+  EXACT: assistant random1k rows equal to a 2026 search top10k query: 1/1000 = 0.1%
+     e.g. 青岛城市学院(搜索第1033名)
+  EXACT reverse: search top1000 queries that appear verbatim in the assistant: 21/1000
+  WRAP: assistant top1k rows that CONTAIN a search top1000 query (>=3 chars) plus >=2 more chars: 9/903 = 1.0%
+     added material among wrapped rows — first-person 11.1%, question 0.0%, output constraint 0.0%; the cores themselves: question 0.0%
+     median length: core 4 -> assistant 7
+     most-wrapped search cores: 大学排名(×4, 搜索第500名) | 岳阳楼记(×1, 搜索第145名) | 拼豆图纸(×1, 搜索第15名) | 华中科技大学(×1, 搜索第86名) | 安徽大学(×1, 搜索第80名) | 志愿填报(×1, 搜索第62名)
+       [大学排名] -> 985大学排名
+       [大学排名] -> 西安大学排名一览表
+       [大学排名] -> 陕西大学排名
+       [大学排名] -> 浙江省大学排名
+       [安徽大学] -> 安徽大学排名
+       [岳阳楼记] -> 岳阳楼记全文
+       [华中科技大学] -> 华中科技大学在职研究生
+       [拼豆图纸] -> 帮我画 拼豆图纸
+       [志愿填报] -> 高考志愿填报
+  WRAP: assistant random1k rows that CONTAIN a search top1000 query (>=3 chars) plus >=2 more chars: 28/1000 = 2.8%
+     added material among wrapped rows — first-person 10.7%, question 71.4%, output constraint 3.6%; the cores themselves: question 0.0%
+     median length: core 6 -> assistant 17
+     most-wrapped search cores: 复旦大学(×2, 搜索第373名) | 成都理工大学(×2, 搜索第52名) | 元素周期表(×1, 搜索第487名) | 南昌大学(×1, 搜索第40名) | 上海大学(×1, 搜索第132名) | 安徽财经大学(×1, 搜索第370名) | 华中科技大学(×1, 搜索第86名) | 中南财经政法大学(×1, 搜索第228名)
+       [成都理工大学] -> 成都理工大学工程技术学院数字媒体艺术学费多少？
+       [成都理工大学] -> 成都理工大学在湖北的录取分数大概是多少
+       [太原理工大学] -> 太原理工大学安全工程怎么样
+       [齐齐哈尔大学] -> 齐齐哈尔大学推免生报名材料有哪些
+       [山西财经大学] -> 山西财经大学财政学专业就业前景如何
+       [华南师范大学] -> 广东除华南师范大学可以报读韩山师范学院还可以进教师编吗
+       [安阳师范学院] -> 如何线上联系到安阳师范学院、中国移动的工作人员？
+       [上海大学] -> 上海大学哪个专业最受欢迎
+       [南昌大学] -> 文琴 南昌大学红谷滩附属小学
+       [重庆工商大学] -> 重庆工商大学统计学就业前景如何
+
+==================== 影视 ====================
+  EXACT: assistant top1k rows equal to a 2026 search top10k query: 213/958 = 22.2%
+     e.g. 早春晴朗电视剧(搜索第3537名) | 视频(搜索第163名) | 日剧韩剧在线观看大全(搜索第1052名) | 抖音(搜索第20名) | 我爱你(搜索第8902名) | 短剧(搜索第464名) | 电视剧(搜索第69名) | 电影(搜索第38名) | 韩国电影在线高清免费观看完整版(搜索第57名) | 青青河边草免费完整版观看(搜索第326名)
+  EXACT: assistant random1k rows equal to a 2026 search top10k query: 1/998 = 0.1%
+     e.g. 努尔哈赤(搜索第4073名)
+  EXACT reverse: search top1000 queries that appear verbatim in the assistant: 109/1000
+  WRAP: assistant top1k rows that CONTAIN a search top1000 query (>=3 chars) plus >=2 more chars: 175/958 = 18.3%
+     added material among wrapped rows — first-person 4.6%, question 6.9%, output constraint 0.0%; the cores themselves: question 0.0%
+     median length: core 4 -> assistant 12
+     most-wrapped search cores: 电视剧(×62, 搜索第69名) | 在线观看(×35, 搜索第117名) | 免费观看(×31, 搜索第589名) | 在线观看免费(×10, 搜索第888名) | cctv5(×5, 搜索第131名) | 动画片(×4, 搜索第766名) | 奥特曼(×2, 搜索第559名) | 小猪佩奇(×2, 搜索第732名)
+       [cctv5] -> cctv5直播
+       [免费观看] -> 醒来电视剧全集免费观看在线播放
+       [在线观看] -> 母亲韩剧结局在线观看全集
+       [在线观看] -> 日韩剧欧美在线观看电视剧
+       [在线观看] -> 在线观看电影
+       [在线观看免费] -> 星空在线观看免费高清韩剧TV
+       [电视剧] -> 电视剧醒来全部演员表
+       [问心2] -> 问心2演员表
+       [在线观看] -> 激战的后厨1-6集在线观看百度云
+       [在线观看] -> 老王影院高清在线观看电视剧视频
+  WRAP: assistant random1k rows that CONTAIN a search top1000 query (>=3 chars) plus >=2 more chars: 150/998 = 15.0%
+     added material among wrapped rows — first-person 10.0%, question 33.3%, output constraint 0.7%; the cores themselves: question 0.0%
+     median length: core 3 -> assistant 14
+     most-wrapped search cores: 电视剧(×48, 搜索第69名) | 奥特曼(×14, 搜索第559名) | 免费观看(×10, 搜索第589名) | 熊出没(×8, 搜索第369名) | 在线观看(×7, 搜索第117名) | 动画片(×5, 搜索第766名) | 小猪佩奇(×4, 搜索第732名) | 西游记(×4, 搜索第337名)
+       [电视剧] -> 农村电视剧免费连续剧大全
+       [鬼灭之刃] -> 鬼灭之刃最新一集
+       [免费观看] -> 日漫僧侣也要谈恋爱免费观看
+       [动画片] -> 我们就在动画片里呀
+       [奥特曼] -> 奥特曼中所有借力量的变身器
+       [电视剧] -> 希望的田野盖贸易大厅电视剧
+       [韩国电影] -> 韩国电影《向日葵》的导演和主演
+       [奥特曼] -> 不是我说的是雷杰多、诺亚、罗布、格罗布、令迦这些奥特曼是没有的（赛罗奥特曼宇宙升华里面的记录墙里面没有这些奥特曼）
+       [腾讯视频] -> 《假面骑士空我》（日文：仮面ライダークウガ，英文：Masked Rider Kuuga）是由东映株式会社与朝日电视台联合制作的平成假面骑士系
+       [在线观看] -> 在线观看网址
+
+==================== 人物 ====================
+  EXACT: assistant top1k rows equal to a 2026 search top10k query: 418/964 = 43.4%
+     e.g. 景甜(搜索第980名) | 孙宇晨(搜索第2403名) | 陈武(搜索第6035名) | 孙宇晨(搜索第2403名) | 叶建春(搜索第5339名) | 景甜个人简介(搜索第6126名) | 美女(搜索第22名) | 张又侠(搜索第94名) | 肖战(搜索第13名) | 井柏然(搜索第2464名)
+  EXACT: assistant random1k rows equal to a 2026 search top10k query: 5/1000 = 0.5%
+     e.g. 谭凯(搜索第5869名) | 王奎荣(搜索第2963名) | 汪小菲(搜索第9436名) | 马皇后(搜索第6038名) | 杨博文个人详细资料 百科(搜索第3177名)
+  EXACT reverse: search top1000 queries that appear verbatim in the assistant: 199/1000
+  WRAP: assistant top1k rows that CONTAIN a search top1000 query (>=3 chars) plus >=2 more chars: 78/964 = 8.1%
+     added material among wrapped rows — first-person 3.8%, question 38.5%, output constraint 0.0%; the cores themselves: question 0.0%
+     median length: core 3 -> assistant 11
+     most-wrapped search cores: 田栩宁(×7, 搜索第15名) | 中央政治局委员(×7, 搜索第116名) | 许家印(×6, 搜索第374名) | 刘亦菲(×4, 搜索第102名) | 赵丽颖(×4, 搜索第156名) | 于朦胧(×4, 搜索第89名) | 刘宇宁(×4, 搜索第17名) | 毛泽东(×3, 搜索第33名)
+       [任嘉伦] -> 曝景甜张继科介绍人任嘉伦
+       [蒋介石] -> 蒋介石为何不允许退台士兵结婚？
+       [彭丽媛] -> 彭丽媛，1962年11月20日出生于山东省菏泽市郓城县，中国著名女高音歌唱家，中国第一位民族声乐硕士，一级演员，享受国务院颁发的“政府津贴”
+       [赵雅芝] -> 赵雅芝墨镜酷拽大片
+       [王皓祯] -> 王皓祯现在脚部恢复得如何
+       [王嘉尔] -> 王嘉尔舒淇大理即兴共舞
+       [田栩宁] -> 田栩宁参与过哪些公益项目
+       [赵丽颖] -> 赵丽颖突发身体不适
+       [中央政治局常委] -> 李克强（1955年7月3日-2023年10月27日），男，汉族，安徽定远人，1974年3月参加工作，1976年5月加入中国共产党，北京大学法
+       [赵丽颖] -> 赵丽颖辛芷蕾成影后受害者
+  WRAP: assistant random1k rows that CONTAIN a search top1000 query (>=3 chars) plus >=2 more chars: 68/1000 = 6.8%
+     added material among wrapped rows — first-person 2.9%, question 54.4%, output constraint 5.9%; the cores themselves: question 0.0%
+     median length: core 3 -> assistant 14
+     most-wrapped search cores: 毛泽东(×8, 搜索第33名) | 许家印(×4, 搜索第374名) | 蒋介石(×3, 搜索第129名) | 迪丽热巴(×2, 搜索第99名) | 郭德纲(×2, 搜索第750名) | 谢霆锋(×2, 搜索第197名) | 蝴蝶忍(×2, 搜索第975名) | 中央政治局委员(×2, 搜索第116名)
+       [迪丽热巴] -> 温小辉会怎么夸迪丽热巴的颜值
+       [邓小平] -> 长征时邓小平是什么职务
+       [李大钊] -> 李大钊后人现在主要分布在哪些城市
+       [蝴蝶忍] -> 蝴蝶忍‌眼天天看香奈羽头戴紫蝴蝶结，浅白皮肤，鹅蛋脸，身材纤细苗条，发型温柔，有戏谑感吗，会捏脸吗？睡觉会单独一个人还是和谁睡
+       [王楚然] -> 挺进王楚然翘臀
+       [刘晓庆] -> 刘晓庆为何会与外甥女产生矛盾
+       [朱元璋] -> 李世民完全是靠自己的家族，他自己有有很大的本事，可是朱元璋完全是靠自己的本事得到的一切，如果朱元璋得到一次失败了，他的家族没有任何人帮他，他
+       [时代少年团] -> 北京时代峰峻文化艺术发展有限公司（英文名：Time Fengjun Entertainment）成立于2009年8月6日，公司法定代表人为陈
+       [习近平] -> 马云和习近平。谁的钱多？
+       [关志鸥] -> 关志鸥的个人简历详细履历有哪些
+
+==================== POOLED 5 DOMAINS ====================
+  WRAP top1k: 506/4737 = 10.7%
+  WRAP random1k: 335/4998 = 6.7%

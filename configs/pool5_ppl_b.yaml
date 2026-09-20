@@ -1,0 +1,31 @@
+# 人物 POOLED-5, relaunched with EVERY Zhipu-assigned role routed elsewhere.
+#
+# WHY. On this corpus — Chinese public figures, including political ones — Zhipu returns
+# 400 `contentFilter` on generation. Measured on ppl-pool5: `researcher_pragmatic_intents`
+# (glm-5.3-flash) refused 3/3 in both generations, so the taxonomy was designed from 4 of its
+# 5 research angles; `risk_sentinel` (glm-5.3) refused 3/3 in gen01, which is what exposed the
+# broken fallback in p7_audit. The refusals are a property of the material, not of the run, so
+# the remedy is routing, not retrying.
+#
+# DeepSeek and Moonshot both handled this corpus without a single refusal in the same run
+# (taxonomy_architect, all 5 namers, tree_auditor on deepseek-v4-pro; researcher_log_reading on
+# kimi-k3), which is why those are the two labs used here. annotator_a stays deepseek and
+# annotator_b qwen, so the lab-independence rule is unaffected.
+extends: live.yaml
+
+data:
+  input_path: data/raw/pooled5/人物_pooled5.parquet
+  text_column: query
+  weight_column: pv_norm
+  snapshot_column: surface
+  comparison_axis: stratum
+  reference_label_columns: []
+
+llm:
+  model_overrides:
+    risk_sentinel: openrouter:moonshotai/kimi-k3
+    researcher: openrouter:moonshotai/kimi-k3
+    domain_scout: deepseek:deepseek-v4-pro
+    maintainer: openrouter:moonshotai/kimi-k3
+    reporter: deepseek:deepseek-v4-pro
+    referee: openrouter:moonshotai/kimi-k3

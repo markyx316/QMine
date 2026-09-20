@@ -1,0 +1,9 @@
+domain,source,n,ami_leaf_vs_intent,ami_family_vs_intent
+书籍文档,2025search,9988,0.5519,0.5126
+书籍文档,2026search,9995,0.5597,0.5179
+书籍文档,assistant_top,850,0.4481,0.4655
+书籍文档,assistant_random,953,0.2959,0.291
+软件,2025search,9997,0.4667,0.4628
+软件,2026search,9999,0.4617,0.4614
+软件,assistant_top,940,0.3696,0.3649
+软件,assistant_random,984,0.3118,0.3194

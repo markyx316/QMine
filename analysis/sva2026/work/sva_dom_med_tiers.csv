@@ -1,0 +1,11 @@
+﻿surface,tier,rows,row_share,pv,pv_share
+assistant_top1k,C1_content_free,1,0.001,333,0.0007742169481437393
+assistant_top1k,S1_system_repeated,25,0.025,32359,0.0752338925675173
+assistant_top1k,S2_system_template,14,0.014,135263,0.31448320437467453
+assistant_top1k,S4_suggested_chip,1,0.001,174,0.0004045457927237557
+assistant_top1k,S5_headline,1,0.001,176,0.0004091957443642586
+assistant_top1k,user,958,0.958,261807,0.6086949445725764
+assistant_random1k,S4_suggested_chip,2,0.002,2,0.0017050298380221654
+assistant_random1k,user,998,0.998,1171,0.9982949701619779
+search_top10k,S5_headline,2,0.0002,677,0.000129969010933907
+search_top10k,user,9998,0.9998,5208257,0.9998700309890661

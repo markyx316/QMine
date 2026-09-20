@@ -1,0 +1,21 @@
+{
+ "n": 1192,
+ "fleiss_kappa": 0.617,
+ "unanimous_%": 70.6,
+ "majority_counts": {
+  "U": 829,
+  "A": 336,
+  "NOMAJ": 15,
+  "D": 7,
+  "C": 2,
+  "P": 2,
+  "F": 1
+ },
+ "unanimous_product_rows": 305,
+ "pairwise_agreement": {
+  "origin~standalone": 0.936,
+  "origin~form": 0.728,
+  "standalone~form": 0.734
+ },
+ "three_way_split_rows": 15
+}

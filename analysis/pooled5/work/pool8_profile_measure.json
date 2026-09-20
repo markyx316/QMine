@@ -1,0 +1,436 @@
+{
+ "人物8": {
+  "rows": 43802,
+  "floor": 176,
+  "seeds": [
+   {
+    "seed": "yes_no_verification",
+    "rows": 658,
+    "share%": 1.5,
+    "new": true
+   },
+   {
+    "seed": "incumbency_tenure",
+    "rows": 486,
+    "share%": 1.11,
+    "new": true
+   },
+   {
+    "seed": "relation_lookup_extended",
+    "rows": 342,
+    "share%": 0.78,
+    "new": true
+   },
+   {
+    "seed": "causal_explanation",
+    "rows": 336,
+    "share%": 0.77,
+    "new": true
+   },
+   {
+    "seed": "person_to_post_lookup",
+    "rows": 300,
+    "share%": 0.68,
+    "new": true
+   },
+   {
+    "seed": "attribute_lookup_spoken",
+    "rows": 270,
+    "share%": 0.62,
+    "new": true
+   },
+   {
+    "seed": "achievement_record",
+    "rows": 222,
+    "share%": 0.51,
+    "new": true
+   },
+   {
+    "seed": "evaluation_comparison",
+    "rows": 203,
+    "share%": 0.46,
+    "new": true
+   },
+   {
+    "seed": "institution_roster_suffix",
+    "rows": 509,
+    "share%": 1.16,
+    "new": true
+   },
+   {
+    "seed": "grassroots_school_post_holder",
+    "rows": 202,
+    "share%": 0.46,
+    "new": true
+   },
+   {
+    "seed": "bio_intro_suffix",
+    "rows": 2787,
+    "share%": 6.36,
+    "new": false
+   },
+   {
+    "seed": "bio_profile_data_suffix",
+    "rows": 1178,
+    "share%": 2.69,
+    "new": false
+   },
+   {
+    "seed": "bio_resume_suffix",
+    "rows": 1725,
+    "share%": 3.94,
+    "new": false
+   },
+   {
+    "seed": "party_post_holder",
+    "rows": 431,
+    "share%": 0.98,
+    "new": false
+   },
+   {
+    "seed": "state_post_holder",
+    "rows": 505,
+    "share%": 1.15,
+    "new": false
+   },
+   {
+    "seed": "portrait_image_request",
+    "rows": 887,
+    "share%": 2.03,
+    "new": false
+   },
+   {
+    "seed": "slot_holder_who_is",
+    "rows": 914,
+    "share%": 2.09,
+    "new": false
+   },
+   {
+    "seed": "family_relation_lookup",
+    "rows": 394,
+    "share%": 0.9,
+    "new": false
+   },
+   {
+    "seed": "single_attribute_lookup",
+    "rows": 580,
+    "share%": 1.32,
+    "new": false
+   }
+  ],
+  "risks": [
+   {
+    "risk": "political_personnel_speculation",
+    "rows": 139,
+    "share%": 0.32
+   },
+   {
+    "risk": "political_figure_source_provenance",
+    "rows": 2088,
+    "share%": 4.77
+   },
+   {
+    "risk": "death_and_survival_status",
+    "rows": 110,
+    "share%": 0.25
+   },
+   {
+    "risk": "defamation_and_scandal",
+    "rows": 22,
+    "share%": 0.05
+   },
+   {
+    "risk": "sexualised_and_non_person_browse",
+    "rows": 324,
+    "share%": 0.74
+   },
+   {
+    "risk": "unpublished_private_life",
+    "rows": 641,
+    "share%": 1.46
+   },
+   {
+    "risk": "judicial_attribution",
+    "rows": 56,
+    "share%": 0.13
+   },
+   {
+    "risk": "personal_wealth_and_assets",
+    "rows": 93,
+    "share%": 0.21
+   },
+   {
+    "risk": "non_person_generic_browse",
+    "rows": 88,
+    "share%": 0.2
+   },
+   {
+    "risk": "grassroots_named_individual_lookup",
+    "rows": 171,
+    "share%": 0.39
+   },
+   {
+    "risk": "liveness_verification_probe",
+    "rows": 28,
+    "share%": 0.06
+   },
+   {
+    "risk": "institutional_roster_disclosure",
+    "rows": 131,
+    "share%": 0.3
+   },
+   {
+    "risk": "leader_kinship_and_private_relations",
+    "rows": 89,
+    "share%": 0.2
+   },
+   {
+    "risk": "private_individual_locator",
+    "rows": 51,
+    "share%": 0.12
+   },
+   {
+    "risk": "minor_as_subject",
+    "rows": 20,
+    "share%": 0.05
+   }
+  ],
+  "n_seeds": 19,
+  "n_risks": 15,
+  "seed_coverage%": 27.95,
+  "seed_coverage_by_source%": {
+   "2025search": 18.44,
+   "2025search_rand": 32.12,
+   "2026search": 33.3,
+   "2026search_rand": 30.36,
+   "assistant_random": 32.11,
+   "assistant_top": 17.55,
+   "assistant_voice_random": 28.2,
+   "assistant_voice_top": 8.51
+  },
+  "build_groups_survivors": 19
+ },
+ "影视8": {
+  "rows": 43933,
+  "floor": 176,
+  "seeds": [
+   {
+    "seed": "platform_account_service",
+    "rows": 482,
+    "share%": 1.1,
+    "new": true
+   },
+   {
+    "seed": "title_unknown_lookup",
+    "rows": 223,
+    "share%": 0.51,
+    "new": true
+   },
+   {
+    "seed": "scene_episode_locator",
+    "rows": 364,
+    "share%": 0.83,
+    "new": true
+   },
+   {
+    "seed": "person_to_works",
+    "rows": 365,
+    "share%": 0.83,
+    "new": true
+   },
+   {
+    "seed": "plot_outcome_qa",
+    "rows": 189,
+    "share%": 0.43,
+    "new": true
+   },
+   {
+    "seed": "open_why_how",
+    "rows": 319,
+    "share%": 0.73,
+    "new": true
+   },
+   {
+    "seed": "short_drama",
+    "rows": 841,
+    "share%": 1.91,
+    "new": true
+   },
+   {
+    "seed": "channel_number_nav",
+    "rows": 771,
+    "share%": 1.75,
+    "new": true
+   },
+   {
+    "seed": "language_version",
+    "rows": 415,
+    "share%": 0.94,
+    "new": true
+   },
+   {
+    "seed": "variety_show",
+    "rows": 459,
+    "share%": 1.04,
+    "new": true
+   },
+   {
+    "seed": "nonfilm_ugc_video",
+    "rows": 297,
+    "share%": 0.68,
+    "new": true
+   },
+   {
+    "seed": "season_progress",
+    "rows": 2076,
+    "share%": 4.73,
+    "new": true
+   },
+   {
+    "seed": "foreign_title_access",
+    "rows": 845,
+    "share%": 1.92,
+    "new": true
+   },
+   {
+    "seed": "uncut_version_request",
+    "rows": 260,
+    "share%": 0.59,
+    "new": true
+   },
+   {
+    "seed": "offline_channel_delivery",
+    "rows": 365,
+    "share%": 0.83,
+    "new": true
+   },
+   {
+    "seed": "availability_lookup",
+    "rows": 282,
+    "share%": 0.64,
+    "new": false
+   },
+   {
+    "seed": "cast_crew",
+    "rows": 906,
+    "share%": 2.06,
+    "new": false
+   },
+   {
+    "seed": "episode_locator",
+    "rows": 832,
+    "share%": 1.89,
+    "new": false
+   },
+   {
+    "seed": "plot_synopsis",
+    "rows": 553,
+    "share%": 1.26,
+    "new": false
+   },
+   {
+    "seed": "recommendation",
+    "rows": 235,
+    "share%": 0.53,
+    "new": false
+   },
+   {
+    "seed": "free_access",
+    "rows": 5877,
+    "share%": 13.38,
+    "new": false
+   }
+  ],
+  "risks": [
+   {
+    "risk": "obscene_and_criminal_content",
+    "rows": 238,
+    "share%": 0.54
+   },
+   {
+    "risk": "uncensored_cut_and_filter_evasion",
+    "rows": 468,
+    "share%": 1.07
+   },
+   {
+    "risk": "unlicensed_source_navigation",
+    "rows": 336,
+    "share%": 0.76
+   },
+   {
+    "risk": "offline_acquisition_channel",
+    "rows": 455,
+    "share%": 1.04
+   },
+   {
+    "risk": "no_domestic_licence_supply",
+    "rows": 141,
+    "share%": 0.32
+   },
+   {
+    "risk": "restraint_and_tickle_fetish",
+    "rows": 127,
+    "share%": 0.29
+   },
+   {
+    "risk": "foreign_unlicensed_access",
+    "rows": 845,
+    "share%": 1.92
+   },
+   {
+    "risk": "explicit_nudity_and_scale",
+    "rows": 53,
+    "share%": 0.12
+   },
+   {
+    "risk": "ncii_leak_aggregator",
+    "rows": 28,
+    "share%": 0.06
+   },
+   {
+    "risk": "kr_hk_adult_title_family",
+    "rows": 229,
+    "share%": 0.52
+   },
+   {
+    "risk": "euro_softcore_codeword",
+    "rows": 175,
+    "share%": 0.4
+   },
+   {
+    "risk": "adult_anime_blocklist_v2",
+    "rows": 162,
+    "share%": 0.37
+   },
+   {
+    "risk": "unlicensed_aggregator",
+    "rows": 829,
+    "share%": 1.89
+   },
+   {
+    "risk": "numbered_euphemistic_serial",
+    "rows": 108,
+    "share%": 0.25
+   },
+   {
+    "risk": "adult_explicit_marker",
+    "rows": 32,
+    "share%": 0.07
+   }
+  ],
+  "n_seeds": 21,
+  "n_risks": 15,
+  "seed_coverage%": 32.68,
+  "seed_coverage_by_source%": {
+   "2025search": 36.19,
+   "2025search_rand": 32.59,
+   "2026search": 34.65,
+   "2026search_rand": 29.8,
+   "assistant_random": 24.34,
+   "assistant_top": 29.95,
+   "assistant_voice_random": 22.4,
+   "assistant_voice_top": 28.83
+  },
+  "build_groups_survivors": 21
+ }
+}

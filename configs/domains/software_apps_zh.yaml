@@ -1,0 +1,299 @@
+# 软件 vertical — 2025/2026 搜索前一万 + AI 助手 top1k/random1k.
+#
+# EVERY SHARE BELOW WAS MEASURED with `str.contains` on the built corpus
+# `data/raw/pooled5/软件_pooled5.parquet` (21,920 mining rows = 2025搜索 9,997 +
+# 2026搜索 9,999 + 助手头部 940 + 助手随机 984). PV shares are WITHIN SOURCE.
+# Where the two search years disagree, both are given.
+#
+# THE CORPUS IS MOSTLY A NAVIGATION LOG. 下载/安装 matches 20.36% of rows and
+# ~17% of search PV; 官网/入口/登录 7.34%; the head of both years is a list of
+# app names (deepseek, 豆包, 微博, 微信, 应用宝, QQ). A taxonomy built here will
+# spend most of its mass on "take me to X", and the interesting structure is in
+# the remaining third — how-to, troubleshooting, and the grey-channel block.
+#
+# NOT a compliance artifact. The risk categories are a screening floor for
+# taxonomy work; a deployed 软件 surface needs platform-policy and legal review.
+key: software_apps_zh
+display_name: "软件搜索与 AI 助手 Query"
+language: zh
+
+tokenizer: jieba
+char_ngram_range: [1, 3]
+word_ngram_range: [1, 2]
+
+# Light-first; the bake-off decides. This corpus is unusually latin-heavy for a
+# zh vertical — app names (deepseek, telegram, shadowrocket, v2rayNG, clashverge,
+# base.apk), version strings (3.0.3, v21.6.0) and file extensions. A zh-only
+# encoder will treat those as OOV noise, so a multilingual candidate is in the
+# list rather than assumed away.
+embedding_candidates:
+  - BAAI/bge-small-zh-v1.5
+  - BAAI/bge-base-zh-v1.5
+  - intfloat/multilingual-e5-small
+instruction_prefix: null
+
+# Ordered narrow-to-broad. Union of all seeds below: 36.4% of rows, inside the
+# 20-40% ceiling.
+#
+# TWO CANDIDATES WERE DELIBERATELY NOT SEEDED.
+# `social_mechanics` (微信|qq|抖音|小红书|微博|贴吧|朋友圈…) matches 22.33% of
+# rows — but those are ENTITY names, not a phrasing template, and seeding them
+# builds a family that means "mentions a Chinese social app", which the taxonomy
+# gets for free from the entities themselves. It also overlaps howto_setting on
+# 927 rows (18.9%), so seeding both would hand the miner a family that is mostly
+# another family.
+# `ai_tool` (deepseek|豆包|文心|kimi…) 2.81% — same reason, plus it is the single
+# fastest-moving thing in the corpus (search rows 1.64% → 3.17%, search PV
+# 9.99% → 16.71%) and should be discovered, not pre-declared.
+template_seeds:
+  - name: file_convert
+    pattern: '(格式转换|pdf转|word转|转文字|识别文字|ocr|解压|压缩包)'
+    intent_hint: "把一个文件变成另一种格式，软件名是手段不是目的"
+    expected_min_share: 0.003
+  - name: troubleshoot
+    pattern: '(不能用|打不开|闪退|失败|异常|恢复|黑屏|卡顿|收不到|不显示)'
+    intent_hint: "某个功能坏了，求修复路径 — 与「怎么设置」不同：这里有一个已发生的故障"
+    expected_min_share: 0.010
+  - name: app_store
+    pattern: '(应用宝|应用市场|应用商店|豌豆荚|软件库|软件站)'
+    intent_hint: "求一个分发入口本身，而不是某个具体应用；行占比小但流量占比大（搜索 PV 5.36%/5.68%）"
+    expected_min_share: 0.010
+  - name: image_edit_op
+    pattern: '(抠图|去水印|水印|修图|美颜|扩图|变清晰|一键消除|线稿|写真)'
+    intent_hint: >
+      直接说出要对一张图做的操作，不点名软件。搜索侧 1.22%/1.00%，助手头部 18.72% —
+      因为助手把这些做成了功能入口，这是界面差异，不是需求差异
+    expected_min_share: 0.015
+  - name: circumvention
+    pattern: '(vpn|ⅴpn|加速器|梯子|翻墙|科学上网|clash|shadowrocket|v2ray|小火箭|纸飞机|电鸽)'
+    intent_hint: "求一个能连到境外网络的工具 — 见下方同名风险类目，这里只作为措辞族登记"
+    expected_min_share: 0.020
+  - name: howto_setting
+    pattern: '(怎么(办|弄|设置|用|恢复|关闭|打开|取消|删除|操作|改)|如何|在哪|哪里设置)'
+    intent_hint: "求在某个应用里完成某项操作的步骤 — 助手随机层 12.50% vs 搜索 6.63%/4.72%"
+    expected_min_share: 0.040
+  - name: official_entry
+    pattern: '(官网|网页版|入口|网址|登录|注册|客户端|电脑版|手机版)'
+    intent_hint: "求官方入口/网页版，通常与下载并列出现（两者重叠 491 行）"
+    expected_min_share: 0.055
+  - name: download_install
+    pattern: '(下载|安装|安装包|apk)'
+    intent_hint: "本垂类的支配意图：把某个应用装到本机上。合法与否取决于渠道，不取决于这个词"
+    expected_min_share: 0.150
+
+# The test applied: returning a normal, relevance-optimal result would itself be
+# a legal or safety event. 下载 alone does not fail it — 应用宝/华为应用市场 are
+# licensed channels — so it is the largest seed above, not a risk category.
+risk_categories:
+  - name: circumvention_tooling
+    # Measured 779 rows (3.554%), search PV 6.29% → 7.33% — the LARGEST
+    # risk-adjacent block in either new vertical, and growing (349 → 418 rows).
+    # NOTE THE FILTER EVASION, measured in these logs: ⅴpn uses U+2174 SMALL
+    # ROMAN NUMERAL FIVE, and the corpus also carries `ⅴpn加速器免费`. A screen
+    # keyed only to the ASCII spelling under-reports this class.
+    patterns:
+      - '(?i)vpn|ⅴpn|v ?p ?n|加速器|梯子|翻墙|科学上网|机场节点'
+      - '(?i)clash|shadowrocket|v2ray|小火箭|纸飞机|电鸽'
+      - '(?i)telegram|推特|twitter|外网|instagram|youtube|facebook'
+    rationale: >
+      《计算机信息网络国际联网管理暂行规定》art. 6 requires international traffic
+      to use state-provided gateways; art. 14 makes unauthorised channels an
+      ADMINISTRATIVE matter for 公安 (stop-order, warning, fine ≤ ¥15,000,
+      confiscation of gains) — for the individual user this is not a crime.
+      Supplying or operating the tooling is the different question: that can
+      reach 刑法 285(3) 提供侵入、非法控制计算机信息系统程序、工具罪 or 非法经营.
+      So the hazard here is the ANSWER, not the asker: naming a working node,
+      mirror or download is the act with exposure. Also: 推特/telegram/youtube
+      are blocked platforms whose mere naming is not itself unlawful, which is
+      why they sit in a flagged category and not a dropped one.
+    policy: isolate_and_flag
+  - name: cracked_and_unlocked_software
+    # Measured 131 rows (0.598%), search PV 0.41% → 0.18%, and SHRINKING:
+    # 91 rows in 2025 → 36 in 2026, the only risk block in either vertical that
+    # fell. The targets are domestic paid apps (剪映/豆包/kimi/小红书/美图秀秀),
+    # not foreign professional suites.
+    patterns:
+      - '(?i)破解|绿色版|去广告|免广告|vip版|会员版|解锁(版|会员|vip|全部)'
+      - '(?i)内购|激活码|注册机|序列号|补丁|crack|修改版|魔改'
+      - '共享(账号|会员)|白嫖|吾爱破解'
+    rationale: >
+      刑法 217 侵犯著作权罪 / 218 销售侵权复制品罪 under the 两高 IP interpretation
+      in force 2025-04-26, plus 《计算机软件保护条例》. A relevance-optimal answer
+      here is a download link to a modified binary — distribution, and in the
+      common case also a malware-delivery vector, since the same builds carry
+      the payload. Note 解锁 is polysemous: 微信怎么设置面容解锁 matches the
+      pattern and is entirely lawful, so hits need the object checked.
+    policy: isolate_and_flag
+  - name: credential_and_intrusion_tooling
+    # Measured 122 rows (0.557%), search PV 1.28% → 0.92%. Dominated by
+    # WiFi万能钥匙 — a mainstream, shipping app whose query intent here is 蹭网.
+    # Also measured: `wⅰf|万能钥匙下载` (U+2170 + pipe) — same evasion pattern as
+    # the VPN block. Tail includes 偷偷定位别人手机 and 干扰或屏蔽手机信号.
+    patterns:
+      - '万能钥匙|蹭网|破解.{0,4}密码'
+      - '查看.{0,6}(聊天记录|隐私|位置|轨迹)|(偷偷)?定位.{0,3}(对方|别人|他人|老公|老婆|孩子)|监控.{0,4}(手机|对方)'
+      - '(?i)盗号|黑客|改机|虚拟定位|模拟定位|fake ?location|一键root|解锁id'
+      - '(屏蔽|干扰).{0,4}(手机)?信号|信号(屏蔽|干扰)器|接码平台'
+    rationale: >
+      Three different statutes sit in this one pattern block, which is why it is
+      flagged rather than dropped and why hits must be read individually.
+      Password/WiFi tooling → 刑法 285(3). Locating or reading another person's
+      messages → 刑法 253-1 侵犯公民个人信息罪, where 行踪轨迹信息/通信内容 reach
+      情节严重 at 50 records. Signal jammers → 刑法 288 for the interference and
+      刑法 225 for producing or selling the equipment. 万能钥匙 itself is a
+      distributed product, so the flag means "this asker wants someone else's
+      network", not "this app is contraband".
+    policy: isolate_and_flag
+  - name: unregistered_distribution_channel
+    # Measured 80 rows (0.365%), search PV 0.53% → 1.18% — MORE THAN DOUBLED
+    # year on year, the fastest-growing risk block here. Named channels:
+    # 猪猪软件库 (versions 2.3/2.5/3.2/3.4/3.8/4.3), 3322软件站, 极客/海豚/微笑/
+    # 小虎/南泽/最先软件库, 蓝奏云, plus bare `base.apk` / `jhs2.0.5-1.apk`.
+    patterns:
+      - '软件库|软件站|破解软件|绿色软件|第三方(应用|商店)'
+      - '(?i)蓝奏云|base\.apk|[a-z0-9]{2,10}\.apk'
+    rationale: >
+      工信部 App 备案 (2023 onward, enforced through 2025) bars distribution
+      platforms from serving unregistered apps; these channels exist precisely to
+      sit outside that regime, and their catalogues overlap the cracked-software
+      block above. The exposure is joint: copyright for the builds, 备案 for the
+      channel, and malware for the user. A bare `*.apk` filename is kept in the
+      pattern because it is how the channel is named when the site is not.
+    policy: isolate_and_flag
+  - name: porn_app_distribution
+    # Measured 72 rows (0.328%), search PV 0.21% → 0.12%. The spelling is
+    # NUMERIC, not lexical: `9.1` is the whole euphemism (9.1免费下载 /
+    # 9.1.无需下载直接进入…), which is why a screen keyed to 色情/成人 finds
+    # almost none of it — the same lesson the film profile recorded for 三级片.
+    patterns:
+      # Bare `9\.1`, not `9\.1(免费|下载|…)`. The suffixed form scored 29 rows and
+      # missed 24 genuine ones (9.1软件 / 9.1极速版 / 9.1视频 / 9.1cad网站入口 /
+      # 9.1.无需下载直接进入百度…). Bare scores 53 with 2 arguable false positives
+      # (.com9.1.crm.org, 百度蓝莓成长9.1) — ~96% precision, and a screen should
+      # buy recall at that price.
+      - '9\.1'
+      - '黄金网站|幺蓝|无禁词'
+      - '草莓视频|樱桃视频|丝瓜视频|向日葵视频|香蕉视频|榴莲视频|快猫|茄子视频|荔枝视频|蜜桃'
+      - '(?i)成人.{0,4}(app|软件|下载)|涩涩'
+    rationale: >
+      Distribution of obscene material — 刑法 363/364, the same criminal exposure
+      as the manga platforms in books_docs_zh, and the same 快播 (2016) holding
+      that supplying the channel is the act. Serving a working install link is
+      the offence; serving an explanation of what the code refers to is not.
+    policy: drop
+
+  # ==========================================================================
+  # 下面六类不是我写的，是 soft-pool5 这一跑自己找出来的（2026-09-13）。
+  #
+  # `screen_risk` 跑在聚类之前，正是为了能问「一个没被告知这些模式的 agent，自己找到了吗」。
+  # 答案是找到了，而且找到的是这份档案的盲区：架构师在 p2a 写出了 4 个档案里没有的风险类，
+  # 风控哨兵在 p7 又给了 12 条发现。其中最大的一类（灰色辅助/作弊工具，101 行）比档案里
+  # 已经写了的两类都大（未备案分发 80 行、成人 App 分发 72 行）。
+  #
+  # **这六类不在 `runs/soft-pool5/gen01/risk_screen.json` 里** —— 那份文件记录的是运行当时的
+  # 档案。要在那一跑的语料上得到它们的数字，用 `analysis/pooled5/p5_new2_risk_supplement.py`。
+  # 条数均为我在 `data/raw/pooled5/软件_pooled5.parquet` 上复算的结果。
+  - name: grey_automation_and_multiboxing
+    # 101 行 (0.461%)，搜索 PV 0.577% → 0.461%。主体是 微信分身 与 自动点击器。
+    patterns:
+      - '(?i)多开|分身|改机|防关联|自动点击|一键root|群控|养号'
+      - '(?i)外挂|辅助器|脚本.{0,3}(挂机|自动)|模拟器.{0,4}(挂|脚本)'
+    rationale: >
+      Multi-boxing, device-spoofing, anti-association and auto-clicker tooling. The exposure is
+      platform-rule evasion rather than a single statute, but 群控/养号 farms sit next to
+      刑法 285(3) when they drive other people's accounts, and 微信分身 specifically breaches
+      the platform's terms in a way that gets accounts banned — so a relevance-optimal answer
+      here can cost the asker the account they are trying to protect.
+    policy: isolate_and_flag
+  - name: ncii_and_undressing_edit
+    # 51 行按交付分类（NON_CONSENSUAL_EXPLICIT_IMAGE_EDIT），15 行按词面。
+    # **七个领域里唯一一个「仅助手」类**：搜索侧 0 行，同发生率下期望 530.04 行，P(0)=0.0000。
+    # 绕过方式是**换说法**不是换字符，所以第一版档案完全没有它。
+    patterns:
+      - '(?i)p掉.{0,8}(衣|服|裙|裤)|(衣服|外衣|内衣|上衣|衣物|裙子|短裙|短裤|三角裤).{0,8}(p掉|去掉|删掉|删除|去除|消除|变透明|透视)'
+      - '(?i)透视装|透明度.{0,10}(100|全透)|半透明.{0,6}(比基尼|泳装|衣)'
+      - '(?i)(去|删|消)(除)?.{0,4}(打码|马赛克)|打码.{0,8}(去掉|删掉|去除|删除)|去码'
+    rationale: >
+      Instructions to strip clothing from, or de-censor, a person in an image the asker already
+      holds. On a retrieval surface this has no counterpart — you cannot search for an edit of a
+      picture you are carrying — which is why it is the only assistant-only class measured across
+      seven verticals. On a generation surface the request IS the production, so the output is
+      attributable to the operator. 33 of the 51 rows are in the assistant HEAD.
+    policy: drop
+  - name: deepfake_and_face_swap
+    # 14 行 (0.064%)，四个快照都有。
+    patterns: ['(?i)ai换脸|换脸|深度合成|deepfake|一键换脸|换头']
+    rationale: >
+      《互联网信息服务深度合成管理规定》(2023) requires conspicuous labelling of synthesised
+      likenesses and consent from the person depicted; 民法典 1019 protects the likeness right.
+      Naming the capability is lawful; routing to a tool that swaps a named person's face is the
+      act with exposure.
+    policy: isolate_and_flag
+  - name: evidence_fabrication_tooling
+    # 24 行 (0.109%)。微信聊天记录生成器 / 微信余额修改生成器 / 水印相机改时间与定位 / 抓包。
+    patterns:
+      - '(?i)聊天(记录)?生成器|转账生成|余额.{0,4}(修改|生成)|截图生成器'
+      - '(?i)水印.{0,8}(改|修改).{0,6}(时间|日期|定位)|修改.{0,4}(时间|日期|定位).{0,6}水印|抓包'
+    rationale: >
+      Tools whose only purpose is to produce a false record — fabricated chat logs, altered
+      balances, back-dated or relocated timestamped photos. Downstream these are evidence in
+      wage disputes, attendance checks and fraud; 刑法 280 (伪造证件) and civil fraud both sit
+      close. This is the class where a helpful answer most directly enables a harm to a third
+      party rather than to the asker.
+    policy: isolate_and_flag
+  - name: access_card_cloning
+    # 2 行。`mct门禁卡软件` = Mifare Classic Tool。小样本，保留为筛查底线。
+    patterns: ['(?i)\bmct\b|门禁卡.{0,6}(软件|复制|克隆|模拟)|ic卡.{0,4}(复制|破解)|nfc.{0,4}(复制|模拟|破解)']
+    rationale: >
+      Cloning another party's access credential — 刑法 285 for the system, and trespass for what
+      the card opens. n=2 cannot be fitted or evaluated; this is a maintained screen, never a
+      learned leaf.
+    policy: isolate_and_flag
+  - name: injected_link_or_html_payload
+    # 20 行 (0.091%)，2026 搜索 14 / 2025 搜索 6。整段 HTML 文档与「复制下面链接」式的分发话术。
+    # 附带发现：以 `=` 开头的这类串会被 openpyxl 当成公式写坏（见 p5_postprocess_run_xlsx.py）。
+    patterns:
+      - '(?i)<\s*(form|html|script|!doctype|iframe)'
+      - '(?i)https?://.{0,4}\?url=|复制下面.{0,4}链接|发货啦'
+    rationale: >
+      Raw HTML documents and copy-this-link distribution boilerplate appearing as queries. Either
+      scraping artefacts or spam/phishing templates being tested; both mean the row is not a user
+      intent and must not be clustered as one. Flagged so it is isolated rather than named.
+    policy: isolate_and_flag
+
+expected_l1_range: [16, 24]
+expected_family_range: [12, 30]
+
+pragmatic_intents_hint:
+  - "把某个应用装到本机上（下载/安装/官网入口）— 本垂类的支配意图，但合法与否在渠道不在措辞"
+  - "在某个应用里完成一项具体操作的步骤（微信怎么设置面容解锁）"
+  - "某项功能已经坏了，求修复（聊天记录删了怎么恢复 / 闪退 / 收不到消息）"
+  - "求一个能做某件事的软件，但说不出名字（有没有免费提取视频音乐的软件）"
+  - "直接说出要对一张图做的操作（去水印/抠图/扩图）— 助手侧是功能入口，搜索侧是找工具"
+  - "问某个平台的社交机制会怎样（对方把我删了我还能看到他的空间吗）— 问的是产品规则，不是操作步骤"
+  - "取消一项持续扣费或授权（自动续费/免密支付/解绑）"
+  - "对上一轮输出提修改要求 — 只在助手侧存在，脱离上文无法判定"
+
+domain_notes: >
+  软件 measured on 21,920 mining rows. Row shares: 社交平台机制 22.33%,
+  下载/安装 20.36%, 官网/入口 10.57%, 怎么办/排障 5.76%, 办公/专业软件 5.73%,
+  翻墙/境外 3.55%, AI 工具 3.08%, 图像编辑 2.40%.
+  Four things that change how results must be read.
+  (1) THE ASSISTANT HEAD IS ALMOST ENTIRELY PRODUCT SURFACE. v3 cleaning removed
+  only 56 of 996 head rows but took 98.47% of that export's PV with them — the
+  top eight (变清晰 5,229,357 / 去水印 / 涂抹消除 / 智能抠图 / 提取线稿 /
+  图片修复 / 一键消除 / 一键美颜) are all image-editing feature chips. Any
+  PV-weighted claim about the assistant head in this vertical is a claim about
+  Baidu's button layout. Use ROW shares.
+  (2) THE GREY CHANNEL IS THE STORY, AND IT IS SPLITTING. Circumvention grew
+  (6.29% → 7.33% of search PV) and unregistered distribution more than doubled
+  (0.53% → 1.18%), while cracking SHRANK (0.41% → 0.18%, 91 → 36 rows). Reporting
+  a single "grey" aggregate would hide that these move in opposite directions.
+  (3) FILTER EVASION IS PRESENT AND CHEAP. Measured in these logs: `ⅴpn加速器免费`
+  (U+2174) and `wⅰf|万能钥匙下载` (U+2170 + pipe). Any screen written only in
+  ASCII/standard forms under-reports; the risk patterns above carry the variants.
+  (4) AI TOOLS ARE THE FASTEST-MOVING ENTITY CLASS. Search rows 1.64% → 3.17%,
+  search PV 9.99% → 16.71%, and 12.77% of assistant-head rows. They were NOT
+  seeded as a template family precisely so the run has to find them.
+  Time caveat: both search snapshots are 7-01 and the assistant export is ~late
+  August; version-numbered and launch-driven queries move on that calendar.

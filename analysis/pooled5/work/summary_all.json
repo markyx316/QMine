@@ -1,0 +1,19 @@
+[
+ {
+  "domain": "人物",
+  "n_rows": 21804,
+  "sources": {
+   "2025search": 9983,
+   "2026search": 9982,
+   "assistant_top": 889,
+   "assistant_random": 950
+  },
+  "cramers_v_td_l1_name": 0.3138,
+  "n_classes_td_l1_name": 19,
+  "cramers_v_bu_family_final": 0.3835,
+  "n_classes_bu_family_final": 35,
+  "cramers_v_bu_leaf_name": 0.3836,
+  "n_classes_bu_leaf_name": 36,
+  "risk_total": 1188
+ }
+]

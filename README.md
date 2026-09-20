@@ -656,7 +656,7 @@ HANDOFF.md            dated log of state, findings and open questions
 runs/<id>/gen01/      artifacts and deliverables (git-ignored — runs stay local)
 ```
 
-**711 tests.** Each one records the defect it was written after, and its docstring
+**~750 tests.** Each one records the defect it was written after, and its docstring
 names that defect — `tests/` is the real index of the invariants this pipeline
 holds.
 

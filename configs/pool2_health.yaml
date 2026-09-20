@@ -1,0 +1,56 @@
+# POOLED-2 corpus for the 健康 domain: one week (2026-09-04 .. 09-10) of health SEARCH and of a
+# specialised HEALTH AI assistant (健康AI管家), aggregated from "top 10,000 (query x day)" exports
+# to one row per query and cleaned of the assistant's answer chips, feature buttons, pushed
+# suggestions and templates.
+#
+# Built by `analysis/pooled5/build_health_corpus.py` — its docstring carries the reasoning for every
+# column below. One run, one taxonomy, both sources, because two runs over the same rows shared 0
+# of 35 class codes.
+#
+# `extends: live.yaml` because `--config` REPLACES the default rather than merging it; without this
+# line the whole provider policy is silently dropped.
+extends: live.yaml
+
+data:
+  input_path: data/raw/pooled5/健康_pooled5.parquet
+  text_column: query
+
+  # Week-summed PV, normalised WITHIN source to 10,000. Search wise_pv and the assistant's PV are
+  # different instruments, and a query's week total is exact only when it was in the daily top
+  # on all seven days (a lower bound otherwise — see `pv_week_upper`).
+  weight_column: pv_norm
+
+  # `ops/drift.label_drift` compares EXACTLY two groups; here there are exactly two sources, and
+  # `surface` (搜索 / AI助手) names them.
+  snapshot_column: surface
+
+  # Same week on both sides, so the groups differ by SURFACE (and product), not by date. The time
+  # branch's prose would be false here (.claude/rules/multi-snapshot.md).
+  comparison_axis: stratum
+
+  # LEGACY LABELS — both exports carry the platform's own category on every row (100% coverage,
+  # a shared 6-value level-2 vocabulary, and a level-3 that is 科室-类型 crossed).
+  #
+  # Declared as REFERENCE ONLY, never supervision. What that buys, per the program's consumers:
+  # the first column stratifies the gold set, pilot and log-reading sample; every column is a K
+  # locator reference partition (gated on reaching >= 80% of clusters) and a naming-firewall
+  # term list; the legacy_audit researcher gets a taxonomy to audit (it had none on fin-pool8);
+  # and each column is carried into labels_full.csv as `ref_<col>`.
+  #
+  # `legacy_l1` is constant (医疗) and would be dropped by p1 anyway. Raw `legacy_l3` is NOT
+  # declared: it is the cross of the two facets below and adds 21 one-sided classes.
+  #
+  # PRE-REGISTERED CONDITION, written before the final corpus existed: each column stays declared
+  # only if, on the final cleaned corpus, Cramér's V(column, surface) <= 0.55 AND no class holding
+  # more than 1% of rows appears on one surface only. Draft-corpus values: legacy_l2 0.519,
+  # legacy_dept 0.339, legacy_type 0.253 (delivered intents vary by surface at 0.20-0.41 in the
+  # earlier runs).
+  #
+  # OUTCOME ON THE FINAL CORPUS (2,461 rows), applied as written:
+  #   legacy_l2    V = 0.251, no one-sided class                      -> declared (first: it
+  #                stratifies the gold set, pilot and log-reading sample)
+  #   legacy_type  V = 0.362, one one-sided class under 1% of rows    -> declared
+  #   legacy_dept  V = 0.348, two one-sided classes above 1% of rows  -> WITHDRAWN. A department that
+  #                exists on only one surface would reward partitions that separate the surfaces,
+  #                which is the comparison, not the frame. It stays in the corpus for analysis.
+  reference_label_columns: [legacy_l2, legacy_type]

@@ -401,18 +401,30 @@ def test_the_join_refuses_to_run_when_a_branch_never_arrived():
 
     The gate is RETURNED rather than registered, because `deps.gate` only builds
     the record; a gate the node discards cannot halt anything.
+
+    **The stub binds the REAL signature.** It used to accept `**kw` and read a
+    `blocking` key — a keyword `Deps.gate` has never had. So this test passed while
+    the production call raised `TypeError: Deps.gate() got an unexpected keyword
+    argument 'blocking'`, and the guard stayed broken until `ppl-pool8` gen03 hit
+    the join for real and died on a traceback instead of this gate. A stub looser
+    than the thing it stands in for tests nothing at the boundary that matters.
     """
+    import inspect
     from types import SimpleNamespace
 
     from qmine.graph.build import BOTTOMUP_BRANCH, TOPDOWN_BRANCH
+    from qmine.graph.deps import Deps
     from qmine.graph.nodes.topdown import _require_both_branches
 
     emitted: list[str] = []
     built: dict = {}
+    _real = inspect.signature(Deps.gate)
 
     def _gate(name, phase=None, **kw):
-        g = SimpleNamespace(name=name, halts_run=bool(kw.get("blocking"))
-                            and not kw.get("passed", True), **kw)
+        # Raises TypeError on any keyword the real method would reject.
+        _real.bind(None, name, phase=phase, **kw)
+        g = SimpleNamespace(name=name, halts_run=not kw.get("passed", True)
+                            and not kw.get("warn_only", False) and not kw.get("skipped", False), **kw)
         built[name] = g
         return g
 

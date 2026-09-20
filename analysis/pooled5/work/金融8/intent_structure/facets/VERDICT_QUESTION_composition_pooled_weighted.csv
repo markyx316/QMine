@@ -1,0 +1,10 @@
+﻿多数,加权占比%,子功能名
+CATEGORY_CHECK,10.2,类别/身份辨析
+DECISION_ADVICE,3.8,决策建议（该不该做）
+ELIGIBILITY_COVER,12.9,资格准入/承保范围
+IMPACT_EXPOSURE,5.8,后果影响核实
+MERIT_SAFETY,10.0,安全/质量评估
+REMEDY_UNDO,8.3,事后补救/撤销
+SERVICE_RULE,41.7,业务规则/操作可行性
+UNSURE_FUNCTION,1.4,功能无法判定
+WORLD_STATE,6.0,事实状态/时事走势

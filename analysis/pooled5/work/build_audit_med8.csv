@@ -1,0 +1,9 @@
+﻿domain,source,rows,kept,dropped,drop_%,pv_dropped_%
+医疗8,2025search,10000,9998,2,0.02,0.09
+医疗8,2025search_rand,10000,10000,0,0.0,0.0
+医疗8,2026search,10000,9998,2,0.02,0.01
+医疗8,2026search_rand,10000,10000,0,0.0,0.0
+医疗8,assistant_top,1000,958,42,4.2,39.13
+医疗8,assistant_random,1000,998,2,0.2,0.17
+医疗8,assistant_voice_top,1067,1067,0,0.0,0.0
+医疗8,assistant_voice,1000,1000,0,0.0,0.0

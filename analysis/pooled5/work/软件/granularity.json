@@ -1,0 +1,290 @@
+{
+  "k_sweep": [
+    {
+      "k": 7,
+      "intent_alignment_ami": 0.4137,
+      "stability_ari": 0.9873,
+      "silhouette": 0.1163,
+      "template_fragmentation": 2.4269
+    },
+    {
+      "k": 8,
+      "intent_alignment_ami": 0.4009,
+      "stability_ari": 0.972,
+      "silhouette": 0.116,
+      "template_fragmentation": 2.8132
+    },
+    {
+      "k": 10,
+      "intent_alignment_ami": 0.4431,
+      "stability_ari": 0.8138,
+      "silhouette": 0.1201,
+      "template_fragmentation": 2.8698
+    },
+    {
+      "k": 12,
+      "intent_alignment_ami": 0.4141,
+      "stability_ari": 0.8845,
+      "silhouette": 0.1032,
+      "template_fragmentation": 3.4505
+    },
+    {
+      "k": 15,
+      "intent_alignment_ami": 0.4124,
+      "stability_ari": 0.6508,
+      "silhouette": 0.0921,
+      "template_fragmentation": 3.9802
+    },
+    {
+      "k": 18,
+      "intent_alignment_ami": 0.426,
+      "stability_ari": 0.7326,
+      "silhouette": 0.1111,
+      "template_fragmentation": 4.1714
+    },
+    {
+      "k": 20,
+      "intent_alignment_ami": 0.4378,
+      "stability_ari": 0.7873,
+      "silhouette": 0.1007,
+      "template_fragmentation": 4.8115
+    },
+    {
+      "k": 25,
+      "intent_alignment_ami": 0.4133,
+      "stability_ari": 0.837,
+      "silhouette": 0.0998,
+      "template_fragmentation": 5.6327
+    },
+    {
+      "k": 30,
+      "intent_alignment_ami": 0.3925,
+      "stability_ari": 0.6873,
+      "silhouette": 0.1131,
+      "template_fragmentation": 6.9997
+    },
+    {
+      "k": 40,
+      "intent_alignment_ami": 0.3943,
+      "stability_ari": 0.6129,
+      "silhouette": 0.1198,
+      "template_fragmentation": 7.7886
+    },
+    {
+      "k": 45,
+      "intent_alignment_ami": 0.3765,
+      "stability_ari": 0.6338,
+      "silhouette": 0.0951,
+      "template_fragmentation": 9.0774
+    },
+    {
+      "k": 50,
+      "intent_alignment_ami": 0.374,
+      "stability_ari": 0.6273,
+      "silhouette": 0.1013,
+      "template_fragmentation": 9.0226
+    },
+    {
+      "k": 65,
+      "intent_alignment_ami": 0.375,
+      "stability_ari": 0.6889,
+      "silhouette": 0.1094,
+      "template_fragmentation": 10.5575
+    },
+    {
+      "k": 80,
+      "intent_alignment_ami": 0.3529,
+      "stability_ari": 0.6766,
+      "silhouette": 0.1172,
+      "template_fragmentation": 12.7153
+    },
+    {
+      "k": 100,
+      "intent_alignment_ami": 0.3316,
+      "stability_ari": 0.6631,
+      "silhouette": 0.1233,
+      "template_fragmentation": 17.2015
+    },
+    {
+      "k": 120,
+      "intent_alignment_ami": 0.3294,
+      "stability_ari": 0.645,
+      "silhouette": 0.1263,
+      "template_fragmentation": 18.3292
+    }
+  ],
+  "deep_aligned": {
+    "k_overcluster": 63,
+    "survival_threshold": 347.9,
+    "k_estimate": 25,
+    "size_distribution": {
+      "max": 1236,
+      "median": 288,
+      "min": 65
+    }
+  },
+  "triangulation": {
+    "estimates": {
+      "located_k": 7,
+      "located_by": "intent_alignment_ami",
+      "deep_aligned_leaf_k": 25,
+      "deep_aligned_implied_family_k": 8.3,
+      "expert_range": [
+        12,
+        30
+      ],
+      "silhouette_peak_k": 120
+    },
+    "chosen_family_k": 7,
+    "locator": "intent_alignment_ami",
+    "stability_floor": 0.55,
+    "n_rejected_as_unstable": 0,
+    "tie_set": [
+      {
+        "k": 7,
+        "intent_alignment_ami": 0.4137,
+        "stability_ari": 0.9873,
+        "template_fragmentation": 2.4269
+      },
+      {
+        "k": 10,
+        "intent_alignment_ami": 0.4431,
+        "stability_ari": 0.8138,
+        "template_fragmentation": 2.8698
+      },
+      {
+        "k": 12,
+        "intent_alignment_ami": 0.4141,
+        "stability_ari": 0.8845,
+        "template_fragmentation": 3.4505
+      },
+      {
+        "k": 15,
+        "intent_alignment_ami": 0.4124,
+        "stability_ari": 0.6508,
+        "template_fragmentation": 3.9802
+      },
+      {
+        "k": 18,
+        "intent_alignment_ami": 0.426,
+        "stability_ari": 0.7326,
+        "template_fragmentation": 4.1714
+      },
+      {
+        "k": 20,
+        "intent_alignment_ami": 0.4378,
+        "stability_ari": 0.7873,
+        "template_fragmentation": 4.8115
+      },
+      {
+        "k": 25,
+        "intent_alignment_ami": 0.4133,
+        "stability_ari": 0.837,
+        "template_fragmentation": 5.6327
+      }
+    ],
+    "chosen_by": "stability >= 0.55 rejects irreproducible K; among survivors the highest intent_alignment_ami; ties within 0.03208 — 2x measured noise (se=0.01604) — broken toward the simpler tree",
+    "converged": false,
+    "agreement": "measured_only",
+    "measured_estimators_agree": true,
+    "prior_agrees": false,
+    "divergence_note": "两个实测估计都落在 K=7 附近 (定案 7, 过聚类存活推出 8.3), 但领域先验期望 12-30。**对本语料的两个独立测量一致, 胜过从别处带来的先验** — 该修的是先验。值得复核: 这里的意图轴是否真的比预期更粗, 因为承载细分的是叶层而非家族层。",
+    "silhouette_disagrees": true,
+    "reference_sensitivity": {
+      "by_reference": {
+        "phrasing_groups": {
+          "locates_k": 10,
+          "peak_value": 0.4431,
+          "value_at_chosen_k": 0.4137,
+          "decides": true
+        }
+      },
+      "chosen_k": 7,
+      "note_scope": "raw argmax per reference, before the stability veto and the tie band",
+      "located_k_values": {
+        "phrasing_groups": 10
+      },
+      "n_references": 1,
+      "references_agree": null
+    },
+    "locator_reach": {
+      "phrasing_groups": {
+        "reach": 0.8333,
+        "mass": 0.7198,
+        "n_clusters_reached": 25,
+        "n_clusters": 30,
+        "row_coverage": 0.3565,
+        "min_share": 0.1,
+        "column": "intent_alignment_ami",
+        "discrimination": 7.09
+      }
+    },
+    "deciding_reference": "phrasing_groups"
+  },
+  "locator_reference": {
+    "reference": "phrasing (template) groups",
+    "n_classes": 7,
+    "coverage": 0.3565,
+    "n_rows_scored": 7814,
+    "caveat": "这是**措辞群**参照系的画像, 不一定是最终定位 K 的那个参照系 —— 后者见 `triangulation.deciding_reference`。定位到的 K 跟着参照系**触及到多少簇**走 (不是它的类目数: 固定行集、只改类目数, 6/9/25 类都定位到同一个 K), 参照系没覆盖到的行则完全不计分。换一个参照系, 答案就会变。",
+    "is_the_deciding_reference": true,
+    "deciding_reference": "phrasing_groups"
+  },
+  "grid_proposal": {
+    "incumbent": [
+      8,
+      10,
+      12,
+      15,
+      18,
+      20,
+      25,
+      30,
+      40,
+      50,
+      65,
+      80,
+      100,
+      120
+    ],
+    "proposed_kept": [
+      7,
+      45
+    ],
+    "proposed_rejected": [],
+    "n_extra_comparisons": 2,
+    "widened": [
+      7,
+      8,
+      10,
+      12,
+      15,
+      18,
+      20,
+      25,
+      30,
+      40,
+      45,
+      50,
+      65,
+      80,
+      100,
+      120
+    ],
+    "rationale": "该语料是 software_apps_zh，规模为 21920 行、16639 去重查询。12 个短语组名称中有明显可合并的顶层意图，例如“suffix:朋友圈”“suffix:友圈文案”可归为社交文案，“official_entry”“app_store”“download_install”“suffix:最新版”可归为获取/安装/更新相关；聚合后顶层意图可能低于现有网格下界 8，因此增加 7 作为保守下探。另一方面，短语组覆盖率 0.39786，若按 12 个短语组外推，12/0.398≈30；当部分短语组内部不只一个顶层意图、按平均约 1.5 个计算时约 45。现有网格已有 30、40、50，缺 45，故增加 45 探测模板化部分与非模板尾巴之间的中间粒度。100 和 120 对当前唯一查询量来说平均每簇唯一查询约为 139-166，可能产生难以命名的小簇，列为 drop。",
+    "corpus_signals": [
+      "n_rows",
+      "n_unique",
+      "n_phrasing_groups",
+      "phrasing_group_coverage",
+      "phrasing_group_names"
+    ],
+    "drop_advisory_ignored": [
+      120.0,
+      100.0
+    ],
+    "chosen": 7,
+    "a_proposed_value_won": true,
+    "verdict": "a proposed candidate was selected"
+  }
+}

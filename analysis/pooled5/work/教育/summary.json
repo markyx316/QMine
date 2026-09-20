@@ -1,0 +1,17 @@
+{
+ "domain": "教育",
+ "n_rows": 21799,
+ "sources": {
+  "2025search": 9989,
+  "2026search": 9981,
+  "assistant_top": 859,
+  "assistant_random": 970
+ },
+ "cramers_v_td_l1_name": 0.2827,
+ "n_classes_td_l1_name": 20,
+ "cramers_v_bu_family_final": 0.2703,
+ "n_classes_bu_family_final": 21,
+ "cramers_v_bu_leaf_name": 0.3436,
+ "n_classes_bu_leaf_name": 38,
+ "risk_total": 924
+}

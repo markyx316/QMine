@@ -2755,8 +2755,15 @@ def _require_both_branches(state: PipelineState, deps: Deps) -> dict[str, Any]:
     if not missing:
         return {}
     deps.emit(f"!! 分支缺失: {', '.join(missing)} 从未运行, 但流程已到达汇合点")
+    # `blocking=True` IS NOT A PARAMETER OF `Deps.gate`. This whole branch is the
+    # error path, so nothing ever called it until `ppl-pool8` gen03 arrived at the
+    # join with p2b_gold still unfinished: the guard fired, `TypeError: Deps.gate()
+    # got an unexpected keyword argument 'blocking'` killed the node, and the run
+    # died with a traceback instead of the gate, the reason and the remediation
+    # this function exists to deliver. A gate is blocking unless `warn_only` says
+    # otherwise, so the halt was always spelled by the returned dict below.
     gate = deps.gate(
-        "p2c_both_branches_arrived", phase="p2c", passed=False, blocking=True,
+        "p2c_both_branches_arrived", phase="p2c", passed=False,
         observed={"missing_branch_phases": missing,
                   "phases_completed": sorted(k for k, v in done.items() if v == "ok")},
         threshold={"rule": "every phase of both concurrent branches must have run "
@@ -3204,16 +3211,41 @@ def _active_learning_round(
     la, lb = _annotate_both(
         ctx, queries, classes_txt, rules_txt, taxonomy.labeling_guide, deps)
     solo = lb is None
+    # ROUND 1'S TWO PROTECTIONS HAVE TO APPLY HERE TOO. They were added above and
+    # not here, and on `ppl-pool8` this round produced 22 rows whose annotator
+    # omitted a label: `a2 == b2 == UNLABELED` satisfied the equality, so each was
+    # recorded `agreed=True, final="UNLABELED"`, passed p2c's non-empty filter, and
+    # — 22 rows being more than the 5-fold support floor — was TRAINED AS A CLASS.
+    # The delivered taxonomy has 18 codes; the classifier shipped 19, predicted the
+    # phantom one onto 11 corpus rows, and it reached five delivered documents.
+    # A row nobody labelled is missing data, not agreement; and one annotator has no
+    # second reading to contradict an invented code, so solo has to snap it itself.
+    _valid_codes = {n.code for n in taxonomy.nodes if getattr(n, "code", None)}
+    n_missing = n_offschema = 0
     out: list[GoldRow] = []
     for j, q in enumerate(queries):
         a2 = la[j]["label"]
+        if solo and a2 != UNLABELED and _valid_codes and a2 not in _valid_codes:
+            snapped, _note = _snap_label_to_taxonomy(a2, _valid_codes)
+            if snapped:
+                a2 = snapped
+            else:
+                n_offschema += 1
+                a2 = UNLABELED
         b2 = a2 if solo else lb[j]["label"]
+        missing = UNLABELED in (a2, b2)
+        n_missing += int(missing)
         out.append(GoldRow(
             query=q, idx=int(picks[j]), label_a=a2, label_b="" if solo else b2,
-            final=a2 if a2 == b2 else "", agreed=a2 == b2,
+            final="" if missing else (a2 if a2 == b2 else ""),
+            agreed=(not missing) and a2 == b2,
             n_annotators=1 if solo else 2,
             rationale_a=la[j].get("rationale", ""),
             rationale_b="" if solo else lb[j].get("rationale", ""),
             round=2, source="active_learning",
         ))
+    if n_missing or n_offschema:
+        deps.emit(f"  ⚠ active-learning round: {n_missing} row(s) missing a label, "
+                  f"{n_offschema} row(s) off-schema and unrepairable — excluded from the "
+                  f"gold set rather than shipped as a phantom class")
     return out

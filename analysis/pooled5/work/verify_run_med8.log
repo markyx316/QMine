@@ -1,0 +1,128 @@
+
+==============================================================================
+NEW RUN: runs/med-pool8/gen01
+==============================================================================
+  MODE = fast  —  10 component(s) not run: adversarial_validation, delivery_audit, dual_annotation, kappa_agreement, kappa_repair, narrative_report, phase_observers, pilot_ceiling, result_interpretation, taxonomy_redraw
+  Checks over those components report N/A. A fast run is NOT comparable to a full run on counts alone.
+✅ [governance ] every delivered leaf has a name
+      41 leaves, all named
+✅ [governance ] the blocking delivery gate reached state
+      present
+·  [agents     ] phase observers ran and recorded gates
+      mode=fast: phase_observers not run
+✅ [reports    ] the report agrees with itself on the delivered shape
+      37/41 both places
+✅ [reports    ] the reported shape IS the delivered shape
+      37/41
+✅ [reports    ] every report honours report_language
+      no untranslated headings
+✅ [reports    ] a family is named after the leaves it contains
+      74 headings, all trace to families_final + audit
+✅ [reports    ] gate messages reach the reader
+      per-gate conclusions printed
+✅ [reports    ] the risk screen reaches the catalogue
+      2870 flagged rows shown per leaf
+✅ [measurement] the panel compares BOTH routes
+      {'topdown_l1': 3, 'topdown_l2': 3}, leaves=9
+✅ [measurement] the K tie band was measured, not assumed
+      048 — 2x measured noise (se=0.013524) — broken toward the simpler tree
+✅ [measurement] the K locator is named correctly
+      credited to intent alignment
+✅ [gold       ] no phantom classes from referee typos
+      3199 labelled rows, all in the taxonomy
+✅ [gold       ] gold-set provenance is disclosed
+      source breakdown printed
+✅ [agents     ] research provenance recorded
+      2/5 angles web-researched
+✅ [agents     ] grid proposals recorded and graded
+      granularity: kept=[5, 6] won=False; representation: kept=[0.65] won=False
+—  [agents     ] agent prose is verified or absent
+      no agent prose in this report
+✅ [health     ] the run used real agents
+      routed
+✅ [health     ] every phase completed
+      18 phases: p0..p12
+✅ [measurement] hierarchy_meta agrees with its own breakdown
+      n_leaves=49, breakdown sums to 49, labels carry 49
+·  [agents     ] observers reached the phases that decide
+      mode=fast: phase_observers not run
+·  [agents     ] a blocking observation was CONFIRMED, not merely asserted
+      mode=fast: phase_observers not run
+✅ [agents     ] the findings ledger exists and is run-level
+      0 open, 0 confirmed, 0 total
+✅ [measurement] rules were measured against the referee's own verdicts
+      34 lexical / 14 semantic; 0 boundaries measured
+·  [agents     ] the pre-delivery audit ran and reported itself
+      mode=fast: delivery_audit not run
+·  [agents     ] every edited deliverable kept its pre-audit original
+      mode=fast: delivery_audit not run
+·  [narrative  ] final report was written and its coverage disclosed
+      mode=fast: narrative_report not run
+✅ [narrative  ] no untranslated English prose in a Chinese deliverable
+      no unexpected English prose
+
+  {'PASS': 21, 'N/A': 6, 'SKIP': 1}
+
+==============================================================================
+CONTROL (pre-fix): runs/ppl-pool5/gen01
+==============================================================================
+  MODE = fast  —  10 component(s) not run: adversarial_validation, delivery_audit, dual_annotation, kappa_agreement, kappa_repair, narrative_report, phase_observers, pilot_ceiling, result_interpretation, taxonomy_redraw
+  Checks over those components report N/A. A fast run is NOT comparable to a full run on counts alone.
+—  [governance ] every delivered leaf has a name
+      no delivered table
+❌ [governance ] the blocking delivery gate reached state
+      absent; gates = ['p1_minority_language_risk', 'p1_reference_columns_declared', 'p1_template_coverage', 'p2a_pilot_agreement', 'p2a_taxonomy_shape', 'p
+·  [agents     ] phase observers ran and recorded gates
+      mode=fast: phase_observers not run
+—  [reports    ] the report agrees with itself on the delivered shape
+      no bottom-up report
+—  [reports    ] the reported shape IS the delivered shape
+      missing inputs
+✅ [reports    ] every report honours report_language
+      no untranslated headings
+—  [reports    ] a family is named after the leaves it contains
+      missing report or labels
+—  [reports    ] gate messages reach the reader
+      no report
+—  [reports    ] the risk screen reaches the catalogue
+      missing catalogue or risk screen
+—  [measurement] the panel compares BOTH routes
+      no panel
+✅ [measurement] the K tie band was measured, not assumed
+      466 — 2x measured noise (se=0.026733) — broken toward the simpler tree
+—  [measurement] the K locator is named correctly
+      missing inputs
+✅ [gold       ] no phantom classes from referee typos
+      3200 labelled rows, all in the taxonomy
+—  [gold       ] gold-set provenance is disclosed
+      no top-down report
+✅ [agents     ] research provenance recorded
+      1/4 angles web-researched
+✅ [agents     ] grid proposals recorded and graded
+      granularity: kept=[5, 6] won=False; representation: kept=[0.7, 0.86] won=True
+—  [agents     ] agent prose is verified or absent
+      no report
+✅ [health     ] the run used real agents
+      routed
+❌ [health     ] every phase completed
+      p7_audit: AttributeError: 'types.SimpleNamespace' object has no attribute 'model_dump'
+✅ [measurement] hierarchy_meta agrees with its own breakdown
+      n_leaves=48, breakdown sums to 48, labels carry 48
+·  [agents     ] observers reached the phases that decide
+      mode=fast: phase_observers not run
+·  [agents     ] a blocking observation was CONFIRMED, not merely asserted
+      mode=fast: phase_observers not run
+❌ [agents     ] the findings ledger exists and is run-level
+      no findings.json at the run root (runs/ppl-pool5)
+✅ [measurement] rules were measured against the referee's own verdicts
+      33 lexical / 16 semantic; 0 boundaries measured
+·  [agents     ] the pre-delivery audit ran and reported itself
+      mode=fast: delivery_audit not run
+·  [agents     ] every edited deliverable kept its pre-audit original
+      mode=fast: delivery_audit not run
+·  [narrative  ] final report was written and its coverage disclosed
+      mode=fast: narrative_report not run
+✅ [narrative  ] no untranslated English prose in a Chinese deliverable
+      no unexpected English prose
+
+  {'SKIP': 10, 'FAIL': 3, 'N/A': 6, 'PASS': 9}

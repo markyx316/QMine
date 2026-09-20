@@ -1,0 +1,253 @@
+{
+  "k_sweep": [
+    {
+      "k": 4,
+      "intent_alignment_ami": 0.6344,
+      "stability_ari": 0.9996,
+      "silhouette": 0.0924,
+      "template_fragmentation": 1.2799
+    },
+    {
+      "k": 7,
+      "intent_alignment_ami": 0.7383,
+      "stability_ari": 0.9954,
+      "silhouette": 0.0831,
+      "template_fragmentation": 1.6035
+    },
+    {
+      "k": 8,
+      "intent_alignment_ami": 0.708,
+      "stability_ari": 0.9905,
+      "silhouette": 0.0458,
+      "template_fragmentation": 1.8294
+    },
+    {
+      "k": 10,
+      "intent_alignment_ami": 0.6924,
+      "stability_ari": 0.9893,
+      "silhouette": 0.054,
+      "template_fragmentation": 2.0124
+    },
+    {
+      "k": 12,
+      "intent_alignment_ami": 0.6681,
+      "stability_ari": 0.8914,
+      "silhouette": 0.0489,
+      "template_fragmentation": 2.3944
+    },
+    {
+      "k": 15,
+      "intent_alignment_ami": 0.6738,
+      "stability_ari": 0.8711,
+      "silhouette": 0.0514,
+      "template_fragmentation": 2.3631
+    },
+    {
+      "k": 18,
+      "intent_alignment_ami": 0.6583,
+      "stability_ari": 0.733,
+      "silhouette": 0.058,
+      "template_fragmentation": 2.8385
+    },
+    {
+      "k": 20,
+      "intent_alignment_ami": 0.6445,
+      "stability_ari": 0.6021,
+      "silhouette": 0.0556,
+      "template_fragmentation": 3.2677
+    },
+    {
+      "k": 25,
+      "intent_alignment_ami": 0.6511,
+      "stability_ari": 0.629,
+      "silhouette": 0.0613,
+      "template_fragmentation": 3.5492
+    },
+    {
+      "k": 30,
+      "intent_alignment_ami": 0.5786,
+      "stability_ari": 0.5941,
+      "silhouette": 0.0623,
+      "template_fragmentation": 4.782
+    },
+    {
+      "k": 40,
+      "intent_alignment_ami": 0.5398,
+      "stability_ari": 0.6051,
+      "silhouette": 0.0652,
+      "template_fragmentation": 5.9281
+    },
+    {
+      "k": 50,
+      "intent_alignment_ami": 0.5324,
+      "stability_ari": 0.6403,
+      "silhouette": 0.0742,
+      "template_fragmentation": 7.1554
+    },
+    {
+      "k": 65,
+      "intent_alignment_ami": 0.5119,
+      "stability_ari": 0.5452,
+      "silhouette": 0.0754,
+      "template_fragmentation": 8.7858
+    },
+    {
+      "k": 80,
+      "intent_alignment_ami": 0.4988,
+      "stability_ari": 0.5947,
+      "silhouette": 0.0759,
+      "template_fragmentation": 10.7671
+    },
+    {
+      "k": 100,
+      "intent_alignment_ami": 0.4602,
+      "stability_ari": 0.55,
+      "silhouette": 0.0819,
+      "template_fragmentation": 14.1429
+    },
+    {
+      "k": 120,
+      "intent_alignment_ami": 0.4462,
+      "stability_ari": 0.5376,
+      "silhouette": 0.0877,
+      "template_fragmentation": 17.3301
+    }
+  ],
+  "deep_aligned": {
+    "k_overcluster": 54,
+    "survival_threshold": 425.0,
+    "k_estimate": 22,
+    "size_distribution": {
+      "max": 987,
+      "median": 378,
+      "min": 147
+    }
+  },
+  "triangulation": {
+    "estimates": {
+      "located_k": 7,
+      "located_by": "intent_alignment_ami",
+      "deep_aligned_leaf_k": 22,
+      "deep_aligned_implied_family_k": 7.3,
+      "expert_range": [
+        8,
+        28
+      ],
+      "silhouette_peak_k": 4
+    },
+    "chosen_family_k": 7,
+    "locator": "intent_alignment_ami",
+    "stability_floor": 0.55,
+    "n_rejected_as_unstable": 2,
+    "tie_set": [
+      {
+        "k": 7,
+        "intent_alignment_ami": 0.7383,
+        "stability_ari": 0.9954,
+        "template_fragmentation": 1.6035
+      }
+    ],
+    "chosen_by": "stability >= 0.55 rejects irreproducible K; among survivors the highest intent_alignment_ami; ties within 0.018451 — 2x measured noise (se=0.0092255) — broken toward the simpler tree",
+    "converged": false,
+    "agreement": "measured_only",
+    "measured_estimators_agree": true,
+    "prior_agrees": false,
+    "divergence_note": "两个实测估计都落在 K=7 附近 (定案 7, 过聚类存活推出 7.3), 但领域先验期望 8-28。**对本语料的两个独立测量一致, 胜过从别处带来的先验** — 该修的是先验。值得复核: 这里的意图轴是否真的比预期更粗, 因为承载细分的是叶层而非家族层。",
+    "silhouette_disagrees": true,
+    "reference_sensitivity": {
+      "by_reference": {
+        "phrasing_groups": {
+          "locates_k": 7,
+          "peak_value": 0.7383,
+          "value_at_chosen_k": 0.7383,
+          "decides": true
+        }
+      },
+      "chosen_k": 7,
+      "note_scope": "raw argmax per reference, before the stability veto and the tie band",
+      "located_k_values": {
+        "phrasing_groups": 7
+      },
+      "n_references": 1,
+      "references_agree": null
+    },
+    "locator_reach": {
+      "phrasing_groups": {
+        "reach": 0.76,
+        "mass": 0.7685,
+        "n_clusters_reached": 19,
+        "n_clusters": 25,
+        "row_coverage": 0.5314,
+        "min_share": 0.1,
+        "column": "intent_alignment_ami",
+        "discrimination": 31.66
+      }
+    },
+    "deciding_reference": "phrasing_groups"
+  },
+  "locator_reference": {
+    "reference": "phrasing (template) groups",
+    "n_classes": 8,
+    "coverage": 0.5314,
+    "n_rows_scored": 12196,
+    "caveat": "这是**措辞群**参照系的画像, 不一定是最终定位 K 的那个参照系 —— 后者见 `triangulation.deciding_reference`。定位到的 K 跟着参照系**触及到多少簇**走 (不是它的类目数: 固定行集、只改类目数, 6/9/25 类都定位到同一个 K), 参照系没覆盖到的行则完全不计分。换一个参照系, 答案就会变。",
+    "is_the_deciding_reference": true,
+    "deciding_reference": "phrasing_groups"
+  },
+  "grid_proposal": {
+    "incumbent": [
+      8,
+      10,
+      12,
+      15,
+      18,
+      20,
+      25,
+      30,
+      40,
+      50,
+      65,
+      80,
+      100,
+      120
+    ],
+    "proposed_kept": [
+      4,
+      7
+    ],
+    "proposed_rejected": [],
+    "n_extra_comparisons": 2,
+    "widened": [
+      4,
+      7,
+      8,
+      10,
+      12,
+      15,
+      18,
+      20,
+      25,
+      30,
+      40,
+      50,
+      65,
+      80,
+      100,
+      120
+    ],
+    "rationale": "语料为中文医学垂直查询，han 占 97.9%，几乎不存在需要单独成簇的多语言流量。已识别 8 个短语模板覆盖 53.1% 查询；这些模板可合并为更少的高层意图：药品疗效与物质疗效可并为疗效类，用法用量与治疗操作可并为治疗用法类，正常范围与术语定义可并为指标/定义类，症状原因与症状列表可并为症状信息类，对应约 4 个顶层簇；若只合并两类疗效模板、其余模板各自成簇，则对应约 7 个顶层簇。当前网格最低为 8，未覆盖这种更粗粒度，故增加 4 和 7。22,952 行和 16,223 个唯一查询足以支撑这些簇。",
+    "corpus_signals": [
+      "n_rows",
+      "n_unique",
+      "language_shares",
+      "n_phrasing_groups",
+      "phrasing_group_coverage",
+      "phrasing_group_names",
+      "domain"
+    ],
+    "drop_advisory_ignored": [],
+    "chosen": 7,
+    "a_proposed_value_won": true,
+    "verdict": "a proposed candidate was selected"
+  }
+}

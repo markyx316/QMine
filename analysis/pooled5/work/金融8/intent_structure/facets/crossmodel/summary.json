@@ -1,0 +1,210 @@
+{
+ "NEWS_EVENT": {
+  "n_sub": 175,
+  "n_with_majority": 175,
+  "model": "deepseek-v4-pro",
+  "raw_agreement_%": 98.9,
+  "kappa_claude_majority_vs_deepseek": 0.986,
+  "kappa_each_lens_vs_deepseek": {
+   "answer": 0.986,
+   "form": 0.993,
+   "goal": 0.986
+  },
+  "kappa_between_claude_lenses_same_rows": {
+   "answer~form": 0.993,
+   "answer~goal": 1.0,
+   "form~goal": 0.993
+  },
+  "per_code": {
+   "ASSESS_JUDGE": {
+    "claude_n": 8,
+    "deepseek_n": 9,
+    "both": 8
+   },
+   "EXPLAIN_CAUSE": {
+    "claude_n": 5,
+    "deepseek_n": 5,
+    "both": 5
+   },
+   "FACT_DETAIL": {
+    "claude_n": 47,
+    "deepseek_n": 45,
+    "both": 45
+   },
+   "FORECAST": {
+    "claude_n": 26,
+    "deepseek_n": 26,
+    "both": 26
+   },
+   "LATEST_NEWS": {
+    "claude_n": 38,
+    "deepseek_n": 38,
+    "both": 38
+   },
+   "RULE_CONCEPT": {
+    "claude_n": 9,
+    "deepseek_n": 9,
+    "both": 9
+   },
+   "SERVICE_HELP": {
+    "claude_n": 1,
+    "deepseek_n": 1,
+    "both": 1
+   },
+   "STATUS_TIMING": {
+    "claude_n": 35,
+    "deepseek_n": 36,
+    "both": 35
+   },
+   "UNSURE": {
+    "claude_n": 6,
+    "deepseek_n": 6,
+    "both": 6
+   }
+  },
+  "top_disagreements": {
+   "FACT_DETAIL -> STATUS_TIMING": 1,
+   "FACT_DETAIL -> ASSESS_JUDGE": 1
+  }
+ },
+ "VERDICT_QUESTION": {
+  "n_sub": 164,
+  "n_with_majority": 164,
+  "model": "deepseek-v4-pro",
+  "raw_agreement_%": 97.0,
+  "kappa_claude_majority_vs_deepseek": 0.963,
+  "kappa_each_lens_vs_deepseek": {
+   "answer": 0.956,
+   "form": 0.963,
+   "goal": 0.956
+  },
+  "kappa_between_claude_lenses_same_rows": {
+   "answer~form": 0.978,
+   "answer~goal": 0.985,
+   "form~goal": 0.978
+  },
+  "per_code": {
+   "CATEGORY_CHECK": {
+    "claude_n": 21,
+    "deepseek_n": 21,
+    "both": 21
+   },
+   "DECISION_ADVICE": {
+    "claude_n": 12,
+    "deepseek_n": 12,
+    "both": 12
+   },
+   "ELIGIBILITY_COVER": {
+    "claude_n": 15,
+    "deepseek_n": 15,
+    "both": 14
+   },
+   "IMPACT_EXPOSURE": {
+    "claude_n": 4,
+    "deepseek_n": 3,
+    "both": 3
+   },
+   "MERIT_SAFETY": {
+    "claude_n": 24,
+    "deepseek_n": 25,
+    "both": 24
+   },
+   "REMEDY_UNDO": {
+    "claude_n": 16,
+    "deepseek_n": 15,
+    "both": 15
+   },
+   "SERVICE_RULE": {
+    "claude_n": 46,
+    "deepseek_n": 48,
+    "both": 45
+   },
+   "UNSURE_FUNCTION": {
+    "claude_n": 1,
+    "deepseek_n": 1,
+    "both": 1
+   },
+   "WORLD_STATE": {
+    "claude_n": 25,
+    "deepseek_n": 24,
+    "both": 24
+   }
+  },
+  "top_disagreements": {
+   "REMEDY_UNDO -> SERVICE_RULE": 1,
+   "SERVICE_RULE -> ELIGIBILITY_COVER": 1,
+   "WORLD_STATE -> MERIT_SAFETY": 1,
+   "IMPACT_EXPOSURE -> SERVICE_RULE": 1,
+   "ELIGIBILITY_COVER -> SERVICE_RULE": 1
+  }
+ },
+ "INVEST_ADVICE": {
+  "n_sub": 182,
+  "n_with_majority": 182,
+  "model": "deepseek-v4-pro",
+  "raw_agreement_%": 98.4,
+  "kappa_claude_majority_vs_deepseek": 0.98,
+  "kappa_each_lens_vs_deepseek": {
+   "answer": 0.974,
+   "form": 0.98,
+   "goal": 0.987
+  },
+  "kappa_between_claude_lenses_same_rows": {
+   "answer~form": 0.993,
+   "answer~goal": 0.987,
+   "form~goal": 0.993
+  },
+  "per_code": {
+   "APPRAISE": {
+    "claude_n": 11,
+    "deepseek_n": 9,
+    "both": 9
+   },
+   "DECIDE": {
+    "claude_n": 27,
+    "deepseek_n": 27,
+    "both": 27
+   },
+   "FORECAST": {
+    "claude_n": 43,
+    "deepseek_n": 42,
+    "both": 42
+   },
+   "INFO": {
+    "claude_n": 16,
+    "deepseek_n": 18,
+    "both": 16
+   },
+   "RISK": {
+    "claude_n": 2,
+    "deepseek_n": 2,
+    "both": 2
+   },
+   "RULE": {
+    "claude_n": 15,
+    "deepseek_n": 16,
+    "both": 15
+   },
+   "SCREEN": {
+    "claude_n": 43,
+    "deepseek_n": 43,
+    "both": 43
+   },
+   "SELECT": {
+    "claude_n": 23,
+    "deepseek_n": 23,
+    "both": 23
+   },
+   "UNSURE": {
+    "claude_n": 2,
+    "deepseek_n": 2,
+    "both": 2
+   }
+  },
+  "top_disagreements": {
+   "APPRAISE -> INFO": 1,
+   "APPRAISE -> RULE": 1,
+   "FORECAST -> INFO": 1
+  }
+ }
+}

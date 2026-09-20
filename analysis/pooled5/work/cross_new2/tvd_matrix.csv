@@ -1,0 +1,5 @@
+a,b,why,书籍文档,软件
+2025search,2026search,时间（搜索内部，2025→2026）,0.092,0.091
+2026search,assistant_top,界面（同为头部流量）,0.728,0.538
+assistant_top,assistant_random,深度（助手头部→长尾）,0.41,0.454
+2026search,assistant_random,界面+深度（不可单独归因）,0.651,0.647

@@ -1,0 +1,47 @@
+#### D1. grouped intent shares and diffs  [filter: sva_final_rows domain==金融 tier==user]
+  [all] 查值与裸实体 U02+U03: 搜索1k 91.5[89.6–93.1] | 助手头 61.4[58.2–64.4] | 助手尾 25.7[23.1–28.6] ; 搜索1k→助手头 -30.1[-33.6,-26.5] ; 助手头→助手尾 -35.6[-39.7,-31.4]
+  [all] 解释/核实/办事/判断/清单 U04–U08: 搜索1k 1.2[0.7–2.1] | 助手头 24.5[21.9–27.4] | 助手尾 63.4[60.4–66.4] ; 搜索1k→助手头 +23.3[+20.6,+26.2] ; 助手头→助手尾 +38.9[+34.7,+42.8]
+  [all] 导航+获取内容 U01+U09: 搜索1k 7.0[5.6–8.8] | 助手头 9.4[7.7–11.4] | 助手尾 2.0[1.3–3.1] ; 搜索1k→助手头 +2.4[-0.1,+4.8] ; 助手头→助手尾 -7.3[-9.5,-5.3]
+  [all] 无法判定 U13: 搜索1k 0.3[0.1–0.9] | 助手头 4.6[3.5–6.2] | 助手尾 7.5[6.0–9.3] ; 搜索1k→助手头 +4.3[+3.0,+5.9] ; 助手头→助手尾 +2.9[+0.7,+5.0]
+  [interp] 查值与裸实体 U02+U03: 搜索1k 91.8[89.9–93.3] | 助手头 64.3[61.2–67.4] | 助手尾 27.8[25.0–30.8] ; 搜索1k→助手头 -27.4[-31.0,-23.8] ; 助手头→助手尾 -36.5[-40.7,-32.2]
+  [interp] 解释/核实/办事/判断/清单 U04–U08: 搜索1k 1.2[0.7–2.1] | 助手头 25.7[23.0–28.7] | 助手尾 68.6[65.5–71.5] ; 搜索1k→助手头 +24.5[+21.6,+27.5] ; 助手头→助手尾 +42.8[+38.6,+46.9]
+  [interp] 导航+获取内容 U01+U09: 搜索1k 7.0[5.6–8.8] | 助手头 9.8[8.1–11.9] | 助手尾 2.2[1.4–3.4] ; 搜索1k→助手头 +2.8[+0.3,+5.4] ; 助手头→助手尾 -7.6[-9.9,-5.5]
+
+#### D2. full own-class counts (td_l1 code / name)  [filter: tier==user]
+  [搜索top1000] n=1000: LOOKUP_MARKET_QUOTE/查询标的实时行情与牌价 820 (82.0%) ; LOOKUP_SERVICE_CONTACT/查找机构客服联系方式 28 (2.8%) ; NAVIGATE_OFFICIAL_ENTRY/进入官网或下载官方App 25 (2.5%) ; NAVIGATE_STOCK_FORUM/进入个股股吧讨论区 24 (2.4%) ; BARE_CODE_ENTITY_LOOKUP/解析纯代码标的 23 (2.3%) ; VIEW_PRICE_CHART/查看价格走势图 17 (1.7%) ; COMPUTE_FINANCIAL_AMOUNT/计算金融金额或收益 14 (1.4%) ; OUT_OF_DOMAIN_OR_UNINTELLIGIBLE/离域或无法判定的兜底 11 (1.1%) ; GET_DAILY_QUIZ_ANSWER/获取每日答题答案 8 (0.8%) ; GET_MARKET_NEWS/获取市场资讯与事件动态 7 (0.7%) ; IDENTIFY_UNKNOWN_CALLER/识别陌生来电号码 6 (0.6%) ; LOOKUP_MARKET_CALENDAR_AND_STATUS/查询市场日历与未定状态 6 (0.6%) ; ENUMERATE_LIST/获取枚举清单或榜单 4 (0.4%) ; EXPLAIN_FINANCE_CONCEPT/了解金融术语与规则 4 (0.4%) ; HOWTO_ACCOUNT_SUPPORT/办理操作与账户问题求助 2 (0.2%) ; VERIFY_PLATFORM_LEGITIMACY/核验机构/平台正规性 1 (0.1%)
+  [搜索top10k] n=9999: LOOKUP_MARKET_QUOTE/查询标的实时行情与牌价 5769 (57.7%) ; NAVIGATE_STOCK_FORUM/进入个股股吧讨论区 1406 (14.1%) ; BARE_CODE_ENTITY_LOOKUP/解析纯代码标的 1056 (10.6%) ; COMPUTE_FINANCIAL_AMOUNT/计算金融金额或收益 277 (2.8%) ; NAVIGATE_OFFICIAL_ENTRY/进入官网或下载官方App 237 (2.4%) ; LOOKUP_SERVICE_CONTACT/查找机构客服联系方式 233 (2.3%) ; VIEW_PRICE_CHART/查看价格走势图 161 (1.6%) ; EXPLAIN_FINANCE_CONCEPT/了解金融术语与规则 129 (1.3%) ; IDENTIFY_UNKNOWN_CALLER/识别陌生来电号码 117 (1.2%) ; HOWTO_ACCOUNT_SUPPORT/办理操作与账户问题求助 110 (1.1%) ; OUT_OF_DOMAIN_OR_UNINTELLIGIBLE/离域或无法判定的兜底 105 (1.1%) ; ENUMERATE_LIST/获取枚举清单或榜单 95 (1.0%) ; LOOKUP_MARKET_CALENDAR_AND_STATUS/查询市场日历与未定状态 74 (0.7%) ; GET_MARKET_NEWS/获取市场资讯与事件动态 66 (0.7%) ; VERIFY_PLATFORM_LEGITIMACY/核验机构/平台正规性 66 (0.7%) ; GET_DAILY_QUIZ_ANSWER/获取每日答题答案 53 (0.5%) ; GET_INVESTMENT_OPINION_FORECAST/获取投资判断/预测 45 (0.5%)
+  [助手top1k] n=950: FINANCIAL_AND_VENTURE_ADVICE/投资理财与创业加盟建议 351 (36.9%) ; NUMERIC_FACT_AND_POLICY_LOOKUP/数值事实与年度政策查询 166 (17.5%) ; NON_INTENT_FRAGMENT_UNDERSPECIFIED_INPUT/残缺或不可独立解释输入 97 (10.2%) ; PRICE_COST_INQUIRY/价格或费用查询 92 (9.7%) ; GENERAL_HOWTO_GUIDE/通用操作与生活指南 62 (6.5%) ; NAVIGATE_OFFICIAL_ENTRY_OR_TOPIC_FEED/前往官方入口或话题聚合页 52 (5.5%) ; LIST_AND_RECOMMENDATION_REQUEST/枚举清单或建议推荐 42 (4.4%) ; EXPLAIN_OR_IDENTIFY/解释含义或识别指称 40 (4.2%) ; ENTITY_BACKGROUND_LOOKUP/核查人物或机构背景 21 (2.2%) ; FACT_VERIFICATION_AND_RUMOR_OR_STATUS_CHECK/核验真伪、传闻与进展 21 (2.2%) ; LEGAL_CONSULTATION_AND_OUTCOME_PREDICTION/法律咨询与案件结果预测 3 (0.3%) ; ADULT_OR_VIOLENT_CONTENT_REQUEST/索取或生成成人、色情或暴力内容 1 (0.1%) ; PRIVATE_PERSON_INFO_LOOKUP/查找普通自然人非公开信息 1 (0.1%) ; TOOL_PANEL_SINGLE_STEP_COMMAND/工具面板单步操作指令 1 (0.1%)
+  [助手random1k] n=987: FINANCIAL_AND_VENTURE_ADVICE/投资理财与创业加盟建议 297 (30.1%) ; NUMERIC_FACT_AND_POLICY_LOOKUP/数值事实与年度政策查询 135 (13.7%) ; GENERAL_HOWTO_GUIDE/通用操作与生活指南 118 (12.0%) ; FACT_VERIFICATION_AND_RUMOR_OR_STATUS_CHECK/核验真伪、传闻与进展 107 (10.8%) ; EXPLAIN_OR_IDENTIFY/解释含义或识别指称 79 (8.0%) ; PRICE_COST_INQUIRY/价格或费用查询 67 (6.8%) ; LIST_AND_RECOMMENDATION_REQUEST/枚举清单或建议推荐 65 (6.6%) ; ENTITY_BACKGROUND_LOOKUP/核查人物或机构背景 43 (4.4%) ; NON_INTENT_FRAGMENT_UNDERSPECIFIED_INPUT/残缺或不可独立解释输入 26 (2.6%) ; LEGAL_CONSULTATION_AND_OUTCOME_PREDICTION/法律咨询与案件结果预测 22 (2.2%) ; NON_INTENT_SOCIAL_OR_EMOTIONAL_TURN/无内容社交与情绪表达轮 9 (0.9%) ; CORRECT_OR_ADJUST_PREVIOUS_OUTPUT/修改上一轮输出 8 (0.8%) ; NAVIGATE_OFFICIAL_ENTRY_OR_TOPIC_FEED/前往官方入口或话题聚合页 5 (0.5%) ; MEDIA_CONTENT_SEARCH_OR_ACCESS/按线索查找或获取影音书资源 2 (0.2%) ; PRIVATE_PERSON_INFO_LOOKUP/查找普通自然人非公开信息 1 (0.1%) ; ADULT_OR_VIOLENT_CONTENT_REQUEST/索取或生成成人、色情或暴力内容 1 (0.1%) ; FORTUNE_DREAM_DIVINATION/命理解梦与占卜 1 (0.1%) ; TOOL_PANEL_SINGLE_STEP_COMMAND/工具面板单步操作指令 1 (0.1%)
+
+#### D3. ai04 '投资理财与创业加盟建议' composition by u_ds
+  助手头 n=351: U02 159 (45.3%) ; U03 85 (24.2%) ; U07 54 (15.4%) ; U08 17 (4.8%) ; U05 14 (4.0%) ; U13 12 (3.4%) ; U04 6 (1.7%) ; U01 2 (0.6%) ; U06 2 (0.6%)
+    U02 examples: 美股 | 英伟达股票 | 美国股市 | a股 | 星宇股份 | 韩国股市 | 宇树股份股票 | 美光科技股票
+  助手尾 n=297: U07 138 (46.5%) ; U03 45 (15.2%) ; U08 31 (10.4%) ; U05 30 (10.1%) ; U04 14 (4.7%) ; U13 14 (4.7%) ; U06 13 (4.4%) ; U02 6 (2.0%) ; U11 4 (1.3%) ; U10 1 (0.3%) ; U01 1 (0.3%)
+    U02 examples: 股市股票 | 悦心健康股票 | 渤海银行 股票 | 消费股 | 盐湖钾肥股票 | 西点制药股票
+
+#### D4. PV concentration and anchor rows
+  search top1000 user PV 7,237,987; top10: 今日金价 805,760 (11.1%) | 黄金价格 370,477 (5.1%) | 上证指数 335,317 (4.6%) | 金价 229,093 (3.2%) | 国际金价 128,656 (1.8%) | 股市行情 94,008 (1.3%) | 东方财富网 78,254 (1.1%) | 英伟达股票 68,806 (1.0%) | 美股 65,167 (0.9%) | 今日股市行情 62,944 (0.9%)
+  assistant top1k user PV 162,732; top10: 今日金价 11,669 (7.2%) | 黄金价格 4,361 (2.7%) | 美股 3,073 (1.9%) | 金价 2,343 (1.4%) | 股市行情 2,265 (1.4%) | paypal 2,083 (1.3%) | 美股实时行情 1,610 (1.0%) | 农业银行账户余额200可用余额0是什么 1,566 (1.0%) | 国际金价 1,518 (0.9%) | 上证指数 1,467 (0.9%)
+  search rank1-1000: n=1000 纯数字代码 0.0% ; 股吧 2.4% ; …股票 51.4% ; 疑问 4.6%
+  search 1001-3000: n=2000 纯数字代码 0.0% ; 股吧 10.3% ; …股票 39.1% ; 疑问 5.5%
+  search 3001-10000: n=6999 纯数字代码 0.0% ; 股吧 16.8% ; …股票 29.2% ; 疑问 8.4%
+
+#### D5. p_ds among head marker rows
+  助手头 银行账户异常: n=59 p_ds=1 26 ; u_ds {'U04': np.int64(19), 'U05': np.int64(14), 'U06': np.int64(11), 'U07': np.int64(7), 'U13': np.int64(5), 'U03': np.int64(2), 'U02': np.int64(1)} ; PV 14,708 (9.0%)
+  助手头 预测/买卖: n=49 p_ds=1 1 ; u_ds {'U07': np.int64(35), 'U03': np.int64(9), 'U05': np.int64(3), 'U02': np.int64(1), 'U13': np.int64(1)} ; PV 3,302 (2.0%)
+  助手尾 银行账户异常: n=21 p_ds=1 2 ; u_ds {'U06': np.int64(8), 'U04': np.int64(5), 'U03': np.int64(4), 'U05': np.int64(2), 'U07': np.int64(1), 'U12': np.int64(1)} ; PV 22 (1.9%)
+  助手尾 预测/买卖: n=108 p_ds=1 4 ; u_ds {'U07': np.int64(66), 'U03': np.int64(27), 'U06': np.int64(5), 'U05': np.int64(4), 'U08': np.int64(3), 'U04': np.int64(2), 'U13': np.int64(1)} ; PV 132 (11.4%)
+
+#### D6. U12 rows in tail (describe only)
+  n=3
+
+#### D7. random1k l2 × u_ds (U07 share by l2)
+  保险业: n=68 U07 19.1[11.5–30.0] ; U03 29.4 ; U06 11.8
+  信托业: n=7 U07 14.3[2.6–51.3] ; U03 14.3 ; U06 14.3
+  外汇类: n=25 U07 8.0[2.2–25.0] ; U03 40.0 ; U06 12.0
+  平台中介: n=41 U07 7.3[2.5–19.4] ; U03 14.6 ; U06 36.6
+  融资贷款: n=86 U07 14.0[8.2–22.8] ; U03 31.4 ; U06 14.0
+  证券业: n=554 U07 33.4[29.6–37.4] ; U03 20.4 ; U06 5.6
+  金融其它: n=23 U07 0.0[0.0–14.3] ; U03 26.1 ; U06 4.3
+  金融征信: n=11 U07 27.3[9.7–56.6] ; U03 0.0 ; U06 18.2
+  银行业: n=172 U07 12.8[8.6–18.6] ; U03 27.9 ; U06 20.3

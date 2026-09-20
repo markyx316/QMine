@@ -1,0 +1,23 @@
+00:54:55 ── p5_postprocess_run_xlsx
+健康: runs/health-pool2/gen01/postprocessed/health_zh_query_挖掘结果_含来源.xlsx  (2,461 rows, 健康搜索周榜 2,236 · 健康AI管家周榜 225)
+00:54:57 ── p5_deliverables
+健康: 健康_POOLED5_逐行标注.xlsx — 2,461 labelled rows, 1,686 removed rows, 20 L1 classes
+00:54:57 ── p5_snapshot_classes
+  → runs/health-pool2/gen01/postprocessed/health_zh_意图与聚类叶_跨快照对比.xlsx
+健康: 2,461 行 · 健康搜索周榜 2,236 · 健康AI管家周榜 225 · 自上而下 L1 意图 20类(仅搜索8/仅助手0) · 自上而下 L2 子意图 23类(仅搜索9/仅助手0) · 自下而上 家族 16类(仅搜索4/仅助手0) · 自下而上 叶 16类(仅搜索4/仅助手0)
+00:54:59 ── p5_snapshot_figs
+findfont: Failed to find font weight normal, now using 300.
+findfont: Failed to find font weight normal, now using 300.
+findfont: Failed to find font weight normal, now using 300.
+findfont: Failed to find font weight normal, now using 300.
+findfont: Failed to find font weight normal, now using 300.
+findfont: Failed to find font weight normal, now using 300.
+findfont: Failed to find font weight normal, now using 300.
+findfont: Failed to find font weight normal, now using 300.
+findfont: Failed to find font weight normal, now using 300.
+健康: L1意图_占比热图.png · L1意图_均衡指数热图.png · 叶_占比热图.png · 叶_均衡指数热图.png · 快照两两距离.png · 界面散点.png
+00:55:00 ── p5_snapshot_report
+健康: runs/health-pool2/gen01/postprocessed/health_zh_意图与聚类叶_跨快照对比.zh.md  (93,653 字符, 985 表格行)
+00:55:00 ── p5_snapshot_verify
+健康: 未匹配数字 0 · 问题引文 0 → analysis/pooled5/work/健康/snapshot_classes/verify.md
+00:55:01 all six steps done

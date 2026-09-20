@@ -1,0 +1,1315 @@
+loaded 5 key(s) from /Users/mayouxuan/Documents/Claude/Search Query Mining Agent
+Team/QMine/.env
+──────────── QMine · domain medical_zh_v2 · config 954d8c902cd8fba4 ────────────
+  dashboard → runs/health-pool3/dashboard.html
+12:23:49 INFO    qmine.llm: provider quirks recalled from .cache/model_quirks.json: 15 model(s) start in plain-JSON mode, 6 with a raised output cap — not rediscovered this run
+12:23:50 INFO    httpx: HTTP Request: GET https://raw.githubusercontent.com/BerriAI/litellm/main/model_prices_and_context_window.json "HTTP/1.1 200 OK"
+12:23:50 INFO    httpx: HTTP Request: GET https://openrouter.ai/api/v1/models "HTTP/1.1 200 OK"
+12:23:51 INFO    qmine.llm: routing plan: 19 roles, estimated $4.07, catalogue ['litellm', 'openrouter']
+12:23:51 INFO    qmine.llm:   role assignments for this run (model · lab · est. calls · est. $):
+12:23:51 INFO    qmine.llm:     annotator_a             deepseek:deepseek-v4-flash  lab=deepseek  128 calls  $2.074
+12:23:51 INFO    qmine.llm:     namer                   deepseek:deepseek-v4-pro  lab=deepseek  60 calls  $1.188
+12:23:51 INFO    qmine.llm:     researcher_log_reading  openrouter:moonshotai/kimi-k3  lab=moonshot  5 calls  $0.478
+12:23:51 INFO    qmine.llm:     taxonomy_architect      deepseek:deepseek-v4-pro  lab=deepseek  2 calls  $0.158
+12:23:51 INFO    qmine.llm:     tree_auditor            deepseek:deepseek-v4-pro  lab=deepseek  1 calls  $0.040
+12:23:51 INFO    qmine.llm:     l2_interpreter          openrouter:deepseek/deepseek-v4.1-flash  lab=deepseek  20 calls  $0.032
+12:23:51 INFO    qmine.llm:     domain_scout            zhipu:glm-5.3  lab=zhipu  1 calls  $0.026
+12:23:51 INFO    qmine.llm:     risk_sentinel           zhipu:glm-5.3  lab=zhipu  1 calls  $0.026
+12:23:51 INFO    qmine.llm:     proposer                deepseek:deepseek-v4-pro  lab=deepseek  2 calls  $0.025
+12:23:51 INFO    qmine.llm:     maintainer              zhipu:glm-5.3  lab=zhipu  1 calls  $0.022
+12:23:51 INFO    qmine.llm:     adversary               openrouter:moonshotai/kimi-k3  lab=moonshot  0 calls  $0.000
+12:23:51 INFO    qmine.llm:     delivery_auditor        openrouter:moonshotai/kimi-k3  lab=moonshot  0 calls  $0.000
+12:23:51 INFO    qmine.llm:     interpreter             deepseek:deepseek-v4-pro  lab=deepseek  0 calls  $0.000
+12:23:51 INFO    qmine.llm:     observer                openrouter:moonshotai/kimi-k3  lab=moonshot  0 calls  $0.000
+12:23:51 INFO    qmine.llm:     reporter                zhipu:glm-5.3  lab=zhipu  0 calls  $0.000
+12:23:51 INFO    qmine.llm:     researcher              zhipu:glm-5.3-flash  lab=zhipu  5 calls  $0.000
+12:23:51 INFO    qmine.llm:     taxonomy_critic         deepseek:deepseek-v4-pro  lab=deepseek  0 calls  $0.000
+12:23:51 INFO    qmine.llm:     annotator_b             qwen:qwen3.8-flash  lab=qwen  0 calls  $0.000
+12:23:51 INFO    qmine.llm:     referee                 zhipu:glm-5.3-flash  lab=zhipu  0 calls  $0.000
+12:23:51 INFO    qmine.llm:     annotator/referee labs: a=deepseek, b=qwen, referee=zhipu — independent
+12:23:51 INFO    qmine.llm:     ! taxonomy_architect: pinned with NO FALLBACK — nothing reachable meets this role's 200,000-token context need in another lab, so a single provider outage silently removes this role from the run
+12:23:51 INFO    qmine.llm:     ! tree_auditor: pinned with NO FALLBACK — nothing reachable meets this role's 200,000-token context need in another lab, so a single provider outage silently removes this role from the run
+12:23:51 INFO    qmine.llm:     ! domain_scout: chosen from the configured `capable_models` list; price only broke ties inside it, never against it
+12:23:51 INFO    qmine.llm:     ! risk_sentinel: chosen from the configured `capable_models` list; price only broke ties inside it, never against it
+12:23:51 INFO    qmine.llm:     ! maintainer: chosen from the configured `capable_models` list; price only broke ties inside it, never against it
+12:23:51 INFO    qmine.llm:     ! delivery_auditor: pinned with NO FALLBACK — nothing reachable meets this role's 200,000-token context need in another lab, so a single provider outage silently removes this role from the run
+12:23:51 INFO    qmine.llm:     ! observer: pinned with NO FALLBACK — nothing reachable meets this role's 200,000-token context need in another lab, so a single provider outage silently removes this role from the run
+12:23:51 INFO    qmine.llm:     ! reporter: chosen from the configured `capable_models` list; price only broke ties inside it, never against it
+12:23:51 INFO    qmine.llm:     ! researcher: zhipu:glm-5.3-flash publishes NO PRICE in the catalogue — the pin overrides `_eligible`'s exclusion of unpriced models. Its estimate reads $0.00 and the spend ledger will under-report: the cost is UNKNOWN, not free.
+12:23:51 INFO    qmine.llm:     ! taxonomy_critic: pinned with NO FALLBACK — nothing reachable meets this role's 128,000-token context need in another lab, so a single provider outage silently removes this role from the run
+12:23:51 INFO    qmine.llm:     ! annotator_b: qwen:qwen3.8-flash publishes NO PRICE in the catalogue — the pin overrides `_eligible`'s exclusion of unpriced models. Its estimate reads $0.00 and the spend ledger will under-report: the cost is UNKNOWN, not free.
+12:23:51 INFO    qmine.llm:     ! referee: zhipu:glm-5.3-flash publishes NO PRICE in the catalogue — the pin overrides `_eligible`'s exclusion of unpriced models. Its estimate reads $0.00 and the spend ledger will under-report: the cost is UNKNOWN, not free.
+12:23:51 INFO    qmine.llm: probing native structured output on 1 model(s) so a real call does not pay for the discovery
+12:23:51 INFO    langchain_openai.chat_models._client_utils: langchain-openai detected HTTP_PROXY, HTTPS_PROXY and no explicit `http_socket_options` / `http_client` / `http_async_client` / `openai_proxy`; skipping the custom `httpx` transport so httpx's env-proxy auto-detection applies. Pass `http_socket_options=[...]` to opt back into kernel-level TCP keepalive tuning on top of the env proxy.
+12:23:52 INFO    httpx2: HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+12:23:53 INFO    qmine.graph: P0 foundation — run health-pool3, generation 1
+12:23:56 INFO    qmine.graph: gate p0_provider: PASSED — real agents: provider=routed
+12:23:56 INFO    qmine.graph: ✔ p0_foundation completed in 3.2s
+12:23:56 INFO    qmine.graph: P1 audit — profiling corpus
+12:23:56 INFO    qmine.graph:   2 snapshot(s) in this corpus: AI助手=10,316, 搜索=10,000
+12:23:56 INFO    qmine.graph: gate p1_reference_columns_declared: PASSED — reference labels: legacy_l2, legacy_dept, legacy_type
+12:23:56 INFO    qmine.graph: gate p1_minority_language_risk: PASSED — han accounts for 97.8% and no other script reaches 0.5%. Use a monolingual encoder for the dominant language; there is nothing to stratify.
+12:23:57 INFO    qmine.graph: gate p1_template_coverage: PASSED — 12 phrasing families cover 5,826 rows (28.7% of the corpus; the share is reported, not gated — it is a property of the corpus)
+12:23:57 INFO    qmine.graph: ✔ p1_audit completed in 1.0s
+12:23:57 INFO    qmine.graph: P3a encoder bake-off — 4 candidates
+12:23:57 INFO    qmine.graph: P2a taxonomy — 5 researchers fanning out
+12:23:57 INFO    sentence_transformers.base.model: No device provided, using mps
+12:23:58 INFO    httpx: HTTP Request: HEAD https://huggingface.co/BAAI/bge-small-zh-v1.5/resolve/main/modules.json "HTTP/1.1 307 Temporary Redirect"
+12:23:58 INFO    httpx: HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/BAAI/bge-small-zh-v1.5/7999e1d3359715c523056ef9478215996d62a620/modules.json "HTTP/1.1 200 OK"
+12:23:58 INFO    httpx: HTTP Request: HEAD https://huggingface.co/BAAI/bge-small-zh-v1.5/resolve/main/config_sentence_transformers.json "HTTP/1.1 307 Temporary Redirect"
+12:23:58 INFO    httpx2: HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+12:23:58 INFO    httpx: HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/BAAI/bge-small-zh-v1.5/7999e1d3359715c523056ef9478215996d62a620/config_sentence_transformers.json "HTTP/1.1 200 OK"
+12:23:58 INFO    sentence_transformers.base.model: Loading SentenceTransformer model from BAAI/bge-small-zh-v1.5.
+12:23:59 INFO    httpx: HTTP Request: HEAD https://huggingface.co/BAAI/bge-small-zh-v1.5/resolve/main/config_sentence_transformers.json "HTTP/1.1 307 Temporary Redirect"
+12:23:59 INFO    httpx: HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/BAAI/bge-small-zh-v1.5/7999e1d3359715c523056ef9478215996d62a620/config_sentence_transformers.json "HTTP/1.1 200 OK"
+12:23:59 INFO    httpx: HTTP Request: HEAD https://huggingface.co/BAAI/bge-small-zh-v1.5/resolve/main/README.md "HTTP/1.1 307 Temporary Redirect"
+Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+12:23:59 WARNING huggingface_hub.utils._http: Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+12:23:59 INFO    httpx: HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/BAAI/bge-small-zh-v1.5/7999e1d3359715c523056ef9478215996d62a620/README.md "HTTP/1.1 200 OK"
+12:24:00 INFO    httpx: HTTP Request: HEAD https://huggingface.co/BAAI/bge-small-zh-v1.5/resolve/main/modules.json "HTTP/1.1 307 Temporary Redirect"
+12:24:00 INFO    httpx: HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/BAAI/bge-small-zh-v1.5/7999e1d3359715c523056ef9478215996d62a620/modules.json "HTTP/1.1 200 OK"
+12:24:00 INFO    httpx: HTTP Request: HEAD https://huggingface.co/BAAI/bge-small-zh-v1.5/resolve/main/sentence_bert_config.json "HTTP/1.1 307 Temporary Redirect"
+12:24:00 INFO    httpx: HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/BAAI/bge-small-zh-v1.5/7999e1d3359715c523056ef9478215996d62a620/sentence_bert_config.json "HTTP/1.1 200 OK"
+12:24:01 INFO    httpx: HTTP Request: HEAD https://huggingface.co/BAAI/bge-small-zh-v1.5/resolve/main/adapter_config.json "HTTP/1.1 404 Not Found"
+12:24:01 INFO    httpx: HTTP Request: HEAD https://huggingface.co/BAAI/bge-small-zh-v1.5/resolve/main/config.json "HTTP/1.1 307 Temporary Redirect"
+12:24:01 INFO    httpx: HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/BAAI/bge-small-zh-v1.5/7999e1d3359715c523056ef9478215996d62a620/config.json "HTTP/1.1 200 OK"
+  P0 foundation — run health-pool3, generation 1
+  gate p0_provider: PASSED — real agents: provider=routed
+  ✔ p0_foundation completed in 3.2s
+  P1 audit — profiling corpus
+    2 snapshot(s) in this corpus: AI助手=10,316, 搜索=10,000
+  gate p1_reference_columns_declared: PASSED — reference labels: legacy_l2, legacy_dept, legacy_type
+  gate p1_minority_language_risk: PASSED — han accounts for 97.8% and no other script reaches 0.5%. Use a monolingual encoder for the dominant language; there is nothing to stratify.
+  gate p1_template_coverage: PASSED — 12 phrasing families cover 5,826 rows (28.7% of the corpus; the share is reported, not gated — it is a property of the corpus)
+  ✔ p1_audit completed in 1.0s
+  P3a encoder bake-off — 4 candidates
+  P2a taxonomy — 5 researchers fanning out
+Loading weights:   0%|          | 0/71 [00:00<?, ?it/s]Loading weights: 100%|██████████| 71/71 [00:00<00:00, 13283.18it/s]
+12:24:02 INFO    httpx: HTTP Request: HEAD https://huggingface.co/BAAI/bge-small-zh-v1.5/resolve/main/processor_config.json "HTTP/1.1 404 Not Found"
+12:24:02 INFO    httpx: HTTP Request: HEAD https://huggingface.co/BAAI/bge-small-zh-v1.5/resolve/main/preprocessor_config.json "HTTP/1.1 404 Not Found"
+12:24:02 INFO    httpx: HTTP Request: HEAD https://huggingface.co/BAAI/bge-small-zh-v1.5/resolve/main/video_preprocessor_config.json "HTTP/1.1 404 Not Found"
+12:24:03 INFO    httpx: HTTP Request: HEAD https://huggingface.co/BAAI/bge-small-zh-v1.5/resolve/main/preprocessor_config.json "HTTP/1.1 404 Not Found"
+12:24:03 INFO    httpx: HTTP Request: HEAD https://huggingface.co/BAAI/bge-small-zh-v1.5/resolve/main/tokenizer_config.json "HTTP/1.1 307 Temporary Redirect"
+12:24:03 INFO    httpx: HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/BAAI/bge-small-zh-v1.5/7999e1d3359715c523056ef9478215996d62a620/tokenizer_config.json "HTTP/1.1 200 OK"
+12:24:03 INFO    httpx: HTTP Request: HEAD https://huggingface.co/BAAI/bge-small-zh-v1.5/resolve/main/config.json "HTTP/1.1 307 Temporary Redirect"
+12:24:04 INFO    httpx: HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/BAAI/bge-small-zh-v1.5/7999e1d3359715c523056ef9478215996d62a620/config.json "HTTP/1.1 200 OK"
+12:24:04 INFO    httpx: HTTP Request: HEAD https://huggingface.co/BAAI/bge-small-zh-v1.5/resolve/main/config.json "HTTP/1.1 307 Temporary Redirect"
+12:24:04 INFO    httpx: HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/BAAI/bge-small-zh-v1.5/7999e1d3359715c523056ef9478215996d62a620/config.json "HTTP/1.1 200 OK"
+12:24:04 INFO    httpx: HTTP Request: HEAD https://huggingface.co/BAAI/bge-small-zh-v1.5/resolve/main/tokenizer_config.json "HTTP/1.1 307 Temporary Redirect"
+12:24:05 INFO    httpx: HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/BAAI/bge-small-zh-v1.5/7999e1d3359715c523056ef9478215996d62a620/tokenizer_config.json "HTTP/1.1 200 OK"
+12:24:05 INFO    httpx: HTTP Request: GET https://huggingface.co/api/models/BAAI/bge-small-zh-v1.5/tree/main/additional_chat_templates?recursive=false&expand=false "HTTP/1.1 404 Not Found"
+12:24:05 INFO    httpx: HTTP Request: GET https://huggingface.co/api/models/BAAI/bge-small-zh-v1.5/tree/main?recursive=true&expand=false "HTTP/1.1 200 OK"
+12:24:06 INFO    httpx: HTTP Request: HEAD https://huggingface.co/BAAI/bge-small-zh-v1.5/resolve/main/1_Pooling/config.json "HTTP/1.1 307 Temporary Redirect"
+12:24:06 INFO    httpx: HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/BAAI/bge-small-zh-v1.5/7999e1d3359715c523056ef9478215996d62a620/1_Pooling%2Fconfig.json "HTTP/1.1 200 OK"
+12:24:06 INFO    httpx: HTTP Request: GET https://huggingface.co/api/models/BAAI/bge-small-zh-v1.5 "HTTP/1.1 200 OK"
+12:24:15 INFO    sentence_transformers.base.model: No device provided, using mps
+12:24:15 INFO    httpx: HTTP Request: HEAD https://huggingface.co/BAAI/bge-base-zh-v1.5/resolve/main/modules.json "HTTP/1.1 307 Temporary Redirect"
+12:24:16 INFO    httpx: HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/BAAI/bge-base-zh-v1.5/f03589ceff5aac7111bd60cfc7d497ca17ecac65/modules.json "HTTP/1.1 200 OK"
+12:24:16 INFO    httpx: HTTP Request: HEAD https://huggingface.co/BAAI/bge-base-zh-v1.5/resolve/main/config_sentence_transformers.json "HTTP/1.1 307 Temporary Redirect"
+12:24:16 INFO    httpx: HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/BAAI/bge-base-zh-v1.5/f03589ceff5aac7111bd60cfc7d497ca17ecac65/config_sentence_transformers.json "HTTP/1.1 200 OK"
+12:24:16 INFO    sentence_transformers.base.model: Loading SentenceTransformer model from BAAI/bge-base-zh-v1.5.
+12:24:16 INFO    httpx: HTTP Request: HEAD https://huggingface.co/BAAI/bge-base-zh-v1.5/resolve/main/config_sentence_transformers.json "HTTP/1.1 307 Temporary Redirect"
+12:24:17 INFO    httpx: HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/BAAI/bge-base-zh-v1.5/f03589ceff5aac7111bd60cfc7d497ca17ecac65/config_sentence_transformers.json "HTTP/1.1 200 OK"
+12:24:17 INFO    httpx: HTTP Request: HEAD https://huggingface.co/BAAI/bge-base-zh-v1.5/resolve/main/README.md "HTTP/1.1 307 Temporary Redirect"
+12:24:17 INFO    httpx: HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/BAAI/bge-base-zh-v1.5/f03589ceff5aac7111bd60cfc7d497ca17ecac65/README.md "HTTP/1.1 200 OK"
+12:24:17 INFO    httpx: HTTP Request: HEAD https://huggingface.co/BAAI/bge-base-zh-v1.5/resolve/main/modules.json "HTTP/1.1 307 Temporary Redirect"
+12:24:18 INFO    httpx: HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/BAAI/bge-base-zh-v1.5/f03589ceff5aac7111bd60cfc7d497ca17ecac65/modules.json "HTTP/1.1 200 OK"
+12:24:18 INFO    httpx: HTTP Request: HEAD https://huggingface.co/BAAI/bge-base-zh-v1.5/resolve/main/sentence_bert_config.json "HTTP/1.1 307 Temporary Redirect"
+12:24:18 INFO    httpx: HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/BAAI/bge-base-zh-v1.5/f03589ceff5aac7111bd60cfc7d497ca17ecac65/sentence_bert_config.json "HTTP/1.1 200 OK"
+12:24:18 INFO    httpx: HTTP Request: HEAD https://huggingface.co/BAAI/bge-base-zh-v1.5/resolve/main/adapter_config.json "HTTP/1.1 404 Not Found"
+12:24:19 INFO    httpx: HTTP Request: HEAD https://huggingface.co/BAAI/bge-base-zh-v1.5/resolve/main/config.json "HTTP/1.1 307 Temporary Redirect"
+12:24:19 INFO    httpx: HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/BAAI/bge-base-zh-v1.5/f03589ceff5aac7111bd60cfc7d497ca17ecac65/config.json "HTTP/1.1 200 OK"
+12:24:19 INFO    httpx: HTTP Request: HEAD https://huggingface.co/BAAI/bge-base-zh-v1.5/resolve/main/model.safetensors "HTTP/1.1 404 Not Found"
+Loading weights:   0%|          | 0/199 [00:00<?, ?it/s]Loading weights: 100%|██████████| 199/199 [00:00<00:00, 53957.37it/s]
+12:24:20 INFO    httpx: HTTP Request: GET https://huggingface.co/api/models/BAAI/bge-base-zh-v1.5 "HTTP/1.1 200 OK"
+12:24:20 INFO    httpx: HTTP Request: GET https://huggingface.co/api/models/BAAI/bge-base-zh-v1.5/commits/main "HTTP/1.1 200 OK"
+12:24:21 INFO    httpx: HTTP Request: HEAD https://huggingface.co/BAAI/bge-base-zh-v1.5/resolve/main/processor_config.json "HTTP/1.1 404 Not Found"
+12:24:21 INFO    httpx: HTTP Request: GET https://huggingface.co/api/models/BAAI/bge-base-zh-v1.5/discussions?p=0 "HTTP/1.1 200 OK"
+12:24:21 INFO    httpx: HTTP Request: HEAD https://huggingface.co/BAAI/bge-base-zh-v1.5/resolve/main/preprocessor_config.json "HTTP/1.1 404 Not Found"
+12:24:21 INFO    httpx: HTTP Request: GET https://huggingface.co/api/models/BAAI/bge-base-zh-v1.5/commits/refs%2Fpr%2F1 "HTTP/1.1 200 OK"
+12:24:21 INFO    httpx: HTTP Request: HEAD https://huggingface.co/BAAI/bge-base-zh-v1.5/resolve/main/video_preprocessor_config.json "HTTP/1.1 404 Not Found"
+12:24:21 INFO    httpx: HTTP Request: HEAD https://huggingface.co/BAAI/bge-base-zh-v1.5/resolve/refs%2Fpr%2F1/model.safetensors.index.json "HTTP/1.1 404 Not Found"
+12:24:21 INFO    httpx: HTTP Request: HEAD https://huggingface.co/BAAI/bge-base-zh-v1.5/resolve/main/preprocessor_config.json "HTTP/1.1 404 Not Found"
+12:24:21 INFO    httpx: HTTP Request: HEAD https://huggingface.co/BAAI/bge-base-zh-v1.5/resolve/refs%2Fpr%2F1/model.safetensors "HTTP/1.1 302 Found"
+12:24:22 INFO    httpx: HTTP Request: HEAD https://huggingface.co/BAAI/bge-base-zh-v1.5/resolve/main/tokenizer_config.json "HTTP/1.1 307 Temporary Redirect"
+12:24:22 INFO    httpx: HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/BAAI/bge-base-zh-v1.5/f03589ceff5aac7111bd60cfc7d497ca17ecac65/tokenizer_config.json "HTTP/1.1 200 OK"
+12:24:22 INFO    httpx: HTTP Request: HEAD https://huggingface.co/BAAI/bge-base-zh-v1.5/resolve/main/config.json "HTTP/1.1 307 Temporary Redirect"
+12:24:22 INFO    httpx: HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/BAAI/bge-base-zh-v1.5/f03589ceff5aac7111bd60cfc7d497ca17ecac65/config.json "HTTP/1.1 200 OK"
+12:24:23 INFO    httpx: HTTP Request: HEAD https://huggingface.co/BAAI/bge-base-zh-v1.5/resolve/main/config.json "HTTP/1.1 307 Temporary Redirect"
+12:24:23 INFO    httpx: HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/BAAI/bge-base-zh-v1.5/f03589ceff5aac7111bd60cfc7d497ca17ecac65/config.json "HTTP/1.1 200 OK"
+12:24:23 INFO    httpx: HTTP Request: HEAD https://huggingface.co/BAAI/bge-base-zh-v1.5/resolve/main/tokenizer_config.json "HTTP/1.1 307 Temporary Redirect"
+12:24:23 INFO    httpx: HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/BAAI/bge-base-zh-v1.5/f03589ceff5aac7111bd60cfc7d497ca17ecac65/tokenizer_config.json "HTTP/1.1 200 OK"
+12:24:24 INFO    httpx: HTTP Request: GET https://huggingface.co/api/models/BAAI/bge-base-zh-v1.5/tree/main/additional_chat_templates?recursive=false&expand=false "HTTP/1.1 404 Not Found"
+12:24:24 INFO    httpx: HTTP Request: GET https://huggingface.co/api/models/BAAI/bge-base-zh-v1.5/tree/main?recursive=true&expand=false "HTTP/1.1 200 OK"
+12:24:24 INFO    httpx: HTTP Request: HEAD https://huggingface.co/BAAI/bge-base-zh-v1.5/resolve/main/1_Pooling/config.json "HTTP/1.1 307 Temporary Redirect"
+12:24:25 INFO    httpx: HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/BAAI/bge-base-zh-v1.5/f03589ceff5aac7111bd60cfc7d497ca17ecac65/1_Pooling%2Fconfig.json "HTTP/1.1 200 OK"
+12:24:25 INFO    httpx: HTTP Request: GET https://huggingface.co/api/models/BAAI/bge-base-zh-v1.5 "HTTP/1.1 200 OK"
+12:24:49 INFO    sentence_transformers.base.model: No device provided, using mps
+12:24:49 INFO    httpx: HTTP Request: HEAD https://huggingface.co/BAAI/bge-large-zh-v1.5/resolve/main/modules.json "HTTP/1.1 307 Temporary Redirect"
+12:24:49 INFO    httpx: HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/BAAI/bge-large-zh-v1.5/79e7739b6ab944e86d6171e44d24c997fc1e0116/modules.json "HTTP/1.1 200 OK"
+12:24:50 INFO    httpx: HTTP Request: HEAD https://huggingface.co/BAAI/bge-large-zh-v1.5/resolve/main/config_sentence_transformers.json "HTTP/1.1 307 Temporary Redirect"
+12:24:50 INFO    httpx: HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/BAAI/bge-large-zh-v1.5/79e7739b6ab944e86d6171e44d24c997fc1e0116/config_sentence_transformers.json "HTTP/1.1 200 OK"
+12:24:50 INFO    sentence_transformers.base.model: Loading SentenceTransformer model from BAAI/bge-large-zh-v1.5.
+12:24:50 INFO    httpx: HTTP Request: HEAD https://huggingface.co/BAAI/bge-large-zh-v1.5/resolve/main/config_sentence_transformers.json "HTTP/1.1 307 Temporary Redirect"
+12:24:51 INFO    httpx: HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/BAAI/bge-large-zh-v1.5/79e7739b6ab944e86d6171e44d24c997fc1e0116/config_sentence_transformers.json "HTTP/1.1 200 OK"
+12:24:51 INFO    httpx: HTTP Request: HEAD https://huggingface.co/BAAI/bge-large-zh-v1.5/resolve/main/README.md "HTTP/1.1 307 Temporary Redirect"
+12:24:51 INFO    httpx: HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/BAAI/bge-large-zh-v1.5/79e7739b6ab944e86d6171e44d24c997fc1e0116/README.md "HTTP/1.1 200 OK"
+12:24:51 INFO    httpx: HTTP Request: HEAD https://huggingface.co/BAAI/bge-large-zh-v1.5/resolve/main/modules.json "HTTP/1.1 307 Temporary Redirect"
+12:24:52 INFO    httpx: HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/BAAI/bge-large-zh-v1.5/79e7739b6ab944e86d6171e44d24c997fc1e0116/modules.json "HTTP/1.1 200 OK"
+12:24:52 INFO    httpx: HTTP Request: HEAD https://huggingface.co/BAAI/bge-large-zh-v1.5/resolve/main/sentence_bert_config.json "HTTP/1.1 307 Temporary Redirect"
+12:24:52 INFO    httpx: HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/BAAI/bge-large-zh-v1.5/79e7739b6ab944e86d6171e44d24c997fc1e0116/sentence_bert_config.json "HTTP/1.1 200 OK"
+12:24:52 INFO    httpx: HTTP Request: HEAD https://huggingface.co/BAAI/bge-large-zh-v1.5/resolve/main/adapter_config.json "HTTP/1.1 404 Not Found"
+12:24:53 INFO    httpx: HTTP Request: HEAD https://huggingface.co/BAAI/bge-large-zh-v1.5/resolve/main/config.json "HTTP/1.1 307 Temporary Redirect"
+12:24:53 INFO    httpx: HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/BAAI/bge-large-zh-v1.5/79e7739b6ab944e86d6171e44d24c997fc1e0116/config.json "HTTP/1.1 200 OK"
+12:24:53 INFO    httpx: HTTP Request: HEAD https://huggingface.co/BAAI/bge-large-zh-v1.5/resolve/main/model.safetensors "HTTP/1.1 404 Not Found"
+Loading weights:   0%|          | 0/391 [00:00<?, ?it/s]Loading weights: 100%|██████████| 391/391 [00:00<00:00, 59546.60it/s]
+12:24:54 INFO    httpx: HTTP Request: GET https://huggingface.co/api/models/BAAI/bge-large-zh-v1.5 "HTTP/1.1 200 OK"
+12:24:54 INFO    httpx: HTTP Request: GET https://huggingface.co/api/models/BAAI/bge-large-zh-v1.5/commits/main "HTTP/1.1 200 OK"
+12:24:54 INFO    httpx: HTTP Request: HEAD https://huggingface.co/BAAI/bge-large-zh-v1.5/resolve/main/processor_config.json "HTTP/1.1 404 Not Found"
+12:24:54 INFO    httpx: HTTP Request: HEAD https://huggingface.co/BAAI/bge-large-zh-v1.5/resolve/main/preprocessor_config.json "HTTP/1.1 404 Not Found"
+12:24:54 INFO    httpx: HTTP Request: GET https://huggingface.co/api/models/BAAI/bge-large-zh-v1.5/discussions?p=0 "HTTP/1.1 200 OK"
+12:24:55 INFO    httpx: HTTP Request: GET https://huggingface.co/api/models/BAAI/bge-large-zh-v1.5/commits/refs%2Fpr%2F35 "HTTP/1.1 200 OK"
+12:24:55 INFO    httpx: HTTP Request: HEAD https://huggingface.co/BAAI/bge-large-zh-v1.5/resolve/main/video_preprocessor_config.json "HTTP/1.1 404 Not Found"
+12:24:55 INFO    httpx: HTTP Request: HEAD https://huggingface.co/BAAI/bge-large-zh-v1.5/resolve/main/preprocessor_config.json "HTTP/1.1 404 Not Found"
+12:24:55 INFO    httpx: HTTP Request: HEAD https://huggingface.co/BAAI/bge-large-zh-v1.5/resolve/refs%2Fpr%2F35/model.safetensors.index.json "HTTP/1.1 404 Not Found"
+12:24:55 INFO    httpx: HTTP Request: HEAD https://huggingface.co/BAAI/bge-large-zh-v1.5/resolve/refs%2Fpr%2F35/model.safetensors "HTTP/1.1 302 Found"
+12:24:55 INFO    httpx: HTTP Request: HEAD https://huggingface.co/BAAI/bge-large-zh-v1.5/resolve/main/tokenizer_config.json "HTTP/1.1 307 Temporary Redirect"
+12:24:55 INFO    httpx: HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/BAAI/bge-large-zh-v1.5/79e7739b6ab944e86d6171e44d24c997fc1e0116/tokenizer_config.json "HTTP/1.1 200 OK"
+12:24:56 INFO    httpx: HTTP Request: HEAD https://huggingface.co/BAAI/bge-large-zh-v1.5/resolve/main/config.json "HTTP/1.1 307 Temporary Redirect"
+12:24:56 INFO    httpx: HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/BAAI/bge-large-zh-v1.5/79e7739b6ab944e86d6171e44d24c997fc1e0116/config.json "HTTP/1.1 200 OK"
+12:24:56 INFO    httpx: HTTP Request: HEAD https://huggingface.co/BAAI/bge-large-zh-v1.5/resolve/main/config.json "HTTP/1.1 307 Temporary Redirect"
+12:24:57 INFO    httpx: HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/BAAI/bge-large-zh-v1.5/79e7739b6ab944e86d6171e44d24c997fc1e0116/config.json "HTTP/1.1 200 OK"
+12:24:57 INFO    httpx: HTTP Request: HEAD https://huggingface.co/BAAI/bge-large-zh-v1.5/resolve/main/tokenizer_config.json "HTTP/1.1 307 Temporary Redirect"
+12:24:57 INFO    httpx: HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/BAAI/bge-large-zh-v1.5/79e7739b6ab944e86d6171e44d24c997fc1e0116/tokenizer_config.json "HTTP/1.1 200 OK"
+12:24:57 INFO    httpx: HTTP Request: GET https://huggingface.co/api/models/BAAI/bge-large-zh-v1.5/tree/main/additional_chat_templates?recursive=false&expand=false "HTTP/1.1 404 Not Found"
+12:24:58 INFO    httpx: HTTP Request: GET https://huggingface.co/api/models/BAAI/bge-large-zh-v1.5/tree/main?recursive=true&expand=false "HTTP/1.1 200 OK"
+12:24:58 INFO    httpx: HTTP Request: HEAD https://huggingface.co/BAAI/bge-large-zh-v1.5/resolve/main/1_Pooling/config.json "HTTP/1.1 307 Temporary Redirect"
+12:24:58 INFO    httpx: HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/BAAI/bge-large-zh-v1.5/79e7739b6ab944e86d6171e44d24c997fc1e0116/1_Pooling%2Fconfig.json "HTTP/1.1 200 OK"
+12:24:58 INFO    httpx: HTTP Request: GET https://huggingface.co/api/models/BAAI/bge-large-zh-v1.5 "HTTP/1.1 200 OK"
+12:26:12 INFO    sentence_transformers.base.model: No device provided, using mps
+12:26:13 INFO    httpx: HTTP Request: HEAD https://huggingface.co/shibing624/text2vec-base-chinese/resolve/main/modules.json "HTTP/1.1 307 Temporary Redirect"
+12:26:13 INFO    httpx: HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/shibing624/text2vec-base-chinese/183bb99aa7af74355fb58d16edf8c13ae7c5433e/modules.json "HTTP/1.1 200 OK"
+12:26:14 INFO    httpx: HTTP Request: HEAD https://huggingface.co/shibing624/text2vec-base-chinese/resolve/main/config_sentence_transformers.json "HTTP/1.1 404 Not Found"
+12:26:14 INFO    sentence_transformers.base.model: Loading SentenceTransformer model from shibing624/text2vec-base-chinese.
+12:26:14 INFO    httpx: HTTP Request: HEAD https://huggingface.co/shibing624/text2vec-base-chinese/resolve/main/config_sentence_transformers.json "HTTP/1.1 404 Not Found"
+12:26:14 INFO    httpx: HTTP Request: HEAD https://huggingface.co/shibing624/text2vec-base-chinese/resolve/main/README.md "HTTP/1.1 307 Temporary Redirect"
+12:26:14 INFO    httpx: HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/shibing624/text2vec-base-chinese/183bb99aa7af74355fb58d16edf8c13ae7c5433e/README.md "HTTP/1.1 200 OK"
+12:26:15 INFO    httpx: HTTP Request: HEAD https://huggingface.co/shibing624/text2vec-base-chinese/resolve/main/modules.json "HTTP/1.1 307 Temporary Redirect"
+12:26:15 INFO    httpx: HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/shibing624/text2vec-base-chinese/183bb99aa7af74355fb58d16edf8c13ae7c5433e/modules.json "HTTP/1.1 200 OK"
+12:26:15 INFO    httpx: HTTP Request: HEAD https://huggingface.co/shibing624/text2vec-base-chinese/resolve/main/sentence_bert_config.json "HTTP/1.1 307 Temporary Redirect"
+12:26:15 INFO    httpx: HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/shibing624/text2vec-base-chinese/183bb99aa7af74355fb58d16edf8c13ae7c5433e/sentence_bert_config.json "HTTP/1.1 200 OK"
+12:26:16 INFO    httpx: HTTP Request: HEAD https://huggingface.co/shibing624/text2vec-base-chinese/resolve/main/adapter_config.json "HTTP/1.1 404 Not Found"
+12:26:16 INFO    httpx: HTTP Request: HEAD https://huggingface.co/shibing624/text2vec-base-chinese/resolve/main/config.json "HTTP/1.1 307 Temporary Redirect"
+12:26:16 INFO    httpx: HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/shibing624/text2vec-base-chinese/183bb99aa7af74355fb58d16edf8c13ae7c5433e/config.json "HTTP/1.1 200 OK"
+Loading weights:   0%|          | 0/199 [00:00<?, ?it/s]Loading weights: 100%|██████████| 199/199 [00:00<00:00, 9966.88it/s]
+12:26:17 INFO    httpx: HTTP Request: HEAD https://huggingface.co/shibing624/text2vec-base-chinese/resolve/main/processor_config.json "HTTP/1.1 404 Not Found"
+12:26:17 INFO    httpx: HTTP Request: HEAD https://huggingface.co/shibing624/text2vec-base-chinese/resolve/main/preprocessor_config.json "HTTP/1.1 404 Not Found"
+12:26:17 INFO    httpx: HTTP Request: HEAD https://huggingface.co/shibing624/text2vec-base-chinese/resolve/main/video_preprocessor_config.json "HTTP/1.1 404 Not Found"
+12:26:17 INFO    httpx: HTTP Request: HEAD https://huggingface.co/shibing624/text2vec-base-chinese/resolve/main/preprocessor_config.json "HTTP/1.1 404 Not Found"
+12:26:18 INFO    httpx: HTTP Request: HEAD https://huggingface.co/shibing624/text2vec-base-chinese/resolve/main/tokenizer_config.json "HTTP/1.1 307 Temporary Redirect"
+12:26:18 INFO    httpx: HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/shibing624/text2vec-base-chinese/183bb99aa7af74355fb58d16edf8c13ae7c5433e/tokenizer_config.json "HTTP/1.1 200 OK"
+12:26:18 INFO    httpx: HTTP Request: HEAD https://huggingface.co/shibing624/text2vec-base-chinese/resolve/main/config.json "HTTP/1.1 307 Temporary Redirect"
+12:26:18 INFO    httpx: HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/shibing624/text2vec-base-chinese/183bb99aa7af74355fb58d16edf8c13ae7c5433e/config.json "HTTP/1.1 200 OK"
+12:26:19 INFO    httpx: HTTP Request: HEAD https://huggingface.co/shibing624/text2vec-base-chinese/resolve/main/config.json "HTTP/1.1 307 Temporary Redirect"
+12:26:19 INFO    httpx: HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/shibing624/text2vec-base-chinese/183bb99aa7af74355fb58d16edf8c13ae7c5433e/config.json "HTTP/1.1 200 OK"
+12:26:19 INFO    httpx: HTTP Request: HEAD https://huggingface.co/shibing624/text2vec-base-chinese/resolve/main/tokenizer_config.json "HTTP/1.1 307 Temporary Redirect"
+12:26:19 INFO    httpx: HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/shibing624/text2vec-base-chinese/183bb99aa7af74355fb58d16edf8c13ae7c5433e/tokenizer_config.json "HTTP/1.1 200 OK"
+12:26:20 INFO    httpx: HTTP Request: GET https://huggingface.co/api/models/shibing624/text2vec-base-chinese/tree/main/additional_chat_templates?recursive=false&expand=false "HTTP/1.1 404 Not Found"
+12:26:20 INFO    httpx: HTTP Request: GET https://huggingface.co/api/models/shibing624/text2vec-base-chinese/tree/main?recursive=true&expand=false "HTTP/1.1 200 OK"
+12:26:20 INFO    httpx: HTTP Request: HEAD https://huggingface.co/shibing624/text2vec-base-chinese/resolve/main/1_Pooling/config.json "HTTP/1.1 307 Temporary Redirect"
+12:26:20 INFO    httpx: HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/shibing624/text2vec-base-chinese/183bb99aa7af74355fb58d16edf8c13ae7c5433e/1_Pooling%2Fconfig.json "HTTP/1.1 200 OK"
+12:26:21 INFO    httpx: HTTP Request: GET https://huggingface.co/api/models/shibing624/text2vec-base-chinese "HTTP/1.1 200 OK"
+12:26:49 INFO    qmine.graph:   chose shibing624/text2vec-base-chinese on stability; silhouette would have chosen shibing624/text2vec-base-chinese
+12:26:49 INFO    sentence_transformers.base.model: No device provided, using mps
+12:26:50 INFO    httpx: HTTP Request: HEAD https://huggingface.co/shibing624/text2vec-base-chinese/resolve/main/modules.json "HTTP/1.1 307 Temporary Redirect"
+12:26:50 INFO    httpx: HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/shibing624/text2vec-base-chinese/183bb99aa7af74355fb58d16edf8c13ae7c5433e/modules.json "HTTP/1.1 200 OK"
+12:26:50 INFO    httpx: HTTP Request: HEAD https://huggingface.co/shibing624/text2vec-base-chinese/resolve/main/config_sentence_transformers.json "HTTP/1.1 404 Not Found"
+12:26:50 INFO    sentence_transformers.base.model: Loading SentenceTransformer model from shibing624/text2vec-base-chinese.
+12:26:50 INFO    httpx: HTTP Request: HEAD https://huggingface.co/shibing624/text2vec-base-chinese/resolve/main/config_sentence_transformers.json "HTTP/1.1 404 Not Found"
+12:26:51 INFO    httpx: HTTP Request: HEAD https://huggingface.co/shibing624/text2vec-base-chinese/resolve/main/README.md "HTTP/1.1 307 Temporary Redirect"
+12:26:51 INFO    httpx: HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/shibing624/text2vec-base-chinese/183bb99aa7af74355fb58d16edf8c13ae7c5433e/README.md "HTTP/1.1 200 OK"
+12:26:51 INFO    httpx: HTTP Request: HEAD https://huggingface.co/shibing624/text2vec-base-chinese/resolve/main/modules.json "HTTP/1.1 307 Temporary Redirect"
+12:26:52 INFO    httpx: HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/shibing624/text2vec-base-chinese/183bb99aa7af74355fb58d16edf8c13ae7c5433e/modules.json "HTTP/1.1 200 OK"
+12:26:52 INFO    httpx: HTTP Request: HEAD https://huggingface.co/shibing624/text2vec-base-chinese/resolve/main/sentence_bert_config.json "HTTP/1.1 307 Temporary Redirect"
+12:26:52 INFO    httpx: HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/shibing624/text2vec-base-chinese/183bb99aa7af74355fb58d16edf8c13ae7c5433e/sentence_bert_config.json "HTTP/1.1 200 OK"
+12:26:52 INFO    httpx: HTTP Request: HEAD https://huggingface.co/shibing624/text2vec-base-chinese/resolve/main/adapter_config.json "HTTP/1.1 404 Not Found"
+12:26:53 INFO    httpx: HTTP Request: HEAD https://huggingface.co/shibing624/text2vec-base-chinese/resolve/main/config.json "HTTP/1.1 307 Temporary Redirect"
+12:26:53 INFO    httpx: HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/shibing624/text2vec-base-chinese/183bb99aa7af74355fb58d16edf8c13ae7c5433e/config.json "HTTP/1.1 200 OK"
+    chose shibing624/text2vec-base-chinese on stability; silhouette would have chosen shibing624/text2vec-base-chinese
+Loading weights:   0%|          | 0/199 [00:00<?, ?it/s]Loading weights: 100%|██████████| 199/199 [00:00<00:00, 10300.71it/s]
+12:26:53 INFO    httpx: HTTP Request: HEAD https://huggingface.co/shibing624/text2vec-base-chinese/resolve/main/processor_config.json "HTTP/1.1 404 Not Found"
+12:26:54 INFO    httpx: HTTP Request: HEAD https://huggingface.co/shibing624/text2vec-base-chinese/resolve/main/preprocessor_config.json "HTTP/1.1 404 Not Found"
+12:26:54 INFO    httpx: HTTP Request: HEAD https://huggingface.co/shibing624/text2vec-base-chinese/resolve/main/video_preprocessor_config.json "HTTP/1.1 404 Not Found"
+12:26:54 INFO    httpx: HTTP Request: HEAD https://huggingface.co/shibing624/text2vec-base-chinese/resolve/main/preprocessor_config.json "HTTP/1.1 404 Not Found"
+12:26:55 INFO    httpx: HTTP Request: HEAD https://huggingface.co/shibing624/text2vec-base-chinese/resolve/main/tokenizer_config.json "HTTP/1.1 307 Temporary Redirect"
+12:26:55 INFO    httpx: HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/shibing624/text2vec-base-chinese/183bb99aa7af74355fb58d16edf8c13ae7c5433e/tokenizer_config.json "HTTP/1.1 200 OK"
+12:26:55 INFO    httpx: HTTP Request: HEAD https://huggingface.co/shibing624/text2vec-base-chinese/resolve/main/config.json "HTTP/1.1 307 Temporary Redirect"
+12:26:55 INFO    httpx: HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/shibing624/text2vec-base-chinese/183bb99aa7af74355fb58d16edf8c13ae7c5433e/config.json "HTTP/1.1 200 OK"
+12:26:56 INFO    httpx: HTTP Request: HEAD https://huggingface.co/shibing624/text2vec-base-chinese/resolve/main/config.json "HTTP/1.1 307 Temporary Redirect"
+12:26:56 INFO    httpx: HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/shibing624/text2vec-base-chinese/183bb99aa7af74355fb58d16edf8c13ae7c5433e/config.json "HTTP/1.1 200 OK"
+12:26:56 INFO    httpx: HTTP Request: HEAD https://huggingface.co/shibing624/text2vec-base-chinese/resolve/main/tokenizer_config.json "HTTP/1.1 307 Temporary Redirect"
+12:26:57 INFO    httpx: HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/shibing624/text2vec-base-chinese/183bb99aa7af74355fb58d16edf8c13ae7c5433e/tokenizer_config.json "HTTP/1.1 200 OK"
+12:26:57 INFO    httpx: HTTP Request: GET https://huggingface.co/api/models/shibing624/text2vec-base-chinese/tree/main/additional_chat_templates?recursive=false&expand=false "HTTP/1.1 404 Not Found"
+12:26:57 INFO    httpx: HTTP Request: GET https://huggingface.co/api/models/shibing624/text2vec-base-chinese/tree/main?recursive=true&expand=false "HTTP/1.1 200 OK"
+12:26:58 INFO    httpx: HTTP Request: HEAD https://huggingface.co/shibing624/text2vec-base-chinese/resolve/main/1_Pooling/config.json "HTTP/1.1 307 Temporary Redirect"
+12:26:58 INFO    httpx: HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/shibing624/text2vec-base-chinese/183bb99aa7af74355fb58d16edf8c13ae7c5433e/1_Pooling%2Fconfig.json "HTTP/1.1 200 OK"
+12:26:58 INFO    httpx: HTTP Request: GET https://huggingface.co/api/models/shibing624/text2vec-base-chinese "HTTP/1.1 200 OK"
+12:27:13 INFO    httpx2: HTTP Request: POST https://open.bigmodel.cn/api/paas/v4/chat/completions "HTTP/1.1 200 OK"
+12:27:13 INFO    qmine:   ~ researcher_legacy_audit ok 196.1s out 21,799 · glm-5.3-flash · candidates=12, observations=12, contradictions=4, open_questions=5 · 判断自身症状的可能原因 → symptom_cause_interpretati
+12:27:13 INFO    qmine.graph:   researcher[legacy_audit] → 12 candidates
+12:27:19 INFO    httpx2: HTTP Request: POST https://open.bigmodel.cn/api/paas/v4/chat/completions "HTTP/1.1 200 OK"
+12:27:20 INFO    qmine:   ~ researcher_pragmatic_intents ok 202.7s out 20,673 · glm-5.3-flash · candidates=10, observations=7, contradictions=4, open_questions=5 · 判读具体个案的正常与否或严重程度 → own_case_verdict
+12:27:20 INFO    qmine.graph:   researcher[pragmatic_intents] → 10 candidates
+12:27:22 INFO    qmine.graph:   encoded (20316, 768) (computed)
+12:27:22 INFO    qmine.graph: P3b sparse block — char TF-IDF → SVD
+12:27:26 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+12:28:03 INFO    qmine:   ~ proposer_alpha ok 37.9s out 2,840 · deepseek-v4-pro · add=2, drop=0, corpus_signals=5 · phrasing_group_coverage
+12:28:03 INFO    qmine.graph:   grid proposer[alpha]: +[0.7, 0.85] (0 rejected) — 该语料约28.7%的查询落入12个固定短语组，且这些短语组多对应明确意图，如“后缀:怎么办”“后缀:正常吗”“后缀:什么意思”以及医疗导航类问题，说明短语结构承载一部分真实意图信号。当前网格最高只到0
+12:28:03 INFO    qmine.graph: P3c alpha sweep — [0.0, 0.1, 0.2, 0.3, 0.5, 0.7, 0.85]
+12:28:59 INFO    qmine:   ~ researcher_log_reading ok 302.0s out 27,948 · moonshotai/kimi-k3 · candidates=12, observations=13, contradictions=3, open_questions=4 · 查询症状或体征的原因 → symptom_cause_lookup
+12:28:59 INFO    qmine.graph:   researcher[log_reading] → 12 candidates
+12:30:23 INFO    qmine.graph: ✔ p3_represent completed in 386.2s
+12:32:03 INFO    httpx2: HTTP Request: POST https://open.bigmodel.cn/api/paas/v4/chat/completions "HTTP/1.1 200 OK"
+12:32:04 INFO    primp: response: https://en.wikipedia.org/w/api.php?action=opensearch&profile=fuzzy&limit=1&search=%E4%B8%AD%E6%96%87%20%E5%8C%BB%E7%96%97%E6%90%9C%E7%B4%A2%20query%20intent%20%E6%84%8F%E5%9B%BE%E5%88%86%E7%B1%BB%20%E8%AE%BA%E6%96%87%20health%20search%20query%20intent%20classification%20Chinese 200
+12:32:04 INFO    primp: response: https://en.wikipedia.org/w/api.php?action=opensearch&profile=fuzzy&limit=1&search=consumer%20health%20question%20classification%20taxonomy%20types%20of%20consumer%20health%20questions 200
+12:32:04 INFO    primp: response: https://en.wikipedia.org/w/api.php?action=opensearch&profile=fuzzy&limit=1&search=Rose%20Levinson%202004%20understanding%20user%20goals%20of%20web%20search%20taxonomy%20navigational%20informational%20resource 200
+12:32:04 INFO    primp: response: https://en.wikipedia.org/w/api.php?action=opensearch&profile=fuzzy&limit=1&search=Broder%202002%20taxonomy%20of%20web%20queries%20informational%20navigational%20transactional 200
+12:32:04 INFO    primp: response: https://en.wikipedia.org/w/api.php?action=opensearch&profile=fuzzy&limit=1&search=Ely%202000%20%22taxonomy%20of%20generic%20clinical%20questions%22%20BMJ%20diagnosis%20treatment%20etiology 200
+12:32:04 INFO    primp: response: https://en.wikipedia.org/w/api.php?action=opensearch&profile=fuzzy&limit=1&search=e-commerce%20search%20query%20intent%20taxonomy%20classes%20research%20compare%20browse%20purchase%20product%20search%20SIGIR 200
+12:32:07 INFO    ddgs.ddgs: Error in engine grokipedia: DDGSException('ConnectError: ConnectError(\'error sending request for url (https://grokipedia.com/api/typeahead?query=consumer+health+question+classification+taxonomy+types+of+consumer+health+questions&limit=1) > client error (Connect) > invalid peer certificate: certificate not valid for name "grokipedia.com"; certificate is only valid for DnsName("*.facebook.com"), DnsName("*.facebook.net"), DnsName("*.fbcdn.net"), DnsName("*.fbsbx.com"), DnsName("*.m.facebook.com"), DnsName("*.messenger.com"), DnsName("*.xx.fbcdn.net"), DnsName("*.xy.fbcdn.net"), DnsName("*.xz.fbcdn.net"), DnsName("facebook.com") or DnsName("messenger.com")\')')
+12:32:08 INFO    ddgs.ddgs: Error in engine grokipedia: DDGSException('ConnectError: ConnectError(\'error sending request for url (https://grokipedia.com/api/typeahead?query=Broder+2002+taxonomy+of+web+queries+informational+navigational+transactional&limit=1) > client error (Connect) > invalid peer certificate: certificate not valid for name "grokipedia.com"; certificate is only valid for DnsName("*.facebook.com"), DnsName("*.facebook.net"), DnsName("*.fbcdn.net"), DnsName("*.fbsbx.com"), DnsName("*.m.facebook.com"), DnsName("*.messenger.com"), DnsName("*.xx.fbcdn.net"), DnsName("*.xy.fbcdn.net"), DnsName("*.xz.fbcdn.net"), DnsName("facebook.com") or DnsName("messenger.com")\')')
+12:32:08 INFO    ddgs.ddgs: Error in engine grokipedia: DDGSException('ConnectError: ConnectError(\'error sending request for url (https://grokipedia.com/api/typeahead?query=e-commerce+search+query+intent+taxonomy+classes+research+compare+browse+purchase+product+search+SIGIR&limit=1) > client error (Connect) > invalid peer certificate: certificate not valid for name "grokipedia.com"; certificate is only valid for DnsName("*.facebook.com"), DnsName("*.facebook.net"), DnsName("*.fbcdn.net"), DnsName("*.fbsbx.com"), DnsName("*.m.facebook.com"), DnsName("*.messenger.com"), DnsName("*.xx.fbcdn.net"), DnsName("*.xy.fbcdn.net"), DnsName("*.xz.fbcdn.net"), DnsName("facebook.com") or DnsName("messenger.com")\')')
+12:32:08 INFO    httpx: HTTP Request: POST https://html.duckduckgo.com/html/ "HTTP/2 200 OK"
+12:32:08 INFO    ddgs.ddgs: Error in engine grokipedia: DDGSException('ConnectError: ConnectError(\'error sending request for url (https://grokipedia.com/api/typeahead?query=Rose+Levinson+2004+understanding+user+goals+of+web+search+taxonomy+navigational+informational+resource&limit=1) > client error (Connect) > invalid peer certificate: certificate not valid for name "grokipedia.com"; certificate is only valid for DnsName("*.facebook.com"), DnsName("*.facebook.net"), DnsName("*.fbcdn.net"), DnsName("*.fbsbx.com"), DnsName("*.m.facebook.com"), DnsName("*.messenger.com"), DnsName("*.xx.fbcdn.net"), DnsName("*.xy.fbcdn.net"), DnsName("*.xz.fbcdn.net"), DnsName("facebook.com") or DnsName("messenger.com")\')')
+12:32:08 INFO    ddgs.ddgs: Error in engine grokipedia: TimeoutException(TimeoutError('error sending request for url (https://grokipedia.com/api/typeahead?query=%E4%B8%AD%E6%96%87+%E5%8C%BB%E7%96%97%E6%90%9C%E7%B4%A2+query+intent+%E6%84%8F%E5%9B%BE%E5%88%86%E7%B1%BB+%E8%AE%BA%E6%96%87+health+search+query+intent+classification+Chinese&limit=1) > operation timed out'))
+12:32:08 INFO    ddgs.ddgs: Error in engine grokipedia: TimeoutException(TimeoutError('error sending request for url (https://grokipedia.com/api/typeahead?query=Ely+2000+%22taxonomy+of+generic+clinical+questions%22+BMJ+diagnosis+treatment+etiology&limit=1) > operation timed out'))
+12:32:08 INFO    primp: response: https://search.brave.com/search?q=e-commerce+search+query+intent+taxonomy+classes+research+compare+browse+purchase+product+search+SIGIR&source=web 429
+12:32:09 INFO    primp: response: https://search.brave.com/search?q=Rose+Levinson+2004+understanding+user+goals+of+web+search+taxonomy+navigational+informational+resource&source=web 429
+12:32:09 INFO    httpx: HTTP Request: POST https://html.duckduckgo.com/html/ "HTTP/2 200 OK"
+12:32:09 INFO    httpx: HTTP Request: POST https://html.duckduckgo.com/html/ "HTTP/2 200 OK"
+12:32:10 INFO    primp: response: https://www.mojeek.com/search?q=Rose+Levinson+2004+understanding+user+goals+of+web+search+taxonomy+navigational+informational+resource 200
+12:32:11 INFO    httpx: HTTP Request: POST https://html.duckduckgo.com/html/ "HTTP/2 200 OK"
+12:32:11 INFO    primp: response: https://www.startpage.com/ 200
+12:32:11 INFO    primp: response: https://www.mojeek.com/search?q=Broder+2002+taxonomy+of+web+queries+informational+navigational+transactional 200
+12:32:13 INFO    primp: response: https://www.startpage.com/ 200
+12:32:13 INFO    primp: response: https://www.startpage.com/ 200
+12:32:13 INFO    ddgs.ddgs: Error in engine startpage: DDGSException("DecodeError: DecodeError('Body collection error: error decoding response body')")
+12:32:14 INFO    primp: response: https://www.startpage.com/sp/search 200
+12:32:15 INFO    httpx: HTTP Request: POST https://html.duckduckgo.com/html/ "HTTP/2 200 OK"
+12:32:16 INFO    ddgs.ddgs: Error in engine startpage: DDGSException("DecodeError: DecodeError('Body collection error: error decoding response body')")
+12:32:17 INFO    primp: response: https://search.brave.com/search?q=Broder+2002+taxonomy+of+web+queries+informational+navigational+transactional&source=web 429
+12:32:17 INFO    primp: response: https://search.yahoo.com/search;_ylt=NaCURm0-mtWV-P-Z0oQ5i3ab;_ylu=qZ7D2UElgLqVBmlxTRk8yU6n-2ATZZqC7MUSt8W5_9J85IQ?p=Broder+2002+taxonomy+of+web+queries+informational+navigational+transactional 200
+12:32:44 INFO    httpx2: HTTP Request: POST https://open.bigmodel.cn/api/paas/v4/chat/completions "HTTP/1.1 200 OK"
+12:32:44 INFO    httpx: HTTP Request: GET https://tianchi.aliyun.com/dataset/92109 "HTTP/1.1 200 OK"
+12:32:45 INFO    httpx: HTTP Request: GET https://www.bmj.com/content/321/7258/429.1.full.pdf "HTTP/1.1 403 Forbidden"
+12:32:46 INFO    httpx: HTTP Request: GET https://lhncbc.nlm.nih.gov/LHC-publications/PDF/pub8972.pdf "HTTP/1.1 200 OK"
+12:32:47 INFO    httpx: HTTP Request: GET https://sigir.org/files/forum/F2002/broder.pdf "HTTP/1.1 200 OK"
+12:33:33 INFO    httpx2: HTTP Request: POST https://open.bigmodel.cn/api/paas/v4/chat/completions "HTTP/1.1 200 OK"
+12:33:34 INFO    primp: response: https://en.wikipedia.org/w/api.php?action=opensearch&profile=fuzzy&limit=1&search=CMID%20Chinese%20medical%20question%20intent%20classification%20benchmark%20dataset%2044%20intent%20classes%20causes%20treatment%20prevention 200
+12:33:34 INFO    primp: response: https://en.wikipedia.org/w/api.php?action=opensearch&profile=fuzzy&limit=1&search=KUAKE-QIC%20%E5%8C%BB%E5%AD%A6%E6%90%9C%E7%B4%A2%E6%84%8F%E5%9B%BE%E5%88%86%E7%B1%BB%20%E7%B1%BB%E5%88%AB%20%E7%97%85%E5%9B%A0%20%E9%A2%84%E9%98%B2%20%E4%B8%B4%E5%BA%8A%E8%A1%A8%E7%8E%B0%20%E6%B2%BB%E7%96%97%E6%96%B9%E6%A1%88%20%E6%B3%A8%E6%84%8F%E4%BA%8B%E9%A1%B9 200
+12:33:34 INFO    ddgs.ddgs: Error in engine grokipedia: DDGSException('ConnectError: ConnectError(\'error sending request for url (https://grokipedia.com/api/typeahead?query=KUAKE-QIC+%E5%8C%BB%E5%AD%A6%E6%90%9C%E7%B4%A2%E6%84%8F%E5%9B%BE%E5%88%86%E7%B1%BB+%E7%B1%BB%E5%88%AB+%E7%97%85%E5%9B%A0+%E9%A2%84%E9%98%B2+%E4%B8%B4%E5%BA%8A%E8%A1%A8%E7%8E%B0+%E6%B2%BB%E7%96%97%E6%96%B9%E6%A1%88+%E6%B3%A8%E6%84%8F%E4%BA%8B%E9%A1%B9&limit=1) > client error (Connect) > invalid peer certificate: certificate not valid for name "grokipedia.com"; certificate is only valid for DnsName("*.facebook.com"), DnsName("*.facebook.net"), DnsName("*.fbcdn.net"), DnsName("*.fbsbx.com"), DnsName("*.m.facebook.com"), DnsName("*.messenger.com"), DnsName("*.xx.fbcdn.net"), DnsName("*.xy.fbcdn.net"), DnsName("*.xz.fbcdn.net"), DnsName("facebook.com") or DnsName("messenger.com")\')')
+12:33:35 INFO    ddgs.ddgs: Error in engine grokipedia: DDGSException('ConnectError: ConnectError(\'error sending request for url (https://grokipedia.com/api/typeahead?query=CMID+Chinese+medical+question+intent+classification+benchmark+dataset+44+intent+classes+causes+treatment+prevention&limit=1) > client error (Connect) > invalid peer certificate: certificate not valid for name "grokipedia.com"; certificate is only valid for DnsName("*.facebook.com"), DnsName("*.facebook.net"), DnsName("*.fbcdn.net"), DnsName("*.fbsbx.com"), DnsName("*.m.facebook.com"), DnsName("*.messenger.com"), DnsName("*.xx.fbcdn.net"), DnsName("*.xy.fbcdn.net"), DnsName("*.xz.fbcdn.net"), DnsName("facebook.com") or DnsName("messenger.com")\')')
+12:33:35 INFO    httpx: HTTP Request: GET https://pmc.ncbi.nlm.nih.gov/articles/PMC4420005/ "HTTP/1.1 200 OK"
+12:33:35 INFO    httpx: HTTP Request: POST https://html.duckduckgo.com/html/ "HTTP/2 200 OK"
+12:33:37 INFO    httpx: HTTP Request: GET https://europepmc.org/article/PMC/PMC27459 "HTTP/1.1 403 Forbidden"
+12:33:37 INFO    primp: response: https://www.mojeek.com/search?q=CMID+Chinese+medical+question+intent+classification+benchmark+dataset+44+intent+classes+causes+treatment+prevention 200
+12:33:39 INFO    primp: response: https://search.yahoo.com/search;_ylt=5d5k1yol9DS7mlbQLkImvzBS;_ylu=aSlA_zZyWoa9NNeeC2HbLPzQNOy08YfY4F_71tZ3kjgs7ak?p=CMID+Chinese+medical+question+intent+classification+benchmark+dataset+44+intent+classes+causes+treatment+prevention 200
+12:33:51 INFO    httpx2: HTTP Request: POST https://open.bigmodel.cn/api/paas/v4/chat/completions "HTTP/1.1 200 OK"
+12:33:52 INFO    primp: response: https://en.wikipedia.org/w/api.php?action=opensearch&profile=fuzzy&limit=1&search=NLM%20consumer%20health%20question%2013%20question%20types%20cause%20treatment%20sign%20symptom%20history%20expectation%20person%20group%20information 200
+12:33:52 INFO    primp: response: https://en.wikipedia.org/w/api.php?action=opensearch&profile=fuzzy&limit=1&search=Sondhi%20%22A%20Taxonomy%20of%20Queries%20for%20E-commerce%20Search%22%20five%20classes%20feature%20navigational%20attribute%20relation%20subject 200
+12:33:53 INFO    httpx: HTTP Request: GET https://lhncbc.nlm.nih.gov/LHC-publications/PDF/pub7077.pdf "HTTP/1.1 200 OK"
+12:33:53 INFO    ddgs.ddgs: Error in engine grokipedia: DDGSException('ConnectError: ConnectError(\'error sending request for url (https://grokipedia.com/api/typeahead?query=Sondhi+%22A+Taxonomy+of+Queries+for+E-commerce+Search%22+five+classes+feature+navigational+attribute+relation+subject&limit=1) > client error (Connect) > invalid peer certificate: certificate not valid for name "grokipedia.com"; certificate is only valid for DnsName("*.facebook.com"), DnsName("*.facebook.net"), DnsName("*.fbcdn.net"), DnsName("*.fbsbx.com"), DnsName("*.m.facebook.com"), DnsName("*.messenger.com"), DnsName("*.xx.fbcdn.net"), DnsName("*.xy.fbcdn.net"), DnsName("*.xz.fbcdn.net"), DnsName("facebook.com") or DnsName("messenger.com")\')')
+12:33:53 INFO    ddgs.ddgs: Error in engine grokipedia: DDGSException('ConnectError: ConnectError(\'error sending request for url (https://grokipedia.com/api/typeahead?query=NLM+consumer+health+question+13+question+types+cause+treatment+sign+symptom+history+expectation+person+group+information&limit=1) > client error (Connect) > invalid peer certificate: certificate not valid for name "grokipedia.com"; certificate is only valid for DnsName("*.facebook.com"), DnsName("*.facebook.net"), DnsName("*.fbcdn.net"), DnsName("*.fbsbx.com"), DnsName("*.m.facebook.com"), DnsName("*.messenger.com"), DnsName("*.xx.fbcdn.net"), DnsName("*.xy.fbcdn.net"), DnsName("*.xz.fbcdn.net"), DnsName("facebook.com") or DnsName("messenger.com")\')')
+12:33:54 INFO    httpx: HTTP Request: GET https://link.springer.com/article/10.1186/s12911-020-1122-3 "HTTP/1.1 303 See Other"
+12:33:54 INFO    primp: response: https://search.brave.com/search?q=NLM+consumer+health+question+13+question+types+cause+treatment+sign+symptom+history+expectation+person+group+information&source=web 429
+12:33:54 INFO    httpx: HTTP Request: POST https://html.duckduckgo.com/html/ "HTTP/2 200 OK"
+12:33:55 INFO    httpx: HTTP Request: GET https://idp.springer.com/authorize?response_type=cookie&client_id=springerlink&redirect_uri=https%3A%2F%2Flink.springer.com%2Farticle%2F10.1186%2Fs12911-020-1122-3 "HTTP/1.1 302 Found"
+12:33:56 INFO    httpx: HTTP Request: GET https://link.springer.com/article/10.1186/s12911-020-1122-3 "HTTP/1.1 200 OK"
+12:33:59 INFO    ddgs.ddgs: Error in engine mojeek: TimeoutException(TimeoutError('error sending request for url (https://www.mojeek.com/search?q=NLM+consumer+health+question+13+question+types+cause+treatment+sign+symptom+history+expectation+person+group+information) > operation timed out'))
+12:34:00 INFO    httpx: HTTP Request: POST https://html.duckduckgo.com/html/ "HTTP/2 200 OK"
+12:34:17 INFO    httpx2: HTTP Request: POST https://open.bigmodel.cn/api/paas/v4/chat/completions "HTTP/1.1 200 OK"
+12:34:18 INFO    httpx: HTTP Request: GET https://psondhiblog.wordpress.com/wp-content/uploads/2018/09/p1245-sondhi1.pdf "HTTP/1.1 200 OK"
+12:34:19 INFO    httpx: HTTP Request: GET https://lhncbc.nlm.nih.gov/CHRB/Projects/chqa.html "HTTP/1.1 200 OK"
+12:34:19 INFO    httpx: HTTP Request: GET https://www.researchgate.net/publication/342815044_A_benchmark_dataset_and_case_study_for_Chinese_medical_question_intent_classification/links/5fc23b27a6fdcc5f8b53928f/A-benchmark-dataset-and-case-study-for-Chinese-medical-question-intent-classification.pdf "HTTP/1.1 403 Forbidden"
+12:34:40 INFO    httpx2: HTTP Request: POST https://open.bigmodel.cn/api/paas/v4/chat/completions "HTTP/1.1 200 OK"
+12:34:41 INFO    httpx: HTTP Request: GET https://github.com/IMU-MachineLearningSXD/CMID "HTTP/1.1 200 OK"
+12:34:41 INFO    httpx: HTTP Request: GET https://www.researchgate.net/publication/267544206_Annotating_Question_Types_for_Consumer_Health_Questions "HTTP/1.1 403 Forbidden"
+12:34:42 INFO    httpx: HTTP Request: GET https://www.semanticscholar.org/paper/A-Taxonomy-of-Queries-for-E-commerce-Search-Sondhi-Sharma/2767c29f74f3724c1165d35def808fd038620311 "HTTP/1.1 202 Accepted"
+12:35:03 INFO    httpx2: HTTP Request: POST https://open.bigmodel.cn/api/paas/v4/chat/completions "HTTP/1.1 200 OK"
+12:35:03 INFO    primp: response: https://en.wikipedia.org/w/api.php?action=opensearch&profile=fuzzy&limit=1&search=%22thirteen%20question%20types%22%20consumer%20health%20questions%20Roberts%20Demner-Fushman%20cause%20treatment%20sign%20symptom%20list%20%22history%22%20%22expectation%22 200
+12:35:04 INFO    ddgs.ddgs: Error in engine grokipedia: DDGSException('ConnectError: ConnectError(\'error sending request for url (https://grokipedia.com/api/typeahead?query=%22thirteen+question+types%22+consumer+health+questions+Roberts+Demner-Fushman+cause+treatment+sign+symptom+list+%22history%22+%22expectation%22&limit=1) > client error (Connect) > invalid peer certificate: certificate not valid for name "grokipedia.com"; certificate is only valid for DnsName("*.facebook.com"), DnsName("*.facebook.net"), DnsName("*.fbcdn.net"), DnsName("*.fbsbx.com"), DnsName("*.m.facebook.com"), DnsName("*.messenger.com"), DnsName("*.xx.fbcdn.net"), DnsName("*.xy.fbcdn.net"), DnsName("*.xz.fbcdn.net"), DnsName("facebook.com") or DnsName("messenger.com")\')')
+12:35:05 INFO    httpx: HTTP Request: GET https://experts.illinois.edu/en/publications/a-taxonomy-of-queries-for-e-commerce-search/ "HTTP/1.1 200 OK"
+12:35:08 INFO    httpx: HTTP Request: GET https://courses.ischool.berkeley.edu/i141/f07/resources/rose_www04.pdf "HTTP/1.1 200 OK"
+12:35:09 INFO    ddgs.ddgs: Error in engine mojeek: TimeoutException(TimeoutError('error sending request for url (https://www.mojeek.com/search?q=%22thirteen+question+types%22+consumer+health+questions+Roberts+Demner-Fushman+cause+treatment+sign+symptom+list+%22history%22+%22expectation%22) > operation timed out'))
+12:35:10 INFO    primp: response: https://search.yahoo.com/search;_ylt=z2iEWgnvevIZLfj4I1o1IH2n;_ylu=RJ0Jf7ykgJoFv4zR29szAw75X127lFNsJWnUil5i7-jDXTA?p=%22thirteen+question+types%22+consumer+health+questions+Roberts+Demner-Fushman+cause+treatment+sign+symptom+list+%22history%22+%22expectation%22 200
+12:35:13 INFO    primp: response: https://www.startpage.com/ 200
+12:35:16 INFO    ddgs.ddgs: Error in engine startpage: DDGSException("DecodeError: DecodeError('Body collection error: error decoding response body')")
+12:35:16 INFO    primp: response: https://search.brave.com/search?q=%22thirteen+question+types%22+consumer+health+questions+Roberts+Demner-Fushman+cause+treatment+sign+symptom+list+%22history%22+%22expectation%22&source=web 429
+12:35:17 INFO    httpx: HTTP Request: POST https://html.duckduckgo.com/html/ "HTTP/2 200 OK"
+12:35:57 INFO    httpx2: HTTP Request: POST https://open.bigmodel.cn/api/paas/v4/chat/completions "HTTP/1.1 200 OK"
+12:35:58 INFO    ddgs.ddgs: Error in engine grokipedia: DDGSException('ConnectError: ConnectError(\'error sending request for url (https://grokipedia.com/api/typeahead?query=Roberts+Demner-Fushman+2016+%22Automatically+Classifying+Question+Types%22+consumer+health+%22question+types%22+list+%22cause%22+%22treatment%22+%22sign%22+%22symptom%22+%22history%22&limit=1) > client error (Connect) > invalid peer certificate: certificate not valid for name "grokipedia.com"; certificate is only valid for DnsName("*.facebook.com"), DnsName("*.facebook.net"), DnsName("*.fbcdn.net"), DnsName("*.fbsbx.com"), DnsName("*.m.facebook.com"), DnsName("*.messenger.com"), DnsName("*.xx.fbcdn.net"), DnsName("*.xy.fbcdn.net"), DnsName("*.xz.fbcdn.net"), DnsName("facebook.com") or DnsName("messenger.com")\')')
+12:35:59 INFO    primp: response: https://en.wikipedia.org/w/api.php?action=opensearch&profile=fuzzy&limit=1&search=Rose%20Levinson%202004%20goal%20categories%20%22resource%22%20advice%20locate%20download%20entertainment%20%22informational%22%20navigational%20categories%20of%20user%20goals 200
+12:35:59 INFO    primp: response: https://en.wikipedia.org/w/api.php?action=opensearch&profile=fuzzy&limit=1&search=Roberts%20Demner-Fushman%202016%20%22Automatically%20Classifying%20Question%20Types%22%20consumer%20health%20%22question%20types%22%20list%20%22cause%22%20%22treatment%22%20%22sign%22%20%22symptom%22%20%22history%22 200
+12:36:00 INFO    httpx: HTTP Request: GET http://chqa.nlm.nih.gov "HTTP/1.0 302 Moved Temporarily"
+12:36:00 INFO    ddgs.ddgs: Error in engine grokipedia: DDGSException('ConnectError: ConnectError(\'error sending request for url (https://grokipedia.com/api/typeahead?query=Rose+Levinson+2004+goal+categories+%22resource%22+advice+locate+download+entertainment+%22informational%22+navigational+categories+of+user+goals&limit=1) > client error (Connect) > invalid peer certificate: certificate not valid for name "grokipedia.com"; certificate is only valid for DnsName("*.facebook.com"), DnsName("*.facebook.net"), DnsName("*.fbcdn.net"), DnsName("*.fbsbx.com"), DnsName("*.m.facebook.com"), DnsName("*.messenger.com"), DnsName("*.xx.fbcdn.net"), DnsName("*.xy.fbcdn.net"), DnsName("*.xz.fbcdn.net"), DnsName("facebook.com") or DnsName("messenger.com")\')')
+12:36:00 INFO    httpx2: HTTP Request: POST https://open.bigmodel.cn/api/paas/v4/chat/completions "HTTP/1.1 200 OK"
+12:36:00 INFO    qmine:   ~ researcher_risk_compliance ok 723.4s out 32,716 · glm-5.3-flash · candidates=12, observations=11, contradictions=5, open_questions=5 · 判断自身症状的原因与严重程度 → self_diagnosis
+12:36:00 INFO    qmine.graph:   researcher[risk_compliance] → 12 candidates (web-researched)
+12:36:00 INFO    primp: response: https://www.startpage.com/ 200
+12:36:00 INFO    primp: response: https://search.brave.com/search?q=Rose+Levinson+2004+goal+categories+%22resource%22+advice+locate+download+entertainment+%22informational%22+navigational+categories+of+user+goals&source=web 429
+12:36:02 INFO    primp: response: https://search.yahoo.com/search;_ylt=5uvt6wuKcAA98xKTxvx9E_eX;_ylu=9sDqRE_NvBLtQVUdOs8QfhdlcWut4qnOSZPqhTeAOvkOfPI?p=Rose+Levinson+2004+goal+categories+%22resource%22+advice+locate+download+entertainment+%22informational%22+navigational+categories+of+user+goals 200
+12:36:04 INFO    primp: response: https://www.startpage.com/sp/search 200
+12:36:04 INFO    primp: response: https://search.yahoo.com/search;_ylt=VQXmJ3a16ke-lo7w8uXWZBFB;_ylu=eGcIJ6ChvpKWEhmuD6kPovDlN5Q_XWF_RPfIOpvB14NrmeM?p=Roberts+Demner-Fushman+2016+%22Automatically+Classifying+Question+Types%22+consumer+health+%22question+types%22+list+%22cause%22+%22treatment%22+%22sign%22+%22symptom%22+%22history%22 200
+12:36:10 INFO    ddgs.ddgs: Error in engine mojeek: TimeoutException(TimeoutError('error sending request for url (https://www.mojeek.com/search?q=Roberts+Demner-Fushman+2016+%22Automatically+Classifying+Question+Types%22+consumer+health+%22question+types%22+list+%22cause%22+%22treatment%22+%22sign%22+%22symptom%22+%22history%22) > operation timed out'))
+12:36:10 INFO    httpx: HTTP Request: GET https://chqa.nlm.nih.gov/ "HTTP/1.1 200 200"
+12:36:10 INFO    primp: response: https://search.brave.com/search?q=Roberts+Demner-Fushman+2016+%22Automatically+Classifying+Question+Types%22+consumer+health+%22question+types%22+list+%22cause%22+%22treatment%22+%22sign%22+%22symptom%22+%22history%22&source=web 429
+12:36:12 INFO    httpx: HTTP Request: POST https://html.duckduckgo.com/html/ "HTTP/2 200 OK"
+12:36:25 INFO    httpx2: HTTP Request: POST https://open.bigmodel.cn/api/paas/v4/chat/completions "HTTP/1.1 200 OK"
+12:36:25 INFO    primp: response: https://en.wikipedia.org/w/api.php?action=opensearch&profile=fuzzy&limit=1&search=%22consumer%20health%22%20question%20types%20list%20%22questions%20about%20cause%22%20%22questions%20about%20treatment%22%20%22questions%20about%20sign%20or%20symptom%22%20NLM%20pub7077 200
+12:36:30 INFO    ddgs.ddgs: Error in engine grokipedia: TimeoutException(TimeoutError('error sending request for url (https://grokipedia.com/api/typeahead?query=%22consumer+health%22+question+types+list+%22questions+about+cause%22+%22questions+about+treatment%22+%22questions+about+sign+or+symptom%22+NLM+pub7077&limit=1) > operation timed out'))
+12:36:31 INFO    httpx: HTTP Request: POST https://html.duckduckgo.com/html/ "HTTP/2 200 OK"
+12:36:33 INFO    httpx: HTTP Request: GET https://faculty.ist.psu.edu/jjansen/academic/jansen_user_intent.pdf "HTTP/1.1 200 OK"
+12:36:33 INFO    primp: response: https://www.startpage.com/ 200
+12:36:36 INFO    ddgs.ddgs: Error in engine startpage: DDGSException("DecodeError: DecodeError('Body collection error: error decoding response body')")
+12:36:37 INFO    primp: response: https://www.mojeek.com/search?q=%22consumer+health%22+question+types+list+%22questions+about+cause%22+%22questions+about+treatment%22+%22questions+about+sign+or+symptom%22+NLM+pub7077 200
+12:36:38 INFO    primp: response: https://search.brave.com/search?q=%22consumer+health%22+question+types+list+%22questions+about+cause%22+%22questions+about+treatment%22+%22questions+about+sign+or+symptom%22+NLM+pub7077&source=web 429
+12:41:59 INFO    httpx2: HTTP Request: POST https://open.bigmodel.cn/api/paas/v4/chat/completions "HTTP/1.1 200 OK"
+12:41:59 INFO    qmine:   ~ researcher_literature ok 1082.4s out 30,725 · glm-5.3-flash · candidates=12, observations=6, contradictions=5, open_questions=6 · 许可与配伍裁决 (能否/可不可以/能不能) → permission_verdict
+12:41:59 INFO    qmine.graph:   researcher[literature] → 12 candidates (web-researched)
+12:42:00 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+12:47:20 INFO    qmine:   ~ taxonomy_architect ok 320.3s out 31,076 · deepseek-v4-pro · nodes=21, rules=17, dropped_candidates=14 · 查询症状或体征的原因 → SYMPTOM_CAUSE_LOOKUP
+12:47:20 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+12:50:24 INFO    qmine:   ~ taxonomy_architect ok 184.7s out 18,053 · deepseek-v4-pro · rules=27 · 点名实体并要求其结构化信息，是产品信息查找而不是疗效验证或治疗推荐。
+12:50:24 INFO    qmine.graph:   rule writer → 27 rules over 210 class pairs (44 total after merge)
+12:50:25 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+12:53:40 INFO    qmine:   ~ taxonomy_critic ok 196.0s out 19,461 · deepseek-v4-pro · findings=16 · overlap
+12:53:40 INFO    qmine.graph:   critic → 16 findings, verdict revise
+12:53:40 INFO    qmine.graph:   4 rule(s) held a sentence in `then` — reduced to the class they name, sentence kept in the rationale
+12:53:40 INFO    qmine.graph:   ⚠ 13 rule(s) name TWO classes in `then` and cannot be used as a key — they still reach the annotator, but rule-conflict and rule-vs-evidence measurement skips them:
+12:53:40 INFO    qmine.graph:       ADJ_CAUSE_VS_DIAGNOSIS: names 2 classes (SYMPTOM_CAUSE_LOOKUP, DIAGNOSIS_PROGNOSIS_VERDICT) — cannot be used as a key, and g
+12:53:40 INFO    qmine.graph:       ADJ_PERMISSION_VS_INTERACTION: names 2 classes (PERMISSION_VERDICT, INTERACTION_VERDICT) — cannot be used as a key, and guessing wh
+12:53:40 INFO    qmine.graph:       ADJ_EFFICACY_VS_PRODUCT: names 2 classes (EFFICACY_VERDICT, PRODUCT_INFO_LOOKUP) — cannot be used as a key, and guessing whic
+12:53:40 INFO    qmine.graph:       ADJ_TREATMENT_VS_DOSAGE: names 2 classes (TREATMENT_SEEKING, DOSAGE_ADMINISTRATION) — cannot be used as a key, and guessing w
+12:53:40 INFO    qmine.graph:   pilot skipped — fast 模式单标注员, 无第二判读可比对
+12:53:40 INFO    qmine.graph: gate p2a_pilot_agreement: SKIPPED — 标注一致性试点未运行 —— fast 模式单标注员 (a), 没有第二判读可比对; kappa、自洽上限与结构性/指南性混淆的拆分本次均未测量
+12:53:40 INFO    qmine.graph: gate p2a_taxonomy_shape: PASSED — 21 L1 intents, 44 adjudication rules the annotator can cite
+12:53:40 INFO    qmine.graph: ✔ p2a_taxonomy completed in 1783.6s
+12:53:40 INFO    qmine.graph: P4 algorithm battery — 3 K values × 6 algorithms
+12:53:41 INFO    qmine.graph: P2b gold — 3000 queries (14.8% of corpus, derived from corpus size), double-blind annotation
+12:53:41 INFO    qmine.graph:   single annotator (a) — no agreement measured
+12:53:41 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+12:53:41 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+12:53:41 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+12:53:41 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+12:53:41 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+12:53:41 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+12:53:41 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+12:53:41 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+12:53:46 INFO    qmine:   ~ annotator_a ok 5.0s out 1,132 · deepseek-v4-flash · labels=25 · 慢性牙髓炎拍片没有 → DIAGNOSIS_PROGNOSIS_VERDIC
+12:53:46 INFO    qmine:   ~ annotator_a ok 5.4s out 1,214 · deepseek-v4-flash · labels=25 · 颈椎病止痛药哪种好 → ENTITY_COMPARISON
+12:53:46 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+12:53:46 INFO    qmine:   ~ annotator_a ok 5.7s out 1,254 · deepseek-v4-flash · labels=25 · 18岁血压133/80正常吗 → OWN_CASE_VERDICT
+12:53:47 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+12:53:47 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+12:53:47 INFO    qmine:   ~ annotator_a ok 6.3s out 1,707 · deepseek-v4-flash · labels=25 · 喉咙痛但不流鼻涕发烧浑身酸痛吃什么药好 → TREATMENT_SEEKING
+12:53:47 INFO    qmine:   ~ annotator_a ok 6.4s out 1,715 · deepseek-v4-flash · labels=25 · 手指杆状是什么回事 → SYMPTOM_CAUSE_LOOKUP
+12:53:47 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+12:53:47 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+12:53:48 INFO    qmine:   ~ annotator_a ok 6.7s out 1,760 · deepseek-v4-flash · labels=25 · 右上后背经常有麻麻的感觉 → SYMPTOM_CAUSE_LOOKUP
+12:53:48 INFO    qmine:   ~ annotator_a ok 6.9s out 1,723 · deepseek-v4-flash · labels=25 · 修青元维生素d3 → PRODUCT_INFO_LOOKUP
+12:53:48 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+12:53:48 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+12:53:48 INFO    qmine:   ~ annotator_a ok 7.3s out 1,806 · deepseek-v4-flash · labels=25 · 达格列净的保质期是几年 → PRODUCT_INFO_LOOKUP
+12:53:48 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+12:53:52 INFO    qmine:   ~ annotator_a ok 5.6s out 1,301 · deepseek-v4-flash · labels=25 · 刚睡着就被口水呛到咳嗽什么原因 → SYMPTOM_CAUSE_LOOKUP
+12:53:52 INFO    qmine:   ~ annotator_a ok 5.9s out 1,293 · deepseek-v4-flash · labels=25 · 男性如何检测hpv → MEDICAL_KNOWLEDGE_LOOKUP
+12:53:52 INFO    qmine:   ~ annotator_a ok 6.5s out 1,727 · deepseek-v4-flash · labels=25 · 心律超过110心脏问题大吗 → OWN_CASE_VERDICT
+12:53:52 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+12:53:52 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+12:53:52 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+12:53:53 INFO    qmine:   ~ annotator_a ok 5.5s out 1,285 · deepseek-v4-flash · labels=25 · 未分化脊柱关节炎 柳氮磺 → PRODUCT_INFO_LOOKUP
+12:53:53 INFO    qmine.graph:   annotator[a] 12/120 batches · 300 rows
+12:53:53 INFO    qmine:   ~ annotator_a ok 6.0s out 1,704 · deepseek-v4-flash · labels=25 · 减脂吃麻辣烫煮菜行吗 → PERMISSION_VERDICT
+12:53:53 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+12:53:53 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+12:53:54 INFO    qmine:   ~ annotator_a ok 5.8s out 1,685 · deepseek-v4-flash · labels=25 · 曼月乐带上三个月后天天出血是不是不适应 → OWN_CASE_VERDICT
+12:53:54 INFO    qmine:   ~ annotator_a ok 6.8s out 1,767 · deepseek-v4-flash · labels=25 · 上海哪个医生看心脏最好 → PROVIDER_NAVIGATION_AND_AD
+12:53:54 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+12:53:54 INFO    qmine:   ~ annotator_a ok 6.4s out 1,332 · deepseek-v4-flash · labels=25 · 痣疮引起的肛门骚痒用什么药膏 → TREATMENT_SEEKING
+12:53:54 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+12:53:54 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+12:53:58 INFO    qmine:   ~ annotator_a ok 6.1s out 1,722 · deepseek-v4-flash · labels=25 · 爬完山回来晚饭吃了一个鸡蛋一片低脂粗粮面包行吗 → PERMISSION_VERDICT
+12:53:59 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+12:53:59 INFO    qmine:   ~ annotator_a ok 6.5s out 1,701 · deepseek-v4-flash · labels=25 · 肾结石可以吃东瓜吗 → PERMISSION_VERDICT
+12:53:59 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+12:53:59 INFO    qmine:   ~ annotator_a ok 6.9s out 1,782 · deepseek-v4-flash · labels=25 · 盖上被子皮肤有灼烧感正常吗 → SYMPTOM_CAUSE_LOOKUP
+12:53:59 INFO    qmine:   ~ annotator_a ok 5.2s out 1,186 · deepseek-v4-flash · labels=25 · 女孩8岁半123是矮小症吗 → OWN_CASE_VERDICT
+12:53:59 INFO    qmine:   ~ annotator_a ok 6.2s out 1,722 · deepseek-v4-flash · labels=25 · 吃早点吗? → CONTEXT_DEPENDENT_FOLLOW_U
+12:53:59 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+12:53:59 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+12:54:00 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+12:54:00 INFO    qmine:   ~ annotator_a ok 6.4s out 1,764 · deepseek-v4-flash · labels=25 · 八味肾气丸的配方 → PRODUCT_INFO_LOOKUP
+12:54:00 INFO    qmine:   ~ annotator_a ok 5.7s out 1,334 · deepseek-v4-flash · labels=25 · 熬夜会引起脑梗或脑出血么? → EFFICACY_VERDICT
+12:54:00 INFO    qmine:   ~ annotator_a ok 5.5s out 1,336 · deepseek-v4-flash · labels=25 · 黑肠病会变胖吗? → DIAGNOSIS_PROGNOSIS_VERDIC
+12:54:00 INFO    qmine.graph:   annotator[a] 24/120 batches · 600 rows
+12:54:00 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+12:54:00 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+12:54:00 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+12:54:04 INFO    qmine:   ~ annotator_a ok 5.2s out 1,268 · deepseek-v4-flash · labels=25 · PGS是什么检查 → MEDICAL_KNOWLEDGE_LOOKUP
+12:54:04 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+12:54:04 INFO    qmine:   ~ annotator_a ok 5.2s out 1,222 · deepseek-v4-flash · labels=25 · 小孩眼睛桃子水过敏 → SYMPTOM_CAUSE_LOOKUP
+12:54:04 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+12:54:05 INFO    qmine:   ~ annotator_a ok 5.2s out 1,202 · deepseek-v4-flash · labels=25 · 阴虱虫子图片症状 → DIAGRAM_MEDIA_LOOKUP
+12:54:05 INFO    qmine:   ~ annotator_a ok 5.2s out 1,220 · deepseek-v4-flash · labels=25 · 氯雷他定和什么不能同吃 → INTERACTION_VERDICT
+12:54:05 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+12:54:05 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+12:54:05 INFO    qmine:   ~ annotator_a ok 6.2s out 3,395 · deepseek-v4-flash · labels=25 · 武汉协和医院王宝菊 → PROVIDER_NAVIGATION_AND_AD
+12:54:05 INFO    qmine:   ~ annotator_a ok 6.1s out 0 · deepseek-v4-flash · labels=25 · 两岁宝宝能用左氧氟沙星滴眼液吗? → PERMISSION_VERDICT
+12:54:05 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+12:54:05 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+12:54:06 INFO    qmine:   ~ annotator_a ok 6.7s out 1,819 · deepseek-v4-flash · labels=25 · 下面有尖锐湿疣会有什么症状 → MEDICAL_KNOWLEDGE_LOOKUP
+12:54:06 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+12:54:06 INFO    qmine:   ~ annotator_a ok 6.4s out 1,762 · deepseek-v4-flash · labels=25 · 吸二手烟舌头麻怎么回事? → SYMPTOM_CAUSE_LOOKUP
+    ~ researcher_legacy_audit ok 196.1s out 21,799 · glm-5.3-flash · candidates=12, observations=12, contradictions=4, open_questions=5 · 判断自身症状的可能原因 → symptom_cause_interpretati
+    researcher[legacy_audit] → 12 candidates
+    ~ researcher_pragmatic_intents ok 202.7s out 20,673 · glm-5.3-flash · candidates=10, observations=7, contradictions=4, open_questions=5 · 判读具体个案的正常与否或严重程度 → own_case_verdict
+    researcher[pragmatic_intents] → 10 candidates
+    encoded (20316, 768) (computed)
+  P3b sparse block — char TF-IDF → SVD
+    ~ proposer_alpha ok 37.9s out 2,840 · deepseek-v4-pro · add=2, drop=0, corpus_signals=5 · phrasing_group_coverage
+    grid proposer[alpha]: +[0.7, 0.85] (0 rejected) — 该语料约28.7%的查询落入12个固定短语组，且这些短语组多对应明确意图，如“后缀:怎么办”“后缀:正常吗”“后缀:什么意思”以及医疗导航类问题，说明短语结构承载一部分真实意图信号。当前网格最高只到0
+  P3c alpha sweep — [0.0, 0.1, 0.2, 0.3, 0.5, 0.7, 0.85]
+    ~ researcher_log_reading ok 302.0s out 27,948 · moonshotai/kimi-k3 · candidates=12, observations=13, contradictions=3, open_questions=4 · 查询症状或体征的原因 → symptom_cause_lookup
+    researcher[log_reading] → 12 candidates
+  ✔ p3_represent completed in 386.2s
+    ~ researcher_risk_compliance ok 723.4s out 32,716 · glm-5.3-flash · candidates=12, observations=11, contradictions=5, open_questions=5 · 判断自身症状的原因与严重程度 → self_diagnosis
+    researcher[risk_compliance] → 12 candidates (web-researched)
+    ~ researcher_literature ok 1082.4s out 30,725 · glm-5.3-flash · candidates=12, observations=6, contradictions=5, open_questions=6 · 许可与配伍裁决 (能否/可不可以/能不能) → permission_verdict
+    researcher[literature] → 12 candidates (web-researched)
+    ~ taxonomy_architect ok 320.3s out 31,076 · deepseek-v4-pro · nodes=21, rules=17, dropped_candidates=14 · 查询症状或体征的原因 → SYMPTOM_CAUSE_LOOKUP
+    ~ taxonomy_architect ok 184.7s out 18,053 · deepseek-v4-pro · rules=27 · 点名实体并要求其结构化信息，是产品信息查找而不是疗效验证或治疗推荐。
+    rule writer → 27 rules over 210 class pairs (44 total after merge)
+    ~ taxonomy_critic ok 196.0s out 19,461 · deepseek-v4-pro · findings=16 · overlap
+    critic → 16 findings, verdict revise
+    4 rule(s) held a sentence in `then` — reduced to the class they name, sentence kept in the rationale
+    ⚠ 13 rule(s) name TWO classes in `then` and cannot be used as a key — they still reach the annotator, but rule-conflict and rule-vs-evidence measurement skips them:
+        ADJ_CAUSE_VS_DIAGNOSIS: names 2 classes (SYMPTOM_CAUSE_LOOKUP, DIAGNOSIS_PROGNOSIS_VERDICT) — cannot be used as a key, and g
+        ADJ_PERMISSION_VS_INTERACTION: names 2 classes (PERMISSION_VERDICT, INTERACTION_VERDICT) — cannot be used as a key, and guessing wh
+        ADJ_EFFICACY_VS_PRODUCT: names 2 classes (EFFICACY_VERDICT, PRODUCT_INFO_LOOKUP) — cannot be used as a key, and guessing whic
+        ADJ_TREATMENT_VS_DOSAGE: names 2 classes (TREATMENT_SEEKING, DOSAGE_ADMINISTRATION) — cannot be used as a key, and guessing w
+    pilot skipped — fast 模式单标注员, 无第二判读可比对
+  gate p2a_pilot_agreement: SKIPPED — 标注一致性试点未运行 —— fast 模式单标注员 (a), 没有第二判读可比对; kappa、自洽上限与结构性/指南性混淆的拆分本次均未测量
+  gate p2a_taxonomy_shape: PASSED — 21 L1 intents, 44 adjudication rules the annotator can cite
+  ✔ p2a_taxonomy completed in 1783.6s
+  P4 algorithm battery — 3 K values × 6 algorithms
+  P2b gold — 3000 queries (14.8% of corpus, derived from corpus size), double-blind annotation
+    single annotator (a) — no agreement measured
+    ~ annotator_a ok 5.0s out 1,132 · deepseek-v4-flash · labels=25 · 慢性牙髓炎拍片没有 → DIAGNOSIS_PROGNOSIS_VERDIC
+    ~ annotator_a ok 5.4s out 1,214 · deepseek-v4-flash · labels=25 · 颈椎病止痛药哪种好 → ENTITY_COMPARISON
+    ~ annotator_a ok 5.7s out 1,254 · deepseek-v4-flash · labels=25 · 18岁血压133/80正常吗 → OWN_CASE_VERDICT
+    ~ annotator_a ok 6.3s out 1,707 · deepseek-v4-flash · labels=25 · 喉咙痛但不流鼻涕发烧浑身酸痛吃什么药好 → TREATMENT_SEEKING
+    ~ annotator_a ok 6.4s out 1,715 · deepseek-v4-flash · labels=25 · 手指杆状是什么回事 → SYMPTOM_CAUSE_LOOKUP
+    ~ annotator_a ok 6.7s out 1,760 · deepseek-v4-flash · labels=25 · 右上后背经常有麻麻的感觉 → SYMPTOM_CAUSE_LOOKUP
+    ~ annotator_a ok 6.9s out 1,723 · deepseek-v4-flash · labels=25 · 修青元维生素d3 → PRODUCT_INFO_LOOKUP
+    ~ annotator_a ok 7.3s out 1,806 · deepseek-v4-flash · labels=25 · 达格列净的保质期是几年 → PRODUCT_INFO_LOOKUP
+    ~ annotator_a ok 5.6s out 1,301 · deepseek-v4-flash · labels=25 · 刚睡着就被口水呛到咳嗽什么原因 → SYMPTOM_CAUSE_LOOKUP
+    ~ annotator_a ok 5.9s out 1,293 · deepseek-v4-flash · labels=25 · 男性如何检测hpv → MEDICAL_KNOWLEDGE_LOOKUP
+    ~ annotator_a ok 6.5s out 1,727 · deepseek-v4-flash · labels=25 · 心律超过110心脏问题大吗 → OWN_CASE_VERDICT
+    ~ annotator_a ok 5.5s out 1,285 · deepseek-v4-flash · labels=25 · 未分化脊柱关节炎 柳氮磺 → PRODUCT_INFO_LOOKUP
+    annotator[a] 12/120 batches · 300 rows
+    ~ annotator_a ok 6.0s out 1,704 · deepseek-v4-flash · labels=25 · 减脂吃麻辣烫煮菜行吗 → PERMISSION_VERDICT
+    ~ annotator_a ok 5.8s out 1,685 · deepseek-v4-flash · labels=25 · 曼月乐带上三个月后天天出血是不是不适应 → OWN_CASE_VERDICT
+    ~ annotator_a ok 6.8s out 1,767 · deepseek-v4-flash · labels=25 · 上海哪个医生看心脏最好 → PROVIDER_NAVIGATION_AND_AD
+    ~ annotator_a ok 6.4s out 1,332 · deepseek-v4-flash · labels=25 · 痣疮引起的肛门骚痒用什么药膏 → TREATMENT_SEEKING
+    ~ annotator_a ok 6.1s out 1,722 · deepseek-v4-flash · labels=25 · 爬完山回来晚饭吃了一个鸡蛋一片低脂粗粮面包行吗 → PERMISSION_VERDICT
+    ~ annotator_a ok 6.5s out 1,701 · deepseek-v4-flash · labels=25 · 肾结石可以吃东瓜吗 → PERMISSION_VERDICT
+    ~ annotator_a ok 6.9s out 1,782 · deepseek-v4-flash · labels=25 · 盖上被子皮肤有灼烧感正常吗 → SYMPTOM_CAUSE_LOOKUP
+    ~ annotator_a ok 5.2s out 1,186 · deepseek-v4-flash · labels=25 · 女孩8岁半123是矮小症吗 → OWN_CASE_VERDICT
+    ~ annotator_a ok 6.2s out 1,722 · deepseek-v4-flash · labels=25 · 吃早点吗? → CONTEXT_DEPENDENT_FOLLOW_U
+    ~ annotator_a ok 6.4s out 1,764 · deepseek-v4-flash · labels=25 · 八味肾气丸的配方 → PRODUCT_INFO_LOOKUP
+    ~ annotator_a ok 5.7s out 1,334 · deepseek-v4-flash · labels=25 · 熬夜会引起脑梗或脑出血么? → EFFICACY_VERDICT
+    ~ annotator_a ok 5.5s out 1,336 · deepseek-v4-flash · labels=25 · 黑肠病会变胖吗? → DIAGNOSIS_PROGNOSIS_VERDIC
+    annotator[a] 24/120 batches · 600 rows
+    ~ annotator_a ok 5.2s out 1,268 · deepseek-v4-flash · labels=25 · PGS是什么检查 → MEDICAL_KNOWLEDGE_LOOKUP
+    ~ annotator_a ok 5.2s out 1,222 · deepseek-v4-flash · labels=25 · 小孩眼睛桃子水过敏 → SYMPTOM_CAUSE_LOOKUP
+    ~ annotator_a ok 5.2s out 1,202 · deepseek-v4-flash · labels=25 · 阴虱虫子图片症状 → DIAGRAM_MEDIA_LOOKUP
+    ~ annotator_a ok 5.2s out 1,220 · deepseek-v4-flash · labels=25 · 氯雷他定和什么不能同吃 → INTERACTION_VERDICT
+    ~ annotator_a ok 6.2s out 3,395 · deepseek-v4-flash · labels=25 · 武汉协和医院王宝菊 → PROVIDER_NAVIGATION_AND_AD
+    ~ annotator_a ok 6.1s out 0 · deepseek-v4-flash · labels=25 · 两岁宝宝能用左氧氟沙星滴眼液吗? → PERMISSION_VERDICT
+    ~ annotator_a ok 6.7s out 1,819 · deepseek-v4-flash · labels=25 · 下面有尖锐湿疣会有什么症状 → MEDICAL_KNOWLEDGE_LOOKUP
+    ~ annotator_a ok 6.4s out 1,762 · deepseek-v4-flash · labels=25 · 吸二手烟舌头麻怎么回事? → SYMPTOM_CAUSE_LOOKUP12:54:06 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+12:54:10 INFO    qmine:   ~ annotator_a ok 6.4s out 1,451 · deepseek-v4-flash · labels=25 · 经常喝牛奶会产生痰液吗 → MEDICAL_KNOWLEDGE_LOOKUP
+12:54:10 INFO    qmine:   ~ annotator_a ok 5.0s out 1,236 · deepseek-v4-flash · labels=25 · 金华婺城区医院有哪些 → PROVIDER_NAVIGATION_AND_AD
+12:54:10 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+12:54:10 INFO    qmine:   ~ annotator_a ok 5.7s out 1,315 · deepseek-v4-flash · labels=25 · 六胞胎有可能吗 → MEDICAL_KNOWLEDGE_LOOKUP
+12:54:10 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+12:54:11 INFO    qmine:   ~ annotator_a ok 5.8s out 1,326 · deepseek-v4-flash · labels=25 · 中耳炎中医治疗最佳方法 → TREATMENT_SEEKING
+12:54:11 INFO    qmine.graph:   annotator[a] 36/120 batches · 900 rows
+12:54:11 INFO    qmine:   ~ annotator_a ok 7.2s out 1,910 · deepseek-v4-flash · labels=25 · 感冒初期喉咙不痛后期才痛 → SYMPTOM_CAUSE_LOOKUP
+12:54:11 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+12:54:11 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+12:54:11 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+12:54:12 INFO    qmine:   ~ annotator_a ok 6.3s out 1,704 · deepseek-v4-flash · labels=25 · 手术后送花 → CONTEXT_DEPENDENT_FOLLOW_U
+12:54:12 INFO    qmine:   ~ annotator_a ok 6.8s out 1,929 · deepseek-v4-flash · labels=25 · 脚杆肿是什么病 → DIAGNOSIS_PROGNOSIS_VERDIC
+12:54:12 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+12:54:12 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+12:54:12 INFO    qmine:   ~ annotator_a ok 6.4s out 1,731 · deepseek-v4-flash · labels=25 · 四个月宝宝一喂就严重出汗正常吗 → OWN_CASE_VERDICT
+12:54:13 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+12:54:16 INFO    qmine:   ~ annotator_a ok 5.6s out 1,265 · deepseek-v4-flash · labels=25 · 75岁老人一个右肾现在右肾输尿管结石8毫米伴盆腔囊肿 → OWN_CASE_VERDICT
+12:54:16 INFO    qmine:   ~ annotator_a ok 6.2s out 1,712 · deepseek-v4-flash · labels=25 · 同房后褐色分泌物第二天流鲜血 → SYMPTOM_CAUSE_LOOKUP
+12:54:16 INFO    qmine:   ~ annotator_a ok 5.9s out 1,257 · deepseek-v4-flash · labels=25 · 药名后III什什么意思 → MEDICAL_KNOWLEDGE_LOOKUP
+12:54:17 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+12:54:17 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+12:54:17 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+12:54:17 INFO    qmine:   ~ annotator_a ok 6.0s out 1,688 · deepseek-v4-flash · labels=25 · 肠系粘膜淋巴结 → MEDICAL_KNOWLEDGE_LOOKUP
+12:54:17 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+12:54:17 INFO    qmine:   ~ annotator_a ok 6.6s out 1,793 · deepseek-v4-flash · labels=25 · 免疫的标志 → MEDICAL_KNOWLEDGE_LOOKUP
+12:54:17 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+12:54:18 INFO    qmine:   ~ annotator_a ok 6.2s out 1,761 · deepseek-v4-flash · labels=25 · 带状疱疹能吃肉米蒸蛋吗 → PERMISSION_VERDICT
+12:54:18 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+12:54:18 INFO    qmine:   ~ annotator_a ok 6.2s out 1,727 · deepseek-v4-flash · labels=25 · 肛门拭子检查法 → MEDICAL_KNOWLEDGE_LOOKUP
+12:54:19 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+12:54:19 INFO    qmine:   ~ annotator_a ok 6.1s out 1,692 · deepseek-v4-flash · labels=25 · 四妙丸和五味子搭配的功效 → PRODUCT_INFO_LOOKUP
+12:54:19 INFO    qmine.graph:   annotator[a] 48/120 batches · 1200 rows
+12:54:19 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+12:54:22 INFO    qmine:   ~ annotator_a ok 5.1s out 1,239 · deepseek-v4-flash · labels=25 · 查血丙肝抗体阳性 → OWN_CASE_VERDICT
+12:54:22 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+12:54:22 INFO    qmine:   ~ annotator_a ok 5.4s out 1,264 · deepseek-v4-flash · labels=25 · 怀孕四十天做普通人流多少钱 → PROVIDER_NAVIGATION_AND_AD
+12:54:22 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+12:54:22 INFO    qmine:   ~ annotator_a ok 5.3s out 1,263 · deepseek-v4-flash · labels=25 · 拍八虚有什么作用 → PRODUCT_INFO_LOOKUP
+12:54:22 INFO    qmine:   ~ annotator_a ok 5.9s out 1,678 · deepseek-v4-flash · labels=25 · 吃头孢可以吃竹笋吗 → INTERACTION_VERDICT
+12:54:23 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+12:54:23 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+12:54:24 INFO    qmine:   ~ annotator_a ok 7.5s out 1,945 · deepseek-v4-flash · labels=25 · 中午趴在桌子上午休醒来之后一条腿的小腿1点知觉没有了 → SYMPTOM_CAUSE_LOOKUP
+12:54:24 INFO    qmine:   ~ annotator_a ok 6.0s out 1,684 · deepseek-v4-flash · labels=25 · 半夜想睡觉睡不着什么原因 → SYMPTOM_CAUSE_LOOKUP
+12:54:24 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+12:54:25 INFO    qmine:   ~ annotator_a ok 6.0s out 1,671 · deepseek-v4-flash · labels=25 · 右下腹压痛什么原因男性 → SYMPTOM_CAUSE_LOOKUP
+12:54:25 INFO    qmine:   ~ annotator_a ok 6.5s out 1,691 · deepseek-v4-flash · labels=25 · 急性肠胃炎怎样判断已不脱水了 → TREATMENT_SEEKING
+12:54:25 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+12:54:25 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+12:54:25 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+12:54:28 INFO    qmine:   ~ annotator_a ok 6.2s out 1,736 · deepseek-v4-flash · labels=25 · 心慌失眠手脚麻木是什么病 → DIAGNOSIS_PROGNOSIS_VERDIC
+12:54:28 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+12:54:28 INFO    qmine:   ~ annotator_a ok 6.0s out 1,713 · deepseek-v4-flash · labels=25 · 是矿泉水含矿物质更有利于饱腹感 纯净水更容易刺激消化 → ENTITY_COMPARISON
+12:54:29 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+12:54:29 INFO    qmine:   ~ annotator_a ok 7.1s out 1,769 · deepseek-v4-flash · labels=25 · 西尼地平一旦吃了就不能停吗 → DOSAGE_ADMINISTRATION
+12:54:29 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+12:54:29 INFO    qmine:   ~ annotator_a ok 6.8s out 1,832 · deepseek-v4-flash · labels=25 · 63岁男血压100-60正常吗 → OWN_CASE_VERDICT
+12:54:29 INFO    qmine.graph:   annotator[a] 60/120 batches · 1500 rows
+12:54:29 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+12:54:31 INFO    qmine:   ~ annotator_a ok 6.3s out 1,771 · deepseek-v4-flash · labels=25 · 我第一次测餐后两小时吃了一碗玉米珍稀饭一个水煎包和一 → OWN_CASE_VERDICT
+12:54:31 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+12:54:31 INFO    qmine:   ~ annotator_a ok 6.7s out 1,717 · deepseek-v4-flash · labels=25 · 放了支架之后只能活18年m吗，那后面如何替换支架？ → DIAGNOSIS_PROGNOSIS_VERDIC
+12:54:31 INFO    qmine:   ~ annotator_a ok 6.4s out 1,741 · deepseek-v4-flash · labels=25 · 三七泡酒擦关节有什么功效 → PRODUCT_INFO_LOOKUP
+12:54:31 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+12:54:31 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+12:54:31 INFO    qmine:   ~ annotator_a ok 6.8s out 1,808 · deepseek-v4-flash · labels=25 · 盐酸氨溴索与小儿清肺化痰哪个好 → ENTITY_COMPARISON
+12:54:32 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+12:54:34 INFO    qmine:   ~ annotator_a ok 6.0s out 1,367 · deepseek-v4-flash · labels=25 · 怀孕31周可以喝咖啡吗 → PERMISSION_VERDICT
+12:54:34 INFO    qmine:   ~ annotator_a ok 5.8s out 1,318 · deepseek-v4-flash · labels=25 · 耳穴的准确位置图 → DIAGRAM_MEDIA_LOOKUP
+12:54:34 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+12:54:34 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+12:54:36 INFO    qmine:   ~ annotator_a ok 6.9s out 1,951 · deepseek-v4-flash · labels=25 · 36周胎儿能听到音乐吗 → MEDICAL_KNOWLEDGE_LOOKUP
+12:54:36 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+12:54:36 INFO    qmine:   ~ annotator_a ok 6.7s out 1,772 · deepseek-v4-flash · labels=25 · 光敏疗法治疗皮肤鳞癌效果好吗 → EFFICACY_VERDICT
+12:54:36 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+12:54:36 INFO    qmine:   ~ annotator_a ok 5.4s out 1,294 · deepseek-v4-flash · labels=25 · 萘普生和布洛芬哪个对嗓子疼的效果好 → ENTITY_COMPARISON
+12:54:36 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+12:54:37 INFO    qmine:   ~ annotator_a ok 5.5s out 1,288 · deepseek-v4-flash · labels=25 · 草本五黑膏怎么用 → DOSAGE_ADMINISTRATION
+12:54:37 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+12:54:37 INFO    qmine:   ~ annotator_a ok 5.8s out 1,268 · deepseek-v4-flash · labels=25 · 我说我12点吃的荆防颗粒，现在是几点吃？荆防颗粒，还 → DOSAGE_ADMINISTRATION
+12:54:37 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+12:54:39 INFO    qmine:   ~ annotator_a ok 7.6s out 1,635 · deepseek-v4-flash · labels=25 · 自穿舌钉受伤的概率有多少大 → PROCEDURE_EXPERIENCE
+12:54:39 INFO    qmine.graph:   annotator[a] 72/120 batches · 1800 rows
+12:54:39 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+12:54:40 INFO    qmine:   ~ annotator_a ok 5.7s out 1,301 · deepseek-v4-flash · labels=25 · 喉咙经常红有痰怎么办吃什么药 → TREATMENT_SEEKING
+12:54:40 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+12:54:40 INFO    qmine:   ~ annotator_a ok 5.9s out 1,743 · deepseek-v4-flash · labels=25 · 鼻子里有点痛怎么办 → TREATMENT_SEEKING
+12:54:40 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+12:54:41 INFO    qmine:   ~ annotator_a !! 5.2s out 1,205 · deepseek-v4-flash · ValueError
+12:54:41 WARNING qmine.llm: role=annotator_a attempt=0 failed (ValueError: no parseable structured output); already in plain-JSON mode — the model returned unparseable JSON; re-asking
+12:54:41 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+12:54:41 INFO    qmine:   ~ annotator_a ok 5.5s out 1,318 · deepseek-v4-flash · labels=25 · 打梨涡钉可以吃蛋糕吗 → PERMISSION_VERDICT
+12:54:42 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+12:54:42 INFO    qmine:   ~ annotator_a ok 5.5s out 1,299 · deepseek-v4-flash · labels=25 · 腰椎间盘突出手术后复发还能再割吗 → TREATMENT_SEEKER
+12:54:42 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+12:54:43 INFO    qmine:   ~ annotator_a ok 6.4s out 1,348 · deepseek-v4-flash · labels=25 · 宫颈癌筛查例假前能不能做 → PROVIDER_NAVIGATION_AND_AD
+12:54:43 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+12:54:44 INFO    qmine:   ~ annotator_a ok 7.1s out 1,844 · deepseek-v4-flash · labels=25 · 盐酸吗啡缓释片吃多少粒上瘾 → PRODUCT_INFO_LOOKUP
+12:54:44 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+12:54:45 INFO    qmine:   ~ annotator_a ok 5.6s out 1,263 · deepseek-v4-flash · labels=25 · 说手术做的好。但是术后左眼总是有分泌物 → RECOVERY_TIMELINE
+12:54:45 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+12:54:45 INFO    qmine:   ~ annotator_a ok 5.3s out 1,239 · deepseek-v4-flash · labels=25 · 长期打生物制剂会影响寿命吗 → DIAGNOSIS_PROGNOSIS_VERDIC
+12:54:45 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+12:54:46 INFO    qmine:   ~ annotator_a ok 6.1s out 1,411 · deepseek-v4-flash · labels=25 · 语言疗法一天做几次 → DOSAGE_ADMINISTRATION
+12:54:46 INFO    qmine:   ~ annotator_a ok 10.7s out 1,250 · deepseek-v4-flash · labels=25 · 月经来前两天，量偏多一点点 → OWN_CASE_VERDICT
+12:54:46 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+12:54:46 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+12:54:48 INFO    qmine:   ~ annotator_a ok 6.1s out 1,738 · deepseek-v4-flash · labels=25 · 打喷嚏鼻塞嗓子疼是病毒还是细菌 → DIAGNOSIS_PROGNOSIS_VERDIC
+12:54:48 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+12:54:48 INFO    qmine:   ~ annotator_a ok 6.5s out 1,779 · deepseek-v4-flash · labels=25 · 胳膊疼脚肿怎么回事 → SYMPTOM_CAUSE_LOOKUP
+12:54:48 INFO    qmine.graph:   annotator[a] 84/120 batches · 2100 rows
+12:54:48 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+12:54:49 INFO    qmine:   ~ annotator_a ok 5.7s out 1,274 · deepseek-v4-flash · labels=25 · 手指割伤了怎么止血 → ACUTE_EMERGENCY_TRIAGE
+12:54:49 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+12:54:49 INFO    qmine:   ~ annotator_a ok 4.6s out 1,168 · deepseek-v4-flash · labels=25 · 胰腺炎血淀粉酶对预后判断的影响 → MEDICAL_KNOWLEDGE_LOOKUP
+12:54:49 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+12:54:49 INFO    qmine:   ~ annotator_a ok 5.4s out 1,263 · deepseek-v4-flash · labels=25 · 中午会有一点鸡胸肉 → CONTEXT_DEPENDENT_FOLLOW_U
+12:54:49 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+12:54:50 INFO    qmine:   ~ annotator_a ok 5.3s out 1,245 · deepseek-v4-flash · labels=25 · 前额发红有什么预兆 → SYMPTOM_CAUSE_LOOKUP
+12:54:51 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+12:54:52 INFO    qmine:   ~ annotator_a ok 5.4s out 1,320 · deepseek-v4-flash · labels=25 · 12岁小孩头痛呕吐什么原因 → SYMPTOM_CAUSE_LOOKUP
+12:54:52 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+12:54:53 INFO    qmine:   ~ annotator_a ok 6.8s out 1,857 · deepseek-v4-flash · labels=25 · 诺丽果和胰岛果煮水喝比例多少 → PRODUCT_INFO_LOOKUP
+
+    ~ annotator_a ok 6.4s out 1,451 · deepseek-v4-flash · labels=25 · 经常喝牛奶会产生痰液吗 → MEDICAL_KNOWLEDGE_LOOKUP
+    ~ annotator_a ok 5.0s out 1,236 · deepseek-v4-flash · labels=25 · 金华婺城区医院有哪些 → PROVIDER_NAVIGATION_AND_AD
+    ~ annotator_a ok 5.7s out 1,315 · deepseek-v4-flash · labels=25 · 六胞胎有可能吗 → MEDICAL_KNOWLEDGE_LOOKUP
+    ~ annotator_a ok 5.8s out 1,326 · deepseek-v4-flash · labels=25 · 中耳炎中医治疗最佳方法 → TREATMENT_SEEKING
+    annotator[a] 36/120 batches · 900 rows
+    ~ annotator_a ok 7.2s out 1,910 · deepseek-v4-flash · labels=25 · 感冒初期喉咙不痛后期才痛 → SYMPTOM_CAUSE_LOOKUP
+    ~ annotator_a ok 6.3s out 1,704 · deepseek-v4-flash · labels=25 · 手术后送花 → CONTEXT_DEPENDENT_FOLLOW_U
+    ~ annotator_a ok 6.8s out 1,929 · deepseek-v4-flash · labels=25 · 脚杆肿是什么病 → DIAGNOSIS_PROGNOSIS_VERDIC
+    ~ annotator_a ok 6.4s out 1,731 · deepseek-v4-flash · labels=25 · 四个月宝宝一喂就严重出汗正常吗 → OWN_CASE_VERDICT
+    ~ annotator_a ok 5.6s out 1,265 · deepseek-v4-flash · labels=25 · 75岁老人一个右肾现在右肾输尿管结石8毫米伴盆腔囊肿 → OWN_CASE_VERDICT
+    ~ annotator_a ok 6.2s out 1,712 · deepseek-v4-flash · labels=25 · 同房后褐色分泌物第二天流鲜血 → SYMPTOM_CAUSE_LOOKUP
+    ~ annotator_a ok 5.9s out 1,257 · deepseek-v4-flash · labels=25 · 药名后III什什么意思 → MEDICAL_KNOWLEDGE_LOOKUP
+    ~ annotator_a ok 6.0s out 1,688 · deepseek-v4-flash · labels=25 · 肠系粘膜淋巴结 → MEDICAL_KNOWLEDGE_LOOKUP
+    ~ annotator_a ok 6.6s out 1,793 · deepseek-v4-flash · labels=25 · 免疫的标志 → MEDICAL_KNOWLEDGE_LOOKUP
+    ~ annotator_a ok 6.2s out 1,761 · deepseek-v4-flash · labels=25 · 带状疱疹能吃肉米蒸蛋吗 → PERMISSION_VERDICT
+    ~ annotator_a ok 6.2s out 1,727 · deepseek-v4-flash · labels=25 · 肛门拭子检查法 → MEDICAL_KNOWLEDGE_LOOKUP
+    ~ annotator_a ok 6.1s out 1,692 · deepseek-v4-flash · labels=25 · 四妙丸和五味子搭配的功效 → PRODUCT_INFO_LOOKUP
+    annotator[a] 48/120 batches · 1200 rows
+    ~ annotator_a ok 5.1s out 1,239 · deepseek-v4-flash · labels=25 · 查血丙肝抗体阳性 → OWN_CASE_VERDICT
+    ~ annotator_a ok 5.4s out 1,264 · deepseek-v4-flash · labels=25 · 怀孕四十天做普通人流多少钱 → PROVIDER_NAVIGATION_AND_AD
+    ~ annotator_a ok 5.3s out 1,263 · deepseek-v4-flash · labels=25 · 拍八虚有什么作用 → PRODUCT_INFO_LOOKUP
+    ~ annotator_a ok 5.9s out 1,678 · deepseek-v4-flash · labels=25 · 吃头孢可以吃竹笋吗 → INTERACTION_VERDICT
+    ~ annotator_a ok 7.5s out 1,945 · deepseek-v4-flash · labels=25 · 中午趴在桌子上午休醒来之后一条腿的小腿1点知觉没有了 → SYMPTOM_CAUSE_LOOKUP
+    ~ annotator_a ok 6.0s out 1,684 · deepseek-v4-flash · labels=25 · 半夜想睡觉睡不着什么原因 → SYMPTOM_CAUSE_LOOKUP
+    ~ annotator_a ok 6.0s out 1,671 · deepseek-v4-flash · labels=25 · 右下腹压痛什么原因男性 → SYMPTOM_CAUSE_LOOKUP
+    ~ annotator_a ok 6.5s out 1,691 · deepseek-v4-flash · labels=25 · 急性肠胃炎怎样判断已不脱水了 → TREATMENT_SEEKING
+    ~ annotator_a ok 6.2s out 1,736 · deepseek-v4-flash · labels=25 · 心慌失眠手脚麻木是什么病 → DIAGNOSIS_PROGNOSIS_VERDIC
+    ~ annotator_a ok 6.0s out 1,713 · deepseek-v4-flash · labels=25 · 是矿泉水含矿物质更有利于饱腹感 纯净水更容易刺激消化 → ENTITY_COMPARISON
+    ~ annotator_a ok 7.1s out 1,769 · deepseek-v4-flash · labels=25 · 西尼地平一旦吃了就不能停吗 → DOSAGE_ADMINISTRATION
+    ~ annotator_a ok 6.8s out 1,832 · deepseek-v4-flash · labels=25 · 63岁男血压100-60正常吗 → OWN_CASE_VERDICT
+    annotator[a] 60/120 batches · 1500 rows
+    ~ annotator_a ok 6.3s out 1,771 · deepseek-v4-flash · labels=25 · 我第一次测餐后两小时吃了一碗玉米珍稀饭一个水煎包和一 → OWN_CASE_VERDICT
+    ~ annotator_a ok 6.7s out 1,717 · deepseek-v4-flash · labels=25 · 放了支架之后只能活18年m吗，那后面如何替换支架？ → DIAGNOSIS_PROGNOSIS_VERDIC
+    ~ annotator_a ok 6.4s out 1,741 · deepseek-v4-flash · labels=25 · 三七泡酒擦关节有什么功效 → PRODUCT_INFO_LOOKUP
+    ~ annotator_a ok 6.8s out 1,808 · deepseek-v4-flash · labels=25 · 盐酸氨溴索与小儿清肺化痰哪个好 → ENTITY_COMPARISON
+    ~ annotator_a ok 6.0s out 1,367 · deepseek-v4-flash · labels=25 · 怀孕31周可以喝咖啡吗 → PERMISSION_VERDICT
+    ~ annotator_a ok 5.8s out 1,318 · deepseek-v4-flash · labels=25 · 耳穴的准确位置图 → DIAGRAM_MEDIA_LOOKUP
+    ~ annotator_a ok 6.9s out 1,951 · deepseek-v4-flash · labels=25 · 36周胎儿能听到音乐吗 → MEDICAL_KNOWLEDGE_LOOKUP
+    ~ annotator_a ok 6.7s out 1,772 · deepseek-v4-flash · labels=25 · 光敏疗法治疗皮肤鳞癌效果好吗 → EFFICACY_VERDICT
+    ~ annotator_a ok 5.4s out 1,294 · deepseek-v4-flash · labels=25 · 萘普生和布洛芬哪个对嗓子疼的效果好 → ENTITY_COMPARISON
+    ~ annotator_a ok 5.5s out 1,288 · deepseek-v4-flash · labels=25 · 草本五黑膏怎么用 → DOSAGE_ADMINISTRATION
+    ~ annotator_a ok 5.8s out 1,268 · deepseek-v4-flash · labels=25 · 我说我12点吃的荆防颗粒，现在是几点吃？荆防颗粒，还 → DOSAGE_ADMINISTRATION
+    ~ annotator_a ok 7.6s out 1,635 · deepseek-v4-flash · labels=25 · 自穿舌钉受伤的概率有多少大 → PROCEDURE_EXPERIENCE
+    annotator[a] 72/120 batches · 1800 rows
+    ~ annotator_a ok 5.7s out 1,301 · deepseek-v4-flash · labels=25 · 喉咙经常红有痰怎么办吃什么药 → TREATMENT_SEEKING
+    ~ annotator_a ok 5.9s out 1,743 · deepseek-v4-flash · labels=25 · 鼻子里有点痛怎么办 → TREATMENT_SEEKING
+    ~ annotator_a !! 5.2s out 1,205 · deepseek-v4-flash · ValueError
+    ~ annotator_a ok 5.5s out 1,318 · deepseek-v4-flash · labels=25 · 打梨涡钉可以吃蛋糕吗 → PERMISSION_VERDICT
+    ~ annotator_a ok 5.5s out 1,299 · deepseek-v4-flash · labels=25 · 腰椎间盘突出手术后复发还能再割吗 → TREATMENT_SEEKER
+    ~ annotator_a ok 6.4s out 1,348 · deepseek-v4-flash · labels=25 · 宫颈癌筛查例假前能不能做 → PROVIDER_NAVIGATION_AND_AD
+    ~ annotator_a ok 7.1s out 1,844 · deepseek-v4-flash · labels=25 · 盐酸吗啡缓释片吃多少粒上瘾 → PRODUCT_INFO_LOOKUP
+    ~ annotator_a ok 5.6s out 1,263 · deepseek-v4-flash · labels=25 · 说手术做的好。但是术后左眼总是有分泌物 → RECOVERY_TIMELINE
+    ~ annotator_a ok 5.3s out 1,239 · deepseek-v4-flash · labels=25 · 长期打生物制剂会影响寿命吗 → DIAGNOSIS_PROGNOSIS_VERDIC
+    ~ annotator_a ok 6.1s out 1,411 · deepseek-v4-flash · labels=25 · 语言疗法一天做几次 → DOSAGE_ADMINISTRATION
+    ~ annotator_a ok 10.7s out 1,250 · deepseek-v4-flash · labels=25 · 月经来前两天，量偏多一点点 → OWN_CASE_VERDICT
+    ~ annotator_a ok 6.1s out 1,738 · deepseek-v4-flash · labels=25 · 打喷嚏鼻塞嗓子疼是病毒还是细菌 → DIAGNOSIS_PROGNOSIS_VERDIC
+    ~ annotator_a ok 6.5s out 1,779 · deepseek-v4-flash · labels=25 · 胳膊疼脚肿怎么回事 → SYMPTOM_CAUSE_LOOKUP
+    annotator[a] 84/120 batches · 2100 rows
+    ~ annotator_a ok 5.7s out 1,274 · deepseek-v4-flash · labels=25 · 手指割伤了怎么止血 → ACUTE_EMERGENCY_TRIAGE
+    ~ annotator_a ok 4.6s out 1,168 · deepseek-v4-flash · labels=25 · 胰腺炎血淀粉酶对预后判断的影响 → MEDICAL_KNOWLEDGE_LOOKUP
+    ~ annotator_a ok 5.4s out 1,263 · deepseek-v4-flash · labels=25 · 中午会有一点鸡胸肉 → CONTEXT_DEPENDENT_FOLLOW_U
+    ~ annotator_a ok 5.3s out 1,245 · deepseek-v4-flash · labels=25 · 前额发红有什么预兆 → SYMPTOM_CAUSE_LOOKUP
+    ~ annotator_a ok 5.4s out 1,320 · deepseek-v4-flash · labels=25 · 12岁小孩头痛呕吐什么原因 → SYMPTOM_CAUSE_LOOKUP
+    ~ annotator_a ok 6.8s out 1,857 · deepseek-v4-flash · labels=25 · 诺丽果和胰岛果煮水喝比例多少 → PRODUCT_INFO_LOOKUP12:54:53 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+12:54:54 INFO    qmine:   ~ annotator_a ok 6.4s out 1,483 · deepseek-v4-flash · labels=25 · 如何改善夜尿问题 → TREATMENT_SEEKING
+12:54:54 INFO    qmine:   ~ annotator_a ok 5.9s out 1,332 · deepseek-v4-flash · labels=25 · 腰右边扭伤一个月还痛正常吗 → OWN_CASE_VERDICT
+12:54:54 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+12:54:54 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+12:54:54 INFO    qmine:   ~ annotator_a ok 5.3s out 1,235 · deepseek-v4-flash · labels=25 · 是很多年前做过一次性激素六项医生说过可能是多囊做了一 → OWN_CASE_VERDICT
+12:54:55 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+12:54:55 INFO    qmine:   ~ annotator_a ok 6.1s out 3,507 · deepseek-v4-flash · labels=25 · 输尿管结石是在哪个位置 → DIAGRAM_MEDIA_LOOKUP
+12:54:55 INFO    qmine:   ~ annotator_a ok 6.8s out 0 · deepseek-v4-flash · labels=25 · 吃完安宫牛黄丸后多久能喝中药 → INTERACTION_VERDICT
+12:54:56 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+12:54:56 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+12:54:57 INFO    qmine:   ~ annotator_a ok 5.3s out 1,249 · deepseek-v4-flash · labels=25 · 只会看症状直接选方 → CONTEXT_DEPENDENT_FOLLOW_U
+12:54:57 INFO    qmine.graph:   annotator[a] 96/120 batches · 2400 rows
+12:54:57 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+12:54:58 INFO    qmine:   ~ annotator_a ok 7.2s out 1,827 · deepseek-v4-flash · labels=25 · 不知道高烧还是中暑怎么挂号 → PROVIDER_NAVIGATION_AND_AD
+12:54:58 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+12:55:00 INFO    qmine:   ~ annotator_a ok 5.4s out 1,259 · deepseek-v4-flash · labels=25 · 尿道癌几率多少 → DIAGNOSIS_PROGNOSIS_VERDIC
+12:55:00 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+12:55:00 INFO    qmine:   ~ annotator_a ok 6.4s out 1,722 · deepseek-v4-flash · labels=25 · 阿米卡星雾化吸入用法用量 → DOSAGE_ADMINISTRATION
+12:55:00 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+12:55:01 INFO    qmine:   ~ annotator_a ok 6.7s out 1,802 · deepseek-v4-flash · labels=25 · 萎缩性胃炎好转后吃什么食物比较好 → TREATMENT_SEEKING
+12:55:01 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+12:55:02 INFO    qmine:   ~ annotator_a ok 6.7s out 1,801 · deepseek-v4-flash · labels=25 · 前一天血糖21第二天早上血糖17是什么情况 → OWN_CASE_VERDICT
+12:55:02 INFO    qmine:   ~ annotator_a ok 6.8s out 1,804 · deepseek-v4-flash · labels=25 · 宝宝发烧有痰咳嗽喝什么药 → TREATMENT_SEEKING
+12:55:02 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+12:55:02 INFO    qmine:   ~ annotator_a ok 9.3s out 2,277 · deepseek-v4-flash · labels=25 · NET是良性还是恶性肿瘤 → MEDICAL_KNOWLEDGE_LOOKUP
+12:55:02 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+12:55:03 INFO    qmine:   ~ annotator_a ok 5.1s out 1,213 · deepseek-v4-flash · labels=25 · 经常后脑勺疼为什么 → SYMPTOM_CAUSE_LOOKUP
+12:55:03 INFO    qmine:   ~ annotator_a ok 5.7s out 1,327 · deepseek-v4-flash · labels=25 · 牙疼耳朵疼太阳穴疼是怎么回事智齿疼 → SYMPTOM_CAUSE_LOOKUP
+12:55:03 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+12:55:03 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+12:55:05 INFO    qmine.graph:   ⚠ annotator[a] batch lost 25 rows after 3 attempts: ValueError: returned 25/25 labels (1 queries unlabelled)
+12:55:05 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+12:55:05 INFO    qmine:   ~ annotator_a ok 5.6s out 1,234 · deepseek-v4-flash · labels=25 · 中焦不通怎么打通最快 → TREATMENT_SEEKING
+12:55:06 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+12:55:06 INFO    qmine:   ~ annotator_a ok 5.7s out 1,274 · deepseek-v4-flash · labels=25 · 阴壁有一厘米息肉需要手术吗 → OWN_CASE_VERDICT
+12:55:06 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+12:55:07 INFO    qmine:   ~ annotator_a ok 6.6s out 1,770 · deepseek-v4-flash · labels=25 · 中医怎样治疗肠息肉 → TREATMENT_SEEKING
+12:55:07 INFO    qmine.graph:   annotator[a] 108/120 batches · 2675 rows
+12:55:07 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+12:55:08 INFO    qmine:   ~ annotator_a ok 5.5s out 1,268 · deepseek-v4-flash · labels=25 · 46天会有胎心了吗 → REPRODUCTIVE_TIMELINE
+12:55:08 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+12:55:08 INFO    qmine:   ~ annotator_a ok 5.7s out 1,345 · deepseek-v4-flash · labels=25 · 甲状腺手术跟生孩子几个有关系吗 → DIAGNOSIS_PROGNOSIS_VERDIC
+12:55:09 INFO    qmine:   ~ annotator_a ok 6.2s out 1,711 · deepseek-v4-flash · labels=25 · 21周双顶径5.5Cm正常吗 → OWN_CASE_VERDICT
+12:55:09 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+12:55:09 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+12:55:09 INFO    qmine:   ~ annotator_a ok 6.7s out 1,800 · deepseek-v4-flash · labels=25 · 每天坚持吃4~5个核桃,坚持好几年有什么好处? → PRODUCT_INFO_LOOKUP
+12:55:09 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+12:55:11 INFO    qmine:   ~ annotator_a ok 5.8s out 1,257 · deepseek-v4-flash · labels=25 · 什么部位是结膜囊 → MEDICAL_KNOWLEDGE_LOOKUP
+12:55:11 INFO    qmine:   ~ annotator_a ok 6.1s out 1,447 · deepseek-v4-flash · labels=25 · 心率偏快或偏慢有什么危害？ → MEDICAL_KNOWLEDGE_LOOKUP
+12:55:12 INFO    qmine:   ~ annotator_a ok 5.9s out 1,727 · deepseek-v4-flash · labels=25 · 手心脚心痒怎么回事 → SYMPTOM_CAUSE_LOOKUP
+12:55:13 INFO    qmine:   ~ annotator_a ok 5.1s out 1,199 · deepseek-v4-flash · labels=25 · 椎体轻度楔形变,翻身疼是骨折吗 → OWN_CASE_VERDICT
+12:55:14 INFO    qmine:   ~ annotator_a ok 6.3s out 1,723 · deepseek-v4-flash · labels=25 · 我有慢性胃炎伴肠化肛门周围涂了糠酸莫米松乳膏对捡测幽 → OWN_CASE_VERDICT
+12:55:15 INFO    qmine:   ~ annotator_a ok 5.9s out 1,634 · deepseek-v4-flash · labels=25 · 女性睡前喝牛奶的好处？ → PRODUCT_INFO_LOOKUP
+12:55:15 INFO    qmine:   ~ annotator_a ok 6.3s out 1,805 · deepseek-v4-flash · labels=25 · 杏仁核桃葡萄干血糖高能吃吗? → PERMISSION_VERDICT
+12:55:15 INFO    qmine:   ~ annotator_a ok 6.6s out 1,801 · deepseek-v4-flash · labels=25 · 拉肚子不是天天，偶尔有一天拉4一5遍，有时有点恶心， → SYMPTOM_CAUSE_LOOKUP
+12:55:15 INFO    qmine.graph:   annotator[a] labelled 2975/3000  ⚠ 25 rows unlabelled — kappa will be computed on the remainder and the shortfall reported
+12:55:15 INFO    qmine.graph:   2975/3000 rows labelled by one annotator — kappa undefined, no referee, no disagreements  ⚠ 25 row(s) came back unlabelled
+12:55:15 INFO    qmine.graph:   ⚠ 26/3000 rows missing a label from at least one annotator — excluded from the gold set, not counted as agreement
+12:55:15 INFO    qmine.graph:   ⚠ 1/3000 row(s) carried a label that is not a class in this taxonomy and could not be repaired — excluded from the gold set rather than shipped as a phantom class
+12:55:19 INFO    qmine.graph:   single annotator (a) — no agreement measured
+12:55:19 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+12:55:19 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+12:55:19 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+12:55:19 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+12:55:19 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+12:55:19 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+12:55:19 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+12:55:19 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+12:55:24 INFO    qmine:   ~ annotator_a ok 5.4s out 1,200 · deepseek-v4-flash · labels=25 · 活化部分凝血活酶时间偏高 → OWN_CASE_VERDICT
+12:55:25 INFO    qmine:   ~ annotator_a ok 5.9s out 1,274 · deepseek-v4-flash · labels=25 · 比索洛尔最佳服用时间 → DOSAGE_ADMINISTRATION
+12:55:25 INFO    qmine:   ~ annotator_a ok 6.2s out 1,710 · deepseek-v4-flash · labels=25 · 红糖姜枣汤一般喝几天停 → DOSAGE_ADMINISTRATION
+12:55:25 INFO    qmine:   ~ annotator_a ok 6.4s out 1,666 · deepseek-v4-flash · labels=25 · 神经内科刘锐简介 → PROVIDER_NAVIGATION_AND_AD
+12:55:25 INFO    qmine:   ~ annotator_a ok 6.5s out 1,737 · deepseek-v4-flash · labels=25 · 矫正隐形眼镜 → MEDICAL_KNOWLEDGE_LOOKUP
+12:55:25 INFO    qmine:   ~ annotator_a ok 6.7s out 1,708 · deepseek-v4-flash · labels=25 · 呛水 → SYMPTOM_CAUSE_LOOKUP
+12:55:25 INFO    qmine:   ~ annotator_a ok 6.8s out 1,745 · deepseek-v4-flash · labels=25 · 胃病一定要做胃镜才能确诊吗 → MEDICAL_KNOWLEDGE_LOOKUP
+12:55:25 INFO    qmine:   ~ annotator_a ok 6.8s out 1,930 · deepseek-v4-flash · labels=25 · 金铃子散合左金丸 → ENTITY_COMPARISON
+12:55:26 INFO    qmine.graph:   annotator[a] labelled 200/200
+12:55:26 INFO    qmine.graph:   active learning added 200 boundary rows
+12:55:26 INFO    qmine.graph: gate p2b_kappa: SKIPPED — 标注一致性未测量 —— fast 模式由单个标注员 (a) 标注 2975 行, 没有第二份独立判读可供比较; 覆盖率 99%
+12:55:26 INFO    qmine.graph:   rule triggers: 0 executable, 44 semantic (27 rejected as unusable)
+12:55:26 INFO    qmine.graph:   annotator balance: UNDECIDABLE — only 0 contested row(s) adjudicated, 20 needed to say anything
+12:55:26 INFO    qmine.graph: gate p2b_annotator_symmetry: SKIPPED — UNDECIDABLE — only 0 contested row(s) were adjudicated, 20 needed. This is NOT a finding that the annotators are comparable; it is an absence of evidence either way
+12:55:26 INFO    qmine.graph: gate p2b_rules_match_their_evidence: SKIPPED — 规则与证据的比对未运行 —— 本次没有任何被裁定的行可供检验 (单标注员时无争议行; 已写入 0 条词面规则 / 44 条语义规则, 但都没有被检验过)
+12:55:26 INFO    qmine.graph:   taxonomy_v2 persisted: 44 rules (0 drafted by the referee), guide unchanged
+12:55:26 INFO    qmine.graph: ✔ p2b_gold completed in 105.3s
+12:56:06 INFO    qmine.graph:   winner: kmeans_k30 (stability 0.7405)
+12:56:07 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+12:57:22 INFO    qmine:   ~ proposer_family_k ok 75.5s out 6,279 · deepseek-v4-pro · add=1, drop=0, corpus_signals=6 · n_phrasing_groups
+12:57:22 INFO    qmine.graph:   grid proposer[family_k]: +[42] (0 rejected) — 语料有12个短语模式组，覆盖28.7%的查询。若这12组大致代表顶层意图粒度，则按覆盖率线性外推的顶层簇数约为 12 / 0.28677 ≈ 42。语料规模约2万且几乎完全去重，医疗垂直领域足够宽但查
+12:57:22 INFO    qmine.graph: P5 granularity — K sweep over 15 values
+13:02:36 INFO    qmine.graph:   参照系 `legacy_dept`: 触及 100% 的簇 (行覆盖 100%) @ k=30
+13:02:36 INFO    qmine.graph:   参照系 `legacy_l2`: 触及 100% 的簇 (行覆盖 100%) @ k=30
+13:02:36 INFO    qmine.graph:   参照系 `legacy_type`: 触及 100% 的簇 (行覆盖 100%) @ k=30
+13:02:36 INFO    qmine.graph:   参照系 `phrasing_groups`: 触及 57% 的簇 (行覆盖 25%) @ k=30
+13:02:36 INFO    qmine.graph:   K 由 `legacy_type` 定位 (触及率并列 (3 个), 由分辨力 23.02 胜出)
+13:02:44 INFO    qmine.graph:   located K=8 (by ami_vs_legacy_type); DeepAligned leaf estimate 21; converged=True
+13:02:44 INFO    qmine.graph:   locator scored against 9 phrasing classes covering 0.2482 of rows
+13:02:44 INFO    qmine.graph:   ⚠ 参照系之间对 K 不一致: legacy_dept→K=40, legacy_l2→K=8, legacy_type→K=8, phrasing_groups→K=12
+13:02:44 INFO    qmine.graph: gate p5_k_references_agree: WARNED — 不同参照系定位到不同的 K —— 交付的 K 是**相对于当选参照系**的粒度锚点, 不是语料常数。请连同参照系一起阅读这个 K。
+
+    ~ annotator_a ok 6.4s out 1,483 · deepseek-v4-flash · labels=25 · 如何改善夜尿问题 → TREATMENT_SEEKING
+    ~ annotator_a ok 5.9s out 1,332 · deepseek-v4-flash · labels=25 · 腰右边扭伤一个月还痛正常吗 → OWN_CASE_VERDICT
+    ~ annotator_a ok 5.3s out 1,235 · deepseek-v4-flash · labels=25 · 是很多年前做过一次性激素六项医生说过可能是多囊做了一 → OWN_CASE_VERDICT
+    ~ annotator_a ok 6.1s out 3,507 · deepseek-v4-flash · labels=25 · 输尿管结石是在哪个位置 → DIAGRAM_MEDIA_LOOKUP
+    ~ annotator_a ok 6.8s out 0 · deepseek-v4-flash · labels=25 · 吃完安宫牛黄丸后多久能喝中药 → INTERACTION_VERDICT
+    ~ annotator_a ok 5.3s out 1,249 · deepseek-v4-flash · labels=25 · 只会看症状直接选方 → CONTEXT_DEPENDENT_FOLLOW_U
+    annotator[a] 96/120 batches · 2400 rows
+    ~ annotator_a ok 7.2s out 1,827 · deepseek-v4-flash · labels=25 · 不知道高烧还是中暑怎么挂号 → PROVIDER_NAVIGATION_AND_AD
+    ~ annotator_a ok 5.4s out 1,259 · deepseek-v4-flash · labels=25 · 尿道癌几率多少 → DIAGNOSIS_PROGNOSIS_VERDIC
+    ~ annotator_a ok 6.4s out 1,722 · deepseek-v4-flash · labels=25 · 阿米卡星雾化吸入用法用量 → DOSAGE_ADMINISTRATION
+    ~ annotator_a ok 6.7s out 1,802 · deepseek-v4-flash · labels=25 · 萎缩性胃炎好转后吃什么食物比较好 → TREATMENT_SEEKING
+    ~ annotator_a ok 6.7s out 1,801 · deepseek-v4-flash · labels=25 · 前一天血糖21第二天早上血糖17是什么情况 → OWN_CASE_VERDICT
+    ~ annotator_a ok 6.8s out 1,804 · deepseek-v4-flash · labels=25 · 宝宝发烧有痰咳嗽喝什么药 → TREATMENT_SEEKING
+    ~ annotator_a ok 9.3s out 2,277 · deepseek-v4-flash · labels=25 · NET是良性还是恶性肿瘤 → MEDICAL_KNOWLEDGE_LOOKUP
+    ~ annotator_a ok 5.1s out 1,213 · deepseek-v4-flash · labels=25 · 经常后脑勺疼为什么 → SYMPTOM_CAUSE_LOOKUP
+    ~ annotator_a ok 5.7s out 1,327 · deepseek-v4-flash · labels=25 · 牙疼耳朵疼太阳穴疼是怎么回事智齿疼 → SYMPTOM_CAUSE_LOOKUP
+    ⚠ annotator[a] batch lost 25 rows after 3 attempts: ValueError: returned 25/25 labels (1 queries unlabelled)
+    ~ annotator_a ok 5.6s out 1,234 · deepseek-v4-flash · labels=25 · 中焦不通怎么打通最快 → TREATMENT_SEEKING
+    ~ annotator_a ok 5.7s out 1,274 · deepseek-v4-flash · labels=25 · 阴壁有一厘米息肉需要手术吗 → OWN_CASE_VERDICT
+    ~ annotator_a ok 6.6s out 1,770 · deepseek-v4-flash · labels=25 · 中医怎样治疗肠息肉 → TREATMENT_SEEKING
+    annotator[a] 108/120 batches · 2675 rows
+    ~ annotator_a ok 5.5s out 1,268 · deepseek-v4-flash · labels=25 · 46天会有胎心了吗 → REPRODUCTIVE_TIMELINE
+    ~ annotator_a ok 5.7s out 1,345 · deepseek-v4-flash · labels=25 · 甲状腺手术跟生孩子几个有关系吗 → DIAGNOSIS_PROGNOSIS_VERDIC
+    ~ annotator_a ok 6.2s out 1,711 · deepseek-v4-flash · labels=25 · 21周双顶径5.5Cm正常吗 → OWN_CASE_VERDICT
+    ~ annotator_a ok 6.7s out 1,800 · deepseek-v4-flash · labels=25 · 每天坚持吃4~5个核桃,坚持好几年有什么好处? → PRODUCT_INFO_LOOKUP
+    ~ annotator_a ok 5.8s out 1,257 · deepseek-v4-flash · labels=25 · 什么部位是结膜囊 → MEDICAL_KNOWLEDGE_LOOKUP
+    ~ annotator_a ok 6.1s out 1,447 · deepseek-v4-flash · labels=25 · 心率偏快或偏慢有什么危害？ → MEDICAL_KNOWLEDGE_LOOKUP
+    ~ annotator_a ok 5.9s out 1,727 · deepseek-v4-flash · labels=25 · 手心脚心痒怎么回事 → SYMPTOM_CAUSE_LOOKUP
+    ~ annotator_a ok 5.1s out 1,199 · deepseek-v4-flash · labels=25 · 椎体轻度楔形变,翻身疼是骨折吗 → OWN_CASE_VERDICT
+    ~ annotator_a ok 6.3s out 1,723 · deepseek-v4-flash · labels=25 · 我有慢性胃炎伴肠化肛门周围涂了糠酸莫米松乳膏对捡测幽 → OWN_CASE_VERDICT
+    ~ annotator_a ok 5.9s out 1,634 · deepseek-v4-flash · labels=25 · 女性睡前喝牛奶的好处？ → PRODUCT_INFO_LOOKUP
+    ~ annotator_a ok 6.3s out 1,805 · deepseek-v4-flash · labels=25 · 杏仁核桃葡萄干血糖高能吃吗? → PERMISSION_VERDICT
+    ~ annotator_a ok 6.6s out 1,801 · deepseek-v4-flash · labels=25 · 拉肚子不是天天，偶尔有一天拉4一5遍，有时有点恶心， → SYMPTOM_CAUSE_LOOKUP
+    annotator[a] labelled 2975/3000  ⚠ 25 rows unlabelled — kappa will be computed on the remainder and the shortfall reported
+    2975/3000 rows labelled by one annotator — kappa undefined, no referee, no disagreements  ⚠ 25 row(s) came back unlabelled
+    ⚠ 26/3000 rows missing a label from at least one annotator — excluded from the gold set, not counted as agreement
+    ⚠ 1/3000 row(s) carried a label that is not a class in this taxonomy and could not be repaired — excluded from the gold set rather than shipped as a phantom class
+    single annotator (a) — no agreement measured
+    ~ annotator_a ok 5.4s out 1,200 · deepseek-v4-flash · labels=25 · 活化部分凝血活酶时间偏高 → OWN_CASE_VERDICT
+    ~ annotator_a ok 5.9s out 1,274 · deepseek-v4-flash · labels=25 · 比索洛尔最佳服用时间 → DOSAGE_ADMINISTRATION
+    ~ annotator_a ok 6.2s out 1,710 · deepseek-v4-flash · labels=25 · 红糖姜枣汤一般喝几天停 → DOSAGE_ADMINISTRATION
+    ~ annotator_a ok 6.4s out 1,666 · deepseek-v4-flash · labels=25 · 神经内科刘锐简介 → PROVIDER_NAVIGATION_AND_AD
+    ~ annotator_a ok 6.5s out 1,737 · deepseek-v4-flash · labels=25 · 矫正隐形眼镜 → MEDICAL_KNOWLEDGE_LOOKUP
+    ~ annotator_a ok 6.7s out 1,708 · deepseek-v4-flash · labels=25 · 呛水 → SYMPTOM_CAUSE_LOOKUP
+    ~ annotator_a ok 6.8s out 1,745 · deepseek-v4-flash · labels=25 · 胃病一定要做胃镜才能确诊吗 → MEDICAL_KNOWLEDGE_LOOKUP
+    ~ annotator_a ok 6.8s out 1,930 · deepseek-v4-flash · labels=25 · 金铃子散合左金丸 → ENTITY_COMPARISON
+    annotator[a] labelled 200/200
+    active learning added 200 boundary rows
+  gate p2b_kappa: SKIPPED — 标注一致性未测量 —— fast 模式由单个标注员 (a) 标注 2975 行, 没有第二份独立判读可供比较; 覆盖率 99%
+    rule triggers: 0 executable, 44 semantic (27 rejected as unusable)
+    annotator balance: UNDECIDABLE — only 0 contested row(s) adjudicated, 20 needed to say anything
+  gate p2b_annotator_symmetry: SKIPPED — UNDECIDABLE — only 0 contested row(s) were adjudicated, 20 needed. This is NOT a finding that the annotators are comparable; it is an absence of evidence either way
+  gate p2b_rules_match_their_evidence: SKIPPED — 规则与证据的比对未运行 —— 本次没有任何被裁定的行可供检验 (单标注员时无争议行; 已写入 0 条词面规则 / 44 条语义规则, 但都没有被检验过)
+    taxonomy_v2 persisted: 44 rules (0 drafted by the referee), guide unchanged
+  ✔ p2b_gold completed in 105.3s
+    winner: kmeans_k30 (stability 0.7405)
+    ~ proposer_family_k ok 75.5s out 6,279 · deepseek-v4-pro · add=1, drop=0, corpus_signals=6 · n_phrasing_groups
+    grid proposer[family_k]: +[42] (0 rejected) — 语料有12个短语模式组，覆盖28.7%的查询。若这12组大致代表顶层意图粒度，则按覆盖率线性外推的顶层簇数约为 12 / 0.28677 ≈ 42。语料规模约2万且几乎完全去重，医疗垂直领域足够宽但查
+  P5 granularity — K sweep over 15 values
+    参照系 `legacy_dept`: 触及 100% 的簇 (行覆盖 100%) @ k=30
+    参照系 `legacy_l2`: 触及 100% 的簇 (行覆盖 100%) @ k=30
+    参照系 `legacy_type`: 触及 100% 的簇 (行覆盖 100%) @ k=30
+    参照系 `phrasing_groups`: 触及 57% 的簇 (行覆盖 25%) @ k=30
+    K 由 `legacy_type` 定位 (触及率并列 (3 个), 由分辨力 23.02 胜出)
+    located K=8 (by ami_vs_legacy_type); DeepAligned leaf estimate 21; converged=True
+    locator scored against 9 phrasing classes covering 0.2482 of rows
+    ⚠ 参照系之间对 K 不一致: legacy_dept→K=40, legacy_l2→K=8, legacy_type→K=8, phrasing_groups→K=12
+  gate p5_k_references_agree: WARNED — 不同参照系定位到不同的 K —— 交付的 K 是**相对于当选参照系**的粒度锚点, 不是语料常数。请连同参照系一起阅读这个 K。13:02:44 INFO    qmine.graph: P6 hierarchy — 8 families, then local leaf selection
+13:04:02 INFO    qmine.graph:   built 8 families / 36 leaves — 0 个家族无内部结构未再分, 4 个 silhouette 的选择被稳定性否决
+13:04:10 INFO    qmine.graph:   refined to 36 leaves in 5 rounds (converged=False)
+13:04:10 INFO    qmine.graph:   held-out structure reproduction 0.970
+13:04:10 INFO    qmine.graph: gate p6_heldout_reproduction: PASSED — held-out rows land in the same cluster 97.0% of the time (95% CI 0.965-0.975, n=4064) — met
+13:04:10 INFO    qmine.graph: ✔ p456_tree completed in 629.7s
+13:04:10 INFO    qmine.graph: P2c classifier — 3174 labelled rows
+13:04:13 INFO    qmine.graph:   CV accuracy 0.678, macro-F1 0.562, ECE 0.019
+13:04:13 INFO    qmine.graph: gate p2c_calibration: PASSED — ECE 0.0191 sits 0.8 sd above the perfectly-calibrated null for this run (0.0157 ± 0.0043)
+13:04:13 INFO    qmine.graph: ✔ p2c_classifier completed in 3.2s
+13:04:13 INFO    qmine.graph: P2d 对抗验证 —— fast 模式跳过 (纯复核, 不改变任何标签)
+13:04:13 INFO    qmine.graph: ✔ p2d_validate completed in 0.0s
+13:04:13 INFO    qmine.graph: P2e sub-intents — auditing 20 L1 classes
+13:04:14 INFO    qmine.graph:   5 class(es) are rule-dependent (kNN agreement below threshold)
+13:04:47 INFO    qmine.graph:   subdivided into 51 sub-intents
+13:04:48 INFO    qmine.graph: ✔ p2e_subintents completed in 35.2s
+13:04:48 INFO    qmine.graph: P7 prepare — building 36 naming cards
+13:04:48 INFO    qmine.graph:   firewall armed with 77 forbidden label terms
+13:04:54 INFO    qmine.graph: ✔ p7_prepare completed in 5.3s
+13:04:54 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+13:04:54 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+13:04:54 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+13:04:54 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+13:04:54 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+13:05:08 INFO    qmine:   ~ namer_0 ok 14.6s out 973 · deepseek-v4-pro · leaf_id=0 · name_zh=查询医疗机构联系电话
+13:05:09 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+13:05:12 INFO    qmine:   ~ namer_3 ok 18.4s out 1,247 · deepseek-v4-pro · leaf_id=3 · name_zh=查询中医机构、医生与术语
+13:05:12 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+13:05:14 INFO    qmine:   ~ namer_1 ok 20.6s out 1,468 · deepseek-v4-pro · leaf_id=1 · name_zh=医院信息查询
+13:05:15 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+13:05:18 INFO    qmine:   ~ namer_2 ok 24.1s out 1,682 · deepseek-v4-pro · leaf_id=2 · name_zh=查询各地人民医院信息
+13:05:18 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+13:05:19 INFO    qmine:   ~ namer_0 ok 11.1s out 722 · deepseek-v4-pro · leaf_id=5 · name_zh=查询大学附属医院信息
+13:05:20 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+13:05:28 INFO    qmine:   ~ namer_3 ok 16.3s out 1,179 · deepseek-v4-pro · leaf_id=8 · name_zh=查询食物药物能否食用
+13:05:29 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+13:05:47 INFO    qmine:   ~ namer_1 ok 32.6s out 2,084 · deepseek-v4-pro · leaf_id=6 · name_zh=食物药物同食同服查询
+13:05:47 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+13:05:48 INFO    qmine:   ~ namer_4 ok 54.6s out 3,802 · deepseek-v4-pro · leaf_id=4 · name_zh=医生信息查询
+13:05:49 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+13:05:51 INFO    qmine:   ~ namer_3 ok 22.9s out 1,573 · deepseek-v4-pro · leaf_id=13 · name_zh=特定场景饮品饮用适宜性查询
+13:05:51 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+13:05:53 INFO    qmine:   ~ namer_2 ok 35.0s out 2,624 · deepseek-v4-pro · leaf_id=7 · name_zh=解答婴幼儿喂养与奶类营养问题
+13:05:53 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+13:06:00 INFO    qmine:   ~ namer_0 ok 40.7s out 2,970 · deepseek-v4-pro · leaf_id=10 · name_zh=查询食物营养与健康影响
+13:06:00 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+13:06:03 INFO    qmine:   ~ namer_1 ok 15.9s out 1,056 · deepseek-v4-pro · leaf_id=11 · name_zh=健康利弊查询
+13:06:03 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+13:06:09 INFO    qmine:   ~ namer_3 ok 17.5s out 1,131 · deepseek-v4-pro · leaf_id=18 · name_zh=血糖与糖尿病管理查询
+13:06:09 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+13:06:10 INFO    qmine:   ~ namer_2 ok 17.5s out 1,181 · deepseek-v4-pro · leaf_id=12 · name_zh=病症用药饮食查询
+13:06:11 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+13:06:11 INFO    qmine:   ~ namer_4 ok 22.8s out 1,514 · deepseek-v4-pro · leaf_id=9 · name_zh=查询特定健康或用药情形下能否吃某物或做某事
+13:06:11 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+13:06:25 INFO    qmine:   ~ namer_1 ok 22.0s out 1,648 · deepseek-v4-pro · leaf_id=16 · name_zh=查询化验检查指标含义与异常原因
+13:06:25 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+13:06:28 INFO    qmine:   ~ namer_4 ok 16.4s out 1,219 · deepseek-v4-pro · leaf_id=14 · name_zh=血压问题查询
+13:06:28 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+13:06:34 INFO    qmine:   ~ namer_2 ok 23.2s out 1,700 · deepseek-v4-pro · leaf_id=17 · name_zh=查询心脑血管疾病诊疗信息
+13:06:34 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+13:06:34 INFO    qmine:   ~ namer_3 ok 25.4s out 1,843 · deepseek-v4-pro · leaf_id=23 · name_zh=查询物品功效与作用
+13:06:34 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+13:06:35 INFO    qmine:   ~ namer_0 ok 35.4s out 2,634 · deepseek-v4-pro · leaf_id=15 · name_zh=解读个人健康指标与用药疑问
+13:06:36 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+13:06:43 INFO    qmine:   ~ namer_1 ok 17.9s out 1,157 · deepseek-v4-pro · leaf_id=21 · name_zh=查询功效作用
+13:06:43 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+13:06:46 INFO    qmine:   ~ namer_4 ok 18.7s out 1,456 · deepseek-v4-pro · leaf_id=19 · name_zh=判断身体症状或检查结果是否正常
+13:06:46 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+13:06:58 INFO    qmine:   ~ namer_2 ok 23.9s out 1,748 · deepseek-v4-pro · leaf_id=22 · name_zh=药品功效与副作用查询
+13:06:58 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+13:06:59 INFO    qmine:   ~ namer_4 ok 13.0s out 874 · deepseek-v4-pro · leaf_id=24 · name_zh=药品用法与相互作用查询
+13:07:00 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+13:07:03 INFO    qmine:   ~ namer_3 ok 29.2s out 2,021 · deepseek-v4-pro · leaf_id=28 · name_zh=查询身体不适症状原因
+13:07:04 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+13:07:24 INFO    qmine:   ~ namer_2 ok 26.5s out 1,763 · deepseek-v4-pro · leaf_id=27 · name_zh=肢体不适症状查询
+13:07:24 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+13:07:27 INFO    qmine:   ~ namer_1 ok 44.4s out 3,197 · deepseek-v4-pro · leaf_id=26 · name_zh=查询骨科伤病诊疗与康复信息
+13:07:27 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+13:07:28 INFO    qmine:   ~ namer_0 ok 52.2s out 3,789 · deepseek-v4-pro · leaf_id=20 · name_zh=查询具体事物的功效与属性
+13:07:28 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+13:07:32 INFO    qmine:   ~ namer_3 ok 28.4s out 2,080 · deepseek-v4-pro · leaf_id=33 · name_zh=症状原因查询
+13:07:32 INFO    qmine.graph:   namer[3] named 7 clusters
+13:07:36 INFO    qmine:   ~ namer_4 ok 36.2s out 2,645 · deepseek-v4-pro · leaf_id=29 · name_zh=查询术后恢复与孕产相关医学信息
+13:07:36 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+13:07:41 INFO    qmine:   ~ namer_2 ok 17.4s out 1,132 · deepseek-v4-pro · leaf_id=32 · name_zh=症状原因查询
+13:07:41 INFO    qmine.graph:   namer[2] named 7 clusters
+13:07:48 INFO    qmine:   ~ namer_0 ok 20.3s out 1,519 · deepseek-v4-pro · leaf_id=25 · name_zh=中药与中成药信息查询
+13:07:48 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+13:07:56 INFO    qmine:   ~ namer_1 ok 29.0s out 2,316 · deepseek-v4-pro · leaf_id=31 · name_zh=查询健康症状处理办法
+13:07:56 INFO    qmine.graph:   namer[1] named 7 clusters
+13:08:06 INFO    qmine:   ~ namer_0 ok 17.9s out 1,360 · deepseek-v4-pro · leaf_id=30 · name_zh=查询疾病症状与诊疗信息
+13:08:06 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+13:08:09 INFO    qmine:   ~ namer_4 ok 33.1s out 2,325 · deepseek-v4-pro · leaf_id=34 · name_zh=查询皮肤黏膜异常症状与处理建议
+13:08:09 INFO    qmine.graph:   namer[4] named 7 clusters
+13:08:35 INFO    qmine:   ~ namer_0 ok 29.5s out 2,070 · deepseek-v4-pro · leaf_id=35 · name_zh=呼吸道症状与用药建议查询
+13:08:35 INFO    qmine.graph:   namer[0] named 8 clusters
+13:08:35 INFO    qmine.graph: P7 audit — 36 namings in
+13:08:36 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+13:12:14 INFO    qmine:   ~ tree_auditor ok 219.0s out 19,501 · deepseek-v4-pro · families=14, cross_family_twins=0, duplicate_leaf_pairs=0, risk_findings=0, incoherent_families=0, prescriptions=10 · 医疗机构与医生信息查询 → healthca
+13:14:29 INFO    httpx2: HTTP Request: POST https://open.bigmodel.cn/api/paas/v4/chat/completions "HTTP/1.1 200 OK"
+13:14:29 INFO    qmine:   ~ risk_sentinel ok 134.7s out 11,254 · glm-5.3 · findings=10 · 疑似药物过量与自伤风险信号 → 出现明确超量服药表述（100片安神片、5粒吗啡）及绝
+13:14:29 INFO    qmine.graph:   auditor: 10 prescriptions; risk sentinel: 10 findings
+13:14:29 INFO    qmine.graph: gate p7_all_leaves_named: PASSED — all 36 leaves named
+13:14:29 INFO    qmine.graph: gate p7_coherence: PASSED — blind coherence: mean 3.72/5, 4/36 leaves (11%) below 3.0
+13:14:29 INFO    qmine.graph: gate p7_risk_independently_found: PASSED — risk content was flagged by an agent that was never told to look for it
+13:14:29 INFO    qmine.graph: ✔ p7_audit completed in 353.7s
+13:14:29 INFO    qmine.graph: P8 governance — executing 24 prescriptions
+13:14:30 INFO    qmine.graph:   3 leaf/leaves changed membership past 20% — their p7 name no longer describes them: [1, 20, 29]
+13:14:30 INFO    qmine.graph:   naming 4 leaf/leaves after governance (1 new, 3 re-named)
+13:14:35 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+13:15:13 INFO    qmine:   ~ namer_postgov ok 38.8s out 2,929 · deepseek-v4-pro · leaf_id=1 · name_zh=医院及医生信息查询
+13:15:14 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+13:15:46 INFO    qmine:   ~ namer_postgov ok 32.7s out 2,375 · deepseek-v4-pro · leaf_id=20 · name_zh=功效作用与副作用查询
+13:15:46 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+13:16:23 INFO    qmine:   ~ namer_postgov ok 36.7s out 2,834 · deepseek-v4-pro · leaf_id=29 · name_zh=解答月经避孕怀孕相关疑问
+13:16:23 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+13:16:58 INFO    qmine:   ~ namer_postgov ok 34.9s out 2,515 · deepseek-v4-pro · leaf_id=36 · name_zh=医疗恢复与检查时间查询
+13:16:58 INFO    qmine.graph:   named 4/4 leaves affected by governance
+13:16:58 INFO    qmine.graph: gate p8_leaves_are_distinguishable: PASSED — 每个交付叶都能凭名称与同家族的兄弟叶区分开
+13:16:58 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+13:17:15 INFO    qmine:   ~ namer_family ok 16.9s out 1,170 · deepseek-v4-pro · leaf_ids=0
+13:17:15 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+13:17:35 INFO    qmine:   ~ namer_family ok 20.3s out 1,506 · deepseek-v4-pro · leaf_ids=0
+13:17:35 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+13:18:02 INFO    qmine:   ~ namer_family ok 27.3s out 2,130 · deepseek-v4-pro · leaf_ids=0
+13:18:02 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+13:18:30 INFO    qmine:   ~ namer_family ok 27.8s out 2,153 · deepseek-v4-pro · leaf_ids=0
+13:18:30 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+13:18:46 INFO    qmine:   ~ namer_family ok 15.6s out 1,115 · deepseek-v4-pro · leaf_ids=0
+13:18:46 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+13:19:45 INFO    qmine:   ~ namer_family ok 59.1s out 4,345 · deepseek-v4-pro · leaf_ids=0
+13:19:45 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+13:20:11 INFO    qmine:   ~ namer_family ok 26.6s out 1,969 · deepseek-v4-pro · leaf_ids=0
+13:20:12 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+13:20:27 INFO    qmine:   ~ namer_family ok 15.7s out 1,255 · deepseek-v4-pro · leaf_ids=0
+13:20:27 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+13:20:45 INFO    qmine:   ~ namer_family ok 17.7s out 1,318 · deepseek-v4-pro · leaf_ids=0
+13:20:45 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+13:20:58 INFO    qmine:   ~ namer_family ok 13.1s out 998 · deepseek-v4-pro · leaf_ids=0
+13:20:58 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+13:21:23 INFO    qmine:   ~ namer_family ok 25.0s out 1,905 · deepseek-v4-pro · leaf_ids=0
+13:21:23 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+13:21:38 INFO    qmine:   ~ namer_family ok 14.7s out 1,118 · deepseek-v4-pro · leaf_ids=0
+13:21:38 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+13:21:50 INFO    qmine:   ~ namer_family ok 12.5s out 915 · deepseek-v4-pro · leaf_ids=0
+13:21:50 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+13:22:13 INFO    qmine:   ~ namer_family ok 23.2s out 1,749 · deepseek-v4-pro · leaf_ids=0
+13:22:13 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+13:22:26 INFO    qmine:   ~ namer_family ok 12.8s out 943 · deepseek-v4-pro · leaf_ids=0
+13:22:26 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+13:22:52 INFO    qmine:   ~ namer_family ok 25.8s out 2,059 · deepseek-v4-pro · leaf_ids=0
+13:22:52 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+13:23:01 INFO    qmine:   ~ namer_family ok 9.3s out 608 · deepseek-v4-pro · leaf_ids=0
+13:23:01 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+13:23:23 INFO    qmine:   ~ namer_family ok 21.8s out 1,688 · deepseek-v4-pro · leaf_ids=0
+13:23:23 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+13:23:35 INFO    qmine:   ~ namer_family ok 12.0s out 834 · deepseek-v4-pro · leaf_ids=0
+13:23:35 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+13:23:47 INFO    qmine:   ~ namer_family ok 12.2s out 860 · deepseek-v4-pro · leaf_ids=0
+
+  P6 hierarchy — 8 families, then local leaf selection
+    built 8 families / 36 leaves — 0 个家族无内部结构未再分, 4 个 silhouette 的选择被稳定性否决
+    refined to 36 leaves in 5 rounds (converged=False)
+    held-out structure reproduction 0.970
+  gate p6_heldout_reproduction: PASSED — held-out rows land in the same cluster 97.0% of the time (95% CI 0.965-0.975, n=4064) — met
+  ✔ p456_tree completed in 629.7s
+  P2c classifier — 3174 labelled rows
+    CV accuracy 0.678, macro-F1 0.562, ECE 0.019
+  gate p2c_calibration: PASSED — ECE 0.0191 sits 0.8 sd above the perfectly-calibrated null for this run (0.0157 ± 0.0043)
+  ✔ p2c_classifier completed in 3.2s
+  P2d 对抗验证 —— fast 模式跳过 (纯复核, 不改变任何标签)
+  ✔ p2d_validate completed in 0.0s
+  P2e sub-intents — auditing 20 L1 classes
+    5 class(es) are rule-dependent (kNN agreement below threshold)
+    subdivided into 51 sub-intents
+  ✔ p2e_subintents completed in 35.2s
+  P7 prepare — building 36 naming cards
+    firewall armed with 77 forbidden label terms
+  ✔ p7_prepare completed in 5.3s
+    ~ namer_0 ok 14.6s out 973 · deepseek-v4-pro · leaf_id=0 · name_zh=查询医疗机构联系电话
+    ~ namer_3 ok 18.4s out 1,247 · deepseek-v4-pro · leaf_id=3 · name_zh=查询中医机构、医生与术语
+    ~ namer_1 ok 20.6s out 1,468 · deepseek-v4-pro · leaf_id=1 · name_zh=医院信息查询
+    ~ namer_2 ok 24.1s out 1,682 · deepseek-v4-pro · leaf_id=2 · name_zh=查询各地人民医院信息
+    ~ namer_0 ok 11.1s out 722 · deepseek-v4-pro · leaf_id=5 · name_zh=查询大学附属医院信息
+    ~ namer_3 ok 16.3s out 1,179 · deepseek-v4-pro · leaf_id=8 · name_zh=查询食物药物能否食用
+    ~ namer_1 ok 32.6s out 2,084 · deepseek-v4-pro · leaf_id=6 · name_zh=食物药物同食同服查询
+    ~ namer_4 ok 54.6s out 3,802 · deepseek-v4-pro · leaf_id=4 · name_zh=医生信息查询
+    ~ namer_3 ok 22.9s out 1,573 · deepseek-v4-pro · leaf_id=13 · name_zh=特定场景饮品饮用适宜性查询
+    ~ namer_2 ok 35.0s out 2,624 · deepseek-v4-pro · leaf_id=7 · name_zh=解答婴幼儿喂养与奶类营养问题
+    ~ namer_0 ok 40.7s out 2,970 · deepseek-v4-pro · leaf_id=10 · name_zh=查询食物营养与健康影响
+    ~ namer_1 ok 15.9s out 1,056 · deepseek-v4-pro · leaf_id=11 · name_zh=健康利弊查询
+    ~ namer_3 ok 17.5s out 1,131 · deepseek-v4-pro · leaf_id=18 · name_zh=血糖与糖尿病管理查询
+    ~ namer_2 ok 17.5s out 1,181 · deepseek-v4-pro · leaf_id=12 · name_zh=病症用药饮食查询
+    ~ namer_4 ok 22.8s out 1,514 · deepseek-v4-pro · leaf_id=9 · name_zh=查询特定健康或用药情形下能否吃某物或做某事
+    ~ namer_1 ok 22.0s out 1,648 · deepseek-v4-pro · leaf_id=16 · name_zh=查询化验检查指标含义与异常原因
+    ~ namer_4 ok 16.4s out 1,219 · deepseek-v4-pro · leaf_id=14 · name_zh=血压问题查询
+    ~ namer_2 ok 23.2s out 1,700 · deepseek-v4-pro · leaf_id=17 · name_zh=查询心脑血管疾病诊疗信息
+    ~ namer_3 ok 25.4s out 1,843 · deepseek-v4-pro · leaf_id=23 · name_zh=查询物品功效与作用
+    ~ namer_0 ok 35.4s out 2,634 · deepseek-v4-pro · leaf_id=15 · name_zh=解读个人健康指标与用药疑问
+    ~ namer_1 ok 17.9s out 1,157 · deepseek-v4-pro · leaf_id=21 · name_zh=查询功效作用
+    ~ namer_4 ok 18.7s out 1,456 · deepseek-v4-pro · leaf_id=19 · name_zh=判断身体症状或检查结果是否正常
+    ~ namer_2 ok 23.9s out 1,748 · deepseek-v4-pro · leaf_id=22 · name_zh=药品功效与副作用查询
+    ~ namer_4 ok 13.0s out 874 · deepseek-v4-pro · leaf_id=24 · name_zh=药品用法与相互作用查询
+    ~ namer_3 ok 29.2s out 2,021 · deepseek-v4-pro · leaf_id=28 · name_zh=查询身体不适症状原因
+    ~ namer_2 ok 26.5s out 1,763 · deepseek-v4-pro · leaf_id=27 · name_zh=肢体不适症状查询
+    ~ namer_1 ok 44.4s out 3,197 · deepseek-v4-pro · leaf_id=26 · name_zh=查询骨科伤病诊疗与康复信息
+    ~ namer_0 ok 52.2s out 3,789 · deepseek-v4-pro · leaf_id=20 · name_zh=查询具体事物的功效与属性
+    ~ namer_3 ok 28.4s out 2,080 · deepseek-v4-pro · leaf_id=33 · name_zh=症状原因查询
+    namer[3] named 7 clusters
+    ~ namer_4 ok 36.2s out 2,645 · deepseek-v4-pro · leaf_id=29 · name_zh=查询术后恢复与孕产相关医学信息
+    ~ namer_2 ok 17.4s out 1,132 · deepseek-v4-pro · leaf_id=32 · name_zh=症状原因查询
+    namer[2] named 7 clusters
+    ~ namer_0 ok 20.3s out 1,519 · deepseek-v4-pro · leaf_id=25 · name_zh=中药与中成药信息查询
+    ~ namer_1 ok 29.0s out 2,316 · deepseek-v4-pro · leaf_id=31 · name_zh=查询健康症状处理办法
+    namer[1] named 7 clusters
+    ~ namer_0 ok 17.9s out 1,360 · deepseek-v4-pro · leaf_id=30 · name_zh=查询疾病症状与诊疗信息
+    ~ namer_4 ok 33.1s out 2,325 · deepseek-v4-pro · leaf_id=34 · name_zh=查询皮肤黏膜异常症状与处理建议
+    namer[4] named 7 clusters
+    ~ namer_0 ok 29.5s out 2,070 · deepseek-v4-pro · leaf_id=35 · name_zh=呼吸道症状与用药建议查询
+    namer[0] named 8 clusters
+  P7 audit — 36 namings in
+    ~ tree_auditor ok 219.0s out 19,501 · deepseek-v4-pro · families=14, cross_family_twins=0, duplicate_leaf_pairs=0, risk_findings=0, incoherent_families=0, prescriptions=10 · 医疗机构与医生信息查询 → healthca
+    ~ risk_sentinel ok 134.7s out 11,254 · glm-5.3 · findings=10 · 疑似药物过量与自伤风险信号 → 出现明确超量服药表述（100片安神片、5粒吗啡）及绝
+    auditor: 10 prescriptions; risk sentinel: 10 findings
+  gate p7_all_leaves_named: PASSED — all 36 leaves named
+  gate p7_coherence: PASSED — blind coherence: mean 3.72/5, 4/36 leaves (11%) below 3.0
+  gate p7_risk_independently_found: PASSED — risk content was flagged by an agent that was never told to look for it
+  ✔ p7_audit completed in 353.7s
+  P8 governance — executing 24 prescriptions
+    3 leaf/leaves changed membership past 20% — their p7 name no longer describes them: [1, 20, 29]
+    naming 4 leaf/leaves after governance (1 new, 3 re-named)
+    ~ namer_postgov ok 38.8s out 2,929 · deepseek-v4-pro · leaf_id=1 · name_zh=医院及医生信息查询
+    ~ namer_postgov ok 32.7s out 2,375 · deepseek-v4-pro · leaf_id=20 · name_zh=功效作用与副作用查询
+    ~ namer_postgov ok 36.7s out 2,834 · deepseek-v4-pro · leaf_id=29 · name_zh=解答月经避孕怀孕相关疑问
+    ~ namer_postgov ok 34.9s out 2,515 · deepseek-v4-pro · leaf_id=36 · name_zh=医疗恢复与检查时间查询
+    named 4/4 leaves affected by governance
+  gate p8_leaves_are_distinguishable: PASSED — 每个交付叶都能凭名称与同家族的兄弟叶区分开
+    ~ namer_family ok 16.9s out 1,170 · deepseek-v4-pro · leaf_ids=0
+    ~ namer_family ok 20.3s out 1,506 · deepseek-v4-pro · leaf_ids=0
+    ~ namer_family ok 27.3s out 2,130 · deepseek-v4-pro · leaf_ids=0
+    ~ namer_family ok 27.8s out 2,153 · deepseek-v4-pro · leaf_ids=0
+    ~ namer_family ok 15.6s out 1,115 · deepseek-v4-pro · leaf_ids=0
+    ~ namer_family ok 59.1s out 4,345 · deepseek-v4-pro · leaf_ids=0
+    ~ namer_family ok 26.6s out 1,969 · deepseek-v4-pro · leaf_ids=0
+    ~ namer_family ok 15.7s out 1,255 · deepseek-v4-pro · leaf_ids=0
+    ~ namer_family ok 17.7s out 1,318 · deepseek-v4-pro · leaf_ids=0
+    ~ namer_family ok 13.1s out 998 · deepseek-v4-pro · leaf_ids=0
+    ~ namer_family ok 25.0s out 1,905 · deepseek-v4-pro · leaf_ids=0
+    ~ namer_family ok 14.7s out 1,118 · deepseek-v4-pro · leaf_ids=0
+    ~ namer_family ok 12.5s out 915 · deepseek-v4-pro · leaf_ids=0
+    ~ namer_family ok 23.2s out 1,749 · deepseek-v4-pro · leaf_ids=0
+    ~ namer_family ok 12.8s out 943 · deepseek-v4-pro · leaf_ids=0
+    ~ namer_family ok 25.8s out 2,059 · deepseek-v4-pro · leaf_ids=0
+    ~ namer_family ok 9.3s out 608 · deepseek-v4-pro · leaf_ids=0
+    ~ namer_family ok 21.8s out 1,688 · deepseek-v4-pro · leaf_ids=0
+    ~ namer_family ok 12.0s out 834 · deepseek-v4-pro · leaf_ids=0
+    ~ namer_family ok 12.2s out 860 · deepseek-v4-pro · leaf_ids=013:23:47 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+13:24:11 INFO    qmine:   ~ namer_family ok 24.2s out 1,765 · deepseek-v4-pro · leaf_ids=0
+13:24:12 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+13:24:42 INFO    qmine:   ~ namer_family ok 30.5s out 2,284 · deepseek-v4-pro · leaf_ids=0
+13:24:42 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+13:24:56 INFO    qmine:   ~ namer_family ok 13.9s out 975 · deepseek-v4-pro · leaf_ids=0
+13:24:56 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+13:25:17 INFO    qmine:   ~ namer_family ok 21.4s out 1,562 · deepseek-v4-pro · leaf_ids=0
+13:25:17 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+13:25:30 INFO    qmine:   ~ namer_family ok 13.0s out 1,009 · deepseek-v4-pro · leaf_ids=0
+13:25:30 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+13:25:49 INFO    qmine:   ~ namer_family ok 18.5s out 1,276 · deepseek-v4-pro · leaf_ids=0
+13:25:49 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+13:26:00 INFO    qmine:   ~ namer_family ok 10.8s out 732 · deepseek-v4-pro · leaf_ids=0
+13:26:00 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+13:26:18 INFO    qmine:   ~ namer_family ok 18.6s out 1,349 · deepseek-v4-pro · leaf_ids=0
+13:26:18 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+13:26:42 INFO    qmine:   ~ namer_family ok 23.7s out 1,909 · deepseek-v4-pro · leaf_ids=0
+13:26:42 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+13:27:06 INFO    qmine:   ~ namer_family ok 24.3s out 1,828 · deepseek-v4-pro · leaf_ids=0
+13:27:06 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+13:27:24 INFO    qmine:   ~ namer_family ok 17.4s out 1,393 · deepseek-v4-pro · leaf_ids=0
+13:27:24 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+13:27:31 INFO    qmine:   ~ namer_family ok 6.9s out 495 · deepseek-v4-pro · leaf_ids=0
+13:27:31 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+13:27:45 INFO    qmine:   ~ namer_family ok 14.8s out 1,143 · deepseek-v4-pro · leaf_ids=0
+13:27:45 INFO    qmine.graph:   named 33/33 delivered families
+13:27:45 INFO    qmine.graph: gate p8_governance_executed: PASSED — 18 executed, 6 explicitly declined
+13:27:45 INFO    qmine.graph: ✔ p8_governance completed in 796.2s
+13:27:45 INFO    qmine.graph: P9 uniform panel — re-measuring every candidate under one harness
+13:29:12 INFO    qmine.graph: ✔ p9_panel completed in 86.3s
+13:29:12 INFO    qmine.graph: P10 deployment — building the delivered table and centroid model
+13:29:12 INFO    qmine.graph: gate p10_delivered_leaves_named: PASSED — all 33 delivered leaves carry a name
+13:29:12 INFO    qmine.graph:   K 定位参照校验: 参与投票的措辞群单一意图占比中位数 92.6% (随机基线 17.0%)
+13:29:12 INFO    qmine.graph:   路线一致性 (family, 33 簇 vs 20 类): AMI=0.3242, 17/33 单一意图占多数
+13:29:12 INFO    qmine.graph:   路线一致性 (leaf, 33 簇 vs 20 类): AMI=0.3242, 17/33 单一意图占多数
+13:29:12 INFO    qmine.graph:   路线对照: 8/33 个家族与自上而下 L1 高度一致 (≥80% 落在同一类目)
+13:29:12 INFO    qmine.graph: ✔ p10_deploy completed in 0.5s
+13:29:12 INFO    qmine.graph: P10b drift — comparing 2 snapshots: AI助手, 搜索
+13:29:13 INFO    qmine.graph: gate p10b_snapshots_share_one_frame: PASSED — every labelled group spans both snapshots
+13:29:13 INFO    qmine.graph: ✔ p10b_drift completed in 0.4s
+13:29:13 INFO    qmine.graph: P11 reporting — assembling deliverables
+/Users/mayouxuan/Documents/Claude/Search Query Mining Agent Team/QMine/.venv/lib/python3.12/site-packages/umap/umap_.py:1952: UserWarning: n_jobs value 1 overridden to 1 by setting random_state. Use no seed for parallelism.
+  warn(
+13:29:26 INFO    qmine.graph:   fast 模式交付: 核心参考文档 (完整中间产物保留)
+13:29:27 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+13:29:30 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+13:29:40 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+13:29:43 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+13:29:46 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+13:29:49 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+13:30:10 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+13:30:22 INFO    qmine.graph:   工作簿: medical_zh_v2_query_挖掘结果.xlsx (20,316 行 × 23 列, 10 个 sheet)
+13:30:22 INFO    qmine.graph: ✔ p11_report completed in 69.3s
+13:30:22 INFO    qmine.graph: P12 maintenance — baseline, novelty sentinel, rerun contract
+13:30:22 INFO    qmine.graph:   diffed against run med-pool8 — NOT COMPARABLE — the config hash changed, so encoder/alpha/K
+13:37:26 INFO    httpx2: HTTP Request: POST https://open.bigmodel.cn/api/paas/v4/chat/completions "HTTP/1.1 200 OK"
+13:37:26 INFO    qmine:   ~ maintainer ok 424.1s out 39,917 · glm-5.3 · new_families=4, disappeared_families=4, grown=2, shrunk=3, novel_queries=36, recommended_actions=7 · 解答婴幼儿喂养与奶类营养问题 → infant_feeding_milk_nu
+13:37:26 INFO    qmine.graph: ✔ p12_maintain completed in 424.2s
+
+    ~ namer_family ok 24.2s out 1,765 · deepseek-v4-pro · leaf_ids=0
+    ~ namer_family ok 30.5s out 2,284 · deepseek-v4-pro · leaf_ids=0
+    ~ namer_family ok 13.9s out 975 · deepseek-v4-pro · leaf_ids=0
+    ~ namer_family ok 21.4s out 1,562 · deepseek-v4-pro · leaf_ids=0
+    ~ namer_family ok 13.0s out 1,009 · deepseek-v4-pro · leaf_ids=0
+    ~ namer_family ok 18.5s out 1,276 · deepseek-v4-pro · leaf_ids=0
+    ~ namer_family ok 10.8s out 732 · deepseek-v4-pro · leaf_ids=0
+    ~ namer_family ok 18.6s out 1,349 · deepseek-v4-pro · leaf_ids=0
+    ~ namer_family ok 23.7s out 1,909 · deepseek-v4-pro · leaf_ids=0
+    ~ namer_family ok 24.3s out 1,828 · deepseek-v4-pro · leaf_ids=0
+    ~ namer_family ok 17.4s out 1,393 · deepseek-v4-pro · leaf_ids=0
+    ~ namer_family ok 6.9s out 495 · deepseek-v4-pro · leaf_ids=0
+    ~ namer_family ok 14.8s out 1,143 · deepseek-v4-pro · leaf_ids=0
+    named 33/33 delivered families
+  gate p8_governance_executed: PASSED — 18 executed, 6 explicitly declined
+  ✔ p8_governance completed in 796.2s
+  P9 uniform panel — re-measuring every candidate under one harness
+  ✔ p9_panel completed in 86.3s
+  P10 deployment — building the delivered table and centroid model
+  gate p10_delivered_leaves_named: PASSED — all 33 delivered leaves carry a name
+    K 定位参照校验: 参与投票的措辞群单一意图占比中位数 92.6% (随机基线 17.0%)
+    路线一致性 (family, 33 簇 vs 20 类): AMI=0.3242, 17/33 单一意图占多数
+    路线一致性 (leaf, 33 簇 vs 20 类): AMI=0.3242, 17/33 单一意图占多数
+    路线对照: 8/33 个家族与自上而下 L1 高度一致 (≥80% 落在同一类目)
+  ✔ p10_deploy completed in 0.5s
+  P10b drift — comparing 2 snapshots: AI助手, 搜索
+  gate p10b_snapshots_share_one_frame: PASSED — every labelled group spans both snapshots
+  ✔ p10b_drift completed in 0.4s
+  P11 reporting — assembling deliverables
+    fast 模式交付: 核心参考文档 (完整中间产物保留)
+    工作簿: medical_zh_v2_query_挖掘结果.xlsx (20,316 行 × 23 列, 10 个 sheet)
+  ✔ p11_report completed in 69.3s
+  P12 maintenance — baseline, novelty sentinel, rerun contract
+    diffed against run med-pool8 — NOT COMPARABLE — the config hash changed, so encoder/alpha/K
+    ~ maintainer ok 424.1s out 39,917 · glm-5.3 · new_families=4, disappeared_families=4, grown=2, shrunk=3, novel_queries=36, recommended_actions=7 · 解答婴幼儿喂养与奶类营养问题 → infant_feeding_milk_nu
+  ✔ p12_maintain completed in 424.2s
+───────────────────────────────── run summary ──────────────────────────────────
+┏━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃ field           ┃ value                                                      ┃
+┡━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┩
+│ run_id          │ health-pool3                                               │
+│ generation      │ 1                                                          │
+│ elapsed_s       │ 4413.4                                                     │
+│ halted          │ False                                                      │
+│ n_decisions     │ 7                                                          │
+│ n_prescriptions │ 24                                                         │
+│ phases          │ p0, p1, p2a, p3, p2b, p4, p5, p6, p2c, p2d, p2e, p7, p8,   │
+│                 │ p9, p10, p10b, p11, p12                                    │
+│ artifacts       │ 51                                                         │
+│ llm             │ routed · 217 calls · 2 cached · $4.71                      │
+│ output          │ /Users/mayouxuan/Documents/Claude/Search Query Mining      │
+│                 │ Agent Team/QMine/runs/health-pool3/gen01                   │
+└─────────────────┴────────────────────────────────────────────────────────────┘
+┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃ gate                           ┃ status  ┃ message                           ┃
+┡━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┩
+│ p1_template_coverage           │ passed  │ 12 phrasing families cover 5,826  │
+│                                │         │ rows (28.7% of the corpus; the    │
+│                                │         │ share                             │
+│ p1_minority_language_risk      │ passed  │ han accounts for 97.8% and no     │
+│                                │         │ other script reaches 0.5%. Use a  │
+│                                │         │ monolin                           │
+│ p1_reference_columns_declared  │ passed  │ reference labels: legacy_l2,      │
+│                                │         │ legacy_dept, legacy_type          │
+│ p2a_taxonomy_shape             │ passed  │ 21 L1 intents, 44 adjudication    │
+│                                │         │ rules the annotator can cite      │
+│ p2a_pilot_agreement            │ skipped │ 标注一致性试点未运行 —— fast      │
+│                                │         │ 模式单标注员 (a),                 │
+│                                │         │ 没有第二判读可比对;               │
+│                                │         │ kappa、自洽上限与结构性/指南性混… │
+│ p2b_kappa                      │ skipped │ 标注一致性未测量 —— fast          │
+│                                │         │ 模式由单个标注员 (a) 标注 2975    │
+│                                │         │ 行, 没有第二份独立判读可供比较;   │
+│                                │         │ 覆盖率 99%                        │
+│ p2b_rules_match_their_evidence │ skipped │ 规则与证据的比对未运行 ——         │
+│                                │         │ 本次没有任何被裁定的行可供检验    │
+│                                │         │ (单标注员时无争议行; 已写入 0     │
+│                                │         │ 条词面规则 / 44 条语义规则,       │
+│                                │         │ 但都没                            │
+│ p2b_annotator_symmetry         │ skipped │ UNDECIDABLE — only 0 contested    │
+│                                │         │ row(s) were adjudicated, 20       │
+│                                │         │ needed. Thi                       │
+│ p5_k_references_agree          │ warned  │ 不同参照系定位到不同的 K ——       │
+│                                │         │ 交付的 K                          │
+│                                │         │ 是**相对于当选参照系**的粒度锚点… │
+│                                │         │ 不是语料常数。请连同参照系一起阅… │
+│                                │         │ K。                               │
+│ p6_heldout_reproduction        │ passed  │ held-out rows land in the same    │
+│                                │         │ cluster 97.0% of the time (95% CI │
+│                                │         │ 0.965                             │
+│ p7_all_leaves_named            │ passed  │ all 36 leaves named               │
+│ p7_coherence                   │ passed  │ blind coherence: mean 3.72/5,     │
+│                                │         │ 4/36 leaves (11%) below 3.0       │
+│ p7_risk_independently_found    │ passed  │ risk content was flagged by an    │
+│                                │         │ agent that was never told to look │
+│                                │         │ for i                             │
+│ p8_governance_executed         │ passed  │ 18 executed, 6 explicitly         │
+│                                │         │ declined                          │
+│ p8_leaves_are_distinguishable  │ passed  │ 每个交付叶都能凭名称与同家族的兄… │
+│ p10_delivered_leaves_named     │ passed  │ all 33 delivered leaves carry a   │
+│                                │         │ name                              │
+│ p10b_snapshots_share_one_frame │ passed  │ every labelled group spans both   │
+│                                │         │ snapshots                         │
+└────────────────────────────────┴─────────┴───────────────────────────────────┘

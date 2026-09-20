@@ -1,0 +1,230 @@
+# Finance query log, v2 — for the 8-snapshot corpus (`金融8_pooled5.parquet`, 43,934 rows).
+#
+# WHY A SECOND FILE. `finance_zh.yaml` is the profile the DELIVERED fin-pool5 run used; leaving it
+# untouched keeps that run's resolved config reproducible from the repo. Everything below that is
+# not marked "v2" is copied from it verbatim.
+#
+# WHAT v2 CHANGES, AND ON WHAT EVIDENCE. Every number here was measured on the corpus, not assumed.
+#
+# 1. THE RESIDUAL WAS MISNAMED, NOT MISSING. fin-pool5 put 1,883 rows (8.21%) into
+#    `其他或无法判定的非金融查询`. Those rows are not non-financial: their median length is 4
+#    characters, 40% are pure digit strings, and the bottom-up route placed them in plainly
+#    financial leaves (股票代码查询 207, 数字串含义查询 150, 金融代码行情查询 125, 保险信息查询 97).
+#    The residual splits into TWO halves with opposite causes, and the headline confidence figure
+#    (0.671 vs 0.872 domain-wide) is a mixture of them: the NUMERIC half scores 0.817 — near the
+#    domain mean, i.e. confidently misclassified, not undecidable — while the non-numeric half
+#    scores 0.572.
+#      - The numeric half (759 rows, 40.3%) is a DATA DEFECT, not a missing intent. The source
+#        workbooks stored all-digit query cells as numbers, so 000519 arrived as 519. Repaired in
+#        the corpus builder (839 rows); no new class needed, and adding one would cost 1.73
+#        correctly-classified rows for every residual row reclaimed.
+#      - The non-numeric half IS a missing intent: a bare institution / portal / jargon name with
+#        no stated action.
+#
+# 2. THE OTHER DOMAINS ALREADY SOLVED THIS. 医疗 has `仅给出名称的裸实体查询` (14.48% of its rows)
+#    and a residual of only 6.12%; 软件 has `仅产品名消歧` (26.73%) and NO residual class at all;
+#    金融 had neither and carried the largest residual. v1's domain_notes even observed the cause
+#    ("Entity density is high (tickers, fund codes, institution names)") but drew a REPRESENTATION
+#    conclusion from it ("consider entity normalisation") instead of a TAXONOMY one.
+#
+# 3. THE USER'S OWN SEED CASE IS AN ANECDOTE, NOT A CLASS. 十大股东占比16.7%为高还是低 is the
+#    right instinct about the residual but the wrong size: that exact shape is 6 rows in 22,934,
+#    and 88.5% of the residual contains no question marker at all. What IS real in that family is
+#    "explain an observed move" (阳光电源今天为什么大跌) — 2.23% of the assistant tail vs 0.02% of
+#    search — and it is a BOUNDARY problem, not a residual one: 18 such rows currently sit inside
+#    the risk-flagged 寻求个股买卖与持有决策建议.
+#
+# 4. A NAIVE "BARE = SHORT AND NO VERB" RULE IS A TRAP — DO NOT WRITE ONE. It matches 57% of this
+#    corpus, and 10,748 of those rows already sit correctly in 查询金融资产实时行情: 今日金价 and
+#    上证指数 are short and verbless, and their intent is nevertheless determinate. The separation
+#    that works is whether the string NAMES A QUOTABLE INSTRUMENT, not whether it is short.
+#
+# 5. THE CORPUS IS NO LONGER HEAD-ONLY. Four of the eight snapshots are random samples, so the
+#    long tail is now represented at the same scale as the head. Two things follow that v1 could
+#    not have known: bare numeric codes are a HEAD behaviour (10.05% of 2025 head search, 0.50%
+#    of the 2025 random tail — a 20x gap), and financial-DISTRESS queries are a TAIL behaviour
+#    (40 of 57 催收/逾期 rows and 21 of 24 套现 rows fall in the random strata).
+
+key: finance_zh_v2
+display_name: "金融搜索 Query（8 快照：搜索头部/随机 x 2 年 + 助手头部/随机 + 语音头部/未知抽样）"
+language: zh
+
+tokenizer: jieba
+char_ngram_range: [1, 3]
+word_ngram_range: [1, 2]
+
+embedding_candidates:
+  - BAAI/bge-small-zh-v1.5
+  - BAAI/bge-base-zh-v1.5
+instruction_prefix: null
+
+template_seeds:
+  - name: quote_lookup
+    pattern: "(股价|股票价格|市值|今天涨跌|收盘价|开盘价)"
+    intent_hint: "求某标的的行情数字"
+  - name: term_definition
+    pattern: "(是什么意思|什么是|的定义|通俗解释)"
+    intent_hint: "求金融术语释义"
+  - name: howto_transact
+    pattern: "(怎么买|怎么开户|如何购买|怎么赎回|怎么转出|开户流程)"
+    intent_hint: "求操作步骤"
+  - name: rate_lookup
+    pattern: "(汇率|利率|收益率|年化|手续费多少)"
+    intent_hint: "求利率/汇率数字"
+  - name: comparison
+    pattern: "(和.{1,12}哪个好|与.{1,12}区别|哪个更划算|对比)"
+    intent_hint: "两个产品/标的的比较"
+  - name: news_latest
+    pattern: "(最新消息|今天|最新公告|发生了什么|为什么涨|为什么跌)"
+    intent_hint: "求时效性事件"
+  # v2 新增，均为实测形态
+  - name: bare_numeric_code
+    pattern: "^[0-9]{1,6}$"
+    intent_hint: "只打了一串数字，没有任何动词（2,273 行 = 5.17%）"
+  - name: benchmark_judgment
+    pattern: "(为高还是低|算高|算低|正常吗|合理吗|多少算|是高是低|有没有必要|划算吗)"
+    intent_hint: "给出一个数值或情形，问它对标基准算好还是不好"
+  - name: observed_phenomenon_why
+    pattern: "(这是什么原因|为什么会|怎么回事|说明什么|意味着什么)"
+    intent_hint: "描述一段已发生的行情，求解释"
+
+risk_categories:
+  - name: stock_tipping
+    patterns: ["推荐.{0,4}股", "买什么股", "牛股", "内幕", "带单", "跟单", "老师带"]
+    keywords: ["涨停板预测", "明天买什么"]
+    rationale: >
+      Solicitation of specific buy/sell recommendations. Must be isolated and
+      routed to a general-information-only response path.
+    policy: isolate_and_flag
+  - name: personalized_advice
+    patterns: ["我该不该买", "帮我看看仓位", "我的.{0,6}要不要卖", "全仓"]
+    keywords: []
+    rationale: "Requests for individualised investment advice — licensed activity."
+    policy: isolate_and_flag
+  - name: fraud_gambling
+    # `澳门` ALONE MATCHES A CURRENCY, NOT GAMBLING. Measured on both finance
+    # corpora, every single hit this category produced was a Macau Pataca FX
+    # query (澳门币兑换人民币汇率, 澳门汇率) — 12 of 12 false positives, and a
+    # false positive here ISOLATES legitimate traffic into a compliance bucket.
+    # Gambling needs the gambling word, not the place name.
+    patterns: ["杀猪盘", "刷单", "博彩", "澳门.{0,6}(赌|娱乐城|威尼斯人|新葡京)", "洗钱", "外汇黑平台", "赌场"]
+    keywords: []
+    rationale: "Fraud and gambling probes."
+    policy: isolate_and_flag
+
+  # ---- v2 新增五类。全部先在 43,934 行上实测过命中数与例子，patterns 按「不要造假阳性工厂」
+  # ---- 收紧（上面 `澳门` 那条注释就是这条教训的来源）。v1 的三类在本语料合计只命中 21 行
+  # ---- (0.05%)，而下面第一类单独就有 57 行——不是 v1 写错了，是它只见过头部语料。
+  - name: debt_collection_distress
+    # 57 行，其中 40 行落在随机层（头部只有 12）。这是**长尾特有**的人群：正在被催收、
+    # 想知道某个催收公司是不是真的、想协商还款。答错的后果不是「搜索结果不好」，是把一个
+    # 正在财务困境里的人推给一个假冒催收方。
+    patterns: ["催收", "爆通讯录", "停息挂账", "协商还款", "逾期.{0,6}(怎么办|会怎样|多久|上门|起诉)"]
+    keywords: []
+    rationale: >
+      The asker is in or near default. Two distinct hazards: impersonation scams
+      (a fake collection notice) and debt-relief intermediaries. Answers must not
+      name a private settlement intermediary or assert legal consequences.
+    policy: isolate_and_flag
+  - name: no_credit_check_lending
+    # 17 行。「不看征信 / 100%通过 / 秒下款」是非法放贷与套路贷的招徕语，不是产品功能。
+    patterns: ["不看征信", "无视黑白", "秒下款", "放水口子", "高炮", "网贷口子", "黑户.{0,4}贷", "不查征信", "100%通过"]
+    keywords: []
+    rationale: "Marketing language of illegal or predatory lending; never surface a channel."
+    policy: isolate_and_flag
+  - name: credit_repair
+    # 10 行。中国的「征信修复」基本等同于诈骗服务：央行征信记录不可人工消除。
+    patterns: ["征信.{0,4}(修复|洗白|铲单|养回)", "消除.{0,6}(征信|逾期)记录"]
+    keywords: []
+    rationale: >
+      Credit-repair services in China are effectively fraudulent — PBoC credit
+      records cannot be manually erased. Answering as if the service works is harm.
+    policy: isolate_and_flag
+  - name: card_cashout
+    # 24 行，21 行在随机层。信用卡套现在中国是违法的（非法经营）。注意「信用卡取现」是
+    # 合法的 ATM 取现，与「套现」不同——两个词都收进来，靠标注去分，不在正则里预判。
+    patterns: ["套现", "代还", "养卡", "信用卡.{0,4}(取现|刷出来)"]
+    keywords: []
+    rationale: >
+      Credit-card cash-out is illegal business activity in China. Note that
+      信用卡取现 (a legitimate ATM advance) shares vocabulary with 套现 — both are
+      captured here deliberately and the boundary is an annotation decision, not
+      a regex one.
+    policy: isolate_and_flag
+  - name: paid_advisory_dispute
+    # 15 行。一半是「某某投顾服务费能退吗」——提问者多半已经付过钱了，是受害方。
+    patterns: ["投顾", "荐股", "服务费.{0,4}(退|能退|怎么退)", "股票.{0,2}(老师|群)"]
+    keywords: []
+    rationale: >
+      Paid stock-advisory services, and refund disputes with them. Roughly half
+      these rows are someone trying to get money back — treat as consumer harm,
+      not as a product query.
+    policy: isolate_and_flag
+
+# v2: 语料从 22,934 行涨到 43,934 行，而且新增的一半是长尾，形态比头部丰富得多。
+# v1 交付了 18 个 L1，落在 [15, 22] 的上半段；这里把上界放开，让数据决定，而不是让先验封顶。
+expected_l1_range: [18, 30]
+expected_family_range: [15, 32]
+
+pragmatic_intents_hint:
+  # v1 原有四条
+  - "个性化投资建议求证 (looks like a normal question, is a compliance event)"
+  - "操作步骤指引"
+  - "账户/客服问题求助"
+  - "亏损情绪宣泄"
+  # v2 新增。每一条都是对本语料 43,934 行的实测，不是推测。
+  - >
+    只打了一串数字、没有动词（2,273 行 = 5.17%，头部搜索 10.05%、长尾 0.50%）。
+    **这一类不需要自己的意图，也不要为它新建一个。** 语料交付前已经把 Excel 抹掉的前导零补回去了
+    （839 行，`code_repaired` 标出），补完之后 `000519` 与 `000519股吧` 是同一件事——
+    一个裸证券代码就是一次行情/标的查询，键入时带不带修饰词不改变目的。实测证据：把裸码单列一类，
+    每从残余收回 1 行要从「查询金融资产实时行情」抢走 1.73 行已经判对的行。
+    **唯一要分开的是 `95xxx` 五位号（95588 工行 / 95533 建行 / 95566 中行，45 行）**：那是银行保险
+    客服热线，属于「这串号码是谁的」，不是标的查询——它们没有被补零，保持原样。
+  - >
+    只打了一个机构名、网站名或市场术语，没有动词（铜牛信息 / 人民银行 / 上海有色金属网 /
+    龙虎榜 / 数字钱包 / visa卡）。必须与「裸资产名」分开：今日金价、上证指数 同样没有动词，
+    但它们指向一个**可报价的标的**，意图是确定的；一个上市公司全称或一个行业网站名不是。
+    判据是「这个串是不是一个可以报出价格的标的」，不是「这个串有多短」。
+  - >
+    **边界提醒，不是新类**：给出一个数值再问它算高还是低（十大股东占比16.7%为高还是低）
+    实测只有 6 行，太小，不要为它立类；但同族的「描述一段已发生的行情再问为什么」
+    （阳光电源今天为什么大跌 / 跳空高开然后回落这是什么原因）是真实且助手侧特有的形态——
+    助手随机层 2.23%，搜索侧 0.02–0.03%，约 75 倍。
+    这一族现在有 18 行落在「寻求个股买卖与持有决策建议」里，那是个**风险标注类**：
+    问「今天为什么跌」的人并没有在求买卖建议，把它判进去会把一次解释请求路由到投顾合规路径上。
+    请把「对已发生现象求解释」与「求买卖持有决策」在裁定规则里分开，
+    判据是提问者要的是**过去的原因**还是**未来的动作**。
+  - >
+    正在被催收、逾期、或想协商还款（57 行，其中 40 行在随机层）。措辞上像「某某是哪个平台的
+    催收公司」这种普通事实查询，但提问者处在财务困境里——这一类在只看头部的语料里几乎不存在。
+
+domain_notes: >
+  Chinese consumer finance search and assistant logs, pooled across eight snapshots: a PV-ranked
+  head 10k and a random 10k for each of two search years, an assistant head 1k and random 1k, a
+  PV-ranked voice head 1k, and one voice export whose sampling method is unknown. Half the corpus
+  is now long tail, which is new — the earlier finance run saw head traffic only.
+
+  Strong recency axis ("今天", "最新", a year number). Treat time markers as a facet feature rather
+  than letting them drive clustering, or every family splits into a dated and an undated half.
+
+  Entity density is very high. Two different things hide under it and they need opposite treatment.
+  (a) Bare NUMERIC codes — 5.17% of rows. These are not a missing intent: the source workbooks had
+  stored all-digit query cells as numbers, so leading zeros were destroyed before any code ran, and
+  000519 reached the previous run as 519. That corpus is repaired here (839 rows, `code_repaired`),
+  and a repaired bare code is simply a quote/instrument lookup. Do not give it its own class.
+  The one genuine split is the 95xxx five-digit bank hotlines, which are "whose number is this".
+  (b) Bare NON-numeric names — a bare institution, website or jargon term (铜牛信息, 人民银行,
+  上海有色金属网, 龙虎榜). Here the intent really is unstated, and whether the string determines an
+  intent depends on whether it names a QUOTABLE INSTRUMENT: 今日金价 and 上证指数 do, a listed
+  company's full name or an industry portal does not. "Short and verbless" is NOT a usable rule —
+  measured, it matches 57% of this corpus and would strip 10,748 rows out of a correct quote class.
+  The previous taxonomy had no class for (b) and routed the remainder into a bucket it called
+  "non-financial", which was wrong about the content: 40% of that bucket was securities codes.
+
+  The head and the tail carry different risk populations. Solicitation-style hazards (荐股, 内幕)
+  are sparse everywhere, but debt collection, overdue-loan distress, credit-card cash-out and
+  credit-repair scams sit overwhelmingly in the random strata. A screen tuned on head traffic
+  alone will report that this vertical is almost risk-free; measured here, the v1 screen's three
+  categories fire on 21 rows of 43,934 while debt-collection language alone fires on 57.
+  This profile is a screening floor for taxonomy work, not compliance or legal guidance.

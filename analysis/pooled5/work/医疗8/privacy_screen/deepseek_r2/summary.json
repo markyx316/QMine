@@ -1,0 +1,12 @@
+{
+ "model": "deepseek-v4-pro",
+ "distinct_strings": 1053,
+ "batches": 8,
+ "flagged_strings": 23,
+ "by_code": {
+  "EXPLICIT_SEX": 8,
+  "NAMED_PERSON": 7,
+  "NAMED_PRIVATE_FACILITY": 8
+ },
+ "flagged_in_report": 0
+}

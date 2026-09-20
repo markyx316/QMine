@@ -640,10 +640,19 @@ class QMineConfig(BaseModel):
         """
         if self.mode != "fast":
             return self
+        # RECORD WHAT FAST MODE SKIPS, NOT WHAT THIS CALL HAPPENED TO SWITCH OFF.
+        # Every append here used to be conditional on the switch still being ON, so a
+        # config that had ALREADY been through this validator rebuilt a list holding
+        # only the four unconditional entries. That is every `--resume`: it loads the
+        # source generation's resolved config, in which `observe_phases`, `final_report`
+        # and the rest are already False. `ppl-pool8` gen03 shipped deliverables whose
+        # banner named 4 of the 10 skips — a reader would have concluded that dual
+        # annotation, the phase observers, the adversarial validation, the agent-written
+        # report, the pre-delivery audit and the result interpretation all RAN. The list
+        # is a property of the mode, so derive it from the mode.
         skipped: list[str] = []
-        if self.taxonomy.annotators != 1:
-            self.taxonomy.annotators = 1
-            skipped.append("dual_annotation")
+        self.taxonomy.annotators = 1
+        skipped.append("dual_annotation")
         # A single reading has nothing to agree with, so every measurement built
         # on agreement is not "skipped for time" — it is undefined. Zeroing the
         # repair rounds here is what stops the pipeline from trying to repair a
@@ -656,9 +665,8 @@ class QMineConfig(BaseModel):
                             ("final_report", "narrative_report"),
                             ("delivery_audit", "delivery_audit"),
                             ("interpret_results", "result_interpretation")):
-            if getattr(self, field):
-                setattr(self, field, False)
-                skipped.append(name)
+            setattr(self, field, False)
+            skipped.append(name)
         self.fast_skipped = skipped
         return self
 

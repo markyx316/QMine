@@ -1,0 +1,246 @@
+# 书籍文档 vertical — 2025/2026 搜索前一万 + AI 助手 top1k/random1k.
+#
+# EVERY SHARE BELOW WAS MEASURED with `str.contains` on the built corpus
+# `data/raw/pooled5/书籍文档_pooled5.parquet` (21,786 mining rows = 2025搜索 9,988 +
+# 2026搜索 9,995 + 助手头部 850 + 助手随机 953). PV shares are WITHIN SOURCE —
+# search PV (wise_pv) and assistant PV (search_num) are different instruments and
+# pooling them makes every weighted number a statement about whichever export is
+# larger. Where the two search years disagree, both are given.
+#
+# READ THIS FIRST: THE CATEGORY NAME IS MISLEADING. This is not a books vertical.
+# 图片/头像/壁纸/表情包/插画/素材 matches 28.74% of rows and ~30% of search PV;
+# 漫画 matches 11.80%; 小说 matches 0.21%. The dominant object here is a VISUAL
+# ASSET, and the second is a manga chapter. A taxonomy written from the label
+# "书籍文档" will mis-size its top two classes by an order of magnitude.
+#
+# NOT a compliance artifact. The risk categories are a screening floor for
+# taxonomy work; a deployed 书籍文档 surface needs rights-holder and legal review.
+key: books_docs_zh
+display_name: "书籍文档搜索与 AI 助手 Query"
+language: zh
+
+tokenizer: jieba
+char_ngram_range: [1, 3]
+word_ngram_range: [1, 2]
+
+# Light-first; the bake-off decides. Same reasoning as film_tv_zh: the corpus is
+# dense in proper nouns no encoder has seen — manga titles, aggregator site names
+# (漫蛙2/manwa2, 包子漫画, 土豪漫画), and dated greeting-card phrases (七月你好).
+# Expect the char n-gram block to carry more weight here than on finance.
+embedding_candidates:
+  - BAAI/bge-small-zh-v1.5
+  - BAAI/bge-base-zh-v1.5
+  - shibing624/text2vec-base-chinese
+instruction_prefix: null
+
+# Ordered narrow-to-broad: build_groups drops a family whose rows are already 85%
+# claimed, so the small precise ones must claim first.
+#
+# TWO IMAGE SEEDS, NOT ONE BROAD ONE. The broad image marker is 28.74% of rows —
+# a family matching more than a quarter of the corpus is a language detector, not
+# a phrasing template. `avatar_wallpaper` (6.09%) and `image_of_thing` (5.41%)
+# together claim 38% of that traffic and leave the rest — bare 图片, 生成图片,
+# 七月你好图片 — to the affix miner, which is where it belongs.
+# Union of all seeds below: 32.9% of rows, inside the 20-40% ceiling.
+template_seeds:
+  - name: meaning_lookup
+    pattern: '(是什么意思|什么意思|是什么|怎么读|读音|区别|由来)'
+    intent_hint: "求一个词、缩写或标志的释义（3c标识是什么 / 株式会社是什么意思），不求资源"
+    expected_min_share: 0.025
+  - name: festival_greeting
+    pattern: '(早安|晚安|你好|节日|七一|建党|中秋|国庆|春节|生日|问候|祝福)'
+    intent_hint: "按日历取当日问候素材，与具体作品无关；随抓取日期整体轮换"
+    expected_min_share: 0.020
+  - name: doc_template
+    pattern: '(模板|范文|格式|简历|合同|申请书|介绍信|证明|公文)'
+    intent_hint: "求一份可直接套用的文档骨架 — 这是本垂类里唯一真正「文档」的意图"
+    expected_min_share: 0.025
+  - name: scroll_reader_access
+    pattern: '(下拉式|免费(观看|阅读|看)|在线(观看|阅读|看)|全集|全话|未删减|无删减)'
+    intent_hint: "求以免费/完整条件取得连载内容。下拉式是聚合站阅读器的界面签名，不是内容词"
+    expected_min_share: 0.035
+  - name: image_of_thing
+    pattern: '(的图片|图片大全|高清图|图片素材|图大全)'
+    intent_hint: "给一个事物名，求它的配图（梅花的图片 / 竹子图片）"
+    expected_min_share: 0.035
+  - name: avatar_wallpaper
+    pattern: '(头像|壁纸|背景图|锁屏)'
+    intent_hint: "求一张用于**自己账号**的图，与求一张说明某事物的图是两种应答面"
+    expected_min_share: 0.040
+  - name: caption_copywriting
+    pattern: '(文案|短句|句子|说说|朋友圈|寄语|感谢话|签名|标语)'
+    intent_hint: >
+      求一段可直接发出去的文字。**这是两个界面分歧最大的一类**：搜索 6.32%/5.24%，
+      助手头部 26.59%、助手随机 13.01% — 搜索侧求现成句子，助手侧求现场生成与改写
+    expected_min_share: 0.045
+
+# The test applied: returning a normal, relevance-optimal result would itself be
+# a legal or safety event. 免费阅读 alone does NOT fail that test — 番茄/七猫/快看
+# run licensed free-with-ads tiers — so it is a seed above, not a risk category.
+risk_categories:
+  - name: adult_manga_platform
+    # Measured 110 rows (0.505%), search PV 1.52% → 1.41%. ALL 110 are search
+    # rows; the assistant export contributes zero, which is itself a finding.
+    # These are platform names, not content words: a screen keyed to 色情/情色
+    # reports nothing here (色 alone matches 颜色/红色/色卡 and is useless).
+    patterns:
+      - '(?i)ehviewer|eh ?viewer|e ?站|exhentai|nhentai'
+      - '(?i)哔咔|picacg|jmcomic|jm ?comic|禁漫|绅士漫画|无翼之鸟'
+      - '(?i)里番|本子下载|工口|18禁|无修|全彩漫画|h漫|黄漫'
+      - '歪歪漫画|土豪漫画|羞羞漫画'
+    rationale: >
+      E-Hentai / 禁漫天堂 / PicACG are 淫秽物品 in the PRC. Serving a normal
+      result — a working entry link — is the distribution act itself, and 快播
+      (2016) forecloses the "we only supply the technology" defence; 刑法 363/364
+      with 两高 thresholds keyed to click counts. This is the one category here
+      whose exposure is criminal rather than civil, and the one where a false
+      negative is unrecoverable.
+    policy: drop
+  - name: unlicensed_manga_aggregator
+    # Measured 992 rows (4.553%), search PV 4.94% → 6.18%, and GROWING: 414 rows
+    # in 2025 → 578 in 2026. The largest risk-adjacent block in this vertical.
+    # Second pattern is the phrasing, not the site: 下拉式 is the scroll-reader
+    # UI signature, and it survives every domain change the sites make.
+    patterns:
+      - '(?i)漫蛙|蛙漫|manwa|包子漫画|拷贝漫画|copymanga|布丁漫画|mangabz|飒漫画|妖精漫画|虫虫漫画'
+      - '(?i)下拉式|免费漫画(网|软件|app|大全|页面)'
+      - '漫画(免费|在线)(观看|阅读)(全集|完整版|下拉)?'
+    rationale: >
+      刑法 217 侵犯著作权罪 / 218 销售侵权复制品罪, under the 两高《关于办理侵犯
+      知识产权刑事案件适用法律若干问题的解释》in force 2025-04-26.
+      **Licensing status is per-site and per-title and this screen cannot settle
+      it** — 漫蛙 in particular has both a licensed-looking presentation and
+      domain-hopping mirrors, and 快看 runs a lawful free tier. So the policy is
+      isolate_and_flag, not drop: the flag means "a human must check this title
+      against this site", never "this is piracy".
+    policy: isolate_and_flag
+  - name: sexualized_image_generation
+    # Measured 15 rows (0.069%) — 9/2 search, 4 assistant. Tiny, and kept anyway:
+    # a generation surface turns a query into a published artifact, so the floor
+    # matters more than the volume. An earlier draft used 胸/大腿 as solo
+    # triggers and matched a fleece hoodie and a frog's thigh; both were removed.
+    patterns:
+      - '(帮我|请)?(画|生成).{0,24}(黑丝|白丝|丝袜|露脐|比基尼|泳装|情趣|诱惑|裸|沙漏形身材|臀腿|巨乳|爆乳)'
+      - '(黑丝|丝袜|露脐|比基尼|泳装|情趣内衣|爆乳|巨乳).{0,10}(图|画|生成|图片|写真)'
+    rationale: >
+      Requests to synthesise a sexualised human figure. On a retrieval surface
+      this is a ranking question; on a generation surface it is production, and
+      the output is attributable to the operator. Escalates immediately when it
+      co-occurs with the next category.
+    policy: isolate_and_flag
+  - name: minor_adjacent_sexualization
+    # Measured 2 rows (0.009%), both in 助手随机, and BOTH ARE REAL — a 猫娘萝莉
+    # image request with a bare-foot detail, and a 哥特萝莉 transformation-manga
+    # enumeration. n=2 cannot be fitted or evaluated; this is a maintained
+    # blocklist seeded from measurement, never a learned leaf.
+    patterns:
+      - '萝莉|幼女|童女|学生妹'
+      - '(?i)jk.{0,4}(制服|裙|白丝|黑丝)'
+      - '(小学生|初中生|未成年).{0,8}(裸|性感|色情|情趣|比基尼|丝袜)'
+    rationale: >
+      Minors and sexualisation. The volume is two rows and the screen is still
+      mandatory: the adult-manga cluster above sits one hop away in embedding
+      space, so the failure mode is a neighbourhood vote pulling these rows into
+      a normal 漫画 family rather than a model deciding to serve them.
+    policy: drop
+
+  # ==========================================================================
+  # 下面五类不是我写的，是 book-pool5 这一跑自己找出来的（2026-09-13）：架构师在 p2a 写出了
+  # 两个档案里没有的风险类，风控哨兵在 p7 给了 6 条发现，其中 5 条落在档案的盲区上。
+  # **它们不在 `runs/book-pool5/gen01/risk_screen.json` 里** —— 那份记录的是运行当时的档案；
+  # 要在同一份语料上取数用 `analysis/pooled5/p5_new2_risk_supplement.py`。条数均为复算结果。
+  - name: self_harm_and_emotional_crisis
+    # 18 行 (0.083%)：2025搜索 8 / 2026搜索 6 / 助手随机 4。
+    # **比档案原有的两类都大**（sexualized_image_generation 15 行、minor_adjacent 2 行），
+    # 而第一版档案完全没有它。会话最早一次抽样打印助手随机层时它就在那 25 行里。
+    patterns:
+      - '(?i)自残|自杀|遗书|轻生|割腕|不想活|活不下去|想死'
+      - '(?i)抑郁.{0,6}(怎么办|严重|想)|吃药片.{0,8}(遗书|自杀)'
+    rationale: >
+      Disclosure of self-harm or suicidal intent inside a books-and-documents query log. Crisis
+      routing takes precedence over every other intent, and it is the one category here where a
+      relevance-optimal answer — returning documents — is the wrong act regardless of how good
+      the documents are. Rows are described by count and source distribution only, never quoted.
+    policy: isolate_and_flag
+  - name: lottery_riddle_probe
+    # 7 行。`欲钱买大舌头的动物` 一类：六合彩暗语伪装成脑筋急转弯。
+    # **这个模式仓库里早就有** —— `configs/domains/education_zh.yaml` 的 zodiac_lottery_riddle
+    # 在教育语料上命中 463 行；而本域 PV 前 25 就有「脑筋急转弯大全6-12岁」，谜语流量很大。
+    # 模式在隔壁档案里、语料也对得上，第一版还是漏了，因为档案是按「我猜这个域有什么」写的。
+    patterns:
+      - '(?i)欲钱|玄机|打一生肖|猜一生肖|买什么动物|今期|下期|开什么'
+      - '(?i)六合彩|特码|平特|一肖|码报|买马'
+    rationale: >
+      Mark Six code phrases dressed as children's riddles. 刑法 303 赌博罪 for the operator;
+      for the surface the hazard is that a normal riddle answer functions as a betting tip. The
+      disguise is the whole point — a screen keyed to 六合彩/特码 finds almost none of it.
+    policy: isolate_and_flag
+  - name: forgeable_credential_template
+    # 40 行 (0.184%)，搜索 PV 0.276% → 0.206%。工作证明/离职证明/请假条/收入证明模板，
+    # 外加 10 行红头文件与公文格式。档案里有 doc_template 种子，但没把它当风险。
+    patterns:
+      - '(?i)(工作证|学生证|病假条|请假条|离职证明|收入证明|营业执照|资格证|奖状|结婚证|身份证).{0,6}(模板|图片|样本|制作|生成|空白)'
+      - '(?i)红头文件|公文模板|文件头|发文格式|印章.{0,4}(模板|制作)'
+    rationale: >
+      Blank templates for documents whose value is that a third party trusts them. Most uses are
+      mundane; the tail is 刑法 280 (伪造公文、证件、印章) and 治安管理处罚法 52. 红头文件 is the
+      sharper end — a template that imitates a government letterhead is impersonation material.
+      Flagged, not dropped: 请假条模板 is overwhelmingly ordinary stationery.
+    policy: isolate_and_flag
+  - name: adult_content_in_image_surface
+    # 50 行 (0.230%)。哨兵的原话是「成人内容进入头像/图片场景（疑似未成年人高频入口）」——
+    # 危害点不是量，是**落点**：头像/图片是本域最大的意图（图像类合计约 32%），也是最可能被
+    # 未成年人触达的一面。档案原有的 sexualized_image_generation 只覆盖了其中 15 行。
+    patterns:
+      - '(?i)(胸|胸部|乳房|乳沟|臀|臀部|屁股|奶子|三点)(的)?(图片|照片|图$|写真|大图)'
+      - '(?i)(女生|美女|少女|女人|女性|妹子)(的)?(胸|胸部|乳房|臀|臀部|屁股)'
+      - '(?i)束胸|束腰|充气娃娃|翘臀|美臀|蜜臀'
+    rationale: >
+      Sexualised body-part image requests arriving on the avatar/wallpaper surface. Deliberately
+      does NOT match 胸像 (a bust portrait), 胸透 (chest fluoroscopy) or 妆前乳 (makeup primer) —
+      those were checked and are lawful, non-sexual uses of the same characters.
+    policy: isolate_and_flag
+  - name: abuse_and_violence_material
+    # 侮辱话术 29 行、暴力体罚玩法 5 行、暴力场景图像生成 2 行。
+    patterns:
+      - '(?i)骂人|怼人|损人.{0,4}(话|句)|脏话.{0,4}(大全|越毒)'
+      - '(?i)体罚.{0,6}(流程|表|玩法)|打屁股|戒尺|家法|惩罚游戏'
+      - '(?i)(画|生成).{0,20}(劫匪|绑架|架脖子|上吊|勒脖)'
+    rationale: >
+      Requests to generate abuse scripts, corporal-punishment "game" schedules, or violent
+      scene imagery. Low volume and low severity individually; kept because the corporal-
+      punishment rows co-occur with school-uniform and age markers, which is where it stops
+      being a joke.
+    policy: isolate_and_flag
+
+expected_l1_range: [16, 24]
+expected_family_range: [12, 30]
+
+# Intents the playbook predicts clustering will be structurally blind to.
+# Written into the top-down brief so the taxonomy owns them explicitly.
+pragmatic_intents_hint:
+  - "求一张能直接用作自己头像/壁纸的图（与求一张说明某事物的图不同，应答面完全不同）"
+  - "求一段能直接发出去的文字（文案/短句/祝福语）— 搜索侧要现成的，助手侧要现场生成与改写"
+  - "求一份可套用的文档骨架（模板/范文/公文格式）"
+  - "对上一轮输出提修改要求（再短一点/换个风格/换个比例）— 只在助手侧存在，脱离上文无法判定"
+  - "求某连载的下一话或全集的可读入口 — 与求作品信息是两件事"
+  - "把一个词/缩写/标志翻译成一句解释（3c标识是什么）"
+  - "按日历取当日素材（七月你好/七一/早安）— 随抓取日期整体轮换，不是稳定需求"
+
+domain_notes: >
+  书籍文档 is a residual label, not a topic. Measured on 21,786 mining rows:
+  visual assets (图片/头像/壁纸/表情包/插画) 28.74% of rows, manga 11.80%,
+  ready-to-post copy 6.91%, document templates 3.82%, novels 0.21%.
+  Two structural facts that change how the results must be read.
+  (1) THE ASSISTANT HEAD IS MOSTLY PRODUCT SURFACE, NOT USER DEMAND. v3 cleaning
+  removed 150 of 1,000 head rows and with them 88.45% of that export's PV — the
+  top row 总结全文概要 (5,796,587) is a system feature chip, as are 找相似图,
+  风格转换 and the 👌好的，继续吧 acknowledgement pair. Any PV-weighted statement
+  about the assistant head is mostly a statement about which chips Baidu shipped.
+  (2) THE TWO INTERFACES ASK FOR DIFFERENT THINGS IN THE SAME WORDS. 文案 is
+  6.32%/5.24% of search rows but 26.59% of the assistant head; search wants an
+  existing string to copy, the assistant wants one written now and then revised
+  ("再短一点", "换个风格"), which has no search counterpart at all.
+  Time caveat: both search snapshots are 7-01, so 七一/建党/七月你好 are calendar
+  artefacts of the capture date and must not be read as standing demand; the
+  assistant export is ~late August and carries no such peak.

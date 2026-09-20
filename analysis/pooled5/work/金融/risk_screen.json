@@ -1,0 +1,44 @@
+{
+  "categories": [
+    {
+      "name": "stock_tipping",
+      "n_hits": 4,
+      "share": 0.00017,
+      "policy": "isolate_and_flag",
+      "exemplar": "给我推荐几只港股地产ETF",
+      "samples": [
+        "汇正财经推荐的股票真的假的",
+        "洛阳钼业未来大牛股潜力大吗",
+        "给我推荐几只港股地产ETF",
+        "企牛股票智能选取里面的条件有哪几个"
+      ]
+    },
+    {
+      "name": "personalized_advice",
+      "n_hits": 1,
+      "share": 4e-05,
+      "policy": "isolate_and_flag",
+      "exemplar": "股票亏损减少一半仓位，尾盘再把半仓买回来和股票亏损全部清仓，尾盘再全仓买回来哪个更好",
+      "samples": [
+        "股票亏损减少一半仓位，尾盘再把半仓买回来和股票亏损全部清仓，尾盘再全仓买回来哪个更好"
+      ]
+    },
+    {
+      "name": "fraud_gambling",
+      "n_hits": 0,
+      "share": 0.0,
+      "policy": "isolate_and_flag",
+      "exemplar": null,
+      "samples": []
+    }
+  ],
+  "total_flagged": 5,
+  "total_share": 0.00022,
+  "flag_mask_indices": [
+    1825,
+    21614,
+    21716,
+    21747,
+    22199
+  ]
+}

@@ -1,0 +1,1286 @@
+loaded 5 key(s) from /Users/mayouxuan/Documents/Claude/Search Query Mining Agent
+Team/QMine/.env
+──────────── QMine · domain education_zh · config 9a7817c79dfba6ea ─────────────
+  dashboard → runs/edu-pool5/dashboard.html
+17:27:44 INFO    qmine.llm: provider quirks recalled from .cache/model_quirks.json: 15 model(s) start in plain-JSON mode, 5 with a raised output cap — not rediscovered this run
+17:27:45 INFO    httpx: HTTP Request: GET https://raw.githubusercontent.com/BerriAI/litellm/main/model_prices_and_context_window.json "HTTP/1.1 200 OK"
+17:27:45 INFO    httpx: HTTP Request: GET https://openrouter.ai/api/v1/models "HTTP/1.1 200 OK"
+17:27:45 INFO    qmine.llm: routing plan: 19 roles, estimated $4.30, catalogue ['litellm', 'openrouter']
+17:27:45 INFO    qmine.llm:   role assignments for this run (model · lab · est. calls · est. $):
+17:27:45 INFO    qmine.llm:     annotator_a             deepseek:deepseek-v4-flash  lab=deepseek  128 calls  $2.365
+17:27:45 INFO    qmine.llm:     namer                   deepseek:deepseek-v4-pro  lab=deepseek  60 calls  $1.188
+17:27:45 INFO    qmine.llm:     researcher_log_reading  openrouter:moonshotai/kimi-k3  lab=moonshot  5 calls  $0.416
+17:27:45 INFO    qmine.llm:     taxonomy_architect      deepseek:deepseek-v4-pro  lab=deepseek  2 calls  $0.158
+17:27:45 INFO    qmine.llm:     tree_auditor            deepseek:deepseek-v4-pro  lab=deepseek  1 calls  $0.040
+17:27:45 INFO    qmine.llm:     l2_interpreter          openrouter:deepseek/deepseek-v4.1-flash  lab=deepseek  20 calls  $0.032
+17:27:45 INFO    qmine.llm:     domain_scout            zhipu:glm-5.3  lab=zhipu  1 calls  $0.026
+17:27:45 INFO    qmine.llm:     risk_sentinel           zhipu:glm-5.3  lab=zhipu  1 calls  $0.026
+17:27:45 INFO    qmine.llm:     proposer                deepseek:deepseek-v4-pro  lab=deepseek  2 calls  $0.025
+17:27:45 INFO    qmine.llm:     maintainer              zhipu:glm-5.3  lab=zhipu  1 calls  $0.022
+17:27:45 INFO    qmine.llm:     adversary               openrouter:moonshotai/kimi-k3  lab=moonshot  0 calls  $0.000
+17:27:45 INFO    qmine.llm:     delivery_auditor        openrouter:moonshotai/kimi-k3  lab=moonshot  0 calls  $0.000
+17:27:45 INFO    qmine.llm:     interpreter             deepseek:deepseek-v4-pro  lab=deepseek  0 calls  $0.000
+17:27:45 INFO    qmine.llm:     observer                openrouter:moonshotai/kimi-k3  lab=moonshot  0 calls  $0.000
+17:27:45 INFO    qmine.llm:     reporter                zhipu:glm-5.3  lab=zhipu  0 calls  $0.000
+17:27:45 INFO    qmine.llm:     researcher              zhipu:glm-5.3-flash  lab=zhipu  5 calls  $0.000
+17:27:45 INFO    qmine.llm:     taxonomy_critic         deepseek:deepseek-v4-pro  lab=deepseek  0 calls  $0.000
+17:27:45 INFO    qmine.llm:     annotator_b             qwen:qwen3.8-flash  lab=qwen  0 calls  $0.000
+17:27:45 INFO    qmine.llm:     referee                 zhipu:glm-5.3-flash  lab=zhipu  0 calls  $0.000
+17:27:45 INFO    qmine.llm:     annotator/referee labs: a=deepseek, b=qwen, referee=zhipu — independent
+17:27:45 INFO    qmine.llm:     ! taxonomy_architect: pinned with NO FALLBACK — nothing reachable meets this role's 200,000-token context need in another lab, so a single provider outage silently removes this role from the run
+17:27:45 INFO    qmine.llm:     ! tree_auditor: pinned with NO FALLBACK — nothing reachable meets this role's 200,000-token context need in another lab, so a single provider outage silently removes this role from the run
+17:27:45 INFO    qmine.llm:     ! domain_scout: chosen from the configured `capable_models` list; price only broke ties inside it, never against it
+17:27:45 INFO    qmine.llm:     ! risk_sentinel: chosen from the configured `capable_models` list; price only broke ties inside it, never against it
+17:27:45 INFO    qmine.llm:     ! maintainer: chosen from the configured `capable_models` list; price only broke ties inside it, never against it
+17:27:45 INFO    qmine.llm:     ! delivery_auditor: pinned with NO FALLBACK — nothing reachable meets this role's 200,000-token context need in another lab, so a single provider outage silently removes this role from the run
+17:27:45 INFO    qmine.llm:     ! observer: pinned with NO FALLBACK — nothing reachable meets this role's 200,000-token context need in another lab, so a single provider outage silently removes this role from the run
+17:27:45 INFO    qmine.llm:     ! reporter: chosen from the configured `capable_models` list; price only broke ties inside it, never against it
+17:27:45 INFO    qmine.llm:     ! researcher: zhipu:glm-5.3-flash publishes NO PRICE in the catalogue — the pin overrides `_eligible`'s exclusion of unpriced models. Its estimate reads $0.00 and the spend ledger will under-report: the cost is UNKNOWN, not free.
+17:27:45 INFO    qmine.llm:     ! taxonomy_critic: pinned with NO FALLBACK — nothing reachable meets this role's 128,000-token context need in another lab, so a single provider outage silently removes this role from the run
+17:27:45 INFO    qmine.llm:     ! annotator_b: qwen:qwen3.8-flash publishes NO PRICE in the catalogue — the pin overrides `_eligible`'s exclusion of unpriced models. Its estimate reads $0.00 and the spend ledger will under-report: the cost is UNKNOWN, not free.
+17:27:45 INFO    qmine.llm:     ! referee: zhipu:glm-5.3-flash publishes NO PRICE in the catalogue — the pin overrides `_eligible`'s exclusion of unpriced models. Its estimate reads $0.00 and the spend ledger will under-report: the cost is UNKNOWN, not free.
+17:27:45 INFO    qmine.llm: probing native structured output on 1 model(s) so a real call does not pay for the discovery
+17:27:46 INFO    langchain_openai.chat_models._client_utils: langchain-openai detected HTTP_PROXY, HTTPS_PROXY and no explicit `http_socket_options` / `http_client` / `http_async_client` / `openai_proxy`; skipping the custom `httpx` transport so httpx's env-proxy auto-detection applies. Pass `http_socket_options=[...]` to opt back into kernel-level TCP keepalive tuning on top of the env proxy.
+17:27:58 INFO    httpx2: HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+17:28:04 INFO    qmine.graph: P0 foundation — run edu-pool5, generation 1
+17:28:10 INFO    qmine.graph: gate p0_provider: PASSED — real agents: provider=routed
+17:28:10 INFO    qmine.graph: ✔ p0_foundation completed in 6.0s
+17:28:10 INFO    qmine.graph: P1 audit — profiling corpus
+17:28:10 INFO    qmine.graph:   2 snapshot(s) in this corpus: AI助手=1,829, 搜索=19,970
+17:28:10 INFO    qmine.graph:   ⚠ this corpus carries 2 label-like column(s) that no `--reference-columns` flag declared: source, l2
+17:28:10 INFO    qmine.graph: gate p1_reference_columns_declared: WARNED — the corpus carries source, l2 and the run declared NONE — the gold set and pilot are UNSTRATIFIED by legacy label and the blindness firewall is armed without those values
+17:28:11 INFO    qmine.graph: gate p1_minority_language_risk: PASSED — minority scripts total 16.7%. Test unified-versus-stratified explicitly with the decisive metrics; at this share both are defensible and the data should choose.
+17:28:11 INFO    qmine.graph: gate p1_template_coverage: PASSED — 9 phrasing families cover 9,204 rows (42.2% of the corpus; the share is reported, not gated — it is a property of the corpus) — the SEEDED patterns alone already match 42.2% of the corpus. Trimming mined groups cannot bring this under 40% — tighten the regexes in the domain profile instead. A family matching half the corpus is a language detector, not a phrasing template, and it will make the fragmentation metric meaningless.
+17:28:11 INFO    qmine.graph: ✔ p1_audit completed in 0.6s
+17:28:11 INFO    qmine.graph: P3a encoder bake-off — 3 candidates
+17:28:11 INFO    qmine.graph: P2a taxonomy — 5 researchers fanning out
+17:28:11 INFO    sentence_transformers.base.model: No device provided, using mps
+17:28:11 INFO    httpx: HTTP Request: HEAD https://huggingface.co/BAAI/bge-small-zh-v1.5/resolve/main/modules.json "HTTP/1.1 307 Temporary Redirect"
+Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+17:28:11 WARNING huggingface_hub.utils._http: Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+17:28:11 INFO    httpx: HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/BAAI/bge-small-zh-v1.5/7999e1d3359715c523056ef9478215996d62a620/modules.json "HTTP/1.1 200 OK"
+17:28:12 INFO    httpx: HTTP Request: HEAD https://huggingface.co/BAAI/bge-small-zh-v1.5/resolve/main/config_sentence_transformers.json "HTTP/1.1 307 Temporary Redirect"
+17:28:12 INFO    httpx: HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/BAAI/bge-small-zh-v1.5/7999e1d3359715c523056ef9478215996d62a620/config_sentence_transformers.json "HTTP/1.1 200 OK"
+17:28:12 INFO    sentence_transformers.base.model: Loading SentenceTransformer model from BAAI/bge-small-zh-v1.5.
+17:28:12 INFO    httpx2: HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+17:28:12 INFO    httpx: HTTP Request: HEAD https://huggingface.co/BAAI/bge-small-zh-v1.5/resolve/main/config_sentence_transformers.json "HTTP/1.1 307 Temporary Redirect"
+17:28:12 INFO    httpx: HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/BAAI/bge-small-zh-v1.5/7999e1d3359715c523056ef9478215996d62a620/config_sentence_transformers.json "HTTP/1.1 200 OK"
+17:28:12 INFO    httpx: HTTP Request: HEAD https://huggingface.co/BAAI/bge-small-zh-v1.5/resolve/main/README.md "HTTP/1.1 307 Temporary Redirect"
+17:28:13 INFO    httpx: HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/BAAI/bge-small-zh-v1.5/7999e1d3359715c523056ef9478215996d62a620/README.md "HTTP/1.1 200 OK"
+17:28:13 INFO    httpx: HTTP Request: HEAD https://huggingface.co/BAAI/bge-small-zh-v1.5/resolve/main/modules.json "HTTP/1.1 307 Temporary Redirect"
+17:28:13 INFO    httpx: HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/BAAI/bge-small-zh-v1.5/7999e1d3359715c523056ef9478215996d62a620/modules.json "HTTP/1.1 200 OK"
+17:28:13 INFO    httpx: HTTP Request: HEAD https://huggingface.co/BAAI/bge-small-zh-v1.5/resolve/main/sentence_bert_config.json "HTTP/1.1 307 Temporary Redirect"
+17:28:13 INFO    httpx: HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/BAAI/bge-small-zh-v1.5/7999e1d3359715c523056ef9478215996d62a620/sentence_bert_config.json "HTTP/1.1 200 OK"
+17:28:14 INFO    httpx: HTTP Request: HEAD https://huggingface.co/BAAI/bge-small-zh-v1.5/resolve/main/adapter_config.json "HTTP/1.1 404 Not Found"
+17:28:14 INFO    httpx: HTTP Request: HEAD https://huggingface.co/BAAI/bge-small-zh-v1.5/resolve/main/config.json "HTTP/1.1 307 Temporary Redirect"
+17:28:14 INFO    httpx: HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/BAAI/bge-small-zh-v1.5/7999e1d3359715c523056ef9478215996d62a620/config.json "HTTP/1.1 200 OK"
+  P0 foundation — run edu-pool5, generation 1
+  gate p0_provider: PASSED — real agents: provider=routed
+  ✔ p0_foundation completed in 6.0s
+  P1 audit — profiling corpus
+    2 snapshot(s) in this corpus: AI助手=1,829, 搜索=19,970
+    ⚠ this corpus carries 2 label-like column(s) that no `--reference-columns` flag declared: source, l2
+  gate p1_reference_columns_declared: WARNED — the corpus carries source, l2 and the run declared NONE — the gold set and pilot are UNSTRATIFIED by legacy label and the blindness firewall is armed without those values
+  gate p1_minority_language_risk: PASSED — minority scripts total 16.7%. Test unified-versus-stratified explicitly with the decisive metrics; at this share both are defensible and the data should choose.
+  gate p1_template_coverage: PASSED — 9 phrasing families cover 9,204 rows (42.2% of the corpus; the share is reported, not gated — it is a property of the corpus) — the SEEDED patterns alone already match 42.2% of the corpus. Trimming mined groups cannot bring this under 40% — tighten the regexes in the domain profile instead. A family matching half the corpus is a language detector, not a phrasing template, and it will make the fragmentation metric meaningless.
+  ✔ p1_audit completed in 0.6s
+  P3a encoder bake-off — 3 candidates
+  P2a taxonomy — 5 researchers fanning out
+Loading weights:   0%|          | 0/71 [00:00<?, ?it/s]Loading weights: 100%|██████████| 71/71 [00:00<00:00, 11594.14it/s]
+17:28:14 INFO    httpx: HTTP Request: HEAD https://huggingface.co/BAAI/bge-small-zh-v1.5/resolve/main/processor_config.json "HTTP/1.1 404 Not Found"
+17:28:15 INFO    httpx: HTTP Request: HEAD https://huggingface.co/BAAI/bge-small-zh-v1.5/resolve/main/preprocessor_config.json "HTTP/1.1 404 Not Found"
+17:28:15 INFO    httpx: HTTP Request: HEAD https://huggingface.co/BAAI/bge-small-zh-v1.5/resolve/main/video_preprocessor_config.json "HTTP/1.1 404 Not Found"
+17:28:15 INFO    httpx: HTTP Request: HEAD https://huggingface.co/BAAI/bge-small-zh-v1.5/resolve/main/preprocessor_config.json "HTTP/1.1 404 Not Found"
+17:28:15 INFO    httpx: HTTP Request: HEAD https://huggingface.co/BAAI/bge-small-zh-v1.5/resolve/main/tokenizer_config.json "HTTP/1.1 307 Temporary Redirect"
+17:28:16 INFO    httpx: HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/BAAI/bge-small-zh-v1.5/7999e1d3359715c523056ef9478215996d62a620/tokenizer_config.json "HTTP/1.1 200 OK"
+17:28:16 INFO    httpx: HTTP Request: HEAD https://huggingface.co/BAAI/bge-small-zh-v1.5/resolve/main/config.json "HTTP/1.1 307 Temporary Redirect"
+17:28:16 INFO    httpx: HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/BAAI/bge-small-zh-v1.5/7999e1d3359715c523056ef9478215996d62a620/config.json "HTTP/1.1 200 OK"
+17:28:16 INFO    httpx: HTTP Request: HEAD https://huggingface.co/BAAI/bge-small-zh-v1.5/resolve/main/config.json "HTTP/1.1 307 Temporary Redirect"
+17:28:16 INFO    httpx: HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/BAAI/bge-small-zh-v1.5/7999e1d3359715c523056ef9478215996d62a620/config.json "HTTP/1.1 200 OK"
+17:28:17 INFO    httpx: HTTP Request: HEAD https://huggingface.co/BAAI/bge-small-zh-v1.5/resolve/main/tokenizer_config.json "HTTP/1.1 307 Temporary Redirect"
+17:28:17 INFO    httpx: HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/BAAI/bge-small-zh-v1.5/7999e1d3359715c523056ef9478215996d62a620/tokenizer_config.json "HTTP/1.1 200 OK"
+17:28:17 INFO    httpx: HTTP Request: GET https://huggingface.co/api/models/BAAI/bge-small-zh-v1.5/tree/main/additional_chat_templates?recursive=false&expand=false "HTTP/1.1 404 Not Found"
+17:28:17 INFO    httpx: HTTP Request: GET https://huggingface.co/api/models/BAAI/bge-small-zh-v1.5/tree/main?recursive=true&expand=false "HTTP/1.1 200 OK"
+17:28:18 INFO    httpx: HTTP Request: HEAD https://huggingface.co/BAAI/bge-small-zh-v1.5/resolve/main/1_Pooling/config.json "HTTP/1.1 307 Temporary Redirect"
+17:28:18 INFO    httpx: HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/BAAI/bge-small-zh-v1.5/7999e1d3359715c523056ef9478215996d62a620/1_Pooling%2Fconfig.json "HTTP/1.1 200 OK"
+17:28:18 INFO    httpx: HTTP Request: GET https://huggingface.co/api/models/BAAI/bge-small-zh-v1.5 "HTTP/1.1 200 OK"
+17:28:19 INFO    httpx2: HTTP Request: POST https://open.bigmodel.cn/api/paas/v4/chat/completions "HTTP/1.1 400 Bad Request"
+17:28:19 INFO    qmine:   ~ researcher_pragmatic_intents !! 8.4s out 0 · glm-5.3-flash · BadRequestError
+17:28:19 WARNING qmine.llm: role=researcher_pragmatic_intents attempt=0 failed (BadRequestError: Error code: 400 - {'contentFilter': [{'level': 1, 'role': 'assistant'}], 'error': {'code': '1301', 'message': '系统检测到输入或生成内容可能包含不安全或敏感内容，请您避免输入易); transient transport error — retrying the same call
+17:28:21 INFO    httpx2: HTTP Request: POST https://open.bigmodel.cn/api/paas/v4/chat/completions "HTTP/1.1 400 Bad Request"
+17:28:21 INFO    qmine:   ~ researcher_pragmatic_intents !! 10.2s out 0 · glm-5.3-flash · BadRequestError
+17:28:21 WARNING qmine.llm: role=researcher_pragmatic_intents attempt=1 failed (BadRequestError: Error code: 400 - {'contentFilter': [{'level': 1, 'role': 'assistant'}], 'error': {'code': '1301', 'message': '系统检测到输入或生成内容可能包含不安全或敏感内容，请您避免输入易); transient transport error — retrying the same call
+17:28:35 INFO    sentence_transformers.base.model: No device provided, using mps
+17:28:36 INFO    httpx: HTTP Request: HEAD https://huggingface.co/BAAI/bge-base-zh-v1.5/resolve/main/modules.json "HTTP/1.1 307 Temporary Redirect"
+17:28:36 INFO    httpx2: HTTP Request: POST https://open.bigmodel.cn/api/paas/v4/chat/completions "HTTP/1.1 400 Bad Request"
+17:28:36 INFO    qmine:   ~ researcher_pragmatic_intents !! 25.4s out 0 · glm-5.3-flash · BadRequestError
+17:28:36 INFO    qmine.graph:   ⚠ researcher[pragmatic_intents] FAILED (provider content filter) — this angle contributed nothing; the taxonomy is designed without it
+17:28:36 INFO    httpx: HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/BAAI/bge-base-zh-v1.5/f03589ceff5aac7111bd60cfc7d497ca17ecac65/modules.json "HTTP/1.1 200 OK"
+17:28:37 INFO    httpx: HTTP Request: HEAD https://huggingface.co/BAAI/bge-base-zh-v1.5/resolve/main/config_sentence_transformers.json "HTTP/1.1 307 Temporary Redirect"
+17:28:37 INFO    httpx: HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/BAAI/bge-base-zh-v1.5/f03589ceff5aac7111bd60cfc7d497ca17ecac65/config_sentence_transformers.json "HTTP/1.1 200 OK"
+17:28:37 INFO    sentence_transformers.base.model: Loading SentenceTransformer model from BAAI/bge-base-zh-v1.5.
+17:28:37 INFO    httpx: HTTP Request: HEAD https://huggingface.co/BAAI/bge-base-zh-v1.5/resolve/main/config_sentence_transformers.json "HTTP/1.1 307 Temporary Redirect"
+17:28:37 INFO    httpx: HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/BAAI/bge-base-zh-v1.5/f03589ceff5aac7111bd60cfc7d497ca17ecac65/config_sentence_transformers.json "HTTP/1.1 200 OK"
+17:28:38 INFO    httpx: HTTP Request: HEAD https://huggingface.co/BAAI/bge-base-zh-v1.5/resolve/main/README.md "HTTP/1.1 307 Temporary Redirect"
+17:28:38 INFO    httpx: HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/BAAI/bge-base-zh-v1.5/f03589ceff5aac7111bd60cfc7d497ca17ecac65/README.md "HTTP/1.1 200 OK"
+17:28:38 INFO    httpx: HTTP Request: HEAD https://huggingface.co/BAAI/bge-base-zh-v1.5/resolve/main/modules.json "HTTP/1.1 307 Temporary Redirect"
+17:28:39 INFO    httpx: HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/BAAI/bge-base-zh-v1.5/f03589ceff5aac7111bd60cfc7d497ca17ecac65/modules.json "HTTP/1.1 200 OK"
+17:28:39 INFO    httpx: HTTP Request: HEAD https://huggingface.co/BAAI/bge-base-zh-v1.5/resolve/main/sentence_bert_config.json "HTTP/1.1 307 Temporary Redirect"
+17:28:39 INFO    httpx: HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/BAAI/bge-base-zh-v1.5/f03589ceff5aac7111bd60cfc7d497ca17ecac65/sentence_bert_config.json "HTTP/1.1 200 OK"
+17:28:40 INFO    httpx: HTTP Request: HEAD https://huggingface.co/BAAI/bge-base-zh-v1.5/resolve/main/adapter_config.json "HTTP/1.1 404 Not Found"
+17:28:40 INFO    httpx: HTTP Request: HEAD https://huggingface.co/BAAI/bge-base-zh-v1.5/resolve/main/config.json "HTTP/1.1 307 Temporary Redirect"
+17:28:40 INFO    httpx: HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/BAAI/bge-base-zh-v1.5/f03589ceff5aac7111bd60cfc7d497ca17ecac65/config.json "HTTP/1.1 200 OK"
+17:28:41 INFO    httpx: HTTP Request: HEAD https://huggingface.co/BAAI/bge-base-zh-v1.5/resolve/main/model.safetensors "HTTP/1.1 404 Not Found"
+    ~ researcher_pragmatic_intents !! 8.4s out 0 · glm-5.3-flash · BadRequestError
+    ~ researcher_pragmatic_intents !! 10.2s out 0 · glm-5.3-flash · BadRequestError
+    ~ researcher_pragmatic_intents !! 25.4s out 0 · glm-5.3-flash · BadRequestError
+    ⚠ researcher[pragmatic_intents] FAILED (provider content filter) — this angle contributed nothing; the taxonomy is designed without it
+Loading weights:   0%|          | 0/199 [00:00<?, ?it/s]Loading weights: 100%|██████████| 199/199 [00:00<00:00, 35028.81it/s]
+17:28:41 INFO    httpx: HTTP Request: GET https://huggingface.co/api/models/BAAI/bge-base-zh-v1.5 "HTTP/1.1 200 OK"
+17:28:42 INFO    httpx: HTTP Request: HEAD https://huggingface.co/BAAI/bge-base-zh-v1.5/resolve/main/processor_config.json "HTTP/1.1 404 Not Found"
+17:28:42 INFO    httpx: HTTP Request: GET https://huggingface.co/api/models/BAAI/bge-base-zh-v1.5/commits/main "HTTP/1.1 200 OK"
+17:28:42 INFO    httpx: HTTP Request: HEAD https://huggingface.co/BAAI/bge-base-zh-v1.5/resolve/main/preprocessor_config.json "HTTP/1.1 404 Not Found"
+17:28:42 INFO    httpx: HTTP Request: GET https://huggingface.co/api/models/BAAI/bge-base-zh-v1.5/discussions?p=0 "HTTP/1.1 200 OK"
+17:28:42 INFO    httpx: HTTP Request: HEAD https://huggingface.co/BAAI/bge-base-zh-v1.5/resolve/main/video_preprocessor_config.json "HTTP/1.1 404 Not Found"
+17:28:43 INFO    httpx: HTTP Request: GET https://huggingface.co/api/models/BAAI/bge-base-zh-v1.5/commits/refs%2Fpr%2F1 "HTTP/1.1 200 OK"
+17:28:43 INFO    httpx: HTTP Request: HEAD https://huggingface.co/BAAI/bge-base-zh-v1.5/resolve/main/preprocessor_config.json "HTTP/1.1 404 Not Found"
+17:28:43 INFO    httpx: HTTP Request: HEAD https://huggingface.co/BAAI/bge-base-zh-v1.5/resolve/refs%2Fpr%2F1/model.safetensors.index.json "HTTP/1.1 404 Not Found"
+17:28:43 INFO    httpx: HTTP Request: HEAD https://huggingface.co/BAAI/bge-base-zh-v1.5/resolve/refs%2Fpr%2F1/model.safetensors "HTTP/1.1 302 Found"
+17:28:43 INFO    httpx: HTTP Request: HEAD https://huggingface.co/BAAI/bge-base-zh-v1.5/resolve/main/tokenizer_config.json "HTTP/1.1 307 Temporary Redirect"
+17:28:44 INFO    httpx: HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/BAAI/bge-base-zh-v1.5/f03589ceff5aac7111bd60cfc7d497ca17ecac65/tokenizer_config.json "HTTP/1.1 200 OK"
+17:28:44 INFO    httpx: HTTP Request: HEAD https://huggingface.co/BAAI/bge-base-zh-v1.5/resolve/main/config.json "HTTP/1.1 307 Temporary Redirect"
+17:28:44 INFO    httpx: HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/BAAI/bge-base-zh-v1.5/f03589ceff5aac7111bd60cfc7d497ca17ecac65/config.json "HTTP/1.1 200 OK"
+17:28:45 INFO    httpx: HTTP Request: HEAD https://huggingface.co/BAAI/bge-base-zh-v1.5/resolve/main/config.json "HTTP/1.1 307 Temporary Redirect"
+17:28:45 INFO    httpx: HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/BAAI/bge-base-zh-v1.5/f03589ceff5aac7111bd60cfc7d497ca17ecac65/config.json "HTTP/1.1 200 OK"
+17:28:45 INFO    httpx: HTTP Request: HEAD https://huggingface.co/BAAI/bge-base-zh-v1.5/resolve/main/tokenizer_config.json "HTTP/1.1 307 Temporary Redirect"
+17:28:45 INFO    httpx: HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/BAAI/bge-base-zh-v1.5/f03589ceff5aac7111bd60cfc7d497ca17ecac65/tokenizer_config.json "HTTP/1.1 200 OK"
+17:28:46 INFO    httpx: HTTP Request: GET https://huggingface.co/api/models/BAAI/bge-base-zh-v1.5/tree/main/additional_chat_templates?recursive=false&expand=false "HTTP/1.1 404 Not Found"
+17:28:47 INFO    httpx: HTTP Request: GET https://huggingface.co/api/models/BAAI/bge-base-zh-v1.5/tree/main?recursive=true&expand=false "HTTP/1.1 200 OK"
+17:28:47 INFO    httpx: HTTP Request: HEAD https://huggingface.co/BAAI/bge-base-zh-v1.5/resolve/main/1_Pooling/config.json "HTTP/1.1 307 Temporary Redirect"
+17:28:47 INFO    httpx: HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/BAAI/bge-base-zh-v1.5/f03589ceff5aac7111bd60cfc7d497ca17ecac65/1_Pooling%2Fconfig.json "HTTP/1.1 200 OK"
+17:28:48 INFO    httpx: HTTP Request: GET https://huggingface.co/api/models/BAAI/bge-base-zh-v1.5 "HTTP/1.1 200 OK"
+17:28:52 INFO    httpx2: HTTP Request: POST https://open.bigmodel.cn/api/paas/v4/chat/completions "HTTP/1.1 200 OK"
+17:28:52 INFO    qmine:   ~ researcher_legacy_audit ok 41.3s out 3,965 · glm-5.3-flash · candidates=0, observations=5, contradictions=2, open_questions=4 · 证据明确声明:本语料不存在遗留分类体系(no legacy taxonomy)。按任务约定(Report that, a
+17:28:52 INFO    qmine.graph:   ⚠ researcher[legacy_audit] returned NO candidates — this angle contributed nothing to the taxonomy
+17:28:52 INFO    qmine.graph:   researcher[legacy_audit] → 0 candidates
+17:29:20 INFO    sentence_transformers.base.model: No device provided, using mps
+17:29:20 INFO    httpx: HTTP Request: HEAD https://huggingface.co/shibing624/text2vec-base-chinese/resolve/main/modules.json "HTTP/1.1 307 Temporary Redirect"
+17:29:21 INFO    httpx: HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/shibing624/text2vec-base-chinese/183bb99aa7af74355fb58d16edf8c13ae7c5433e/modules.json "HTTP/1.1 200 OK"
+17:29:21 INFO    httpx: HTTP Request: HEAD https://huggingface.co/shibing624/text2vec-base-chinese/resolve/main/config_sentence_transformers.json "HTTP/1.1 404 Not Found"
+17:29:21 INFO    sentence_transformers.base.model: Loading SentenceTransformer model from shibing624/text2vec-base-chinese.
+17:29:21 INFO    httpx: HTTP Request: HEAD https://huggingface.co/shibing624/text2vec-base-chinese/resolve/main/config_sentence_transformers.json "HTTP/1.1 404 Not Found"
+17:29:22 INFO    httpx: HTTP Request: HEAD https://huggingface.co/shibing624/text2vec-base-chinese/resolve/main/README.md "HTTP/1.1 307 Temporary Redirect"
+17:29:22 INFO    httpx: HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/shibing624/text2vec-base-chinese/183bb99aa7af74355fb58d16edf8c13ae7c5433e/README.md "HTTP/1.1 200 OK"
+17:29:23 INFO    httpx: HTTP Request: HEAD https://huggingface.co/shibing624/text2vec-base-chinese/resolve/main/modules.json "HTTP/1.1 307 Temporary Redirect"
+17:29:23 INFO    httpx: HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/shibing624/text2vec-base-chinese/183bb99aa7af74355fb58d16edf8c13ae7c5433e/modules.json "HTTP/1.1 200 OK"
+17:29:23 INFO    httpx: HTTP Request: HEAD https://huggingface.co/shibing624/text2vec-base-chinese/resolve/main/sentence_bert_config.json "HTTP/1.1 307 Temporary Redirect"
+17:29:23 INFO    httpx: HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/shibing624/text2vec-base-chinese/183bb99aa7af74355fb58d16edf8c13ae7c5433e/sentence_bert_config.json "HTTP/1.1 200 OK"
+17:29:24 INFO    httpx: HTTP Request: HEAD https://huggingface.co/shibing624/text2vec-base-chinese/resolve/main/adapter_config.json "HTTP/1.1 404 Not Found"
+17:29:24 INFO    httpx: HTTP Request: HEAD https://huggingface.co/shibing624/text2vec-base-chinese/resolve/main/config.json "HTTP/1.1 307 Temporary Redirect"
+17:29:24 INFO    httpx: HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/shibing624/text2vec-base-chinese/183bb99aa7af74355fb58d16edf8c13ae7c5433e/config.json "HTTP/1.1 200 OK"
+    ~ researcher_legacy_audit ok 41.3s out 3,965 · glm-5.3-flash · candidates=0, observations=5, contradictions=2, open_questions=4 · 证据明确声明:本语料不存在遗留分类体系(no legacy taxonomy)。按任务约定(Report that, a
+    ⚠ researcher[legacy_audit] returned NO candidates — this angle contributed nothing to the taxonomy
+    researcher[legacy_audit] → 0 candidates
+Loading weights:   0%|          | 0/199 [00:00<?, ?it/s]Loading weights: 100%|██████████| 199/199 [00:00<00:00, 10474.18it/s]
+17:29:25 INFO    httpx: HTTP Request: HEAD https://huggingface.co/shibing624/text2vec-base-chinese/resolve/main/processor_config.json "HTTP/1.1 404 Not Found"
+17:29:26 INFO    httpx: HTTP Request: HEAD https://huggingface.co/shibing624/text2vec-base-chinese/resolve/main/preprocessor_config.json "HTTP/1.1 404 Not Found"
+17:29:26 INFO    httpx: HTTP Request: HEAD https://huggingface.co/shibing624/text2vec-base-chinese/resolve/main/video_preprocessor_config.json "HTTP/1.1 404 Not Found"
+17:29:26 INFO    httpx: HTTP Request: HEAD https://huggingface.co/shibing624/text2vec-base-chinese/resolve/main/preprocessor_config.json "HTTP/1.1 404 Not Found"
+17:29:27 INFO    httpx: HTTP Request: HEAD https://huggingface.co/shibing624/text2vec-base-chinese/resolve/main/tokenizer_config.json "HTTP/1.1 307 Temporary Redirect"
+17:29:27 INFO    httpx: HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/shibing624/text2vec-base-chinese/183bb99aa7af74355fb58d16edf8c13ae7c5433e/tokenizer_config.json "HTTP/1.1 200 OK"
+17:29:27 INFO    httpx: HTTP Request: HEAD https://huggingface.co/shibing624/text2vec-base-chinese/resolve/main/config.json "HTTP/1.1 307 Temporary Redirect"
+17:29:28 INFO    httpx: HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/shibing624/text2vec-base-chinese/183bb99aa7af74355fb58d16edf8c13ae7c5433e/config.json "HTTP/1.1 200 OK"
+17:29:28 INFO    httpx: HTTP Request: HEAD https://huggingface.co/shibing624/text2vec-base-chinese/resolve/main/config.json "HTTP/1.1 307 Temporary Redirect"
+17:29:28 INFO    httpx: HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/shibing624/text2vec-base-chinese/183bb99aa7af74355fb58d16edf8c13ae7c5433e/config.json "HTTP/1.1 200 OK"
+17:29:29 INFO    httpx: HTTP Request: HEAD https://huggingface.co/shibing624/text2vec-base-chinese/resolve/main/tokenizer_config.json "HTTP/1.1 307 Temporary Redirect"
+17:29:29 INFO    httpx: HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/shibing624/text2vec-base-chinese/183bb99aa7af74355fb58d16edf8c13ae7c5433e/tokenizer_config.json "HTTP/1.1 200 OK"
+17:29:29 INFO    httpx: HTTP Request: GET https://huggingface.co/api/models/shibing624/text2vec-base-chinese/tree/main/additional_chat_templates?recursive=false&expand=false "HTTP/1.1 404 Not Found"
+17:29:30 INFO    httpx: HTTP Request: GET https://huggingface.co/api/models/shibing624/text2vec-base-chinese/tree/main?recursive=true&expand=false "HTTP/1.1 200 OK"
+17:29:30 INFO    httpx: HTTP Request: HEAD https://huggingface.co/shibing624/text2vec-base-chinese/resolve/main/1_Pooling/config.json "HTTP/1.1 307 Temporary Redirect"
+17:29:30 INFO    httpx: HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/shibing624/text2vec-base-chinese/183bb99aa7af74355fb58d16edf8c13ae7c5433e/1_Pooling%2Fconfig.json "HTTP/1.1 200 OK"
+17:29:31 INFO    httpx: HTTP Request: GET https://huggingface.co/api/models/shibing624/text2vec-base-chinese "HTTP/1.1 200 OK"
+17:30:14 INFO    qmine.graph:   chose shibing624/text2vec-base-chinese on stability; silhouette would have chosen BAAI/bge-base-zh-v1.5
+17:30:15 INFO    sentence_transformers.base.model: No device provided, using mps
+17:30:15 INFO    httpx: HTTP Request: HEAD https://huggingface.co/shibing624/text2vec-base-chinese/resolve/main/modules.json "HTTP/1.1 307 Temporary Redirect"
+17:30:16 INFO    httpx: HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/shibing624/text2vec-base-chinese/183bb99aa7af74355fb58d16edf8c13ae7c5433e/modules.json "HTTP/1.1 200 OK"
+17:30:16 INFO    httpx: HTTP Request: HEAD https://huggingface.co/shibing624/text2vec-base-chinese/resolve/main/config_sentence_transformers.json "HTTP/1.1 404 Not Found"
+17:30:16 INFO    sentence_transformers.base.model: Loading SentenceTransformer model from shibing624/text2vec-base-chinese.
+17:30:19 INFO    httpx: HTTP Request: HEAD https://huggingface.co/shibing624/text2vec-base-chinese/resolve/main/config_sentence_transformers.json "HTTP/1.1 404 Not Found"
+17:30:20 INFO    httpx: HTTP Request: HEAD https://huggingface.co/shibing624/text2vec-base-chinese/resolve/main/README.md "HTTP/1.1 307 Temporary Redirect"
+17:30:20 INFO    httpx: HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/shibing624/text2vec-base-chinese/183bb99aa7af74355fb58d16edf8c13ae7c5433e/README.md "HTTP/1.1 200 OK"
+17:30:21 INFO    httpx: HTTP Request: HEAD https://huggingface.co/shibing624/text2vec-base-chinese/resolve/main/modules.json "HTTP/1.1 307 Temporary Redirect"
+17:30:21 INFO    httpx: HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/shibing624/text2vec-base-chinese/183bb99aa7af74355fb58d16edf8c13ae7c5433e/modules.json "HTTP/1.1 200 OK"
+17:30:21 INFO    httpx: HTTP Request: HEAD https://huggingface.co/shibing624/text2vec-base-chinese/resolve/main/sentence_bert_config.json "HTTP/1.1 307 Temporary Redirect"
+17:30:21 INFO    httpx: HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/shibing624/text2vec-base-chinese/183bb99aa7af74355fb58d16edf8c13ae7c5433e/sentence_bert_config.json "HTTP/1.1 200 OK"
+17:30:22 INFO    httpx: HTTP Request: HEAD https://huggingface.co/shibing624/text2vec-base-chinese/resolve/main/adapter_config.json "HTTP/1.1 404 Not Found"
+17:30:22 INFO    httpx: HTTP Request: HEAD https://huggingface.co/shibing624/text2vec-base-chinese/resolve/main/config.json "HTTP/1.1 307 Temporary Redirect"
+17:30:23 INFO    httpx: HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/shibing624/text2vec-base-chinese/183bb99aa7af74355fb58d16edf8c13ae7c5433e/config.json "HTTP/1.1 200 OK"
+    chose shibing624/text2vec-base-chinese on stability; silhouette would have chosen BAAI/bge-base-zh-v1.5
+Loading weights:   0%|          | 0/199 [00:00<?, ?it/s]Loading weights: 100%|██████████| 199/199 [00:00<00:00, 5097.82it/s]
+17:30:23 INFO    httpx: HTTP Request: HEAD https://huggingface.co/shibing624/text2vec-base-chinese/resolve/main/processor_config.json "HTTP/1.1 404 Not Found"
+17:30:24 INFO    httpx: HTTP Request: HEAD https://huggingface.co/shibing624/text2vec-base-chinese/resolve/main/preprocessor_config.json "HTTP/1.1 404 Not Found"
+17:30:24 INFO    httpx: HTTP Request: HEAD https://huggingface.co/shibing624/text2vec-base-chinese/resolve/main/video_preprocessor_config.json "HTTP/1.1 404 Not Found"
+17:30:25 INFO    httpx: HTTP Request: HEAD https://huggingface.co/shibing624/text2vec-base-chinese/resolve/main/preprocessor_config.json "HTTP/1.1 404 Not Found"
+17:30:25 INFO    httpx: HTTP Request: HEAD https://huggingface.co/shibing624/text2vec-base-chinese/resolve/main/tokenizer_config.json "HTTP/1.1 307 Temporary Redirect"
+17:30:25 INFO    httpx: HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/shibing624/text2vec-base-chinese/183bb99aa7af74355fb58d16edf8c13ae7c5433e/tokenizer_config.json "HTTP/1.1 200 OK"
+17:30:26 INFO    httpx: HTTP Request: HEAD https://huggingface.co/shibing624/text2vec-base-chinese/resolve/main/config.json "HTTP/1.1 307 Temporary Redirect"
+17:30:26 INFO    httpx: HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/shibing624/text2vec-base-chinese/183bb99aa7af74355fb58d16edf8c13ae7c5433e/config.json "HTTP/1.1 200 OK"
+17:30:27 INFO    httpx: HTTP Request: HEAD https://huggingface.co/shibing624/text2vec-base-chinese/resolve/main/config.json "HTTP/1.1 307 Temporary Redirect"
+17:30:27 INFO    httpx: HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/shibing624/text2vec-base-chinese/183bb99aa7af74355fb58d16edf8c13ae7c5433e/config.json "HTTP/1.1 200 OK"
+17:30:27 INFO    httpx: HTTP Request: HEAD https://huggingface.co/shibing624/text2vec-base-chinese/resolve/main/tokenizer_config.json "HTTP/1.1 307 Temporary Redirect"
+17:30:27 INFO    httpx: HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/shibing624/text2vec-base-chinese/183bb99aa7af74355fb58d16edf8c13ae7c5433e/tokenizer_config.json "HTTP/1.1 200 OK"
+17:30:28 INFO    httpx: HTTP Request: GET https://huggingface.co/api/models/shibing624/text2vec-base-chinese/tree/main/additional_chat_templates?recursive=false&expand=false "HTTP/1.1 404 Not Found"
+17:30:28 INFO    httpx: HTTP Request: GET https://huggingface.co/api/models/shibing624/text2vec-base-chinese/tree/main?recursive=true&expand=false "HTTP/1.1 200 OK"
+17:30:29 INFO    httpx: HTTP Request: HEAD https://huggingface.co/shibing624/text2vec-base-chinese/resolve/main/1_Pooling/config.json "HTTP/1.1 307 Temporary Redirect"
+17:30:29 INFO    httpx: HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/shibing624/text2vec-base-chinese/183bb99aa7af74355fb58d16edf8c13ae7c5433e/1_Pooling%2Fconfig.json "HTTP/1.1 200 OK"
+17:30:30 INFO    httpx: HTTP Request: GET https://huggingface.co/api/models/shibing624/text2vec-base-chinese "HTTP/1.1 200 OK"
+17:31:53 INFO    httpx2: HTTP Request: POST https://open.bigmodel.cn/api/paas/v4/chat/completions "HTTP/1.1 200 OK"
+17:31:55 INFO    primp: response: https://en.wikipedia.org/w/api.php?action=opensearch&profile=fuzzy&limit=1&search=%E4%B8%AD%E6%96%87%E6%90%9C%E7%B4%A2%E6%97%A5%E5%BF%97%20%E6%9F%A5%E8%AF%A2%E6%84%8F%E5%9B%BE%E5%88%86%E7%B1%BB%20%E4%BF%A1%E6%81%AF%E7%B1%BB%20%E5%AF%BC%E8%88%AA%E7%B1%BB%20%E4%BA%8B%E5%8A%A1%E7%B1%BB%20%E7%A0%94%E7%A9%B6 200
+17:31:55 INFO    primp: response: https://en.wikipedia.org/w/api.php?action=opensearch&profile=fuzzy&limit=1&search=Jansen%20Booth%20Spink%202008%20determining%20informational%20navigational%20transactional%20intent%20web%20queries%20distribution 200
+17:31:55 INFO    primp: response: https://en.wikipedia.org/w/api.php?action=opensearch&profile=fuzzy&limit=1&search=Li%20Roth%202002%20question%20classification%20six%20coarse%20classes%20entity%20description%20human%20location%20numeric%20abbreviation 200
+17:31:55 INFO    primp: response: https://en.wikipedia.org/w/api.php?action=opensearch&profile=fuzzy&limit=1&search=e-commerce%20search%20query%20intent%20taxonomy%20five%20categories%20SIGIR%20paper 200
+17:31:56 INFO    primp: response: https://en.wikipedia.org/w/api.php?action=opensearch&profile=fuzzy&limit=1&search=Rose%20Levinson%202004%20framework%20classifying%20user%20goals%20web%20queries%20direct%20answer%20locate%20advice 200
+17:31:56 INFO    primp: response: https://en.wikipedia.org/w/api.php?action=opensearch&profile=fuzzy&limit=1&search=Broder%202002%20taxonomy%20of%20web%20search%20queries%20navigational%20informational%20transactional 200
+17:31:59 INFO    ddgs.ddgs: Error in engine grokipedia: TimeoutException(TimeoutError('error sending request for url (https://grokipedia.com/api/typeahead?query=Li+Roth+2002+question+classification+six+coarse+classes+entity+description+human+location+numeric+abbreviation&limit=1) > operation timed out'))
+17:31:59 INFO    ddgs.ddgs: Error in engine grokipedia: TimeoutException(TimeoutError('error sending request for url (https://grokipedia.com/api/typeahead?query=Broder+2002+taxonomy+of+web+search+queries+navigational+informational+transactional&limit=1) > operation timed out'))
+17:31:59 INFO    ddgs.ddgs: Error in engine grokipedia: TimeoutException(TimeoutError('error sending request for url (https://grokipedia.com/api/typeahead?query=Jansen+Booth+Spink+2008+determining+informational+navigational+transactional+intent+web+queries+distribution&limit=1) > operation timed out'))
+17:31:59 INFO    ddgs.ddgs: Error in engine grokipedia: TimeoutException(TimeoutError('error sending request for url (https://grokipedia.com/api/typeahead?query=e-commerce+search+query+intent+taxonomy+five+categories+SIGIR+paper&limit=1) > operation timed out'))
+17:31:59 INFO    ddgs.ddgs: Error in engine grokipedia: TimeoutException(TimeoutError('error sending request for url (https://grokipedia.com/api/typeahead?query=Rose+Levinson+2004+framework+classifying+user+goals+web+queries+direct+answer+locate+advice&limit=1) > operation timed out'))
+17:31:59 INFO    ddgs.ddgs: Error in engine grokipedia: TimeoutException(TimeoutError('error sending request for url (https://grokipedia.com/api/typeahead?query=%E4%B8%AD%E6%96%87%E6%90%9C%E7%B4%A2%E6%97%A5%E5%BF%97+%E6%9F%A5%E8%AF%A2%E6%84%8F%E5%9B%BE%E5%88%86%E7%B1%BB+%E4%BF%A1%E6%81%AF%E7%B1%BB+%E5%AF%BC%E8%88%AA%E7%B1%BB+%E4%BA%8B%E5%8A%A1%E7%B1%BB+%E7%A0%94%E7%A9%B6&limit=1) > operation timed out'))
+17:32:01 INFO    httpx: HTTP Request: POST https://html.duckduckgo.com/html/ "HTTP/2 200 OK"
+17:32:01 INFO    httpx: HTTP Request: POST https://html.duckduckgo.com/html/ "HTTP/2 200 OK"
+17:32:01 INFO    primp: response: https://search.yahoo.com/search;_ylt=hATa4eTHPvFkVpEvztlWJs5x;_ylu=iEJ7lJZaD40rYrXMWlpgadqk2BIs57UmW6rMpWt-zKhg2fY?p=e-commerce+search+query+intent+taxonomy+five+categories+SIGIR+paper 200
+17:32:01 INFO    httpx: HTTP Request: POST https://html.duckduckgo.com/html/ "HTTP/2 200 OK"
+17:32:01 INFO    primp: response: https://search.brave.com/search?q=%E4%B8%AD%E6%96%87%E6%90%9C%E7%B4%A2%E6%97%A5%E5%BF%97+%E6%9F%A5%E8%AF%A2%E6%84%8F%E5%9B%BE%E5%88%86%E7%B1%BB+%E4%BF%A1%E6%81%AF%E7%B1%BB+%E5%AF%BC%E8%88%AA%E7%B1%BB+%E4%BA%8B%E5%8A%A1%E7%B1%BB+%E7%A0%94%E7%A9%B6&source=web 200
+17:32:01 INFO    primp: response: https://search.brave.com/search?q=Jansen+Booth+Spink+2008+determining+informational+navigational+transactional+intent+web+queries+distribution&source=web 200
+17:32:02 INFO    primp: response: https://www.startpage.com/ 200
+17:32:02 INFO    primp: response: https://www.mojeek.com/search?q=Broder+2002+taxonomy+of+web+search+queries+navigational+informational+transactional 200
+17:32:02 INFO    primp: response: https://www.startpage.com/ 200
+17:32:02 INFO    primp: response: https://www.mojeek.com/search?q=Jansen+Booth+Spink+2008+determining+informational+navigational+transactional+intent+web+queries+distribution 200
+17:32:03 INFO    primp: response: https://www.startpage.com/sp/search 200
+17:32:03 INFO    primp: response: https://www.startpage.com/sp/search 200
+17:32:04 INFO    qmine.graph:   encoded (21799, 768) (computed)
+17:32:04 INFO    qmine.graph: P3b sparse block — char TF-IDF → SVD
+17:32:05 INFO    primp: response: https://www.startpage.com/ 200
+17:32:07 INFO    primp: response: https://www.startpage.com/sp/search 200
+17:32:07 INFO    qmine.graph:   ⚠ grid proposal for alpha ABORTED — payload contains 'admission_score_line' — the proposer must not see scores, or its additions stop being pre-registered
+17:32:07 INFO    qmine.graph: P3c alpha sweep — [0.0, 0.1, 0.2, 0.3, 0.5]
+17:32:07 INFO    primp: response: https://search.brave.com/search?q=Broder+2002+taxonomy+of+web+search+queries+navigational+informational+transactional&source=web 200
+17:32:17 INFO    httpx2: HTTP Request: POST https://open.bigmodel.cn/api/paas/v4/chat/completions "HTTP/1.1 200 OK"
+17:32:17 INFO    httpx: HTTP Request: GET https://sigir-ecom.github.io/eCom25Papers/paper_24.pdf "HTTP/1.1 200 OK"
+17:32:18 INFO    primp: response: https://en.wikipedia.org/w/api.php?action=opensearch&profile=fuzzy&limit=1&search=%22A%20Taxonomy%20of%20Queries%20for%20E-commerce%20Search%22%20Guo%202018%20categories%20%22product%20specific%22%20%22category%20specific%22%20intent 200
+17:32:18 INFO    primp: response: https://en.wikipedia.org/w/api.php?action=opensearch&profile=fuzzy&limit=1&search=query%20intent%20taxonomy%20%22advice%22%20%22locate%22%20%22direct%20answer%22%20education%20search%20log%20Chinese%20study 200
+17:32:20 INFO    httpx: HTTP Request: GET https://courses.ischool.berkeley.edu/i141/f07/resources/rose_www04.pdf "HTTP/1.1 200 OK"
+17:32:22 INFO    ddgs.ddgs: Error in engine grokipedia: TimeoutException(TimeoutError('error sending request for url (https://grokipedia.com/api/typeahead?query=query+intent+taxonomy+%22advice%22+%22locate%22+%22direct+answer%22+education+search+log+Chinese+study&limit=1) > operation timed out'))
+17:32:22 INFO    ddgs.ddgs: Error in engine grokipedia: TimeoutException(TimeoutError('error sending request for url (https://grokipedia.com/api/typeahead?query=%22A+Taxonomy+of+Queries+for+E-commerce+Search%22+Guo+2018+categories+%22product+specific%22+%22category+specific%22+intent&limit=1) > operation timed out'))
+17:32:23 INFO    primp: response: https://search.brave.com/search?q=query+intent+taxonomy+%22advice%22+%22locate%22+%22direct+answer%22+education+search+log+Chinese+study&source=web 200
+17:32:25 INFO    primp: response: https://www.mojeek.com/search?q=%22A+Taxonomy+of+Queries+for+E-commerce+Search%22+Guo+2018+categories+%22product+specific%22+%22category+specific%22+intent 200
+17:32:27 INFO    ddgs.ddgs: Error in engine startpage: TimeoutException(TimeoutError('error sending request for url (https://www.startpage.com/) > operation timed out'))
+17:32:28 INFO    httpx: HTTP Request: POST https://html.duckduckgo.com/html/ "HTTP/2 200 OK"
+17:32:28 INFO    primp: response: https://search.yahoo.com/search;_ylt=UAf-6LS3Dk8mj1h1hwbZtX4j;_ylu=WZKBcp9rXoZlXYM0KqHa9pUDwn6yo1QXRo7ggODTv5sOrRc?p=%22A+Taxonomy+of+Queries+for+E-commerce+Search%22+Guo+2018+categories+%22product+specific%22+%22category+specific%22+intent 200
+17:32:29 INFO    primp: response: https://search.brave.com/search?q=%22A+Taxonomy+of+Queries+for+E-commerce+Search%22+Guo+2018+categories+%22product+specific%22+%22category+specific%22+intent&source=web 200
+17:32:38 INFO    httpx2: HTTP Request: POST https://open.bigmodel.cn/api/paas/v4/chat/completions "HTTP/1.1 200 OK"
+17:32:38 INFO    httpx: HTTP Request: GET https://zhuanlan.zhihu.com/p/511131317 "HTTP/1.1 403 Forbidden"
+17:32:39 INFO    httpx: HTTP Request: GET https://www.cnblogs.com/bonelee/p/7000113.html "HTTP/1.1 200 OK"
+17:32:39 INFO    primp: response: https://en.wikipedia.org/w/api.php?action=opensearch&profile=fuzzy&limit=1&search=Yin%20Shah%202010%20WSDM%20%22taxonomy%20of%20web%20search%20intents%20for%20name%20entity%20queries%22%20closed%20open%20intent 200
+17:32:39 INFO    primp: response: https://en.wikipedia.org/w/api.php?action=opensearch&profile=fuzzy&limit=1&search=Rose%20Levinson%20%22understanding%20user%20goals%22%20subcategories%20navigational%20%22go%20to%22%20%22find%22%20informational%20locate%20advice 200
+17:32:43 INFO    ddgs.ddgs: Error in engine grokipedia: TimeoutException(TimeoutError('error sending request for url (https://grokipedia.com/api/typeahead?query=Yin+Shah+2010+WSDM+%22taxonomy+of+web+search+intents+for+name+entity+queries%22+closed+open+intent&limit=1) > operation timed out'))
+17:32:43 INFO    ddgs.ddgs: Error in engine grokipedia: TimeoutException(TimeoutError('error sending request for url (https://grokipedia.com/api/typeahead?query=Rose+Levinson+%22understanding+user+goals%22+subcategories+navigational+%22go+to%22+%22find%22+informational+locate+advice&limit=1) > operation timed out'))
+17:32:44 INFO    primp: response: https://search.brave.com/search?q=Yin+Shah+2010+WSDM+%22taxonomy+of+web+search+intents+for+name+entity+queries%22+closed+open+intent&source=web 429
+17:32:45 INFO    httpx: HTTP Request: POST https://html.duckduckgo.com/html/ "HTTP/2 200 OK"
+17:32:46 INFO    primp: response: https://www.mojeek.com/search?q=Yin+Shah+2010+WSDM+%22taxonomy+of+web+search+intents+for+name+entity+queries%22+closed+open+intent 200
+17:32:47 INFO    primp: response: https://www.startpage.com/ 200
+17:32:48 INFO    primp: response: https://www.startpage.com/sp/search 200
+17:32:48 INFO    httpx: HTTP Request: POST https://html.duckduckgo.com/html/ "HTTP/2 200 OK"
+17:32:48 INFO    primp: response: https://search.brave.com/search?q=Rose+Levinson+%22understanding+user+goals%22+subcategories+navigational+%22go+to%22+%22find%22+informational+locate+advice&source=web 429
+17:32:51 INFO    primp: response: https://www.mojeek.com/search?q=Rose+Levinson+%22understanding+user+goals%22+subcategories+navigational+%22go+to%22+%22find%22+informational+locate+advice 200
+17:32:59 INFO    qmine:   ~ researcher_log_reading ok 288.3s out 27,219 · moonshotai/kimi-k3 · candidates=12, observations=10, contradictions=3, open_questions=5 · 按裸校名检索高校信息 → institution_name_lookup
+17:32:59 INFO    qmine.graph:   researcher[log_reading] → 12 candidates
+17:33:10 INFO    httpx2: HTTP Request: POST https://open.bigmodel.cn/api/paas/v4/chat/completions "HTTP/1.1 200 OK"
+17:33:11 INFO    httpx: HTTP Request: GET https://en.wikipedia.org/wiki/User_intent "HTTP/1.1 200 OK"
+17:33:11 INFO    httpx: HTTP Request: GET https://psondhiblog.wordpress.com/wp-content/uploads/2018/09/p1245-sondhi1.pdf "HTTP/1.1 200 OK"
+17:33:11 INFO    primp: response: https://en.wikipedia.org/w/api.php?action=opensearch&profile=fuzzy&limit=1&search=Hashemi%20%22An%20Intent%20Taxonomy%20for%20Questions%20Asked%20in%20Web%20Search%22%20CHIIR%202021%20categories%20abstractive%20extractive%20conversational 200
+17:33:15 INFO    ddgs.ddgs: Error in engine grokipedia: TimeoutException(TimeoutError('error sending request for url (https://grokipedia.com/api/typeahead?query=Hashemi+%22An+Intent+Taxonomy+for+Questions+Asked+in+Web+Search%22+CHIIR+2021+categories+abstractive+extractive+conversational&limit=1) > operation timed out'))
+17:33:16 INFO    primp: response: https://search.brave.com/search?q=Hashemi+%22An+Intent+Taxonomy+for+Questions+Asked+in+Web+Search%22+CHIIR+2021+categories+abstractive+extractive+conversational&source=web 200
+17:33:23 INFO    httpx2: HTTP Request: POST https://open.bigmodel.cn/api/paas/v4/chat/completions "HTTP/1.1 200 OK"
+17:33:25 INFO    httpx: HTTP Request: GET https://marksanderson.org/files/papers/CHIIR21b.pdf "HTTP/1.1 200 OK"
+17:34:21 INFO    qmine.graph: ✔ p3_represent completed in 370.3s
+17:34:43 INFO    httpx2: HTTP Request: POST https://open.bigmodel.cn/api/paas/v4/chat/completions "HTTP/1.1 200 OK"
+17:34:44 INFO    primp: response: https://en.wikipedia.org/w/api.php?action=opensearch&profile=fuzzy&limit=1&search=%E5%B9%BF%E5%91%8A%E6%B3%95%20%E7%AC%AC%E4%BA%8C%E5%8D%81%E5%9B%9B%E6%9D%A1%20%E6%95%99%E8%82%B2%E5%9F%B9%E8%AE%AD%E5%B9%BF%E5%91%8A%20%E4%BF%9D%E8%AF%81%E6%80%A7%E6%89%BF%E8%AF%BA%20%E5%8D%87%E5%AD%A6%20%E9%80%9A%E8%BF%87%E8%80%83%E8%AF%95%20%E8%8E%B7%E5%BE%97%E8%AF%81%E4%B9%A6 200
+17:34:44 INFO    primp: response: https://en.wikipedia.org/w/api.php?action=opensearch&profile=fuzzy&limit=1&search=%E5%85%AD%E5%90%88%E5%BD%A9%20%E6%89%93%E4%B8%80%E7%94%9F%E8%82%96%20%E6%89%93%E4%B8%80%E6%95%B0%E5%AD%97%20%E8%B0%9C%E8%AF%AD%20%E5%BC%95%E6%B5%81%20%E7%BD%91%E7%BB%9C%E8%B5%8C%E5%8D%9A%20%E8%B0%90%E9%9F%B3 200
+17:34:44 INFO    primp: response: https://en.wikipedia.org/w/api.php?action=opensearch&profile=fuzzy&limit=1&search=%E6%95%99%E8%82%B2%E9%83%A8%20%E5%BF%97%E6%84%BF%E5%A1%AB%E6%8A%A5%20%E8%AF%88%E9%AA%97%20%E9%A2%84%E8%AD%A6%20%E9%AB%98%E4%BB%B7%E5%BF%97%E6%84%BF%E5%A1%AB%E6%8A%A5%E5%92%A8%E8%AF%A2%20%E6%9C%8D%E5%8A%A1 200
+17:34:46 INFO    ddgs.ddgs: Error in engine grokipedia: DDGSException('ConnectError: ConnectError(\'error sending request for url (https://grokipedia.com/api/typeahead?query=%E6%95%99%E8%82%B2%E9%83%A8+%E5%BF%97%E6%84%BF%E5%A1%AB%E6%8A%A5+%E8%AF%88%E9%AA%97+%E9%A2%84%E8%AD%A6+%E9%AB%98%E4%BB%B7%E5%BF%97%E6%84%BF%E5%A1%AB%E6%8A%A5%E5%92%A8%E8%AF%A2+%E6%9C%8D%E5%8A%A1&limit=1) > client error (Connect) > invalid peer certificate: certificate not valid for name "grokipedia.com"; certificate is only valid for DnsName("*.extern.facebook.com") or DnsName("extern.facebook.com")\')')
+17:34:47 INFO    primp: response: https://search.brave.com/search?q=%E6%95%99%E8%82%B2%E9%83%A8+%E5%BF%97%E6%84%BF%E5%A1%AB%E6%8A%A5+%E8%AF%88%E9%AA%97+%E9%A2%84%E8%AD%A6+%E9%AB%98%E4%BB%B7%E5%BF%97%E6%84%BF%E5%A1%AB%E6%8A%A5%E5%92%A8%E8%AF%A2+%E6%9C%8D%E5%8A%A1&source=web 200
+17:34:47 INFO    ddgs.ddgs: Error in engine grokipedia: DDGSException('ConnectError: ConnectError(\'error sending request for url (https://grokipedia.com/api/typeahead?query=%E5%85%AD%E5%90%88%E5%BD%A9+%E6%89%93%E4%B8%80%E7%94%9F%E8%82%96+%E6%89%93%E4%B8%80%E6%95%B0%E5%AD%97+%E8%B0%9C%E8%AF%AD+%E5%BC%95%E6%B5%81+%E7%BD%91%E7%BB%9C%E8%B5%8C%E5%8D%9A+%E8%B0%90%E9%9F%B3&limit=1) > client error (Connect) > invalid peer certificate: certificate not valid for name "grokipedia.com"; certificate is only valid for DnsName("*.extern.facebook.com") or DnsName("extern.facebook.com")\')')
+17:34:48 INFO    ddgs.ddgs: Error in engine grokipedia: DDGSException('ConnectError: ConnectError(\'error sending request for url (https://grokipedia.com/api/typeahead?query=%E5%B9%BF%E5%91%8A%E6%B3%95+%E7%AC%AC%E4%BA%8C%E5%8D%81%E5%9B%9B%E6%9D%A1+%E6%95%99%E8%82%B2%E5%9F%B9%E8%AE%AD%E5%B9%BF%E5%91%8A+%E4%BF%9D%E8%AF%81%E6%80%A7%E6%89%BF%E8%AF%BA+%E5%8D%87%E5%AD%A6+%E9%80%9A%E8%BF%87%E8%80%83%E8%AF%95+%E8%8E%B7%E5%BE%97%E8%AF%81%E4%B9%A6&limit=1) > client error (Connect) > invalid peer certificate: certificate not valid for name "grokipedia.com"; certificate is only valid for DnsName("*.extern.facebook.com") or DnsName("extern.facebook.com")\')')
+17:34:49 INFO    httpx: HTTP Request: POST https://html.duckduckgo.com/html/ "HTTP/2 200 OK"
+17:34:49 INFO    primp: response: https://search.yahoo.com/search;_ylt=xF0qgrSAuefVe1UAxkxfNzj5;_ylu=Z71y_-e-96e5FxM0GRNL63Ofz6RhuBnc-iHpgE4lviwP1fs?p=%E5%B9%BF%E5%91%8A%E6%B3%95+%E7%AC%AC%E4%BA%8C%E5%8D%81%E5%9B%9B%E6%9D%A1+%E6%95%99%E8%82%B2%E5%9F%B9%E8%AE%AD%E5%B9%BF%E5%91%8A+%E4%BF%9D%E8%AF%81%E6%80%A7%E6%89%BF%E8%AF%BA+%E5%8D%87%E5%AD%A6+%E9%80%9A%E8%BF%87%E8%80%83%E8%AF%95+%E8%8E%B7%E5%BE%97%E8%AF%81%E4%B9%A6 200
+17:34:53 INFO    primp: response: https://www.startpage.com/ 200
+17:34:53 INFO    primp: response: https://www.startpage.com/sp/search 200
+17:34:55 INFO    httpx: HTTP Request: POST https://html.duckduckgo.com/html/ "HTTP/2 200 OK"
+17:37:49 INFO    httpx2: HTTP Request: POST https://open.bigmodel.cn/api/paas/v4/chat/completions "HTTP/1.1 200 OK"
+17:37:49 INFO    qmine:   ~ researcher_literature ok 578.8s out 20,565 · glm-5.3-flash · candidates=12, observations=10, contradictions=5, open_questions=7 · 查询院校办学信息 → institution_profile_lookup
+17:37:49 INFO    qmine.graph:   researcher[literature] → 12 candidates (web-researched)
+17:40:37 INFO    httpx2: HTTP Request: POST https://open.bigmodel.cn/api/paas/v4/chat/completions "HTTP/1.1 200 OK"
+17:40:37 INFO    qmine:   ~ researcher_risk_compliance ok 746.3s out 28,529 · glm-5.3-flash · candidates=11, observations=7, contradictions=3, open_questions=5 · 破译『打一生肖』博彩谜底 → decode_lottery_riddle
+17:40:37 INFO    qmine.graph:   researcher[risk_compliance] → 11 candidates (web-researched)
+17:40:37 INFO    qmine.graph:   ⚠ 1/5 research angles failed — the taxonomy rests on 4: pragmatic_intents missing
+17:40:38 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+17:47:42 INFO    qmine:   ~ taxonomy_architect ok 425.0s out 31,307 · deepseek-v4-pro · nodes=20, rules=17, dropped_candidates=6 · 按裸校名检索院校信息 → INSTITUTION_NAME_LOOKUP
+17:47:42 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+17:53:04 INFO    qmine:   ~ taxonomy_architect ok 322.2s out 23,971 · deepseek-v4-pro · rules=40 · 子资源词说明用户要进入该校某个官方页面或文件，而不是了解学校本身。
+17:53:04 INFO    qmine.graph:   rule writer → 40 rules over 190 class pairs (57 total after merge)
+17:53:05 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+17:57:15 INFO    qmine:   ~ taxonomy_critic ok 251.0s out 17,936 · deepseek-v4-pro · findings=14 · overlap
+17:57:15 INFO    qmine.graph:   critic → 14 findings, verdict revise
+17:57:15 INFO    qmine.graph:   pilot skipped — fast 模式单标注员, 无第二判读可比对
+17:57:15 INFO    qmine.graph: gate p2a_pilot_agreement: SKIPPED — 标注一致性试点未运行 —— fast 模式单标注员 (a), 没有第二判读可比对; kappa、自洽上限与结构性/指南性混淆的拆分本次均未测量
+17:57:15 INFO    qmine.graph: gate p2a_taxonomy_shape: PASSED — 20 L1 intents, 57 adjudication rules the annotator can cite
+17:57:15 INFO    qmine.graph: ✔ p2a_taxonomy completed in 1744.7s
+17:57:15 INFO    qmine.graph: P4 algorithm battery — 3 K values × 6 algorithms
+17:57:15 INFO    qmine.graph: P2b gold — 3000 queries (13.8% of corpus, derived from corpus size), double-blind annotation
+17:57:15 INFO    qmine.graph:   single annotator (a) — no agreement measured
+17:57:16 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+17:57:16 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+17:57:16 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+17:57:16 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+17:57:16 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+17:57:16 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+17:57:16 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+17:57:16 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+17:57:20 INFO    qmine:   ~ annotator_a ok 4.3s out 1,268 · deepseek-v4-flash · labels=25 · 北部湾大学 → INSTITUTION_NAME_LOOKUP
+17:57:20 INFO    qmine:   ~ annotator_a ok 4.4s out 1,132 · deepseek-v4-flash · labels=25 · 南京医科大学 → INSTITUTION_NAME_LOOKUP
+17:57:20 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+17:57:20 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+17:57:20 INFO    qmine:   ~ annotator_a ok 4.6s out 1,272 · deepseek-v4-flash · labels=25 · 中国人事考试网 → GOVERNMENT_EXAM_PORTAL_NAV
+17:57:20 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+17:57:20 INFO    qmine:   ~ annotator_a ok 4.8s out 1,245 · deepseek-v4-flash · labels=25 · 宁夏医科大学 → INSTITUTION_NAME_LOOKUP
+17:57:20 INFO    qmine:   ~ annotator_a ok 5.0s out 1,261 · deepseek-v4-flash · labels=25 · 大连交通大学 → INSTITUTION_NAME_LOOKUP
+17:57:20 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+17:57:21 INFO    qmine:   ~ annotator_a ok 5.3s out 1,685 · deepseek-v4-flash · labels=25 · 西南医科大学 → INSTITUTION_NAME_LOOKUP
+17:57:21 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+17:57:21 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+17:57:21 INFO    qmine:   ~ annotator_a ok 6.2s out 1,608 · deepseek-v4-flash · labels=25 · 辽宁石油化工大学 → INSTITUTION_NAME_LOOKUP
+17:57:22 INFO    qmine:   ~ annotator_a ok 6.2s out 1,730 · deepseek-v4-flash · labels=25 · 徙怎么读 → CHARACTER_PRONUNCIATION_LO
+17:57:22 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+17:57:22 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+17:57:23 INFO    qmine:   ~ annotator_a ok 3.8s out 1,254 · deepseek-v4-flash · labels=25 · 7月的英文 → TRANSLATION_AND_TOOL_LOOKU
+17:57:24 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+17:57:24 INFO    qmine:   ~ annotator_a ok 4.8s out 1,313 · deepseek-v4-flash · labels=25 · 皮的笔顺 → STROKE_ORDER_LOOKUP
+17:57:24 INFO    qmine:   ~ annotator_a ok 4.6s out 1,283 · deepseek-v4-flash · labels=25 · 辽宁理工学院 → INSTITUTION_NAME_LOOKUP
+17:57:25 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+17:57:25 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+17:57:25 INFO    qmine:   ~ annotator_a ok 4.9s out 1,240 · deepseek-v4-flash · labels=25 · 泉州职业技术大学 → INSTITUTION_NAME_LOOKUP
+17:57:25 INFO    qmine.graph:   annotator[a] 12/120 batches · 300 rows
+17:57:25 INFO    qmine:   ~ annotator_a ok 5.2s out 1,320 · deepseek-v4-flash · labels=25 · 征集志愿什么时候填报怎么填 → ENROLLMENT_DELIBERATION
+17:57:25 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+17:57:25 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+17:57:26 INFO    qmine:   ~ annotator_a ok 4.7s out 1,321 · deepseek-v4-flash · labels=25 · geography → TRANSLATION_AND_TOOL_LOOKU
+17:57:26 INFO    qmine:   ~ annotator_a ok 5.8s out 1,832 · deepseek-v4-flash · labels=25 · 建党节打一准确生肖 → ZODIAC_RIDDLE_ANSWER
+17:57:26 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+17:57:26 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+17:57:27 INFO    qmine:   ~ annotator_a ok 5.1s out 1,400 · deepseek-v4-flash · labels=25 · 四川警察学院 → INSTITUTION_NAME_LOOKUP
+17:57:27 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+17:57:29 INFO    qmine:   ~ annotator_a ok 5.6s out 1,790 · deepseek-v4-flash · labels=25 · 晨的拼音 → CHARACTER_PRONUNCIATION_LO
+17:57:29 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+17:57:29 INFO    qmine:   ~ annotator_a ok 4.9s out 1,698 · deepseek-v4-flash · labels=25 · 吉林艺术学院 → INSTITUTION_NAME_LOOKUP
+17:57:30 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+17:57:30 INFO    qmine:   ~ annotator_a ok 5.1s out 1,321 · deepseek-v4-flash · labels=25 · bottle → TRANSLATION_AND_TOOL_LOOKU
+17:57:30 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+17:57:30 INFO    qmine:   ~ annotator_a ok 4.4s out 1,274 · deepseek-v4-flash · labels=25 · e → UNCLASSIFIABLE_OTHER
+17:57:30 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+17:57:31 INFO    qmine:   ~ annotator_a ok 4.6s out 1,220 · deepseek-v4-flash · labels=25 · 大数据技术应用主要学什么 → MAJOR_AND_CAREER_EXPLORATI
+17:57:31 INFO    qmine:   ~ annotator_a ok 6.0s out 1,770 · deepseek-v4-flash · labels=25 · 遵义医药高等专科学校 → INSTITUTION_NAME_LOOKUP
+17:57:31 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+17:57:31 INFO    qmine:   ~ annotator_a ok 4.7s out 1,260 · deepseek-v4-flash · labels=25 · 勾股定理公式 → HOMEWORK_ASSISTANCE
+17:57:31 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+17:57:31 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+17:57:32 INFO    qmine:   ~ annotator_a ok 6.1s out 1,879 · deepseek-v4-flash · labels=25 · 汉语国际教育 → UNCLASSIFIABLE_OTHER
+17:57:32 INFO    qmine.graph:   annotator[a] 24/120 batches · 600 rows
+17:57:33 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+17:57:34 INFO    qmine:   ~ annotator_a ok 4.7s out 1,223 · deepseek-v4-flash · labels=25 · meal → TRANSLATION_AND_TOOL_LOOKU
+17:57:34 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+17:57:34 INFO    qmine:   ~ annotator_a ok 4.7s out 1,279 · deepseek-v4-flash · labels=25 · 秦皇岛职业技术学院 → INSTITUTION_NAME_LOOKUP
+17:57:35 INFO    qmine:   ~ annotator_a ok 5.5s out 1,657 · deepseek-v4-flash · labels=25 · group → TRANSLATION_AND_TOOL_LOOKU
+17:57:35 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+17:57:35 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+17:57:35 INFO    qmine:   ~ annotator_a ok 5.7s out 1,845 · deepseek-v4-flash · labels=25 · trunk → TRANSLATION_AND_TOOL_LOOKU
+17:57:35 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+17:57:37 INFO    qmine:   ~ annotator_a ok 5.6s out 1,694 · deepseek-v4-flash · labels=25 · were → TRANSLATION_AND_TOOL_LOOKU
+17:57:37 INFO    qmine:   ~ annotator_a ok 4.3s out 1,222 · deepseek-v4-flash · labels=25 · major → TRANSLATION_AND_TOOL_LOOKU
+17:57:37 INFO    qmine:   ~ annotator_a ok 5.7s out 1,762 · deepseek-v4-flash · labels=25 · 教育局官网 → GOVERNMENT_EXAM_PORTAL_NAV
+17:57:37 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+17:57:37 INFO    qmine:   ~ annotator_a ok 5.7s out 1,645 · deepseek-v4-flash · labels=25 · 高考加油小程序 → ENROLLMENT_DELIBERATION
+17:57:37 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+17:57:37 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+17:57:37 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+17:57:39 INFO    qmine:   ~ annotator_a ok 5.1s out 1,343 · deepseek-v4-flash · labels=25 · 山东航空学院录取分数线2024 → ADMISSION_SCORE_LOOKUP
+17:57:39 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+17:57:39 INFO    qmine:   ~ annotator_a ok 4.9s out 1,363 · deepseek-v4-flash · labels=25 · 苏州工学院是一本还是二本 → INSTITUTION_TIER_VERDICT
+17:57:39 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+17:57:40 INFO    qmine:   ~ annotator_a ok 4.8s out 1,306 · deepseek-v4-flash · labels=25 · 德州职业技术学院 → INSTITUTION_NAME_LOOKUP
+17:57:40 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+17:57:41 INFO    qmine:   ~ annotator_a ok 6.4s out 1,859 · deepseek-v4-flash · labels=25 · mat → TRANSLATION_AND_TOOL_LOOKU
+17:57:41 INFO    qmine.graph:   annotator[a] 36/120 batches · 900 rows
+17:57:41 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+17:57:42 INFO    qmine:   ~ annotator_a ok 4.7s out 1,200 · deepseek-v4-flash · labels=25 · 河南理工大学2024录取分数线是多少 → ADMISSION_SCORE_LOOKUP
+17:57:42 INFO    qmine:   ~ annotator_a ok 5.3s out 1,383 · deepseek-v4-flash · labels=25 · lot → TRANSLATION_AND_TOOL_LOOKU
+17:57:42 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+17:57:42 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+17:57:44 INFO    qmine:   ~ annotator_a ok 6.7s out 1,836 · deepseek-v4-flash · labels=25 · shit → TRANSLATION_AND_TOOL_LOOKU
+17:57:44 INFO    qmine:   ~ annotator_a ok 4.2s out 1,202 · deepseek-v4-flash · labels=25 · 衡水中考成绩公布时间 → EXAM_RESULT_TRACKING
+17:57:44 INFO    qmine:   ~ annotator_a ok 7.0s out 1,894 · deepseek-v4-flash · labels=25 · 华东理工大学2024录取分数线 → ADMISSION_SCORE_LOOKUP
+17:57:44 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+17:57:44 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+17:57:44 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+17:57:45 INFO    qmine:   ~ annotator_a ok 4.8s out 1,285 · deepseek-v4-flash · labels=25 · tie → TRANSLATION_AND_TOOL_LOOKU
+17:57:45 INFO    qmine:   ~ annotator_a ok 5.8s out 1,853 · deepseek-v4-flash · labels=25 · 教育技术学 → MAJOR_AND_CAREER_EXPLORATI
+17:57:45 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+17:57:45 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+17:57:46 INFO    qmine:   ~ annotator_a ok 4.7s out 1,304 · deepseek-v4-flash · labels=25 · trap → TRANSLATION_AND_TOOL_LOOKU
+17:57:46 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+17:57:46 INFO    qmine:   ~ annotator_a ok 4.8s out 1,327 · deepseek-v4-flash · labels=25 · 滚 → UNCLASSIFIABLE_OTHER
+17:57:47 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+17:57:47 INFO    qmine:   ~ annotator_a ok 4.8s out 1,336 · deepseek-v4-flash · labels=25 · wolf → TRANSLATION_AND_TOOL_LOOKU
+17:57:47 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+17:57:49 INFO    qmine:   ~ annotator_a ok 5.1s out 1,273 · deepseek-v4-flash · labels=25 · 扬州大学录取分数线2024 → ADMISSION_SCORE_LOOKUP
+17:57:49 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+17:57:49 INFO    qmine:   ~ annotator_a ok 5.5s out 1,757 · deepseek-v4-flash · labels=25 · 天津大学排名 → ENROLLMENT_DELIBERATION
+    encoded (21799, 768) (computed)
+  P3b sparse block — char TF-IDF → SVD
+    ⚠ grid proposal for alpha ABORTED — payload contains 'admission_score_line' — the proposer must not see scores, or its additions stop being pre-registered
+  P3c alpha sweep — [0.0, 0.1, 0.2, 0.3, 0.5]
+    ~ researcher_log_reading ok 288.3s out 27,219 · moonshotai/kimi-k3 · candidates=12, observations=10, contradictions=3, open_questions=5 · 按裸校名检索高校信息 → institution_name_lookup
+    researcher[log_reading] → 12 candidates
+  ✔ p3_represent completed in 370.3s
+    ~ researcher_literature ok 578.8s out 20,565 · glm-5.3-flash · candidates=12, observations=10, contradictions=5, open_questions=7 · 查询院校办学信息 → institution_profile_lookup
+    researcher[literature] → 12 candidates (web-researched)
+    ~ researcher_risk_compliance ok 746.3s out 28,529 · glm-5.3-flash · candidates=11, observations=7, contradictions=3, open_questions=5 · 破译『打一生肖』博彩谜底 → decode_lottery_riddle
+    researcher[risk_compliance] → 11 candidates (web-researched)
+    ⚠ 1/5 research angles failed — the taxonomy rests on 4: pragmatic_intents missing
+    ~ taxonomy_architect ok 425.0s out 31,307 · deepseek-v4-pro · nodes=20, rules=17, dropped_candidates=6 · 按裸校名检索院校信息 → INSTITUTION_NAME_LOOKUP
+    ~ taxonomy_architect ok 322.2s out 23,971 · deepseek-v4-pro · rules=40 · 子资源词说明用户要进入该校某个官方页面或文件，而不是了解学校本身。
+    rule writer → 40 rules over 190 class pairs (57 total after merge)
+    ~ taxonomy_critic ok 251.0s out 17,936 · deepseek-v4-pro · findings=14 · overlap
+    critic → 14 findings, verdict revise
+    pilot skipped — fast 模式单标注员, 无第二判读可比对
+  gate p2a_pilot_agreement: SKIPPED — 标注一致性试点未运行 —— fast 模式单标注员 (a), 没有第二判读可比对; kappa、自洽上限与结构性/指南性混淆的拆分本次均未测量
+  gate p2a_taxonomy_shape: PASSED — 20 L1 intents, 57 adjudication rules the annotator can cite
+  ✔ p2a_taxonomy completed in 1744.7s
+  P4 algorithm battery — 3 K values × 6 algorithms
+  P2b gold — 3000 queries (13.8% of corpus, derived from corpus size), double-blind annotation
+    single annotator (a) — no agreement measured
+    ~ annotator_a ok 4.3s out 1,268 · deepseek-v4-flash · labels=25 · 北部湾大学 → INSTITUTION_NAME_LOOKUP
+    ~ annotator_a ok 4.4s out 1,132 · deepseek-v4-flash · labels=25 · 南京医科大学 → INSTITUTION_NAME_LOOKUP
+    ~ annotator_a ok 4.6s out 1,272 · deepseek-v4-flash · labels=25 · 中国人事考试网 → GOVERNMENT_EXAM_PORTAL_NAV
+    ~ annotator_a ok 4.8s out 1,245 · deepseek-v4-flash · labels=25 · 宁夏医科大学 → INSTITUTION_NAME_LOOKUP
+    ~ annotator_a ok 5.0s out 1,261 · deepseek-v4-flash · labels=25 · 大连交通大学 → INSTITUTION_NAME_LOOKUP
+    ~ annotator_a ok 5.3s out 1,685 · deepseek-v4-flash · labels=25 · 西南医科大学 → INSTITUTION_NAME_LOOKUP
+    ~ annotator_a ok 6.2s out 1,608 · deepseek-v4-flash · labels=25 · 辽宁石油化工大学 → INSTITUTION_NAME_LOOKUP
+    ~ annotator_a ok 6.2s out 1,730 · deepseek-v4-flash · labels=25 · 徙怎么读 → CHARACTER_PRONUNCIATION_LO
+    ~ annotator_a ok 3.8s out 1,254 · deepseek-v4-flash · labels=25 · 7月的英文 → TRANSLATION_AND_TOOL_LOOKU
+    ~ annotator_a ok 4.8s out 1,313 · deepseek-v4-flash · labels=25 · 皮的笔顺 → STROKE_ORDER_LOOKUP
+    ~ annotator_a ok 4.6s out 1,283 · deepseek-v4-flash · labels=25 · 辽宁理工学院 → INSTITUTION_NAME_LOOKUP
+    ~ annotator_a ok 4.9s out 1,240 · deepseek-v4-flash · labels=25 · 泉州职业技术大学 → INSTITUTION_NAME_LOOKUP
+    annotator[a] 12/120 batches · 300 rows
+    ~ annotator_a ok 5.2s out 1,320 · deepseek-v4-flash · labels=25 · 征集志愿什么时候填报怎么填 → ENROLLMENT_DELIBERATION
+    ~ annotator_a ok 4.7s out 1,321 · deepseek-v4-flash · labels=25 · geography → TRANSLATION_AND_TOOL_LOOKU
+    ~ annotator_a ok 5.8s out 1,832 · deepseek-v4-flash · labels=25 · 建党节打一准确生肖 → ZODIAC_RIDDLE_ANSWER
+    ~ annotator_a ok 5.1s out 1,400 · deepseek-v4-flash · labels=25 · 四川警察学院 → INSTITUTION_NAME_LOOKUP
+    ~ annotator_a ok 5.6s out 1,790 · deepseek-v4-flash · labels=25 · 晨的拼音 → CHARACTER_PRONUNCIATION_LO
+    ~ annotator_a ok 4.9s out 1,698 · deepseek-v4-flash · labels=25 · 吉林艺术学院 → INSTITUTION_NAME_LOOKUP
+    ~ annotator_a ok 5.1s out 1,321 · deepseek-v4-flash · labels=25 · bottle → TRANSLATION_AND_TOOL_LOOKU
+    ~ annotator_a ok 4.4s out 1,274 · deepseek-v4-flash · labels=25 · e → UNCLASSIFIABLE_OTHER
+    ~ annotator_a ok 4.6s out 1,220 · deepseek-v4-flash · labels=25 · 大数据技术应用主要学什么 → MAJOR_AND_CAREER_EXPLORATI
+    ~ annotator_a ok 6.0s out 1,770 · deepseek-v4-flash · labels=25 · 遵义医药高等专科学校 → INSTITUTION_NAME_LOOKUP
+    ~ annotator_a ok 4.7s out 1,260 · deepseek-v4-flash · labels=25 · 勾股定理公式 → HOMEWORK_ASSISTANCE
+    ~ annotator_a ok 6.1s out 1,879 · deepseek-v4-flash · labels=25 · 汉语国际教育 → UNCLASSIFIABLE_OTHER
+    annotator[a] 24/120 batches · 600 rows
+    ~ annotator_a ok 4.7s out 1,223 · deepseek-v4-flash · labels=25 · meal → TRANSLATION_AND_TOOL_LOOKU
+    ~ annotator_a ok 4.7s out 1,279 · deepseek-v4-flash · labels=25 · 秦皇岛职业技术学院 → INSTITUTION_NAME_LOOKUP
+    ~ annotator_a ok 5.5s out 1,657 · deepseek-v4-flash · labels=25 · group → TRANSLATION_AND_TOOL_LOOKU
+    ~ annotator_a ok 5.7s out 1,845 · deepseek-v4-flash · labels=25 · trunk → TRANSLATION_AND_TOOL_LOOKU
+    ~ annotator_a ok 5.6s out 1,694 · deepseek-v4-flash · labels=25 · were → TRANSLATION_AND_TOOL_LOOKU
+    ~ annotator_a ok 4.3s out 1,222 · deepseek-v4-flash · labels=25 · major → TRANSLATION_AND_TOOL_LOOKU
+    ~ annotator_a ok 5.7s out 1,762 · deepseek-v4-flash · labels=25 · 教育局官网 → GOVERNMENT_EXAM_PORTAL_NAV
+    ~ annotator_a ok 5.7s out 1,645 · deepseek-v4-flash · labels=25 · 高考加油小程序 → ENROLLMENT_DELIBERATION
+    ~ annotator_a ok 5.1s out 1,343 · deepseek-v4-flash · labels=25 · 山东航空学院录取分数线2024 → ADMISSION_SCORE_LOOKUP
+    ~ annotator_a ok 4.9s out 1,363 · deepseek-v4-flash · labels=25 · 苏州工学院是一本还是二本 → INSTITUTION_TIER_VERDICT
+    ~ annotator_a ok 4.8s out 1,306 · deepseek-v4-flash · labels=25 · 德州职业技术学院 → INSTITUTION_NAME_LOOKUP
+    ~ annotator_a ok 6.4s out 1,859 · deepseek-v4-flash · labels=25 · mat → TRANSLATION_AND_TOOL_LOOKU
+    annotator[a] 36/120 batches · 900 rows
+    ~ annotator_a ok 4.7s out 1,200 · deepseek-v4-flash · labels=25 · 河南理工大学2024录取分数线是多少 → ADMISSION_SCORE_LOOKUP
+    ~ annotator_a ok 5.3s out 1,383 · deepseek-v4-flash · labels=25 · lot → TRANSLATION_AND_TOOL_LOOKU
+    ~ annotator_a ok 6.7s out 1,836 · deepseek-v4-flash · labels=25 · shit → TRANSLATION_AND_TOOL_LOOKU
+    ~ annotator_a ok 4.2s out 1,202 · deepseek-v4-flash · labels=25 · 衡水中考成绩公布时间 → EXAM_RESULT_TRACKING
+    ~ annotator_a ok 7.0s out 1,894 · deepseek-v4-flash · labels=25 · 华东理工大学2024录取分数线 → ADMISSION_SCORE_LOOKUP
+    ~ annotator_a ok 4.8s out 1,285 · deepseek-v4-flash · labels=25 · tie → TRANSLATION_AND_TOOL_LOOKU
+    ~ annotator_a ok 5.8s out 1,853 · deepseek-v4-flash · labels=25 · 教育技术学 → MAJOR_AND_CAREER_EXPLORATI
+    ~ annotator_a ok 4.7s out 1,304 · deepseek-v4-flash · labels=25 · trap → TRANSLATION_AND_TOOL_LOOKU
+    ~ annotator_a ok 4.8s out 1,327 · deepseek-v4-flash · labels=25 · 滚 → UNCLASSIFIABLE_OTHER
+    ~ annotator_a ok 4.8s out 1,336 · deepseek-v4-flash · labels=25 · wolf → TRANSLATION_AND_TOOL_LOOKU
+    ~ annotator_a ok 5.1s out 1,273 · deepseek-v4-flash · labels=25 · 扬州大学录取分数线2024 → ADMISSION_SCORE_LOOKUP
+    ~ annotator_a ok 5.5s out 1,757 · deepseek-v4-flash · labels=25 · 天津大学排名 → ENROLLMENT_DELIBERATION17:57:49 INFO    qmine.graph:   annotator[a] 48/120 batches · 1200 rows
+17:57:49 INFO    qmine:   ~ annotator_a ok 5.7s out 1,707 · deepseek-v4-flash · labels=25 · 梨的英文 → TRANSLATION_AND_TOOL_LOOKU
+17:57:49 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+17:57:49 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+17:57:51 INFO    qmine:   ~ annotator_a ok 6.1s out 1,817 · deepseek-v4-flash · labels=25 · 录取通知书多久能收到 → ENROLLMENT_DELIBERATION
+17:57:51 INFO    qmine:   ~ annotator_a ok 6.2s out 1,855 · deepseek-v4-flash · labels=25 · 铝的拼音 → CHARACTER_PRONUNCIATION_LO
+17:57:51 INFO    qmine:   ~ annotator_a ok 5.4s out 1,739 · deepseek-v4-flash · labels=25 · electric → TRANSLATION_AND_TOOL_LOOKU
+17:57:51 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+17:57:51 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+17:57:51 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+17:57:51 INFO    qmine:   ~ annotator_a ok 4.9s out 1,263 · deepseek-v4-flash · labels=25 · vital → TRANSLATION_AND_TOOL_LOOKU
+17:57:51 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+17:57:52 INFO    qmine:   ~ annotator_a ok 5.4s out 1,413 · deepseek-v4-flash · labels=25 · 穀 → UNCLASSIFIABLE_OTHER
+17:57:52 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+17:57:53 INFO    qmine:   ~ annotator_a ok 4.6s out 1,285 · deepseek-v4-flash · labels=25 · 西交利物浦 → INSTITUTION_NAME_LOOKUP
+17:57:53 INFO    qmine:   ~ annotator_a ok 4.4s out 1,253 · deepseek-v4-flash · labels=25 · 四川大学 → INSTITUTION_NAME_LOOKUP
+17:57:54 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+17:57:54 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+17:57:54 INFO    qmine:   ~ annotator_a ok 4.6s out 1,272 · deepseek-v4-flash · labels=25 · 青岛农业大学 → INSTITUTION_NAME_LOOKUP
+17:57:54 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+17:57:56 INFO    qmine:   ~ annotator_a ok 4.6s out 1,300 · deepseek-v4-flash · labels=25 · 偷梁换柱显奇技,不劳而获极机智 猜一动物 → ZODIAC_RIDDLE_ANSWER
+17:57:56 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+17:57:56 INFO    qmine:   ~ annotator_a ok 4.9s out 1,327 · deepseek-v4-flash · labels=25 · 南昌师范学院 → INSTITUTION_NAME_LOOKUP
+17:57:56 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+17:57:56 INFO    qmine:   ~ annotator_a ok 5.4s out 1,756 · deepseek-v4-flash · labels=25 · 陇东学院 → INSTITUTION_NAME_LOOKUP
+17:57:56 INFO    qmine.graph:   annotator[a] 60/120 batches · 1500 rows
+17:57:57 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+17:57:57 INFO    qmine:   ~ annotator_a ok 5.5s out 1,794 · deepseek-v4-flash · labels=25 · 湖州师范大学 → INSTITUTION_NAME_LOOKUP
+17:57:57 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+17:57:57 INFO    qmine:   ~ annotator_a ok 4.8s out 1,252 · deepseek-v4-flash · labels=25 · 厦门工学院 → INSTITUTION_NAME_LOOKUP
+17:57:57 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+17:57:58 INFO    qmine:   ~ annotator_a ok 4.9s out 1,333 · deepseek-v4-flash · labels=25 · 数字大写 → HOMEWORK_ASSISTANCE
+17:57:59 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+17:57:59 INFO    qmine:   ~ annotator_a ok 5.5s out 1,709 · deepseek-v4-flash · labels=25 · 脩怎么读 → CHARACTER_PRONUNCIATION_LO
+17:57:59 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+17:58:00 INFO    qmine:   ~ annotator_a ok 6.3s out 1,817 · deepseek-v4-flash · labels=25 · 天 → UNCLASSIFIABLE_OTHER
+17:58:00 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+17:58:00 INFO    qmine:   ~ annotator_a ok 4.9s out 1,361 · deepseek-v4-flash · labels=25 · 仰恩大学 → INSTITUTION_NAME_LOOKUP
+17:58:01 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+17:58:01 INFO    qmine:   ~ annotator_a ok 4.9s out 1,286 · deepseek-v4-flash · labels=25 · 履怎么读 → CHARACTER_PRONUNCIATION_LO
+17:58:02 INFO    qmine:   ~ annotator_a ok 5.6s out 1,324 · deepseek-v4-flash · labels=25 · 偿还 → UNCLASSIFIABLE_OTHER
+17:58:02 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+17:58:02 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+17:58:02 INFO    qmine:   ~ annotator_a ok 5.7s out 1,793 · deepseek-v4-flash · labels=25 · 2025中考录取分数线 → ADMISSION_SCORE_LOOKUP
+17:58:02 INFO    qmine:   ~ annotator_a ok 5.6s out 1,804 · deepseek-v4-flash · labels=25 · 河北轨道运输职业技术学院 → INSTITUTION_NAME_LOOKUP
+17:58:03 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+17:58:03 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+17:58:04 INFO    qmine:   ~ annotator_a ok 5.4s out 1,780 · deepseek-v4-flash · labels=25 · 枫桥夜泊 → CLASSICAL_TEXT_RETRIEVAL
+17:58:04 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+17:58:05 INFO    qmine:   ~ annotator_a ok 6.1s out 1,827 · deepseek-v4-flash · labels=25 · 天津中考什么时候出成绩 → EXAM_RESULT_TRACKING
+17:58:05 INFO    qmine.graph:   annotator[a] 72/120 batches · 1800 rows
+17:58:05 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+17:58:06 INFO    qmine:   ~ annotator_a ok 5.7s out 1,768 · deepseek-v4-flash · labels=25 · 聿 → UNCLASSIFIABLE_OTHER
+17:58:06 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+17:58:07 INFO    qmine:   ~ annotator_a ok 6.1s out 1,909 · deepseek-v4-flash · labels=25 · 四川交通职业技术大学 → INSTITUTION_NAME_LOOKUP
+17:58:07 INFO    qmine:   ~ annotator_a ok 5.3s out 1,831 · deepseek-v4-flash · labels=25 · 软件工程是干什么的 → MAJOR_AND_CAREER_EXPLORATI
+17:58:07 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+17:58:07 INFO    qmine:   ~ annotator_a ok 4.9s out 1,337 · deepseek-v4-flash · labels=25 · 乐的笔顺 → STROKE_ORDER_LOOKUP
+17:58:07 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+17:58:07 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+17:58:07 INFO    qmine:   ~ annotator_a ok 4.9s out 1,271 · deepseek-v4-flash · labels=25 · rule → TRANSLATION_AND_TOOL_LOOKU
+17:58:07 INFO    qmine:   ~ annotator_a ok 4.7s out 1,255 · deepseek-v4-flash · labels=25 · 中国矿业大学是211还是985 → INSTITUTION_TIER_VERDICT
+17:58:07 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+17:58:07 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+17:58:09 INFO    qmine:   ~ annotator_a ok 5.1s out 1,730 · deepseek-v4-flash · labels=25 · 渡荆门送别 → CLASSICAL_TEXT_RETRIEVAL
+17:58:09 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+17:58:09 INFO    qmine:   ~ annotator_a ok 4.3s out 1,193 · deepseek-v4-flash · labels=25 · 陕西国际商贸学院 → INSTITUTION_NAME_LOOKUP
+17:58:10 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+17:58:10 INFO    qmine:   ~ annotator_a ok 4.2s out 1,315 · deepseek-v4-flash · labels=25 · 轰组词 → WORD_FORMATION
+17:58:10 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+17:58:11 INFO    qmine:   ~ annotator_a ok 4.2s out 1,252 · deepseek-v4-flash · labels=25 · earth → TRANSLATION_AND_TOOL_LOOKU
+17:58:11 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+17:58:12 INFO    qmine:   ~ annotator_a ok 4.8s out 1,338 · deepseek-v4-flash · labels=25 · speed → TRANSLATION_AND_TOOL_LOOKU
+17:58:12 INFO    qmine:   ~ annotator_a ok 5.1s out 1,750 · deepseek-v4-flash · labels=25 · 元素周期表高清大图 → UNCLASSIFIABLE_OTHER
+17:58:12 INFO    qmine.graph:   annotator[a] 84/120 batches · 2100 rows
+17:58:12 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+17:58:12 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+17:58:12 INFO    qmine:   ~ annotator_a ok 5.5s out 1,669 · deepseek-v4-flash · labels=25 · 八段锦口令带呼吸完整版视频 → UNCLASSIFIABLE_OTHER
+17:58:12 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+17:58:12 INFO    qmine:   ~ annotator_a ok 5.4s out 1,792 · deepseek-v4-flash · labels=25 · try → TRANSLATION_AND_TOOL_LOOKU
+17:58:13 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+17:58:14 INFO    qmine:   ~ annotator_a ok 5.0s out 1,244 · deepseek-v4-flash · labels=25 · 重庆城市管理职业大学 → INSTITUTION_NAME_LOOKUP
+17:58:14 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+17:58:14 INFO    qmine:   ~ annotator_a ok 5.0s out 1,269 · deepseek-v4-flash · labels=25 · survive → TRANSLATION_AND_TOOL_LOOKU
+17:58:14 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+17:58:15 INFO    qmine:   ~ annotator_a ok 5.0s out 1,285 · deepseek-v4-flash · labels=25 · stress → TRANSLATION_AND_TOOL_LOOKU
+17:58:15 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+17:58:16 INFO    qmine:   ~ annotator_a ok 4.3s out 1,247 · deepseek-v4-flash · labels=25 · people → TRANSLATION_AND_TOOL_LOOKU
+17:58:16 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+17:58:16 INFO    qmine:   ~ annotator_a ok 4.9s out 1,295 · deepseek-v4-flash · labels=25 · 簟字怎么读 → CHARACTER_PRONUNCIATION_LO
+17:58:16 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+17:58:17 INFO    qmine:   ~ annotator_a ok 5.5s out 1,750 · deepseek-v4-flash · labels=25 · gold → TRANSLATION_AND_TOOL_LOOKU
+17:58:17 INFO    qmine:   ~ annotator_a ok 4.6s out 1,331 · deepseek-v4-flash · labels=25 · 阳江职业技术学院 → INSTITUTION_NAME_LOOKUP
+17:58:17 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+17:58:17 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+17:58:18 INFO    qmine:   ~ annotator_a ok 6.1s out 1,806 · deepseek-v4-flash · labels=25 · 聚 → UNCLASSIFIABLE_OTHER
+17:58:18 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+17:58:19 INFO    qmine:   ~ annotator_a ok 5.1s out 1,327 · deepseek-v4-flash · labels=25 · 着急的拼音 → CHARACTER_PRONUNCIATION_LO
+17:58:19 INFO    qmine:   ~ annotator_a ok 5.6s out 1,858 · deepseek-v4-flash · labels=25 · 云南省教育考试院官网 → GOVERNMENT_EXAM_PORTAL_NAV
+17:58:19 INFO    qmine.graph:   annotator[a] 96/120 batches · 2400 rows
+17:58:20 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+17:58:20 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+17:58:21 INFO    qmine:   ~ annotator_a ok 4.6s out 1,360 · deepseek-v4-flash · labels=25 · 金的笔顺 → STROKE_ORDER_LOOKUP
+17:58:21 INFO    qmine:   ~ annotator_a ok 6.0s out 1,860 · deepseek-v4-flash · labels=25 · 右江医学院 → INSTITUTION_NAME_LOOKUP
+17:58:21 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+17:58:21 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+17:58:21 INFO    qmine:   ~ annotator_a ok 4.2s out 1,244 · deepseek-v4-flash · labels=25 · 别来无恙是什么意思 → WORD_MEANING_LOOKUP
+17:58:22 INFO    qmine:   ~ annotator_a ok 5.6s out 1,744 · deepseek-v4-flash · labels=25 · 池州市教育和体育局官网 → GOVERNMENT_EXAM_PORTAL_NAV
+17:58:22 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+17:58:22 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+17:58:23 INFO    qmine:   ~ annotator_a ok 5.7s out 1,823 · deepseek-v4-flash · labels=25 · 一语成谶是什么意思 → WORD_MEANING_LOOKUP
+17:58:23 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+17:58:23 INFO    qmine:   ~ annotator_a ok 4.8s out 1,335 · deepseek-v4-flash · labels=25 · 凤组词 → WORD_FORMATION
+17:58:23 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+17:58:25 INFO    qmine:   ~ annotator_a ok 5.9s out 1,807 · deepseek-v4-flash · labels=25 · perfect翻译成中文 → TRANSLATION_AND_TOOL_LOOKU
+17:58:25 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+17:58:26 INFO    qmine:   ~ annotator_a ok 4.8s out 3,080 · deepseek-v4-flash · labels=25 · B → UNCLASSIFIABLE_OTHER
+17:58:26 INFO    qmine:   ~ annotator_a ok 6.3s out 0 · deepseek-v4-flash · labels=25 · 一日无书百事荒芜的意思 → WORD_MEANING_LOOKUP
+17:58:26 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+17:58:26 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+17:58:26 INFO    qmine:   ~ annotator_a ok 4.8s out 1,324 · deepseek-v4-flash · labels=25 · yi → UNCLASSIFIABLE_OTHER
+17:58:26 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+17:58:27 INFO    qmine:   ~ annotator_a ok 5.6s out 1,753 · deepseek-v4-flash · labels=25 · 儿童故事 → UNCLASSIFIABLE_OTHER
+17:58:27 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+17:58:27 INFO    qmine:   ~ annotator_a ok 6.2s out 1,849 · deepseek-v4-flash · labels=25 · 正的笔顺 → STROKE_ORDER_LOOKUP
+17:58:27 INFO    qmine.graph:   annotator[a] 108/120 batches · 2700 rows
+17:58:27 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+17:58:28 INFO    qmine:   ~ annotator_a ok 4.5s out 1,224 · deepseek-v4-flash · labels=25 · 300字 → HOMEWORK_ASSISTANCE
+17:58:28 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+17:58:28 INFO    qmine:   ~ annotator_a ok 5.6s out 1,777 · deepseek-v4-flash · labels=25 · 跟的拼音 → CHARACTER_PRONUNCIATION_LO
+17:58:29 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+17:58:30 INFO    qmine:   ~ annotator_a ok 4.6s out 1,238 · deepseek-v4-flash · labels=25 · 作用 → UNCLASSIFIABLE_OTHER
+17:58:30 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+17:58:31 INFO    qmine:   ~ annotator_a ok 5.6s out 1,313 · deepseek-v4-flash · labels=25 · 字多一点 → UNCLASSIFIABLE_OTHER
+17:58:32 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+17:58:33 INFO    qmine:   ~ annotator_a ok 6.9s out 1,845 · deepseek-v4-flash · labels=25 · 教师节手抄报 → UNCLASSIFIABLE_OTHER
+17:58:33 INFO    qmine:   ~ annotator_a ok 7.0s out 1,891 · deepseek-v4-flash · labels=25 · 简笔画 → UNCLASSIFIABLE_OTHER
+17:58:34 INFO    qmine:   ~ annotator_a ok 7.2s out 1,909 · deepseek-v4-flash · labels=25 · 靠组词 → WORD_FORMATION
+17:58:35 INFO    qmine:   ~ annotator_a ok 7.3s out 2,034 · deepseek-v4-flash · labels=25 · 丰富素材 → UNCLASSIFIABLE_OTHER
+
+    annotator[a] 48/120 batches · 1200 rows
+    ~ annotator_a ok 5.7s out 1,707 · deepseek-v4-flash · labels=25 · 梨的英文 → TRANSLATION_AND_TOOL_LOOKU
+    ~ annotator_a ok 6.1s out 1,817 · deepseek-v4-flash · labels=25 · 录取通知书多久能收到 → ENROLLMENT_DELIBERATION
+    ~ annotator_a ok 6.2s out 1,855 · deepseek-v4-flash · labels=25 · 铝的拼音 → CHARACTER_PRONUNCIATION_LO
+    ~ annotator_a ok 5.4s out 1,739 · deepseek-v4-flash · labels=25 · electric → TRANSLATION_AND_TOOL_LOOKU
+    ~ annotator_a ok 4.9s out 1,263 · deepseek-v4-flash · labels=25 · vital → TRANSLATION_AND_TOOL_LOOKU
+    ~ annotator_a ok 5.4s out 1,413 · deepseek-v4-flash · labels=25 · 穀 → UNCLASSIFIABLE_OTHER
+    ~ annotator_a ok 4.6s out 1,285 · deepseek-v4-flash · labels=25 · 西交利物浦 → INSTITUTION_NAME_LOOKUP
+    ~ annotator_a ok 4.4s out 1,253 · deepseek-v4-flash · labels=25 · 四川大学 → INSTITUTION_NAME_LOOKUP
+    ~ annotator_a ok 4.6s out 1,272 · deepseek-v4-flash · labels=25 · 青岛农业大学 → INSTITUTION_NAME_LOOKUP
+    ~ annotator_a ok 4.6s out 1,300 · deepseek-v4-flash · labels=25 · 偷梁换柱显奇技,不劳而获极机智 猜一动物 → ZODIAC_RIDDLE_ANSWER
+    ~ annotator_a ok 4.9s out 1,327 · deepseek-v4-flash · labels=25 · 南昌师范学院 → INSTITUTION_NAME_LOOKUP
+    ~ annotator_a ok 5.4s out 1,756 · deepseek-v4-flash · labels=25 · 陇东学院 → INSTITUTION_NAME_LOOKUP
+    annotator[a] 60/120 batches · 1500 rows
+    ~ annotator_a ok 5.5s out 1,794 · deepseek-v4-flash · labels=25 · 湖州师范大学 → INSTITUTION_NAME_LOOKUP
+    ~ annotator_a ok 4.8s out 1,252 · deepseek-v4-flash · labels=25 · 厦门工学院 → INSTITUTION_NAME_LOOKUP
+    ~ annotator_a ok 4.9s out 1,333 · deepseek-v4-flash · labels=25 · 数字大写 → HOMEWORK_ASSISTANCE
+    ~ annotator_a ok 5.5s out 1,709 · deepseek-v4-flash · labels=25 · 脩怎么读 → CHARACTER_PRONUNCIATION_LO
+    ~ annotator_a ok 6.3s out 1,817 · deepseek-v4-flash · labels=25 · 天 → UNCLASSIFIABLE_OTHER
+    ~ annotator_a ok 4.9s out 1,361 · deepseek-v4-flash · labels=25 · 仰恩大学 → INSTITUTION_NAME_LOOKUP
+    ~ annotator_a ok 4.9s out 1,286 · deepseek-v4-flash · labels=25 · 履怎么读 → CHARACTER_PRONUNCIATION_LO
+    ~ annotator_a ok 5.6s out 1,324 · deepseek-v4-flash · labels=25 · 偿还 → UNCLASSIFIABLE_OTHER
+    ~ annotator_a ok 5.7s out 1,793 · deepseek-v4-flash · labels=25 · 2025中考录取分数线 → ADMISSION_SCORE_LOOKUP
+    ~ annotator_a ok 5.6s out 1,804 · deepseek-v4-flash · labels=25 · 河北轨道运输职业技术学院 → INSTITUTION_NAME_LOOKUP
+    ~ annotator_a ok 5.4s out 1,780 · deepseek-v4-flash · labels=25 · 枫桥夜泊 → CLASSICAL_TEXT_RETRIEVAL
+    ~ annotator_a ok 6.1s out 1,827 · deepseek-v4-flash · labels=25 · 天津中考什么时候出成绩 → EXAM_RESULT_TRACKING
+    annotator[a] 72/120 batches · 1800 rows
+    ~ annotator_a ok 5.7s out 1,768 · deepseek-v4-flash · labels=25 · 聿 → UNCLASSIFIABLE_OTHER
+    ~ annotator_a ok 6.1s out 1,909 · deepseek-v4-flash · labels=25 · 四川交通职业技术大学 → INSTITUTION_NAME_LOOKUP
+    ~ annotator_a ok 5.3s out 1,831 · deepseek-v4-flash · labels=25 · 软件工程是干什么的 → MAJOR_AND_CAREER_EXPLORATI
+    ~ annotator_a ok 4.9s out 1,337 · deepseek-v4-flash · labels=25 · 乐的笔顺 → STROKE_ORDER_LOOKUP
+    ~ annotator_a ok 4.9s out 1,271 · deepseek-v4-flash · labels=25 · rule → TRANSLATION_AND_TOOL_LOOKU
+    ~ annotator_a ok 4.7s out 1,255 · deepseek-v4-flash · labels=25 · 中国矿业大学是211还是985 → INSTITUTION_TIER_VERDICT
+    ~ annotator_a ok 5.1s out 1,730 · deepseek-v4-flash · labels=25 · 渡荆门送别 → CLASSICAL_TEXT_RETRIEVAL
+    ~ annotator_a ok 4.3s out 1,193 · deepseek-v4-flash · labels=25 · 陕西国际商贸学院 → INSTITUTION_NAME_LOOKUP
+    ~ annotator_a ok 4.2s out 1,315 · deepseek-v4-flash · labels=25 · 轰组词 → WORD_FORMATION
+    ~ annotator_a ok 4.2s out 1,252 · deepseek-v4-flash · labels=25 · earth → TRANSLATION_AND_TOOL_LOOKU
+    ~ annotator_a ok 4.8s out 1,338 · deepseek-v4-flash · labels=25 · speed → TRANSLATION_AND_TOOL_LOOKU
+    ~ annotator_a ok 5.1s out 1,750 · deepseek-v4-flash · labels=25 · 元素周期表高清大图 → UNCLASSIFIABLE_OTHER
+    annotator[a] 84/120 batches · 2100 rows
+    ~ annotator_a ok 5.5s out 1,669 · deepseek-v4-flash · labels=25 · 八段锦口令带呼吸完整版视频 → UNCLASSIFIABLE_OTHER
+    ~ annotator_a ok 5.4s out 1,792 · deepseek-v4-flash · labels=25 · try → TRANSLATION_AND_TOOL_LOOKU
+    ~ annotator_a ok 5.0s out 1,244 · deepseek-v4-flash · labels=25 · 重庆城市管理职业大学 → INSTITUTION_NAME_LOOKUP
+    ~ annotator_a ok 5.0s out 1,269 · deepseek-v4-flash · labels=25 · survive → TRANSLATION_AND_TOOL_LOOKU
+    ~ annotator_a ok 5.0s out 1,285 · deepseek-v4-flash · labels=25 · stress → TRANSLATION_AND_TOOL_LOOKU
+    ~ annotator_a ok 4.3s out 1,247 · deepseek-v4-flash · labels=25 · people → TRANSLATION_AND_TOOL_LOOKU
+    ~ annotator_a ok 4.9s out 1,295 · deepseek-v4-flash · labels=25 · 簟字怎么读 → CHARACTER_PRONUNCIATION_LO
+    ~ annotator_a ok 5.5s out 1,750 · deepseek-v4-flash · labels=25 · gold → TRANSLATION_AND_TOOL_LOOKU
+    ~ annotator_a ok 4.6s out 1,331 · deepseek-v4-flash · labels=25 · 阳江职业技术学院 → INSTITUTION_NAME_LOOKUP
+    ~ annotator_a ok 6.1s out 1,806 · deepseek-v4-flash · labels=25 · 聚 → UNCLASSIFIABLE_OTHER
+    ~ annotator_a ok 5.1s out 1,327 · deepseek-v4-flash · labels=25 · 着急的拼音 → CHARACTER_PRONUNCIATION_LO
+    ~ annotator_a ok 5.6s out 1,858 · deepseek-v4-flash · labels=25 · 云南省教育考试院官网 → GOVERNMENT_EXAM_PORTAL_NAV
+    annotator[a] 96/120 batches · 2400 rows
+    ~ annotator_a ok 4.6s out 1,360 · deepseek-v4-flash · labels=25 · 金的笔顺 → STROKE_ORDER_LOOKUP
+    ~ annotator_a ok 6.0s out 1,860 · deepseek-v4-flash · labels=25 · 右江医学院 → INSTITUTION_NAME_LOOKUP
+    ~ annotator_a ok 4.2s out 1,244 · deepseek-v4-flash · labels=25 · 别来无恙是什么意思 → WORD_MEANING_LOOKUP
+    ~ annotator_a ok 5.6s out 1,744 · deepseek-v4-flash · labels=25 · 池州市教育和体育局官网 → GOVERNMENT_EXAM_PORTAL_NAV
+    ~ annotator_a ok 5.7s out 1,823 · deepseek-v4-flash · labels=25 · 一语成谶是什么意思 → WORD_MEANING_LOOKUP
+    ~ annotator_a ok 4.8s out 1,335 · deepseek-v4-flash · labels=25 · 凤组词 → WORD_FORMATION
+    ~ annotator_a ok 5.9s out 1,807 · deepseek-v4-flash · labels=25 · perfect翻译成中文 → TRANSLATION_AND_TOOL_LOOKU
+    ~ annotator_a ok 4.8s out 3,080 · deepseek-v4-flash · labels=25 · B → UNCLASSIFIABLE_OTHER
+    ~ annotator_a ok 6.3s out 0 · deepseek-v4-flash · labels=25 · 一日无书百事荒芜的意思 → WORD_MEANING_LOOKUP
+    ~ annotator_a ok 4.8s out 1,324 · deepseek-v4-flash · labels=25 · yi → UNCLASSIFIABLE_OTHER
+    ~ annotator_a ok 5.6s out 1,753 · deepseek-v4-flash · labels=25 · 儿童故事 → UNCLASSIFIABLE_OTHER
+    ~ annotator_a ok 6.2s out 1,849 · deepseek-v4-flash · labels=25 · 正的笔顺 → STROKE_ORDER_LOOKUP
+    annotator[a] 108/120 batches · 2700 rows
+    ~ annotator_a ok 4.5s out 1,224 · deepseek-v4-flash · labels=25 · 300字 → HOMEWORK_ASSISTANCE
+    ~ annotator_a ok 5.6s out 1,777 · deepseek-v4-flash · labels=25 · 跟的拼音 → CHARACTER_PRONUNCIATION_LO
+    ~ annotator_a ok 4.6s out 1,238 · deepseek-v4-flash · labels=25 · 作用 → UNCLASSIFIABLE_OTHER
+    ~ annotator_a ok 5.6s out 1,313 · deepseek-v4-flash · labels=25 · 字多一点 → UNCLASSIFIABLE_OTHER
+    ~ annotator_a ok 6.9s out 1,845 · deepseek-v4-flash · labels=25 · 教师节手抄报 → UNCLASSIFIABLE_OTHER
+    ~ annotator_a ok 7.0s out 1,891 · deepseek-v4-flash · labels=25 · 简笔画 → UNCLASSIFIABLE_OTHER
+    ~ annotator_a ok 7.2s out 1,909 · deepseek-v4-flash · labels=25 · 靠组词 → WORD_FORMATION
+    ~ annotator_a ok 7.3s out 2,034 · deepseek-v4-flash · labels=25 · 丰富素材 → UNCLASSIFIABLE_OTHER17:58:35 INFO    qmine:   ~ annotator_a ok 7.1s out 1,969 · deepseek-v4-flash · labels=25 · 周夫笔伐是什么？ → WORD_MEANING_LOOKUP
+17:58:35 INFO    qmine:   ~ annotator_a ok 6.6s out 1,544 · deepseek-v4-flash · labels=25 · 怀柔一中加挂新校牌后有何影响 → UNCLASSIFIABLE_OTHER
+17:58:37 INFO    qmine:   ~ annotator_a ok 7.3s out 1,976 · deepseek-v4-flash · labels=25 · 有没有形容一个人执着的成语 → STRUCTURAL_WORD_LISTING
+17:58:39 INFO    qmine:   ~ annotator_a ok 7.7s out 2,053 · deepseek-v4-flash · labels=25 · 美人不是凡胎生,应是仙器灵长成 → CLASSICAL_TEXT_RETRIEVAL
+17:58:39 INFO    qmine.graph:   annotator[a] labelled 3000/3000
+17:58:39 INFO    qmine.graph:   3000/3000 rows labelled by one annotator — kappa undefined, no referee, no disagreements
+17:58:41 INFO    qmine.graph:   single annotator (a) — no agreement measured
+17:58:41 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+17:58:41 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+17:58:41 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+17:58:41 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+17:58:41 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+17:58:41 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+17:58:41 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+17:58:41 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+17:58:45 INFO    qmine:   ~ annotator_a ok 4.7s out 1,174 · deepseek-v4-flash · labels=25 · 勾股定理 → HOMEWORK_ASSISTANCE
+17:58:45 INFO    qmine:   ~ annotator_a ok 4.9s out 1,317 · deepseek-v4-flash · labels=25 · 犇字读音 → CHARACTER_PRONUNCIATION_LO
+17:58:46 INFO    qmine:   ~ annotator_a ok 5.8s out 1,466 · deepseek-v4-flash · labels=25 · 成语大全 四字成语 → STRUCTURAL_WORD_LISTING
+17:58:46 INFO    qmine:   ~ annotator_a ok 5.8s out 1,400 · deepseek-v4-flash · labels=25 · 李白最著名的十首诗 → CLASSICAL_TEXT_RETRIEVAL
+17:58:47 INFO    qmine:   ~ annotator_a ok 6.3s out 1,566 · deepseek-v4-flash · labels=25 · 翻译这篇文章 → UNCLASSIFIABLE_OTHER
+17:58:47 INFO    qmine:   ~ annotator_a ok 6.4s out 1,705 · deepseek-v4-flash · labels=25 · 出师一表真名世 → CLASSICAL_TEXT_RETRIEVAL
+17:58:47 INFO    qmine:   ~ annotator_a ok 6.5s out 1,840 · deepseek-v4-flash · labels=25 · 平行志愿什么意思 → ENROLLMENT_DELIBERATION
+17:58:47 INFO    qmine:   ~ annotator_a ok 6.8s out 1,923 · deepseek-v4-flash · labels=25 · 中科大测速网 → CAMPUS_PORTAL_NAVIGATION
+17:58:47 INFO    qmine.graph:   annotator[a] labelled 200/200
+17:58:47 INFO    qmine.graph:   active learning added 200 boundary rows
+17:58:47 INFO    qmine.graph: gate p2b_kappa: SKIPPED — 标注一致性未测量 —— fast 模式由单个标注员 (a) 标注 3000 行, 没有第二份独立判读可供比较; 覆盖率 100%
+17:58:48 INFO    qmine.graph:   rule triggers: 39 executable, 18 semantic (17 rejected as unusable)
+17:58:48 INFO    qmine.graph:   annotator balance: UNDECIDABLE — only 0 contested row(s) adjudicated, 20 needed to say anything
+17:58:48 INFO    qmine.graph: gate p2b_annotator_symmetry: SKIPPED — UNDECIDABLE — only 0 contested row(s) were adjudicated, 20 needed. This is NOT a finding that the annotators are comparable; it is an absence of evidence either way
+17:58:48 INFO    qmine.graph: gate p2b_rules_match_their_evidence: SKIPPED — 规则与证据的比对未运行 —— 本次没有任何被裁定的行可供检验 (单标注员时无争议行; 已写入 39 条词面规则 / 18 条语义规则, 但都没有被检验过)
+17:58:48 INFO    qmine.graph:   taxonomy_v2 persisted: 57 rules (0 drafted by the referee), guide unchanged
+17:58:48 INFO    qmine.graph: ✔ p2b_gold completed in 92.5s
+17:59:22 INFO    qmine.graph:   winner: kmeans_k20 (stability 0.9053)
+17:59:22 INFO    qmine.graph:   ⚠ grid proposal for family_k ABORTED — payload contains 'admission_score_line' — the proposer must not see scores, or its additions stop being pre-registered
+17:59:22 INFO    qmine.graph: P5 granularity — K sweep over 14 values
+18:06:52 INFO    qmine.graph:   参照系 `phrasing_groups`: 触及 60% 的簇 (行覆盖 42%) @ k=30
+18:06:52 INFO    qmine.graph:   K 由 `phrasing_groups` 定位 (触及率最高)
+18:07:13 INFO    qmine.graph:   located K=12 (by intent_alignment_ami); DeepAligned leaf estimate 26; converged=False
+18:07:13 INFO    qmine.graph:   locator scored against 9 phrasing classes covering 0.4222 of rows
+18:07:13 INFO    qmine.graph: gate p5_locator_reaches_the_corpus: WARNED — 定位 K 用的参照系只触及 60% 的簇 —— **这个 K 是为它覆盖到的那部分语料定的**, 然后被用到了全量上。
+18:07:13 INFO    qmine.graph: P6 hierarchy — 12 families, then local leaf selection
+18:09:29 INFO    qmine.graph:   built 12 families / 53 leaves — 0 个家族无内部结构未再分, 5 个 silhouette 的选择被稳定性否决
+18:09:36 INFO    qmine.graph:   refined to 52 leaves in 5 rounds (converged=False)
+18:09:37 INFO    qmine.graph:   minority-language facet: 1 family(ies) resolved into 6 sub-intents (a column, not leaves — the hybrid space cannot express intent within a minority language)
+18:09:37 INFO    qmine.graph:   held-out structure reproduction 0.990
+18:09:37 INFO    qmine.graph: gate p6_heldout_reproduction: PASSED — held-out rows land in the same cluster 99.0% of the time (95% CI 0.987-0.993, n=4360) — met
+18:09:37 INFO    qmine.graph: ✔ p456_tree completed in 741.3s
+18:09:37 INFO    qmine.graph: P2c classifier — 3200 labelled rows
+18:09:40 INFO    qmine.graph:   CV accuracy 0.891, macro-F1 0.845, ECE 0.038
+18:09:40 INFO    qmine.graph: gate p2c_calibration: WARNED — ECE 0.0376 sits 8.3 sd above the perfectly-calibrated null for this run (0.0118 ± 0.0031)
+18:09:40 INFO    qmine.graph: ✔ p2c_classifier completed in 3.0s
+18:09:40 INFO    qmine.graph: P2d 对抗验证 —— fast 模式跳过 (纯复核, 不改变任何标签)
+18:09:40 INFO    qmine.graph: ✔ p2d_validate completed in 0.0s
+18:09:40 INFO    qmine.graph: P2e sub-intents — auditing 20 L1 classes
+18:09:40 INFO    qmine.graph:   8 class(es) are rule-dependent (kNN agreement below threshold)
+18:10:25 INFO    qmine.graph:   subdivided into 48 sub-intents
+18:10:26 INFO    qmine.graph: ✔ p2e_subintents completed in 46.6s
+18:10:26 INFO    qmine.graph: P7 prepare — building 52 naming cards
+18:10:26 INFO    qmine.graph:   firewall armed with 40 forbidden label terms
+18:10:30 INFO    qmine.graph: ✔ p7_prepare completed in 4.2s
+18:10:31 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+18:10:31 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+18:10:31 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+18:10:31 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+18:10:31 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+18:10:47 INFO    qmine:   ~ namer_3 ok 16.8s out 929 · deepseek-v4-pro · leaf_id=3 · name_zh=查询词句含义
+18:10:47 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+18:10:55 INFO    qmine:   ~ namer_0 ok 25.1s out 1,450 · deepseek-v4-pro · leaf_id=0 · name_zh=查询词句含义
+18:10:57 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+18:11:09 INFO    qmine:   ~ namer_2 ok 38.5s out 2,212 · deepseek-v4-pro · leaf_id=2 · name_zh=查询词语对应生肖
+18:11:09 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+18:11:11 INFO    qmine:   ~ namer_3 ok 24.1s out 1,483 · deepseek-v4-pro · leaf_id=8 · name_zh=教育考试院官网查询
+18:11:11 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+18:11:11 INFO    qmine:   ~ namer_4 ok 41.1s out 2,423 · deepseek-v4-pro · leaf_id=4 · name_zh=考试招生官网查询
+18:11:12 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+18:11:17 INFO    qmine:   ~ namer_1 ok 46.6s out 2,469 · deepseek-v4-pro · leaf_id=1 · name_zh=查询具体问题答案
+18:11:17 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+18:11:33 INFO    qmine:   ~ namer_2 ok 23.9s out 1,388 · deepseek-v4-pro · leaf_id=7 · name_zh=教育服务平台官网查询
+18:11:33 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+18:11:34 INFO    qmine:   ~ namer_4 ok 22.2s out 1,312 · deepseek-v4-pro · leaf_id=9 · name_zh=考试成绩查询入口查找
+18:11:34 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+18:11:35 INFO    qmine:   ~ namer_0 ok 39.2s out 2,226 · deepseek-v4-pro · leaf_id=5 · name_zh=查询职业资格考试报名信息
+18:11:35 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+18:11:48 INFO    qmine:   ~ namer_0 ok 13.4s out 840 · deepseek-v4-pro · leaf_id=10 · name_zh=汉字读音释义查询
+18:11:48 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+18:11:56 INFO    qmine:   ~ namer_1 ok 38.6s out 2,223 · deepseek-v4-pro · leaf_id=6 · name_zh=官网入口查询
+18:11:56 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+18:11:58 INFO    qmine:   ~ namer_3 ok 46.7s out 2,622 · deepseek-v4-pro · leaf_id=13 · name_zh=职业院校信息查询
+18:11:58 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+18:12:01 INFO    qmine:   ~ namer_4 ok 27.6s out 1,604 · deepseek-v4-pro · leaf_id=14 · name_zh=职业院校信息查询
+18:12:02 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+18:12:03 INFO    qmine:   ~ namer_2 ok 30.0s out 1,709 · deepseek-v4-pro · leaf_id=12 · name_zh=查询高校及职业院校信息
+18:12:03 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+18:12:13 INFO    qmine:   ~ namer_0 ok 24.6s out 1,412 · deepseek-v4-pro · leaf_id=15 · name_zh=两广院校信息查询
+18:12:13 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+18:12:25 INFO    qmine:   ~ namer_4 ok 24.1s out 1,347 · deepseek-v4-pro · leaf_id=19 · name_zh=职业院校信息查询
+18:12:26 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+18:12:31 INFO    qmine:   ~ namer_3 ok 32.7s out 1,949 · deepseek-v4-pro · leaf_id=18 · name_zh=高校信息查询
+18:12:31 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+18:12:36 INFO    qmine:   ~ namer_2 ok 33.2s out 2,020 · deepseek-v4-pro · leaf_id=17 · name_zh=查询四川重庆高校及职业院校信息
+18:12:36 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+18:12:36 INFO    qmine:   ~ namer_1 ok 40.6s out 2,466 · deepseek-v4-pro · leaf_id=11 · name_zh=查询短字词与符号含义
+18:12:36 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+18:12:53 INFO    qmine:   ~ namer_4 ok 27.2s out 1,656 · deepseek-v4-pro · leaf_id=24 · name_zh=中英文翻译查询
+18:12:53 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+18:12:57 INFO    qmine:   ~ namer_3 ok 25.9s out 1,680 · deepseek-v4-pro · leaf_id=23 · name_zh=查找古诗文原文
+18:12:57 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+18:13:05 INFO    qmine:   ~ namer_0 ok 52.7s out 3,169 · deepseek-v4-pro · leaf_id=20 · name_zh=生成与查询多主题文本内容
+18:13:06 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+18:13:08 INFO    qmine:   ~ namer_2 ok 31.7s out 1,742 · deepseek-v4-pro · leaf_id=22 · name_zh=生成作业与学习内容
+18:13:08 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+18:13:08 INFO    qmine:   ~ namer_1 ok 31.9s out 1,971 · deepseek-v4-pro · leaf_id=16 · name_zh=院校信息查询
+18:13:08 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+18:13:10 INFO    qmine:   ~ namer_3 ok 13.1s out 768 · deepseek-v4-pro · leaf_id=28 · name_zh=专业就业方向及前景查询
+18:13:10 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+18:13:25 INFO    qmine:   ~ namer_3 ok 15.3s out 947 · deepseek-v4-pro · leaf_id=33 · name_zh=查询专业学习内容与就业方向
+18:13:25 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+18:13:36 INFO    qmine:   ~ namer_4 ok 43.2s out 2,637 · deepseek-v4-pro · leaf_id=29 · name_zh=大学名单查询
+18:13:36 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+18:13:38 INFO    qmine:   ~ namer_0 ok 32.9s out 1,837 · deepseek-v4-pro · leaf_id=25 · name_zh=汉字组词查询
+18:13:38 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+18:13:55 INFO    qmine:   ~ namer_2 ok 47.2s out 2,577 · deepseek-v4-pro · leaf_id=27 · name_zh=英文词项释义查询
+18:13:55 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+18:14:00 INFO    qmine:   ~ namer_0 ok 22.2s out 1,260 · deepseek-v4-pro · leaf_id=30 · name_zh=查询高校一本二本层次
+18:14:01 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+18:14:03 INFO    qmine:   ~ namer_1 ok 54.5s out 3,331 · deepseek-v4-pro · leaf_id=21 · name_zh=生肖谜底查询
+18:14:03 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+18:14:03 INFO    qmine:   ~ namer_3 ok 37.8s out 2,269 · deepseek-v4-pro · leaf_id=38 · name_zh=查询师范院校信息
+18:14:03 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+18:14:08 INFO    qmine:   ~ namer_4 ok 32.0s out 1,967 · deepseek-v4-pro · leaf_id=34 · name_zh=高校985/211属性查询
+18:14:08 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+18:14:11 INFO    qmine:   ~ namer_2 ok 16.7s out 982 · deepseek-v4-pro · leaf_id=32 · name_zh=查询专业与院校信息
+
+    ~ annotator_a ok 7.1s out 1,969 · deepseek-v4-flash · labels=25 · 周夫笔伐是什么？ → WORD_MEANING_LOOKUP
+    ~ annotator_a ok 6.6s out 1,544 · deepseek-v4-flash · labels=25 · 怀柔一中加挂新校牌后有何影响 → UNCLASSIFIABLE_OTHER
+    ~ annotator_a ok 7.3s out 1,976 · deepseek-v4-flash · labels=25 · 有没有形容一个人执着的成语 → STRUCTURAL_WORD_LISTING
+    ~ annotator_a ok 7.7s out 2,053 · deepseek-v4-flash · labels=25 · 美人不是凡胎生,应是仙器灵长成 → CLASSICAL_TEXT_RETRIEVAL
+    annotator[a] labelled 3000/3000
+    3000/3000 rows labelled by one annotator — kappa undefined, no referee, no disagreements
+    single annotator (a) — no agreement measured
+    ~ annotator_a ok 4.7s out 1,174 · deepseek-v4-flash · labels=25 · 勾股定理 → HOMEWORK_ASSISTANCE
+    ~ annotator_a ok 4.9s out 1,317 · deepseek-v4-flash · labels=25 · 犇字读音 → CHARACTER_PRONUNCIATION_LO
+    ~ annotator_a ok 5.8s out 1,466 · deepseek-v4-flash · labels=25 · 成语大全 四字成语 → STRUCTURAL_WORD_LISTING
+    ~ annotator_a ok 5.8s out 1,400 · deepseek-v4-flash · labels=25 · 李白最著名的十首诗 → CLASSICAL_TEXT_RETRIEVAL
+    ~ annotator_a ok 6.3s out 1,566 · deepseek-v4-flash · labels=25 · 翻译这篇文章 → UNCLASSIFIABLE_OTHER
+    ~ annotator_a ok 6.4s out 1,705 · deepseek-v4-flash · labels=25 · 出师一表真名世 → CLASSICAL_TEXT_RETRIEVAL
+    ~ annotator_a ok 6.5s out 1,840 · deepseek-v4-flash · labels=25 · 平行志愿什么意思 → ENROLLMENT_DELIBERATION
+    ~ annotator_a ok 6.8s out 1,923 · deepseek-v4-flash · labels=25 · 中科大测速网 → CAMPUS_PORTAL_NAVIGATION
+    annotator[a] labelled 200/200
+    active learning added 200 boundary rows
+  gate p2b_kappa: SKIPPED — 标注一致性未测量 —— fast 模式由单个标注员 (a) 标注 3000 行, 没有第二份独立判读可供比较; 覆盖率 100%
+    rule triggers: 39 executable, 18 semantic (17 rejected as unusable)
+    annotator balance: UNDECIDABLE — only 0 contested row(s) adjudicated, 20 needed to say anything
+  gate p2b_annotator_symmetry: SKIPPED — UNDECIDABLE — only 0 contested row(s) were adjudicated, 20 needed. This is NOT a finding that the annotators are comparable; it is an absence of evidence either way
+  gate p2b_rules_match_their_evidence: SKIPPED — 规则与证据的比对未运行 —— 本次没有任何被裁定的行可供检验 (单标注员时无争议行; 已写入 39 条词面规则 / 18 条语义规则, 但都没有被检验过)
+    taxonomy_v2 persisted: 57 rules (0 drafted by the referee), guide unchanged
+  ✔ p2b_gold completed in 92.5s
+    winner: kmeans_k20 (stability 0.9053)
+    ⚠ grid proposal for family_k ABORTED — payload contains 'admission_score_line' — the proposer must not see scores, or its additions stop being pre-registered
+  P5 granularity — K sweep over 14 values
+    参照系 `phrasing_groups`: 触及 60% 的簇 (行覆盖 42%) @ k=30
+    K 由 `phrasing_groups` 定位 (触及率最高)
+    located K=12 (by intent_alignment_ami); DeepAligned leaf estimate 26; converged=False
+    locator scored against 9 phrasing classes covering 0.4222 of rows
+  gate p5_locator_reaches_the_corpus: WARNED — 定位 K 用的参照系只触及 60% 的簇 —— **这个 K 是为它覆盖到的那部分语料定的**, 然后被用到了全量上。
+  P6 hierarchy — 12 families, then local leaf selection
+    built 12 families / 53 leaves — 0 个家族无内部结构未再分, 5 个 silhouette 的选择被稳定性否决
+    refined to 52 leaves in 5 rounds (converged=False)
+    minority-language facet: 1 family(ies) resolved into 6 sub-intents (a column, not leaves — the hybrid space cannot express intent within a minority language)
+    held-out structure reproduction 0.990
+  gate p6_heldout_reproduction: PASSED — held-out rows land in the same cluster 99.0% of the time (95% CI 0.987-0.993, n=4360) — met
+  ✔ p456_tree completed in 741.3s
+  P2c classifier — 3200 labelled rows
+    CV accuracy 0.891, macro-F1 0.845, ECE 0.038
+  gate p2c_calibration: WARNED — ECE 0.0376 sits 8.3 sd above the perfectly-calibrated null for this run (0.0118 ± 0.0031)
+  ✔ p2c_classifier completed in 3.0s
+  P2d 对抗验证 —— fast 模式跳过 (纯复核, 不改变任何标签)
+  ✔ p2d_validate completed in 0.0s
+  P2e sub-intents — auditing 20 L1 classes
+    8 class(es) are rule-dependent (kNN agreement below threshold)
+    subdivided into 48 sub-intents
+  ✔ p2e_subintents completed in 46.6s
+  P7 prepare — building 52 naming cards
+    firewall armed with 40 forbidden label terms
+  ✔ p7_prepare completed in 4.2s
+    ~ namer_3 ok 16.8s out 929 · deepseek-v4-pro · leaf_id=3 · name_zh=查询词句含义
+    ~ namer_0 ok 25.1s out 1,450 · deepseek-v4-pro · leaf_id=0 · name_zh=查询词句含义
+    ~ namer_2 ok 38.5s out 2,212 · deepseek-v4-pro · leaf_id=2 · name_zh=查询词语对应生肖
+    ~ namer_3 ok 24.1s out 1,483 · deepseek-v4-pro · leaf_id=8 · name_zh=教育考试院官网查询
+    ~ namer_4 ok 41.1s out 2,423 · deepseek-v4-pro · leaf_id=4 · name_zh=考试招生官网查询
+    ~ namer_1 ok 46.6s out 2,469 · deepseek-v4-pro · leaf_id=1 · name_zh=查询具体问题答案
+    ~ namer_2 ok 23.9s out 1,388 · deepseek-v4-pro · leaf_id=7 · name_zh=教育服务平台官网查询
+    ~ namer_4 ok 22.2s out 1,312 · deepseek-v4-pro · leaf_id=9 · name_zh=考试成绩查询入口查找
+    ~ namer_0 ok 39.2s out 2,226 · deepseek-v4-pro · leaf_id=5 · name_zh=查询职业资格考试报名信息
+    ~ namer_0 ok 13.4s out 840 · deepseek-v4-pro · leaf_id=10 · name_zh=汉字读音释义查询
+    ~ namer_1 ok 38.6s out 2,223 · deepseek-v4-pro · leaf_id=6 · name_zh=官网入口查询
+    ~ namer_3 ok 46.7s out 2,622 · deepseek-v4-pro · leaf_id=13 · name_zh=职业院校信息查询
+    ~ namer_4 ok 27.6s out 1,604 · deepseek-v4-pro · leaf_id=14 · name_zh=职业院校信息查询
+    ~ namer_2 ok 30.0s out 1,709 · deepseek-v4-pro · leaf_id=12 · name_zh=查询高校及职业院校信息
+    ~ namer_0 ok 24.6s out 1,412 · deepseek-v4-pro · leaf_id=15 · name_zh=两广院校信息查询
+    ~ namer_4 ok 24.1s out 1,347 · deepseek-v4-pro · leaf_id=19 · name_zh=职业院校信息查询
+    ~ namer_3 ok 32.7s out 1,949 · deepseek-v4-pro · leaf_id=18 · name_zh=高校信息查询
+    ~ namer_2 ok 33.2s out 2,020 · deepseek-v4-pro · leaf_id=17 · name_zh=查询四川重庆高校及职业院校信息
+    ~ namer_1 ok 40.6s out 2,466 · deepseek-v4-pro · leaf_id=11 · name_zh=查询短字词与符号含义
+    ~ namer_4 ok 27.2s out 1,656 · deepseek-v4-pro · leaf_id=24 · name_zh=中英文翻译查询
+    ~ namer_3 ok 25.9s out 1,680 · deepseek-v4-pro · leaf_id=23 · name_zh=查找古诗文原文
+    ~ namer_0 ok 52.7s out 3,169 · deepseek-v4-pro · leaf_id=20 · name_zh=生成与查询多主题文本内容
+    ~ namer_2 ok 31.7s out 1,742 · deepseek-v4-pro · leaf_id=22 · name_zh=生成作业与学习内容
+    ~ namer_1 ok 31.9s out 1,971 · deepseek-v4-pro · leaf_id=16 · name_zh=院校信息查询
+    ~ namer_3 ok 13.1s out 768 · deepseek-v4-pro · leaf_id=28 · name_zh=专业就业方向及前景查询
+    ~ namer_3 ok 15.3s out 947 · deepseek-v4-pro · leaf_id=33 · name_zh=查询专业学习内容与就业方向
+    ~ namer_4 ok 43.2s out 2,637 · deepseek-v4-pro · leaf_id=29 · name_zh=大学名单查询
+    ~ namer_0 ok 32.9s out 1,837 · deepseek-v4-pro · leaf_id=25 · name_zh=汉字组词查询
+    ~ namer_2 ok 47.2s out 2,577 · deepseek-v4-pro · leaf_id=27 · name_zh=英文词项释义查询
+    ~ namer_0 ok 22.2s out 1,260 · deepseek-v4-pro · leaf_id=30 · name_zh=查询高校一本二本层次
+    ~ namer_1 ok 54.5s out 3,331 · deepseek-v4-pro · leaf_id=21 · name_zh=生肖谜底查询
+    ~ namer_3 ok 37.8s out 2,269 · deepseek-v4-pro · leaf_id=38 · name_zh=查询师范院校信息
+    ~ namer_4 ok 32.0s out 1,967 · deepseek-v4-pro · leaf_id=34 · name_zh=高校985/211属性查询
+    ~ namer_2 ok 16.7s out 982 · deepseek-v4-pro · leaf_id=32 · name_zh=查询专业与院校信息18:14:11 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+18:14:17 INFO    qmine:   ~ namer_0 !! 16.6s out 1,106 · deepseek-v4-pro · ValueError
+18:14:17 WARNING qmine.llm: role=namer_0 attempt=0 failed (ValueError: no parseable structured output); already in plain-JSON mode — the model returned unparseable JSON; re-asking
+18:14:18 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+18:14:25 INFO    qmine:   ~ namer_3 ok 21.8s out 1,290 · deepseek-v4-pro · leaf_id=43 · name_zh=汉字读音查询
+18:14:25 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+18:14:30 INFO    qmine:   ~ namer_4 ok 22.0s out 1,255 · deepseek-v4-pro · leaf_id=39 · name_zh=查询字词拼音
+18:14:30 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+18:14:33 INFO    qmine:   ~ namer_2 ok 21.4s out 1,275 · deepseek-v4-pro · leaf_id=37 · name_zh=医药类院校信息查询
+18:14:33 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+18:14:33 INFO    qmine:   ~ namer_0 ok 32.6s out 843 · deepseek-v4-pro · leaf_id=35 · name_zh=学院信息查询
+18:14:33 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+18:14:45 INFO    qmine:   ~ namer_2 ok 12.6s out 708 · deepseek-v4-pro · leaf_id=42 · name_zh=查询汉字读音
+18:14:46 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+18:14:49 INFO    qmine:   ~ namer_4 ok 19.2s out 1,012 · deepseek-v4-pro · leaf_id=44 · name_zh=汉字笔顺查询
+18:14:49 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+18:14:50 INFO    qmine:   ~ namer_1 ok 47.6s out 2,700 · deepseek-v4-pro · leaf_id=26 · name_zh=英文词条释义查询
+18:14:50 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+18:14:53 INFO    qmine:   ~ namer_0 ok 19.7s out 1,056 · deepseek-v4-pro · leaf_id=40 · name_zh=查询汉字词语读音
+18:14:53 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+18:15:07 INFO    qmine:   ~ namer_3 ok 41.9s out 2,360 · deepseek-v4-pro · leaf_id=48 · name_zh=高考志愿填报信息查询
+18:15:07 INFO    qmine.graph:   namer[3] named 10 clusters
+18:15:17 INFO    qmine:   ~ namer_2 ok 31.6s out 1,804 · deepseek-v4-pro · leaf_id=47 · name_zh=2026年高考中考分数线查询
+18:15:17 INFO    qmine.graph:   namer[2] named 10 clusters
+18:15:19 INFO    qmine:   ~ namer_1 ok 29.3s out 1,447 · deepseek-v4-pro · leaf_id=31 · name_zh=查询学历学位区别与报考条件
+18:15:19 INFO    qmine:   ~ namer_0 ok 26.8s out 1,648 · deepseek-v4-pro · leaf_id=45 · name_zh=查询2025年中高考录取分数线
+18:15:20 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+18:15:20 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+18:15:39 INFO    qmine:   ~ namer_0 ok 19.7s out 1,088 · deepseek-v4-pro · leaf_id=50 · name_zh=查询大学录取分数线
+18:15:39 INFO    qmine.graph:   namer[0] named 11 clusters
+18:15:48 INFO    qmine:   ~ namer_4 ok 58.8s out 3,292 · deepseek-v4-pro · leaf_id=49 · name_zh=高考信息查询
+18:15:48 INFO    qmine.graph:   namer[4] named 10 clusters
+18:16:04 INFO    qmine:   ~ namer_1 ok 44.6s out 2,506 · deepseek-v4-pro · leaf_id=36 · name_zh=高校信息与教务入口查询
+18:16:04 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+18:16:39 INFO    qmine:   ~ namer_1 ok 34.9s out 2,218 · deepseek-v4-pro · leaf_id=41 · name_zh=多音字组词与拼音基础查询
+18:16:39 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+18:17:31 INFO    qmine:   ~ namer_1 ok 51.7s out 2,845 · deepseek-v4-pro · leaf_id=46 · name_zh=中考总分查询
+18:17:31 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+18:17:57 INFO    qmine:   ~ namer_1 ok 26.1s out 1,523 · deepseek-v4-pro · leaf_id=51 · name_zh=查询录取分数线
+18:17:57 INFO    qmine.graph:   namer[1] named 11 clusters
+18:17:57 INFO    qmine.graph: P7 audit — 52 namings in
+18:17:59 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+18:24:09 INFO    qmine:   ~ tree_auditor ok 371.9s out 25,391 · deepseek-v4-pro · families=25, cross_family_twins=0, duplicate_leaf_pairs=0, risk_findings=0, incoherent_families=0, prescriptions=19 · 查询词句含义 → word_phrase_m
+18:29:12 INFO    httpx2: HTTP Request: POST https://open.bigmodel.cn/api/paas/v4/chat/completions "HTTP/1.1 200 OK"
+18:29:12 INFO    qmine:   ~ risk_sentinel ok 303.8s out 11,723 · glm-5.3 · findings=3 · 赌博彩票竞猜（伪装为谜语/生肖文化） → 两组聚类呈现典型的非法彩票（六合彩类）'解密'话术：
+18:29:12 INFO    qmine.graph:   auditor: 19 prescriptions; risk sentinel: 3 findings
+18:29:12 INFO    qmine.graph: gate p7_all_leaves_named: PASSED — all 52 leaves named
+18:29:12 INFO    qmine.graph: gate p7_coherence: PASSED — blind coherence: mean 3.77/5, 4/52 leaves (8%) below 3.0
+18:29:12 INFO    qmine.graph: gate p7_risk_independently_found: PASSED — risk content was flagged by an agent that was never told to look for it
+18:29:12 INFO    qmine.graph: ✔ p7_audit completed in 675.8s
+18:29:12 INFO    qmine.graph: P8 governance — executing 24 prescriptions
+18:29:13 INFO    qmine.graph:   12 leaf/leaves changed membership past 20% — their p7 name no longer describes them: [0, 1, 9, 11, 12, 20, 26, 29, 31, 39, 41, 45]
+18:29:13 INFO    qmine.graph:   naming 18 leaf/leaves after governance (6 new, 12 re-named)
+18:29:15 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+18:29:45 INFO    qmine:   ~ namer_postgov ok 30.1s out 1,736 · deepseek-v4-pro · leaf_id=0 · name_zh=词语释义查询
+18:29:45 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+18:30:39 INFO    qmine:   ~ namer_postgov ok 54.4s out 3,305 · deepseek-v4-pro · leaf_id=1 · name_zh=查询汉字与词语
+18:30:40 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+18:31:11 INFO    qmine:   ~ namer_postgov ok 31.3s out 1,919 · deepseek-v4-pro · leaf_id=9 · name_zh=查询中考成绩
+18:31:11 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+18:32:00 INFO    qmine:   ~ namer_postgov ok 49.7s out 2,988 · deepseek-v4-pro · leaf_id=11 · name_zh=短词模糊查询处理
+18:32:01 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+18:32:37 INFO    qmine:   ~ namer_postgov ok 36.6s out 2,288 · deepseek-v4-pro · leaf_id=12 · name_zh=查询高校与职业院校信息
+18:32:37 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+18:33:16 INFO    qmine:   ~ namer_postgov ok 39.3s out 2,275 · deepseek-v4-pro · leaf_id=20 · name_zh=查询好词好句与名言故事素材
+18:33:16 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+18:34:08 INFO    qmine:   ~ namer_postgov ok 52.0s out 3,084 · deepseek-v4-pro · leaf_id=26 · name_zh=英文单词查询
+18:34:08 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+18:34:36 INFO    qmine:   ~ namer_postgov ok 27.7s out 1,759 · deepseek-v4-pro · leaf_id=29 · name_zh=院校专业名单查询
+18:34:36 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+18:35:03 INFO    qmine:   ~ namer_postgov ok 27.2s out 1,558 · deepseek-v4-pro · leaf_id=31 · name_zh=考试升学报考条件与学制学费查询
+18:35:03 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+18:35:28 INFO    qmine:   ~ namer_postgov ok 25.0s out 1,463 · deepseek-v4-pro · leaf_id=39 · name_zh=查询中文内容拼音读音
+18:35:28 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+18:35:38 INFO    qmine:   ~ namer_postgov ok 9.8s out 565 · deepseek-v4-pro · leaf_id=41 · name_zh=多音字组词查询
+18:35:38 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+18:35:52 INFO    qmine:   ~ namer_postgov ok 14.4s out 837 · deepseek-v4-pro · leaf_id=45 · name_zh=录取分数线查询
+18:35:53 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+18:36:24 INFO    qmine:   ~ namer_postgov ok 31.8s out 1,996 · deepseek-v4-pro · leaf_id=52 · name_zh=查询词语概念含义与基础常识
+18:36:25 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+18:36:59 INFO    qmine:   ~ namer_postgov ok 35.0s out 2,008 · deepseek-v4-pro · leaf_id=53 · name_zh=查询极短词条
+18:37:00 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+18:37:53 INFO    qmine:   ~ namer_postgov ok 53.3s out 2,993 · deepseek-v4-pro · leaf_id=54 · name_zh=按需求生成与改写文本
+18:37:53 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+18:38:30 INFO    qmine:   ~ namer_postgov ok 37.0s out 2,219 · deepseek-v4-pro · leaf_id=55 · name_zh=查询院校基本信息
+18:38:30 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+18:38:54 INFO    qmine:   ~ namer_postgov ok 24.1s out 1,318 · deepseek-v4-pro · leaf_id=56 · name_zh=查询事物区别
+18:38:54 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+18:39:26 INFO    qmine:   ~ namer_postgov ok 31.9s out 1,922 · deepseek-v4-pro · leaf_id=57 · name_zh=查询拼音字母与声韵母发音表
+18:39:26 INFO    qmine.graph:   named 18/18 leaves affected by governance
+18:39:26 INFO    qmine.graph: gate p8_leaves_are_distinguishable: PASSED — 每个交付叶都能凭名称与同家族的兄弟叶区分开
+18:39:26 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+18:40:26 INFO    qmine:   ~ namer_family ok 60.0s out 3,622 · deepseek-v4-pro · leaf_ids=0
+18:40:26 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+18:40:50 INFO    qmine:   ~ namer_family ok 23.9s out 1,559 · deepseek-v4-pro · leaf_ids=0
+18:40:50 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+18:41:36 INFO    qmine:   ~ namer_family ok 46.5s out 2,800 · deepseek-v4-pro · leaf_ids=0
+18:41:36 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+18:41:58 INFO    qmine:   ~ namer_family ok 21.5s out 1,381 · deepseek-v4-pro · leaf_ids=0
+18:41:58 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+18:43:32 INFO    qmine:   ~ namer_family ok 94.0s out 5,785 · deepseek-v4-pro · leaf_ids=0
+18:43:32 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+18:43:48 INFO    qmine:   ~ namer_family ok 16.8s out 1,038 · deepseek-v4-pro · leaf_ids=0
+18:43:49 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+18:44:34 INFO    qmine:   ~ namer_family ok 45.2s out 2,843 · deepseek-v4-pro · leaf_ids=0
+18:44:34 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+18:45:06 INFO    qmine:   ~ namer_family ok 32.6s out 2,065 · deepseek-v4-pro · leaf_ids=0
+18:45:07 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+18:45:18 INFO    qmine:   ~ namer_family ok 11.5s out 715 · deepseek-v4-pro · leaf_ids=0
+18:45:18 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+18:45:32 INFO    qmine:   ~ namer_family ok 14.0s out 753 · deepseek-v4-pro · leaf_ids=0
+18:45:32 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+18:45:58 INFO    qmine:   ~ namer_family ok 26.0s out 1,588 · deepseek-v4-pro · leaf_ids=0
+18:45:58 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+18:46:26 INFO    qmine:   ~ namer_family ok 27.7s out 1,698 · deepseek-v4-pro · leaf_ids=0
+18:46:26 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+18:46:42 INFO    qmine:   ~ namer_family ok 16.8s out 1,080 · deepseek-v4-pro · leaf_ids=0
+18:46:43 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+18:47:16 INFO    qmine:   ~ namer_family ok 33.5s out 2,008 · deepseek-v4-pro · leaf_ids=0
+18:47:16 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+18:47:50 INFO    qmine:   ~ namer_family ok 34.2s out 2,025 · deepseek-v4-pro · leaf_ids=0
+18:47:50 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+18:48:05 INFO    qmine:   ~ namer_family ok 14.3s out 846 · deepseek-v4-pro · leaf_ids=0
+18:48:05 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+18:49:08 INFO    qmine:   ~ namer_family ok 63.9s out 4,303 · deepseek-v4-pro · leaf_ids=0
+18:49:09 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+18:49:34 INFO    qmine:   ~ namer_family ok 26.0s out 1,688 · deepseek-v4-pro · leaf_ids=0
+18:49:35 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+18:49:52 INFO    qmine:   ~ namer_family ok 18.1s out 1,160 · deepseek-v4-pro · leaf_ids=0
+18:49:53 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+18:50:23 INFO    qmine:   ~ namer_family ok 30.1s out 1,982 · deepseek-v4-pro · leaf_ids=0
+18:50:23 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+18:50:37 INFO    qmine:   ~ namer_family ok 14.7s out 939 · deepseek-v4-pro · leaf_ids=0
+18:50:37 INFO    qmine.graph:   named 21/21 delivered families
+18:50:37 INFO    qmine.graph: gate p8_governance_executed: PASSED — 19 executed, 5 explicitly declined
+18:50:37 INFO    qmine.graph: ✔ p8_governance completed in 1284.9s
+18:50:37 INFO    qmine.graph: P9 uniform panel — re-measuring every candidate under one harness
+18:52:01 INFO    qmine.graph: ✔ p9_panel completed in 83.7s
+18:52:01 INFO    qmine.graph: P10 deployment — building the delivered table and centroid model
+18:52:01 INFO    qmine.graph: gate p10_delivered_leaves_named: PASSED — all 38 delivered leaves carry a name
+18:52:01 INFO    qmine.graph:   K 定位参照校验: 参与投票的措辞群单一意图占比中位数 99.0% (随机基线 20.8%)
+18:52:01 INFO    qmine.graph:   路线一致性 (family, 21 簇 vs 20 类): AMI=0.7002, 18/21 单一意图占多数
+18:52:01 INFO    qmine.graph:   路线一致性 (leaf, 38 簇 vs 20 类): AMI=0.7218, 33/38 单一意图占多数
+18:52:01 INFO    qmine.graph:   路线对照: 11/21 个家族与自上而下 L1 高度一致 (≥80% 落在同一类目)
+18:52:01 INFO    qmine.graph: ✔ p10_deploy completed in 0.3s
+18:52:01 INFO    qmine.graph: P10b drift — comparing 2 snapshots: AI助手, 搜索
+18:52:02 INFO    qmine.graph: gate p10b_snapshots_share_one_frame: WARNED — 39 group(s) sit almost entirely in ONE snapshot — read them before trusting any share below; they were separated, not compared
+18:52:02 INFO    qmine.graph: ✔ p10b_drift completed in 0.3s
+18:52:02 INFO    qmine.graph: P11 reporting — assembling deliverables
+/Users/mayouxuan/Documents/Claude/Search Query Mining Agent Team/QMine/.venv/lib/python3.12/site-packages/umap/umap_.py:1952: UserWarning: n_jobs value 1 overridden to 1 by setting random_state. Use no seed for parallelism.
+  warn(
+18:52:15 INFO    qmine.graph:   fast 模式交付: 核心参考文档 (完整中间产物保留)
+18:52:15 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+18:52:44 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+18:52:51 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+18:52:55 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+18:53:08 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+18:53:22 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+18:53:41 INFO    qmine.graph:   工作簿: education_zh_query_挖掘结果.xlsx (21,799 行 × 21 列, 10 个 sheet)
+18:53:41 INFO    qmine.graph: ✔ p11_report completed in 99.2s
+18:53:41 INFO    qmine.graph: P12 maintenance — baseline, novelty sentinel, rerun contract
+18:53:41 INFO    qmine.graph:   diffed against run edu-pool — NOT COMPARABLE — the config hash changed, so encoder/alpha/K
+
+    ~ namer_0 !! 16.6s out 1,106 · deepseek-v4-pro · ValueError
+    ~ namer_3 ok 21.8s out 1,290 · deepseek-v4-pro · leaf_id=43 · name_zh=汉字读音查询
+    ~ namer_4 ok 22.0s out 1,255 · deepseek-v4-pro · leaf_id=39 · name_zh=查询字词拼音
+    ~ namer_2 ok 21.4s out 1,275 · deepseek-v4-pro · leaf_id=37 · name_zh=医药类院校信息查询
+    ~ namer_0 ok 32.6s out 843 · deepseek-v4-pro · leaf_id=35 · name_zh=学院信息查询
+    ~ namer_2 ok 12.6s out 708 · deepseek-v4-pro · leaf_id=42 · name_zh=查询汉字读音
+    ~ namer_4 ok 19.2s out 1,012 · deepseek-v4-pro · leaf_id=44 · name_zh=汉字笔顺查询
+    ~ namer_1 ok 47.6s out 2,700 · deepseek-v4-pro · leaf_id=26 · name_zh=英文词条释义查询
+    ~ namer_0 ok 19.7s out 1,056 · deepseek-v4-pro · leaf_id=40 · name_zh=查询汉字词语读音
+    ~ namer_3 ok 41.9s out 2,360 · deepseek-v4-pro · leaf_id=48 · name_zh=高考志愿填报信息查询
+    namer[3] named 10 clusters
+    ~ namer_2 ok 31.6s out 1,804 · deepseek-v4-pro · leaf_id=47 · name_zh=2026年高考中考分数线查询
+    namer[2] named 10 clusters
+    ~ namer_1 ok 29.3s out 1,447 · deepseek-v4-pro · leaf_id=31 · name_zh=查询学历学位区别与报考条件
+    ~ namer_0 ok 26.8s out 1,648 · deepseek-v4-pro · leaf_id=45 · name_zh=查询2025年中高考录取分数线
+    ~ namer_0 ok 19.7s out 1,088 · deepseek-v4-pro · leaf_id=50 · name_zh=查询大学录取分数线
+    namer[0] named 11 clusters
+    ~ namer_4 ok 58.8s out 3,292 · deepseek-v4-pro · leaf_id=49 · name_zh=高考信息查询
+    namer[4] named 10 clusters
+    ~ namer_1 ok 44.6s out 2,506 · deepseek-v4-pro · leaf_id=36 · name_zh=高校信息与教务入口查询
+    ~ namer_1 ok 34.9s out 2,218 · deepseek-v4-pro · leaf_id=41 · name_zh=多音字组词与拼音基础查询
+    ~ namer_1 ok 51.7s out 2,845 · deepseek-v4-pro · leaf_id=46 · name_zh=中考总分查询
+    ~ namer_1 ok 26.1s out 1,523 · deepseek-v4-pro · leaf_id=51 · name_zh=查询录取分数线
+    namer[1] named 11 clusters
+  P7 audit — 52 namings in
+    ~ tree_auditor ok 371.9s out 25,391 · deepseek-v4-pro · families=25, cross_family_twins=0, duplicate_leaf_pairs=0, risk_findings=0, incoherent_families=0, prescriptions=19 · 查询词句含义 → word_phrase_m
+    ~ risk_sentinel ok 303.8s out 11,723 · glm-5.3 · findings=3 · 赌博彩票竞猜（伪装为谜语/生肖文化） → 两组聚类呈现典型的非法彩票（六合彩类）'解密'话术：
+    auditor: 19 prescriptions; risk sentinel: 3 findings
+  gate p7_all_leaves_named: PASSED — all 52 leaves named
+  gate p7_coherence: PASSED — blind coherence: mean 3.77/5, 4/52 leaves (8%) below 3.0
+  gate p7_risk_independently_found: PASSED — risk content was flagged by an agent that was never told to look for it
+  ✔ p7_audit completed in 675.8s
+  P8 governance — executing 24 prescriptions
+    12 leaf/leaves changed membership past 20% — their p7 name no longer describes them: [0, 1, 9, 11, 12, 20, 26, 29, 31, 39, 41, 45]
+    naming 18 leaf/leaves after governance (6 new, 12 re-named)
+    ~ namer_postgov ok 30.1s out 1,736 · deepseek-v4-pro · leaf_id=0 · name_zh=词语释义查询
+    ~ namer_postgov ok 54.4s out 3,305 · deepseek-v4-pro · leaf_id=1 · name_zh=查询汉字与词语
+    ~ namer_postgov ok 31.3s out 1,919 · deepseek-v4-pro · leaf_id=9 · name_zh=查询中考成绩
+    ~ namer_postgov ok 49.7s out 2,988 · deepseek-v4-pro · leaf_id=11 · name_zh=短词模糊查询处理
+    ~ namer_postgov ok 36.6s out 2,288 · deepseek-v4-pro · leaf_id=12 · name_zh=查询高校与职业院校信息
+    ~ namer_postgov ok 39.3s out 2,275 · deepseek-v4-pro · leaf_id=20 · name_zh=查询好词好句与名言故事素材
+    ~ namer_postgov ok 52.0s out 3,084 · deepseek-v4-pro · leaf_id=26 · name_zh=英文单词查询
+    ~ namer_postgov ok 27.7s out 1,759 · deepseek-v4-pro · leaf_id=29 · name_zh=院校专业名单查询
+    ~ namer_postgov ok 27.2s out 1,558 · deepseek-v4-pro · leaf_id=31 · name_zh=考试升学报考条件与学制学费查询
+    ~ namer_postgov ok 25.0s out 1,463 · deepseek-v4-pro · leaf_id=39 · name_zh=查询中文内容拼音读音
+    ~ namer_postgov ok 9.8s out 565 · deepseek-v4-pro · leaf_id=41 · name_zh=多音字组词查询
+    ~ namer_postgov ok 14.4s out 837 · deepseek-v4-pro · leaf_id=45 · name_zh=录取分数线查询
+    ~ namer_postgov ok 31.8s out 1,996 · deepseek-v4-pro · leaf_id=52 · name_zh=查询词语概念含义与基础常识
+    ~ namer_postgov ok 35.0s out 2,008 · deepseek-v4-pro · leaf_id=53 · name_zh=查询极短词条
+    ~ namer_postgov ok 53.3s out 2,993 · deepseek-v4-pro · leaf_id=54 · name_zh=按需求生成与改写文本
+    ~ namer_postgov ok 37.0s out 2,219 · deepseek-v4-pro · leaf_id=55 · name_zh=查询院校基本信息
+    ~ namer_postgov ok 24.1s out 1,318 · deepseek-v4-pro · leaf_id=56 · name_zh=查询事物区别
+    ~ namer_postgov ok 31.9s out 1,922 · deepseek-v4-pro · leaf_id=57 · name_zh=查询拼音字母与声韵母发音表
+    named 18/18 leaves affected by governance
+  gate p8_leaves_are_distinguishable: PASSED — 每个交付叶都能凭名称与同家族的兄弟叶区分开
+    ~ namer_family ok 60.0s out 3,622 · deepseek-v4-pro · leaf_ids=0
+    ~ namer_family ok 23.9s out 1,559 · deepseek-v4-pro · leaf_ids=0
+    ~ namer_family ok 46.5s out 2,800 · deepseek-v4-pro · leaf_ids=0
+    ~ namer_family ok 21.5s out 1,381 · deepseek-v4-pro · leaf_ids=0
+    ~ namer_family ok 94.0s out 5,785 · deepseek-v4-pro · leaf_ids=0
+    ~ namer_family ok 16.8s out 1,038 · deepseek-v4-pro · leaf_ids=0
+    ~ namer_family ok 45.2s out 2,843 · deepseek-v4-pro · leaf_ids=0
+    ~ namer_family ok 32.6s out 2,065 · deepseek-v4-pro · leaf_ids=0
+    ~ namer_family ok 11.5s out 715 · deepseek-v4-pro · leaf_ids=0
+    ~ namer_family ok 14.0s out 753 · deepseek-v4-pro · leaf_ids=0
+    ~ namer_family ok 26.0s out 1,588 · deepseek-v4-pro · leaf_ids=0
+    ~ namer_family ok 27.7s out 1,698 · deepseek-v4-pro · leaf_ids=0
+    ~ namer_family ok 16.8s out 1,080 · deepseek-v4-pro · leaf_ids=0
+    ~ namer_family ok 33.5s out 2,008 · deepseek-v4-pro · leaf_ids=0
+    ~ namer_family ok 34.2s out 2,025 · deepseek-v4-pro · leaf_ids=0
+    ~ namer_family ok 14.3s out 846 · deepseek-v4-pro · leaf_ids=0
+    ~ namer_family ok 63.9s out 4,303 · deepseek-v4-pro · leaf_ids=0
+    ~ namer_family ok 26.0s out 1,688 · deepseek-v4-pro · leaf_ids=0
+    ~ namer_family ok 18.1s out 1,160 · deepseek-v4-pro · leaf_ids=0
+    ~ namer_family ok 30.1s out 1,982 · deepseek-v4-pro · leaf_ids=0
+    ~ namer_family ok 14.7s out 939 · deepseek-v4-pro · leaf_ids=0
+    named 21/21 delivered families
+  gate p8_governance_executed: PASSED — 19 executed, 5 explicitly declined
+  ✔ p8_governance completed in 1284.9s
+  P9 uniform panel — re-measuring every candidate under one harness
+  ✔ p9_panel completed in 83.7s
+  P10 deployment — building the delivered table and centroid model
+  gate p10_delivered_leaves_named: PASSED — all 38 delivered leaves carry a name
+    K 定位参照校验: 参与投票的措辞群单一意图占比中位数 99.0% (随机基线 20.8%)
+    路线一致性 (family, 21 簇 vs 20 类): AMI=0.7002, 18/21 单一意图占多数
+    路线一致性 (leaf, 38 簇 vs 20 类): AMI=0.7218, 33/38 单一意图占多数
+    路线对照: 11/21 个家族与自上而下 L1 高度一致 (≥80% 落在同一类目)
+  ✔ p10_deploy completed in 0.3s
+  P10b drift — comparing 2 snapshots: AI助手, 搜索
+  gate p10b_snapshots_share_one_frame: WARNED — 39 group(s) sit almost entirely in ONE snapshot — read them before trusting any share below; they were separated, not compared
+  ✔ p10b_drift completed in 0.3s
+  P11 reporting — assembling deliverables
+    fast 模式交付: 核心参考文档 (完整中间产物保留)
+    工作簿: education_zh_query_挖掘结果.xlsx (21,799 行 × 21 列, 10 个 sheet)
+  ✔ p11_report completed in 99.2s
+  P12 maintenance — baseline, novelty sentinel, rerun contract
+    diffed against run edu-pool — NOT COMPARABLE — the config hash changed, so encoder/alpha/K19:07:41 INFO    httpx2: HTTP Request: POST https://open.bigmodel.cn/api/paas/v4/chat/completions "HTTP/1.1 200 OK"
+19:07:41 INFO    qmine:   ~ maintainer ok 840.6s out 41,755 · glm-5.3 · new_families=4, disappeared_families=5, grown=4, shrunk=2, novel_queries=40, recommended_actions=6 · 数学公式查询 → math_formula
+19:07:41 INFO    qmine.graph: ✔ p12_maintain completed in 840.6s
+
+    ~ maintainer ok 840.6s out 41,755 · glm-5.3 · new_families=4, disappeared_families=5, grown=4, shrunk=2, novel_queries=40, recommended_actions=6 · 数学公式查询 → math_formula
+  ✔ p12_maintain completed in 840.6s
+───────────────────────────────── run summary ──────────────────────────────────
+┏━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃ field           ┃ value                                                      ┃
+┡━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┩
+│ run_id          │ edu-pool5                                                  │
+│ generation      │ 1                                                          │
+│ elapsed_s       │ 5977.4                                                     │
+│ halted          │ False                                                      │
+│ n_decisions     │ 7                                                          │
+│ n_prescriptions │ 24                                                         │
+│ phases          │ p0, p1, p2a, p3, p2b, p4, p5, p6, p2c, p2d, p2e, p7, p8,   │
+│                 │ p9, p10, p10b, p11, p12                                    │
+│ artifacts       │ 51                                                         │
+│ llm             │ routed · 233 calls · 0 cached · $3.78                      │
+│ output          │ /Users/mayouxuan/Documents/Claude/Search Query Mining      │
+│                 │ Agent Team/QMine/runs/edu-pool5/gen01                      │
+└─────────────────┴────────────────────────────────────────────────────────────┘
+┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃ gate                           ┃ status  ┃ message                           ┃
+┡━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┩
+│ p1_template_coverage           │ passed  │ 9 phrasing families cover 9,204   │
+│                                │         │ rows (42.2% of the corpus; the    │
+│                                │         │ share i                           │
+│ p1_minority_language_risk      │ passed  │ minority scripts total 16.7%.     │
+│                                │         │ Test unified-versus-stratified    │
+│                                │         │ explicitl                         │
+│ p1_reference_columns_declared  │ warned  │ the corpus carries source, l2 and │
+│                                │         │ the run declared NONE — the gold  │
+│                                │         │ set                               │
+│ p2a_taxonomy_shape             │ passed  │ 20 L1 intents, 57 adjudication    │
+│                                │         │ rules the annotator can cite      │
+│ p2a_pilot_agreement            │ skipped │ 标注一致性试点未运行 —— fast      │
+│                                │         │ 模式单标注员 (a),                 │
+│                                │         │ 没有第二判读可比对;               │
+│                                │         │ kappa、自洽上限与结构性/指南性混… │
+│ p2b_kappa                      │ skipped │ 标注一致性未测量 —— fast          │
+│                                │         │ 模式由单个标注员 (a) 标注 3000    │
+│                                │         │ 行, 没有第二份独立判读可供比较;   │
+│                                │         │ 覆盖率 100%                       │
+│ p2b_rules_match_their_evidence │ skipped │ 规则与证据的比对未运行 ——         │
+│                                │         │ 本次没有任何被裁定的行可供检验    │
+│                                │         │ (单标注员时无争议行; 已写入 39    │
+│                                │         │ 条词面规则 / 18 条语义规则, 但都  │
+│ p2b_annotator_symmetry         │ skipped │ UNDECIDABLE — only 0 contested    │
+│                                │         │ row(s) were adjudicated, 20       │
+│                                │         │ needed. Thi                       │
+│ p5_locator_reaches_the_corpus  │ warned  │ 定位 K 用的参照系只触及 60% 的簇  │
+│                                │         │ —— **这个 K                       │
+│                                │         │ 是为它覆盖到的那部分语料定的**,   │
+│                                │         │ 然后被用到了全量上。              │
+│ p6_heldout_reproduction        │ passed  │ held-out rows land in the same    │
+│                                │         │ cluster 99.0% of the time (95% CI │
+│                                │         │ 0.987                             │
+│ p7_all_leaves_named            │ passed  │ all 52 leaves named               │
+│ p7_coherence                   │ passed  │ blind coherence: mean 3.77/5,     │
+│                                │         │ 4/52 leaves (8%) below 3.0        │
+│ p7_risk_independently_found    │ passed  │ risk content was flagged by an    │
+│                                │         │ agent that was never told to look │
+│                                │         │ for i                             │
+│ p8_governance_executed         │ passed  │ 19 executed, 5 explicitly         │
+│                                │         │ declined                          │
+│ p8_leaves_are_distinguishable  │ passed  │ 每个交付叶都能凭名称与同家族的兄… │
+│ p10_delivered_leaves_named     │ passed  │ all 38 delivered leaves carry a   │
+│                                │         │ name                              │
+│ p10b_snapshots_share_one_frame │ warned  │ 39 group(s) sit almost entirely   │
+│                                │         │ in ONE snapshot — read them       │
+│                                │         │ before tru                        │
+└────────────────────────────────┴─────────┴───────────────────────────────────┘

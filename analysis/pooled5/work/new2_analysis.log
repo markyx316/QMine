@@ -1,0 +1,568 @@
+=== .venv/bin/python analysis/pooled5/p5_tables.py 书籍文档 ===
+/Users/mayouxuan/Documents/Claude/Search Query Mining Agent Team/QMine/analysis/pooled5/pooled5_common.py:214: UserWarning: This pattern is interpreted as a regular expression, and has match groups. To actually get the groups, use str.extract.
+  row[name] = float(q.str.contains(pat, regex=True).mean())
+/Users/mayouxuan/Documents/Claude/Search Query Mining Agent Team/QMine/analysis/pooled5/pooled5_common.py:214: UserWarning: This pattern is interpreted as a regular expression, and has match groups. To actually get the groups, use str.extract.
+  row[name] = float(q.str.contains(pat, regex=True).mean())
+/Users/mayouxuan/Documents/Claude/Search Query Mining Agent Team/QMine/analysis/pooled5/pooled5_common.py:214: UserWarning: This pattern is interpreted as a regular expression, and has match groups. To actually get the groups, use str.extract.
+  row[name] = float(q.str.contains(pat, regex=True).mean())
+/Users/mayouxuan/Documents/Claude/Search Query Mining Agent Team/QMine/analysis/pooled5/pooled5_common.py:214: UserWarning: This pattern is interpreted as a regular expression, and has match groups. To actually get the groups, use str.extract.
+  row[name] = float(q.str.contains(pat, regex=True).mean())
+书籍文档: 21,786 rows · 2025搜索 9,988 · 2026搜索 9,995 · 助手头部1k 850 · 助手随机1k 953 · L1 classes 20 · V(source×L1) 0.4118
+=== .venv/bin/python analysis/pooled5/p5_digest.py 书籍文档 ===
+================ 书籍文档 · POOLED-5 数字底稿 ================
+
+[1] 语料构成（清洗后进入挖掘的行数 / 原始行数 / 剔除 PV%）
+          source  rows  kept    pv_raw  pv_dropped  drop_%  pv_drop_%
+      2025search 10000  9988 3099312.0      4647.0    0.12   0.149937
+      2026search 10000  9995 1774989.0       907.0    0.05   0.051099
+   assistant_top  1000   850 8253202.0   7300343.0   15.00  88.454675
+assistant_random  1000   953    1245.0        52.0    4.70   4.176707
+
+[1b] 清洗剔除的行（按来源×层）
+          source               tier  rows
+      2025search        S5_headline    12
+      2026search        S5_headline     5
+assistant_random    C2_feed_control     1
+assistant_random    S3_card_passage     1
+assistant_random  S4_suggested_chip    45
+   assistant_top    C1_content_free    10
+   assistant_top S1_system_repeated    20
+   assistant_top S2_system_template    54
+   assistant_top  S4_suggested_chip    62
+   assistant_top        S5_headline     4
+
+[2] 本次挖出的意图体系（L1）
+  · OBTAIN_PERSONAL_DECOR_IMAGE 获取个人装饰用图（头像/壁纸）: 用户想要一张已经存在的、可直接保存并用于个人账号头像或设备壁纸的图片。
+  · OBTAIN_OCCASION_GREETING_IMAGE 获取应景问候图片: 用户想要一组已经存在的、可直接保存发送的节日、早安/晚安或祝福场合配图。
+  · OBTAIN_REFERENCE_IMAGE 获取说明性/参考图片: 用户想要一张已存在的、用于说明某事物外观或形象的图片，如实物、植物、标志、国旗、场景或真实照片。
+  · GENERATE_OR_EDIT_IMAGE 生成或修改图片: 用户要求系统绘制、生成一张新图片，或对图片进行修改、修复、去水印、改比例等编辑操作。
+  · OBTAIN_READY_TO_POST_COPY 获取现成可直接发布文案: 用户想要一段已经写好的、可直接复制粘贴到朋友圈、聊天或祝福场合的文案、句子或语录。
+  · COMPOSE_OR_REVISE_TEXT_ON_DEMAND 现场生成或改写文字内容: 用户要求系统当场编写或改写一段文字，包括社交文案、故事或续写，而不是查找已经存在的文本。
+  · OBTAIN_READABLE_MANGA 获取漫画免费阅读或下载入口: 用户想要一个可打开、在线阅读、下载或进入某漫画平台/App的入口，通常带免费、完整版、下拉式、官网等约束。
+  · OBTAIN_DOCUMENT_TEMPLATE 获取可套用文书模板或范文: 用户想要一份可下载、可填写或可提交的正式文书模板、范文或格式样本，如合同、证明、申请书、协议、红头文件等。
+  · LEARN_HOW_TO_WRITE 学习某类文字怎么写: 用户想要某类文书或评语的写法步骤、结构要点和示例，而不是一份可直接提交的成稿。
+  · OBTAIN_ASSIGNED_WRITING_MATERIALS 获取单位或组织指定写作成稿: 用户为完成单位、党组织或学校指定主题的任务，想要发言稿、心得体会、主持词、思想汇报等可直接使用的成稿。
+  · OBTAIN_STORY_TEXT 获取故事或典故全文/梗概: 用户想要某个已有故事、典故、寓言、人物事迹的完整叙述或简介。
+  · LOOK_UP_DEFINITION 查询词语或概念的含义: 用户想要某个普通词语、俗语、缩写或概念的通俗解释。
+  · LOOK_UP_NUMERIC_OR_OFFICIAL_FACT 查询具体数字或年度主题: 用户想要一个带年份或地域的具体统计数字、人口数、出生人口或某年主题。
+  · NAVIGATE_TO_SITE 进入指定网站或电子报刊页面: 用户点名某个非漫画类网站、电子报刊、学术资源库或素材库，想要到达其入口或内容页面。
+  · LOOK_UP_OFFICIAL_POLICY_OR_COMPLIANCE_TEXT 查询官方政策法规或合规原文: 用户想要法规、标准、制度、政治要求或安全合规条款的原文、标准号或权威定义。
+  · COMPLETE_OR_INTERPRET_QUOTE 补全或解释给定句子: 用户给出一句俗语、语录或诗句，要求补下一句、出处或解释其含义。
+  · CONTEXT_DEPENDENT_REVISION_OR_FOLLOWUP 依赖前文的修改或追问: 查询缺少独立对象，只是对上一轮输出的修改要求或会话承接性追问，必须结合上文才能解释。
+  · VENT_SEEK_EMPATHY 倾诉并寻求情绪支持: 用户倾倒个人情绪、人际冲突或对系统不满，期待被理解、安慰或获得不评判的回应，而不是检索式回答。
+  · REQUEST_EXPLICIT_OR_SEXUAL_CONTENT 索取露骨或性化内容: 用户要求系统提供或生成露骨、性暗示、性化着装的真人或虚构人物图片、视频或描述，包括未成年性化内容。
+  · REQUEST_RESTRICTED_OR_HARMFUL_CONTENT 索取受限、欺骗性或有害内容: 用户要求获取自残影像、可冒充凭证的图片、博彩资料暗语、暴力体罚玩法或其他应合规处置而不直接供给的内容。
+
+[3] 各来源的意图占比（行占比 %；括号内为该来源内 Wilson 95% 区间）
+                 2025搜索  2026搜索  助手头部1k  助手随机1k
+label                                          
+依赖前文的修改或追问          1.9     1.9    44.4    25.7
+获取现成可直接发布文案        12.0     9.8    31.4    14.5
+获取说明性/参考图片         23.2    24.5     4.9     6.4
+倾诉并寻求情绪支持           0.2     0.3     0.7    23.5
+获取漫画免费阅读或下载入口      11.4    16.5     0.5     1.3
+查询词语或概念的含义         14.1    12.0     3.8     4.2
+现场生成或改写文字内容         0.7     0.8     0.7     9.1
+获取个人装饰用图（头像/壁纸）     6.3     6.7     1.5     0.5
+获取可套用文书模板或范文        5.7     4.4     0.6     0.8
+生成或修改图片             0.0     0.1     5.5     3.7
+获取应景问候图片            3.3     4.7     0.2     0.5
+获取故事或典故全文/梗概        3.9     4.2     0.1     1.3
+索取露骨或性化内容           0.9     1.0     3.8     2.1
+进入指定网站或电子报刊页面       3.2     3.8     0.1     0.6
+查询官方政策法规或合规原文       3.1     2.3     NaN     0.9
+获取单位或组织指定写作成稿       2.7     1.7     0.1     1.5
+学习某类文字怎么写           2.6     1.9     1.5     0.6
+查询具体数字或年度主题         2.1     1.8     NaN     0.6
+补全或解释给定句子           1.9     1.3     0.1     1.6
+索取受限、欺骗性或有害内容       0.5     0.5     NaN     0.5
+
+[3b] 同一张表，按流量（pv_norm，来源内归一）
+                 2025搜索  2026搜索  助手随机1k  助手头部1k
+依赖前文的修改或追问          2.0     3.0    24.6    53.3
+获取现成可直接发布文案        14.4     9.3    20.4    24.9
+获取说明性/参考图片         18.0    18.4     6.1     5.1
+倾诉并寻求情绪支持           0.1     0.2    19.5     0.4
+获取漫画免费阅读或下载入口      13.1    17.7     1.3     0.2
+查询词语或概念的含义         11.1    10.3     4.0     3.7
+现场生成或改写文字内容         0.5     0.5     8.5     0.4
+获取个人装饰用图（头像/壁纸）     9.7     9.5     0.5     1.4
+获取可套用文书模板或范文        5.1     4.0     0.8     0.4
+生成或修改图片             0.0     0.0     3.5     5.1
+获取应景问候图片            6.0     7.9     0.4     0.1
+获取故事或典故全文/梗概        3.3     3.5     1.0     0.1
+索取露骨或性化内容           0.9     0.7     3.7     2.6
+进入指定网站或电子报刊页面       6.2     7.5     0.6     0.1
+查询官方政策法规或合规原文       2.0     1.5     0.8     0.0
+获取单位或组织指定写作成稿       2.2     1.6     1.3     0.1
+学习某类文字怎么写           2.5     1.5     0.5     1.9
+查询具体数字或年度主题         1.4     1.1     0.6     0.0
+补全或解释给定句子           1.0     0.7     1.5     0.1
+索取受限、欺骗性或有害内容       0.4     0.8     0.5     0.0
+
+[4] 四条对比线的整体距离（TVD=需要换类的行占比；V=Cramér's V）
+            a                b                why  n_a  n_b    tvd  cramers_v  n_sig_classes  emergent  receded                                                                                                top_movers
+   2025search       2026search 时间（搜索内部，2025→2026） 9988 9995 0.0918     0.1108             11         0        0     获取漫画免费阅读或下载入口 +5.1pp | 获取现成可直接发布文案 -2.2pp | 查询词语或概念的含义 -2.2pp | 获取应景问候图片 +1.3pp | 获取可套用文书模板或范文 -1.3pp
+   2026search    assistant_top         界面（同为头部流量） 9995  850 0.7278     0.6138             18         0        3 依赖前文的修改或追问 +42.4pp | 获取现成可直接发布文案 +21.6pp | 获取说明性/参考图片 -19.5pp | 获取漫画免费阅读或下载入口 -16.0pp | 查询词语或概念的含义 -8.2pp
+assistant_top assistant_random        深度（助手头部→长尾）  850  953 0.4100     0.4822             11         3        0        倾诉并寻求情绪支持 +22.8pp | 依赖前文的修改或追问 -18.6pp | 获取现成可直接发布文案 -16.9pp | 现场生成或改写文字内容 +8.4pp | 生成或修改图片 -1.9pp
+   2026search assistant_random      界面+深度（不可单独归因） 9995  953 0.6509     0.6429             17         0        0  依赖前文的修改或追问 +23.8pp | 倾诉并寻求情绪支持 +23.3pp | 获取说明性/参考图片 -18.1pp | 获取漫画免费阅读或下载入口 -15.2pp | 现场生成或改写文字内容 +8.3pp
+
+[5] 每条对比线上显著变化的类目（Newcombe 95% 区间不含 0，按幅度排序，取前 8）
+
+  — 2025搜索 → 2026搜索（时间（搜索内部，2025→2026））
+     获取漫画免费阅读或下载入口                 11.4% →  16.5%    +5.1pp [+4.1,+6.1] stable
+     获取现成可直接发布文案                   12.0% →   9.8%    -2.2pp [-3.1,-1.3] stable
+     查询词语或概念的含义                    14.1% →  12.0%    -2.2pp [-3.1,-1.2] stable
+     获取应景问候图片                       3.3% →   4.7%    +1.3pp [+0.8,+1.9] stable
+     获取可套用文书模板或范文                   5.7% →   4.4%    -1.3pp [-1.9,-0.7] stable
+     获取说明性/参考图片                    23.2% →  24.5%    +1.3pp [+0.1,+2.5] stable
+     获取单位或组织指定写作成稿                  2.7% →   1.7%    -1.0pp [-1.4,-0.6] stable
+     查询官方政策法规或合规原文                  3.1% →   2.3%    -0.8pp [-1.3,-0.4] stable
+
+  — 2026搜索 → 助手头部1k（界面（同为头部流量））
+     依赖前文的修改或追问                     1.9% →  44.4%   +42.4pp [+39.1,+45.8] stable
+     获取现成可直接发布文案                    9.8% →  31.4%   +21.6pp [+18.5,+24.8] stable
+     获取说明性/参考图片                    24.5% →   4.9%   -19.5pp [-21.1,-17.7] stable
+     获取漫画免费阅读或下载入口                 16.5% →   0.5%   -16.0pp [-16.8,-15.0] stable
+     查询词语或概念的含义                    12.0% →   3.8%    -8.2pp [-9.5,-6.6] stable
+     生成或修改图片                        0.1% →   5.5%    +5.5pp [+4.1,+7.2] stable
+     获取个人装饰用图（头像/壁纸）                6.7% →   1.5%    -5.2pp [-6.0,-4.0] stable
+     获取应景问候图片                       4.7% →   0.2%    -4.5pp [-4.9,-3.7] stable
+
+  — 助手头部1k → 助手随机1k（深度（助手头部→长尾））
+     倾诉并寻求情绪支持                      0.7% →  23.5%   +22.8pp [+20.1,+25.6] stable
+     依赖前文的修改或追问                    44.4% →  25.7%   -18.6pp [-22.9,-14.3] stable
+     获取现成可直接发布文案                   31.4% →  14.5%   -16.9pp [-20.8,-13.1] stable
+     现场生成或改写文字内容                    0.7% →   9.1%    +8.4pp [+6.6,+10.5] stable
+     索取露骨或性化内容                      3.8% →   2.1%    -1.7pp [-3.3,-0.1] stable
+     补全或解释给定句子                      0.1% →   1.6%    +1.5pp [+0.6,+2.5] stable
+     获取单位或组织指定写作成稿                  0.1% →   1.5%    +1.4pp [+0.5,+2.3] stable
+     获取故事或典故全文/梗概                   0.1% →   1.3%    +1.1pp [+0.4,+2.1] stable
+
+  — 2026搜索 → 助手随机1k（界面+深度（不可单独归因））
+     依赖前文的修改或追问                     1.9% →  25.7%   +23.8pp [+21.1,+26.7] stable
+     倾诉并寻求情绪支持                      0.3% →  23.5%   +23.3pp [+20.7,+26.1] stable
+     获取说明性/参考图片                    24.5% →   6.4%   -18.1pp [-19.7,-16.2] stable
+     获取漫画免费阅读或下载入口                 16.5% →   1.3%   -15.2pp [-16.1,-14.0] stable
+     现场生成或改写文字内容                    0.8% →   9.1%    +8.3pp [+6.6,+10.3] stable
+     查询词语或概念的含义                    12.0% →   4.2%    -7.8pp [-9.1,-6.2] stable
+     获取个人装饰用图（头像/壁纸）                6.7% →   0.5%    -6.2pp [-6.7,-5.3] stable
+     获取现成可直接发布文案                    9.8% →  14.5%    +4.7pp [+2.5,+7.1] stable
+
+[6] 写法标记（行占比）
+           n  len_median  len_p90  len_mean   疑问句  祈使/委托  第一人称  称呼对方  家庭成员  身份/人生阶段  情绪词  是非核实  方法/怎么办  选择清单   定义  时效词  输出约束  导航词   资源词  回指上文  多问句(一行≥2问)
+2025搜索  9988         7.0     13.0       7.8   9.9    0.9   1.7   1.0   1.8      3.6  0.3   0.1     2.5   0.6  4.6  1.2   2.8  2.3  26.5   0.1         0.0
+2026搜索  9995         7.0     14.0       8.1   8.2    0.9   1.6   0.9   1.7      3.3  0.4   0.1     1.9   0.7  4.0  1.3   2.1  2.4  32.2   0.0         0.0
+助手头部1k   850         5.0     12.0      10.0  14.0    8.7   8.1   1.5   2.8      5.8  0.4   5.9     2.0   0.6  1.3  0.4   9.1  0.0   5.9   1.6         0.0
+助手随机1k   953        14.0     66.8      47.2  23.6   10.4  39.1  17.0   4.8      4.9  1.0   7.7     2.6   2.1  0.9  4.2   5.9  0.5   6.9   3.7         2.0
+
+[7] 逐字重合（A 的不同字符串里有多少也出现在 B）
+        2025搜索  2026搜索  助手头部1k  助手随机1k
+2025搜索   100.0    50.8     0.6     0.0
+2026搜索    50.8   100.0     0.7     0.0
+助手头部1k     6.6     8.6   100.0     0.0
+助手随机1k     0.0     0.1     0.0   100.0
+
+[8] 体系适配度（这套体系是在 87% 搜索行上拟合的）
+source    n  td_confidence_mean  td_confidence_p10  td_ambiguous_%  bu_ambiguous_%  td_margin_mean  decided_by_model_%  distinct_td_l1  distinct_bu_leaf
+2025搜索 9988               0.787              0.411           1.532          15.308           0.699               100.0              20                30
+2026搜索 9995               0.800              0.417           1.341          14.037           0.718               100.0              20                30
+助手头部1k  850               0.787              0.469           1.059          16.706           0.688               100.0              17                24
+助手随机1k  953               0.592              0.305           3.673          18.888           0.429               100.0              20                26
+
+[12] 每个类目在每个来源里的例子 —— 见 examples_td_l1_name.csv（top_pv 与随机各 6 条）
+[13] 逐行数据：analysis/pooled5/deliverables/书籍文档_pooled5_labeled.parquet
+=== .venv/bin/python analysis/pooled5/p5_postprocess_run_xlsx.py 书籍文档 ===
+书籍文档: runs/book-pool5/gen01/postprocessed/books_docs_zh_query_挖掘结果_含来源.xlsx  (21,786 rows, 2025搜索 9,988 · 2026搜索 9,995 · 助手头部1k 850 · 助手随机1k 953)
+=== .venv/bin/python analysis/pooled5/p5_deliverables.py 书籍文档 ===
+书籍文档: 书籍文档_POOLED5_逐行标注.xlsx — 21,786 labelled rows, 214 removed rows, 20 L1 classes
+=== .venv/bin/python analysis/pooled5/p5_snapshot_classes.py 书籍文档 ===
+  → runs/book-pool5/gen01/postprocessed/books_docs_zh_意图与聚类叶_跨快照对比.xlsx
+书籍文档: 21,786 行 · 2025搜索 9,988 · 2026搜索 9,995 · 助手头部1k 850 · 助手随机1k 953 · 自上而下 L1 意图 20类(仅搜索0/仅助手0) · 自上而下 L2 子意图 59类(仅搜索9/仅助手0) · 自下而上 家族 21类(仅搜索1/仅助手0) · 自下而上 叶 30类(仅搜索2/仅助手0)
+=== .venv/bin/python analysis/pooled5/p5_snapshot_figs.py 书籍文档 ===
+findfont: Failed to find font weight normal, now using 300.
+findfont: Failed to find font weight normal, now using 300.
+findfont: Failed to find font weight normal, now using 300.
+findfont: Failed to find font weight normal, now using 300.
+findfont: Failed to find font weight normal, now using 300.
+findfont: Failed to find font weight normal, now using 300.
+findfont: Failed to find font weight normal, now using 300.
+findfont: Failed to find font weight normal, now using 300.
+findfont: Failed to find font weight normal, now using 300.
+书籍文档: L1意图_占比热图.png · L1意图_均衡指数热图.png · 叶_占比热图.png · 叶_均衡指数热图.png · 快照两两距离.png · 界面散点.png
+=== .venv/bin/python analysis/pooled5/p5_snapshot_report.py 书籍文档 ===
+书籍文档: runs/book-pool5/gen01/postprocessed/books_docs_zh_意图与聚类叶_跨快照对比.zh.md  (169,133 字符, 1,427 表格行)
+=== .venv/bin/python analysis/pooled5/p5_snapshot_verify.py 书籍文档 ===
+书籍文档: 未匹配数字 0 · 问题引文 0 → analysis/pooled5/work/书籍文档/snapshot_classes/verify.md
+=== .venv/bin/python analysis/pooled5/p5_tables.py 软件 ===
+/Users/mayouxuan/Documents/Claude/Search Query Mining Agent Team/QMine/analysis/pooled5/pooled5_common.py:214: UserWarning: This pattern is interpreted as a regular expression, and has match groups. To actually get the groups, use str.extract.
+  row[name] = float(q.str.contains(pat, regex=True).mean())
+/Users/mayouxuan/Documents/Claude/Search Query Mining Agent Team/QMine/analysis/pooled5/pooled5_common.py:214: UserWarning: This pattern is interpreted as a regular expression, and has match groups. To actually get the groups, use str.extract.
+  row[name] = float(q.str.contains(pat, regex=True).mean())
+/Users/mayouxuan/Documents/Claude/Search Query Mining Agent Team/QMine/analysis/pooled5/pooled5_common.py:214: UserWarning: This pattern is interpreted as a regular expression, and has match groups. To actually get the groups, use str.extract.
+  row[name] = float(q.str.contains(pat, regex=True).mean())
+/Users/mayouxuan/Documents/Claude/Search Query Mining Agent Team/QMine/analysis/pooled5/pooled5_common.py:214: UserWarning: This pattern is interpreted as a regular expression, and has match groups. To actually get the groups, use str.extract.
+  row[name] = float(q.str.contains(pat, regex=True).mean())
+软件: 21,920 rows · 2025搜索 9,997 · 2026搜索 9,999 · 助手头部1k 940 · 助手随机1k 984 · L1 classes 24 · V(source×L1) 0.3769
+=== .venv/bin/python analysis/pooled5/p5_digest.py 软件 ===
+================ 软件 · POOLED-5 数字底稿 ================
+
+[1] 语料构成（清洗后进入挖掘的行数 / 原始行数 / 剔除 PV%）
+          source  rows  kept    pv_raw  pv_dropped  drop_%  pv_drop_%
+      2025search 10000  9997 2857327.0       326.0 0.03000   0.011409
+      2026search 10000  9999 1781056.0        36.0 0.01000   0.002021
+   assistant_top   996   940 8460983.0   8331117.0 5.62249  98.465119
+assistant_random  1000   984    1369.0        16.0 1.60000   1.168736
+
+[1b] 清洗剔除的行（按来源×层）
+          source               tier  rows
+      2025search    C1_content_free     2
+      2025search        S5_headline     1
+      2026search    C1_content_free     1
+assistant_random  S4_suggested_chip    16
+   assistant_top    C1_content_free    17
+   assistant_top S1_system_repeated    22
+   assistant_top S2_system_template    13
+   assistant_top    S3_card_passage     1
+   assistant_top  S4_suggested_chip     3
+
+[2] 本次挖出的意图体系（L1）
+  · DOWNLOAD_INSTALL_NAMED_APP 下载并安装指定软件: 用户想获取某个已指明名称的软件或App的安装包或下载地址并完成安装，查询中常带官方、正版、免费、最新版、旧版本等限定词。
+  · REACH_OFFICIAL_ENTRY 打开官方网页或网页版入口: 用户想直达某产品或服务的官网、网页版或官方客户端入口，以便在线使用或访问，而不是下载安装App。
+  · REACH_NAMED_PAGE_OR_PROFILE 直达指定页面或账号主页: 用户想打开一个指定的论坛、贴吧、微博主页、深链或URL，目标是非官方页面或特定个人、专区主页。
+  · NAME_ONLY_DISAMBIGUATION 仅产品名消歧: 用户只给出一个产品、品牌或平台名，没有动词或渠道指示，且该名称本身不足以直接归入翻墙、成人、破解等风险实体类，需由语境或追问判定动作。
+  · COMPLETE_TASK_HOWTO 完成设置或操作步骤: 用户想按步骤在某个软件、系统或平台中完成一项具体的设置或操作，包括微信功能、办公软件公式等，只要目标是学会怎么做。
+  · FIX_MALFUNCTION_TROUBLESHOOT 排查并修复故障: 用户描述某个功能已经异常、出错或不可用，如闪退、收不到消息、显示异常等，想要恢复可用状态或消除异常。
+  · CANCEL_SUBSCRIPTION_OR_AUTHORIZATION 取消持续扣费或授权: 用户想解除微信、支付宝等平台的自动续费、免密支付、绑定的银行卡、账号授权或账号本身，停止后续扣费、权限或继续参与。
+  · RECOMMEND_SOFTWARE_BY_FUNCTION 按功能求推荐软件: 用户描述一项能力或需求，想找一个能完成该任务的软件，但说不出软件名，常以有无、推荐、什么软件可以等句式出现。
+  · PLATFORM_RULES_VERDICT 平台规则与能力裁决: 用户就某个平台或产品的规则、能力上限、隐私行为、真伪或可行性提出是或否或数值类问题，要的是判断和理由，而不是操作步骤。
+  · SOCIAL_RELATIONSHIP_STATUS 判断社交关系状态与可见性: 用户想确认自己是否被好友拉黑或删除、拉黑后对方会看到什么、还能否联系，以及如何验证这类社交关系状态。
+  · RECOVER_LOST_DATA 恢复误删或丢失的数据与关系: 用户想找回已删除或过期的聊天记录、好友、照片、闪照、文件等，包括询问还能不能找回的可行性裁决。
+  · GENERATE_SOCIAL_COPY 获取社交文案与发布素材: 用户想要可直接复制使用的朋友圈文案、句子、群名、背景图或回复语，而不是学习操作步骤。
+  · LOOKUP_INPUT_CODE 查询汉字输入编码: 用户给出一个汉字，想知道它的五笔字型编码、拆分方法或输入法打字方式。
+  · DEFINE_TERM_OR_COMPARE 解释术语或比较概念: 用户要求解释某个软件、术语、缩写、版本或平台词是什么意思、有什么区别或功能，而不是获取、安装或操作。
+  · EXTRACT_FROM_IMAGE_DOCUMENT 从图片或文档提取内容: 用户要求从上传的截图、图片、PDF或文档中提取文字、数字、表格等结构化内容，而不是修改图像或生成图像。
+  · EDIT_IMAGE_COMMAND 直接编辑或生成图像: 用户以祈使句或功能词直接要求对当前或上传的图片执行去水印、抠图、换背景、美颜、修复、扩图等操作。
+  · CIRCUMVENTION_ACCESS 获取翻墙工具或访问被限制的境外服务: 用户想下载、使用或获取能突破网络访问限制的VPN、加速器、代理工具，或访问、下载大陆无法直接访问的境外应用与服务。
+  · GET_CRACKED_UNLOCKED_SOFTWARE 获取破解或解锁版软件: 用户想获得绕过付费、登录、次数或功能限制的破解版、绿色版、解锁版、无限次版等非官方修改软件。
+  · GET_ADULT_CONTENT_OR_APP 获取成人内容或成人应用: 用户想下载、安装或找到提供色情视频、成人聊天、成人社区或成人内容的应用、站点或观看入口。
+  · GET_WIFI_CREDENTIAL_INTRUSION_TOOL 获取蹭网或WiFi破解工具: 用户想获得可破解、绕过或自动连接他人受保护WiFi的密码或连接工具，或询问这类工具的能力。
+  · GET_LOCATION_SPOOFING_TOOL 获取位置伪造工具: 用户想获得可修改手机定位、伪造位置或模拟移动轨迹的工具，以规避定位验证、打卡或位置限制。
+  · GET_UNAUTHORIZED_SOFTWARE_LIBRARY 获取非官方软件库或第三方分发渠道: 用户想找到并访问非官方、第三方聚合的软件库、应用站或破解、灰色分发入口本身。
+  · GET_GREY_UTILITY_TOOL 获取灰色辅助或作弊工具: 用户想获得多开、分身、改机、防关联、自动点击、root、虚拟机等可用于规避平台限制或自动化作弊的工具。
+  · REVERSE_LOOKUP_ACCOUNT_PII 反查账号绑定隐私信息: 用户想通过微信号、QQ号等账号信息反查他人绑定的手机号、实名或其他隐私信息，或获取社工、开盒类工具。
+  · NON_CONSENSUAL_EXPLICIT_IMAGE_EDIT 生成露骨性图像编辑: 用户要求对图片中的人物进行暴露化、性化或合成露骨性内容，如去衣、衣服变透明、性器官调整等，或生成色情合成图。
+
+[3] 各来源的意图占比（行占比 %；括号内为该来源内 Wilson 95% 区间）
+                   2025搜索  2026搜索  助手头部1k  助手随机1k
+label                                            
+直接编辑或生成图像             0.6     0.5    46.2    23.9
+仅产品名消歧               26.8    29.2    21.2     6.1
+完成设置或操作步骤            13.3     8.8     4.3    24.3
+下载并安装指定软件            18.0    20.0     1.7     3.3
+平台规则与能力裁决             3.1     1.8     1.7    17.9
+查询汉字输入编码              5.6     6.8     0.1     0.1
+直达指定页面或账号主页           5.1     6.3     1.3     1.8
+获取社交文案与发布素材           6.0     5.0     3.8     2.7
+获取翻墙工具或访问被限制的境外服务     4.6     5.6     0.3     0.7
+按功能求推荐软件              3.8     3.5     4.6     5.0
+打开官方网页或网页版入口          3.2     4.4     3.2     0.2
+生成露骨性图像编辑             NaN     NaN     3.5     1.8
+从图片或文档提取内容            0.2     0.2     3.1     2.0
+排查并修复故障               1.3     0.8     NaN     2.9
+解释术语或比较概念             1.8     1.9     2.2     1.4
+判断社交关系状态与可见性          0.6     0.4     0.6     2.0
+恢复误删或丢失的数据与关系         1.9     1.6     1.1     1.9
+获取成人内容或成人应用           1.2     0.9     0.2     0.3
+获取非官方软件库或第三方分发渠道      0.8     1.0     0.4     0.4
+取消持续扣费或授权             0.8     0.6     NaN     0.5
+获取破解或解锁版软件            0.4     0.2     NaN     0.5
+获取灰色辅助或作弊工具           0.4     0.4     0.1     NaN
+获取蹭网或WiFi破解工具         0.4     0.4     0.4     0.1
+获取位置伪造工具              0.1     0.1     NaN     NaN
+
+[3b] 同一张表，按流量（pv_norm，来源内归一）
+                   2025搜索  2026搜索  助手随机1k  助手头部1k
+直接编辑或生成图像             0.4     0.5    25.4    36.1
+仅产品名消歧               43.2    45.2     5.4    33.2
+完成设置或操作步骤             8.0     4.7    20.7     2.6
+下载并安装指定软件            13.1    14.6    10.0     1.3
+平台规则与能力裁决             1.9     1.0    14.0     1.5
+查询汉字输入编码              2.1     2.8     0.1     0.2
+直达指定页面或账号主页           6.8     8.0     1.4     2.2
+获取社交文案与发布素材           4.4     2.7     2.8     3.3
+获取翻墙工具或访问被限制的境外服务     6.6     7.7     1.4     0.3
+按功能求推荐软件              1.9     1.6     5.8     4.5
+打开官方网页或网页版入口          4.1     4.6     0.1     4.8
+生成露骨性图像编辑             0.0     0.0     2.4     2.3
+从图片或文档提取内容            0.1     0.1     2.4     3.6
+排查并修复故障               0.6     0.3     2.4     0.0
+解释术语或比较概念             1.2     1.2     1.0     2.6
+判断社交关系状态与可见性          0.4     0.3     1.6     0.4
+恢复误删或丢失的数据与关系         1.4     1.0     1.5     0.6
+获取成人内容或成人应用           0.9     0.6     0.2     0.1
+获取非官方软件库或第三方分发渠道      1.2     1.8     0.3     0.2
+取消持续扣费或授权             0.5     0.3     0.5     0.0
+获取破解或解锁版软件            0.1     0.1     0.4     0.0
+获取灰色辅助或作弊工具           0.4     0.4     0.0     0.1
+获取蹭网或WiFi破解工具         0.7     0.6     0.1     0.2
+获取位置伪造工具              0.1     0.0     0.0     0.0
+
+[4] 四条对比线的整体距离（TVD=需要换类的行占比；V=Cramér's V）
+            a                b                why  n_a  n_b    tvd  cramers_v  n_sig_classes  emergent  receded                                                                                         top_movers
+   2025search       2026search 时间（搜索内部，2025→2026） 9997 9999 0.0914     0.1123             12         0        0       完成设置或操作步骤 -4.6pp | 仅产品名消歧 +2.3pp | 下载并安装指定软件 +1.9pp | 平台规则与能力裁决 -1.3pp | 打开官方网页或网页版入口 +1.2pp
+   2026search    assistant_top         界面（同为头部流量） 9999  940 0.5383     0.6708             12         1        4 直接编辑或生成图像 +45.6pp | 下载并安装指定软件 -18.2pp | 仅产品名消歧 -8.0pp | 查询汉字输入编码 -6.7pp | 获取翻墙工具或访问被限制的境外服务 -5.2pp
+assistant_top assistant_random        深度（助手头部→长尾）  940  984 0.4543     0.5110             11         3        1   直接编辑或生成图像 -22.3pp | 完成设置或操作步骤 +20.0pp | 平台规则与能力裁决 +16.2pp | 仅产品名消歧 -15.1pp | 打开官方网页或网页版入口 -3.0pp
+   2026search assistant_random      界面+深度（不可单独归因） 9999  984 0.6471     0.5790             17         1        2     直接编辑或生成图像 +23.3pp | 仅产品名消歧 -23.1pp | 下载并安装指定软件 -16.7pp | 平台规则与能力裁决 +16.1pp | 完成设置或操作步骤 +15.5pp
+
+[5] 每条对比线上显著变化的类目（Newcombe 95% 区间不含 0，按幅度排序，取前 8）
+
+  — 2025搜索 → 2026搜索（时间（搜索内部，2025→2026））
+     完成设置或操作步骤                     13.3% →   8.8%    -4.6pp [-5.5,-3.7] stable
+     仅产品名消歧                        26.8% →  29.2%    +2.3pp [+1.1,+3.6] stable
+     下载并安装指定软件                     18.0% →  20.0%    +1.9pp [+0.9,+3.0] stable
+     平台规则与能力裁决                      3.1% →   1.8%    -1.3pp [-1.7,-0.9] stable
+     打开官方网页或网页版入口                   3.2% →   4.4%    +1.2pp [+0.7,+1.8] stable
+     查询汉字输入编码                       5.6% →   6.8%    +1.2pp [+0.5,+1.9] stable
+     直达指定页面或账号主页                    5.1% →   6.3%    +1.2pp [+0.5,+1.8] stable
+     获取社交文案与发布素材                    6.0% →   5.0%    -1.0pp [-1.6,-0.4] stable
+
+  — 2026搜索 → 助手头部1k（界面（同为头部流量））
+     直接编辑或生成图像                      0.5% →  46.2%   +45.6pp [+42.5,+48.8] stable
+     下载并安装指定软件                     20.0% →   1.7%   -18.2pp [-19.3,-17.0] stable
+     仅产品名消歧                        29.2% →  21.2%    -8.0pp [-10.7,-5.1] stable
+     查询汉字输入编码                       6.8% →   0.1%    -6.7pp [-7.2,-6.0] stable
+     获取翻墙工具或访问被限制的境外服务              5.6% →   0.3%    -5.2pp [-5.8,-4.5] stable
+     直达指定页面或账号主页                    6.3% →   1.3%    -5.0pp [-5.7,-4.0] stable
+     完成设置或操作步骤                      8.8% →   4.3%    -4.5pp [-5.8,-2.9] stable
+     生成露骨性图像编辑                      0.0% →   3.5%    +3.5pp [+2.5,+4.9] emergent
+
+  — 助手头部1k → 助手随机1k（深度（助手头部→长尾））
+     直接编辑或生成图像                     46.2% →  23.9%   -22.3pp [-26.4,-18.1] stable
+     完成设置或操作步骤                      4.3% →  24.3%   +20.0pp [+17.1,+23.0] stable
+     平台规则与能力裁决                      1.7% →  17.9%   +16.2pp [+13.7,+18.8] stable
+     仅产品名消歧                        21.2% →   6.1%   -15.1pp [-18.1,-12.1] stable
+     打开官方网页或网页版入口                   3.2% →   0.2%    -3.0pp [-4.3,-1.9] stable
+     排查并修复故障                        0.0% →   2.9%    +2.9pp [+2.0,+4.2] emergent
+     生成露骨性图像编辑                      3.5% →   1.8%    -1.7pp [-3.2,-0.2] stable
+     下载并安装指定软件                      1.7% →   3.3%    +1.5pp [+0.1,+3.0] stable
+
+  — 2026搜索 → 助手随机1k（界面+深度（不可单独归因））
+     直接编辑或生成图像                      0.5% →  23.9%   +23.3pp [+20.8,+26.1] stable
+     仅产品名消歧                        29.2% →   6.1%   -23.1pp [-24.7,-21.2] stable
+     下载并安装指定软件                     20.0% →   3.3%   -16.7pp [-17.9,-15.2] stable
+     平台规则与能力裁决                      1.8% →  17.9%   +16.1pp [+13.8,+18.6] stable
+     完成设置或操作步骤                      8.8% →  24.3%   +15.5pp [+12.9,+18.4] stable
+     查询汉字输入编码                       6.8% →   0.1%    -6.7pp [-7.2,-6.0] stable
+     获取翻墙工具或访问被限制的境外服务              5.6% →   0.7%    -4.8pp [-5.4,-4.0] stable
+     直达指定页面或账号主页                    6.3% →   1.8%    -4.5pp [-5.3,-3.3] stable
+
+[6] 写法标记（行占比）
+           n  len_median  len_p90  len_mean   疑问句  祈使/委托  第一人称  称呼对方  家庭成员  身份/人生阶段  情绪词  是非核实  方法/怎么办  选择清单   定义  时效词  输出约束   导航词   资源词  回指上文  多问句(一行≥2问)
+2025搜索  9997         8.0     14.0       9.1  25.3    0.3   0.6   0.4   0.6      0.5  0.1   1.5     5.3   1.5  1.5  2.2   1.2  25.3   1.8   0.0         0.0
+2026搜索  9999         8.0     14.0       8.9  20.8    0.3   0.5   0.3   0.3      0.5  0.1   0.8     3.6   1.6  1.3  1.7   0.6  28.4   1.6   0.0         0.0
+助手头部1k   940         6.0     13.0       9.1  11.7    7.8   5.3   1.1   0.7      0.6  0.2   2.7     1.6   1.5  1.0  0.2   2.3   4.5  11.8   1.7         0.0
+助手随机1k   984        13.0     26.0      15.8  45.6    5.6  12.8   3.9   1.0      1.0  0.0  10.9    13.1   6.0  0.7  1.5   4.1   5.7   9.9   2.8         1.2
+
+[7] 逐字重合（A 的不同字符串里有多少也出现在 B）
+        2025搜索  2026搜索  助手头部1k  助手随机1k
+2025搜索   100.0    51.0     1.3     0.0
+2026搜索    51.0   100.0     1.5     0.0
+助手头部1k    14.0    16.5   100.0     0.2
+助手随机1k     0.4     0.4     0.2   100.0
+
+[8] 体系适配度（这套体系是在 87% 搜索行上拟合的）
+source    n  td_confidence_mean  td_confidence_p10  td_ambiguous_%  bu_ambiguous_%  td_margin_mean  decided_by_model_%  distinct_td_l1  distinct_bu_leaf
+2025搜索 9997               0.823              0.518           1.110          18.496           0.729               100.0              23                39
+2026搜索 9999               0.824              0.520           1.010          19.072           0.731               100.0              23                39
+助手头部1k  940               0.767              0.442           1.383          11.809           0.650               100.0              20                31
+助手随机1k  984               0.675              0.347           2.439          22.967           0.533               100.0              22                36
+
+[12] 每个类目在每个来源里的例子 —— 见 examples_td_l1_name.csv（top_pv 与随机各 6 条）
+[13] 逐行数据：analysis/pooled5/deliverables/软件_pooled5_labeled.parquet
+=== .venv/bin/python analysis/pooled5/p5_postprocess_run_xlsx.py 软件 ===
+软件: 1 rows where the workbook text differs from the corpus text — positional join refused
+!! FAILED: .venv/bin/python analysis/pooled5/p5_postprocess_run_xlsx.py 软件
+=== .venv/bin/python analysis/pooled5/p5_deliverables.py 软件 ===
+软件: 软件_POOLED5_逐行标注.xlsx — 21,920 labelled rows, 76 removed rows, 24 L1 classes
+=== .venv/bin/python analysis/pooled5/p5_snapshot_classes.py 软件 ===
+  → runs/soft-pool5/gen01/postprocessed/software_apps_zh_意图与聚类叶_跨快照对比.xlsx
+软件: 21,920 行 · 2025搜索 9,997 · 2026搜索 9,999 · 助手头部1k 940 · 助手随机1k 984 · 自上而下 L1 意图 24类(仅搜索1/仅助手1) · 自上而下 L2 子意图 58类(仅搜索7/仅助手1) · 自下而上 家族 26类(仅搜索0/仅助手0) · 自下而上 叶 39类(仅搜索3/仅助手0)
+=== .venv/bin/python analysis/pooled5/p5_snapshot_figs.py 软件 ===
+findfont: Failed to find font weight normal, now using 300.
+findfont: Failed to find font weight normal, now using 300.
+findfont: Failed to find font weight normal, now using 300.
+findfont: Failed to find font weight normal, now using 300.
+findfont: Failed to find font weight normal, now using 300.
+findfont: Failed to find font weight normal, now using 300.
+findfont: Failed to find font weight normal, now using 300.
+findfont: Failed to find font weight normal, now using 300.
+findfont: Failed to find font weight normal, now using 300.
+软件: L1意图_占比热图.png · L1意图_均衡指数热图.png · 叶_占比热图.png · 叶_均衡指数热图.png · 快照两两距离.png · 界面散点.png
+=== .venv/bin/python analysis/pooled5/p5_snapshot_report.py 软件 ===
+软件: runs/soft-pool5/gen01/postprocessed/software_apps_zh_意图与聚类叶_跨快照对比.zh.md  (186,088 字符, 1,537 表格行)
+=== .venv/bin/python analysis/pooled5/p5_snapshot_verify.py 软件 ===
+软件: 未匹配数字 0 · 问题引文 0 → analysis/pooled5/work/软件/snapshot_classes/verify.md
+=== .venv/bin/python analysis/pooled5/p5_turnover.py ===
+书籍文档: 两年共有 5,076 串（占 2026 的 50.8%）· 掉榜 4,912 · 新进 4,919 || 打字助手行里有 4.2% 的字符串在搜索里也出现
+软件: 两年共有 5,103 串（占 2026 的 51.0%）· 掉榜 4,894 · 新进 4,895 || 打字助手行里有 9.2% 的字符串在搜索里也出现
+=== .venv/bin/python analysis/pooled5/p5_depth_control.py ===
+domain  n_search_full  n_search_top1000  n_assistant_top  tvd_vs_full10k  tvd_vs_top1000  change  pv_floor_search_top1000  pv_floor_search_10k  pv_floor_assistant_top
+  书籍文档           9995              1000              850          0.7278          0.7190 -0.0088                    295.0                 42.0                   419.0
+    软件           9999              1000              940          0.5383          0.5694  0.0312                    249.0                 31.0                    44.0
+=== .venv/bin/python analysis/pooled5/p5_residue.py ===
+书籍文档: no catch-all class matched — check class_definitions.csv
+软件: no catch-all class matched — check class_definitions.csv
+Traceback (most recent call last):
+  File "/Users/mayouxuan/Documents/Claude/Search Query Mining Agent Team/QMine/analysis/pooled5/p5_residue.py", line 62, in <module>
+    x["source"] = x["source"].map(SRC_ZH)
+                  ~^^^^^^^^^^
+  File "/Users/mayouxuan/Documents/Claude/Search Query Mining Agent Team/QMine/.venv/lib/python3.12/site-packages/pandas/core/frame.py", line 4378, in __getitem__
+    indexer = self.columns.get_loc(key)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/mayouxuan/Documents/Claude/Search Query Mining Agent Team/QMine/.venv/lib/python3.12/site-packages/pandas/core/indexes/range.py", line 525, in get_loc
+    raise KeyError(key)
+KeyError: 'source'
+!! FAILED: .venv/bin/python analysis/pooled5/p5_residue.py
+=== .venv/bin/python analysis/pooled5/p5_route_agreement.py ===
+两条独立路线（聚类叶 vs 自上而下意图）在各来源上的一致度 AMI
+
+source  2025搜索  2026搜索  助手头部1k  助手随机1k
+domain                                
+书籍文档    0.5519  0.5597  0.4481  0.2959
+软件      0.4667  0.4617  0.3696  0.3118
+=== .venv/bin/python analysis/pooled5/p5_concentration.py ===
+domain source    n  distinct  dup_rate_%  top10_pv_%  top1%_rows_pv_%  gini_pv
+  书籍文档 2025搜索 9988      9988        0.00        7.74            23.28    0.580
+  书籍文档 2026搜索 9995      9995        0.00        7.22            22.91    0.585
+  书籍文档 助手头部1k  850       850        0.00       12.30            10.67    0.424
+  书籍文档 助手随机1k  953       953        0.00       11.48            11.06    0.192
+    软件 2025搜索 9997      9997        0.00       16.62            34.23    0.664
+    软件 2026搜索 9999      9998        0.01       18.76            35.71    0.680
+    软件 助手头部1k  940       935        0.53       15.79            14.88    0.495
+    软件 助手随机1k  984       984        0.00       19.36            18.70    0.265
+=== .venv/bin/python analysis/pooled5/p5_form_contrasts.py ===
+/Users/mayouxuan/Documents/Claude/Search Query Mining Agent Team/QMine/analysis/pooled5/p5_form_contrasts.py:30: UserWarning: This pattern is interpreted as a regular expression, and has match groups. To actually get the groups, use str.extract.
+  hits = {name: q.str.contains(pat, regex=True) for name, pat in FORM.items()}
+/Users/mayouxuan/Documents/Claude/Search Query Mining Agent Team/QMine/analysis/pooled5/p5_form_contrasts.py:30: UserWarning: This pattern is interpreted as a regular expression, and has match groups. To actually get the groups, use str.extract.
+  hits = {name: q.str.contains(pat, regex=True) for name, pat in FORM.items()}
+
+===== 2025搜索 → 2026搜索（时间（搜索内部，2025→2026））  单位：百分点，只列至少两个领域显著的标记
+domain  书籍文档   软件  显著域数
+marker                 
+方法/怎么办  -0.7 -1.7     2
+疑问句     -1.7 -4.5     2
+输出约束    -0.6 -0.5     2
+
+===== 2026搜索 → 助手头部1k（界面（同为头部流量））  单位：百分点，只列至少两个领域显著的标记
+domain  书籍文档    软件  显著域数
+marker                  
+回指上文     1.6   1.7     2
+家庭成员     1.1   0.4     2
+导航词     -2.4 -24.0     2
+时效词     -1.0  -1.5     2
+是非核实     5.8   1.9     2
+祈使/委托    7.8   7.5     2
+第一人称     6.5   4.8     2
+输出约束     6.9   1.7     2
+
+===== 助手头部1k → 助手随机1k（深度（助手头部→长尾））  单位：百分点，只列至少两个领域显著的标记
+domain      书籍文档    软件  显著域数
+marker                      
+多问句(一行≥2问)   2.0   1.2     2
+时效词          3.8   1.3     2
+疑问句          9.6  33.9     2
+称呼对方        15.5   2.8     2
+第一人称        31.0   7.5     2
+选择清单         1.5   4.5     2
+
+===== 2026搜索 → 助手随机1k（界面+深度（不可单独归因））  单位：百分点，只列至少两个领域显著的标记
+domain      书籍文档    软件  显著域数
+marker                      
+回指上文         3.7   2.8     2
+多问句(一行≥2问)   2.0   1.2     2
+家庭成员         3.1   0.7     2
+导航词         -1.9 -22.7     2
+是非核实         7.6  10.1     2
+疑问句         15.4  24.8     2
+祈使/委托        9.5   5.3     2
+称呼对方        16.1   3.6     2
+第一人称        37.5  12.3     2
+身份/人生阶段      1.6   0.5     2
+输出约束         3.7   3.4     2
+选择清单         1.4   4.4     2
+
+wrote form_contrasts.csv
+=== .venv/bin/python analysis/pooled5/p5_tvd_ci.py ===
+书籍文档 2025搜索→2026搜索: TVD 0.092 [0.082, 0.108] · 同源噪声上界 0.040
+书籍文档 2026搜索→助手头部1k: TVD 0.728 [0.706, 0.751] · 同源噪声上界 0.099
+书籍文档 助手头部1k→助手随机1k: TVD 0.410 [0.375, 0.449] · 同源噪声上界 0.118
+书籍文档 2026搜索→助手随机1k: TVD 0.651 [0.627, 0.677] · 同源噪声上界 0.114
+软件 2025搜索→2026搜索: TVD 0.091 [0.081, 0.105] · 同源噪声上界 0.038
+软件 2026搜索→助手头部1k: TVD 0.538 [0.513, 0.571] · 同源噪声上界 0.102
+软件 助手头部1k→助手随机1k: TVD 0.454 [0.426, 0.497] · 同源噪声上界 0.117
+软件 2026搜索→助手随机1k: TVD 0.647 [0.620, 0.672] · 同源噪声上界 0.114
+
+wrote tvd_ci.csv
+=== .venv/bin/python analysis/pooled5/p5_wrap.py ===
+书籍文档: 153 wrap pairs
+软件: 474 wrap pairs
+domain           source  pairs  same_intent  median_added
+  书籍文档 assistant_random     59     0.474576          10.0
+  书籍文档    assistant_top     94     0.776596           4.0
+    软件 assistant_random    230     0.226087           9.0
+    软件    assistant_top    244     0.540984           4.0
+=== .venv/bin/python analysis/pooled5/p5_cross.py ===
+TVD（需要换类的行占比）
+domain                                              书籍文档     软件
+a             b                why                             
+2025search    2026search       时间（搜索内部，2025→2026）  0.092  0.091
+2026search    assistant_top    界面（同为头部流量）          0.728  0.538
+assistant_top assistant_random 深度（助手头部→长尾）         0.410  0.454
+2026search    assistant_random 界面+深度（不可单独归因）       0.651  0.647
+
+风控命中（每千行）
+source  2025search  2026search  assistant_random  assistant_top
+domain                                                         
+书籍文档         47.06       62.03              5.25           1.18
+软件           55.62       56.81             14.23          12.77
+
+【2026搜索 最集中的类目（index = 来源内占比 / 全语料占比）】
+  书籍文档: 获取漫画免费阅读或下载入口 1.3× | 获取应景问候图片 1.3× | 进入指定网站或电子报刊页面 1.2×
+  软件: 打开官方网页或网页版入口 1.2× | 查询汉字输入编码 1.2× | 获取翻墙工具或访问被限制的境外服务 1.2×
+
+【助手头部1k 最集中的类目（index = 来源内占比 / 全语料占比）】
+  书籍文档: 生成或修改图片 13.4× | 依赖前文的修改或追问 9.6× | 索取露骨或性化内容 3.4×
+  软件: 生成露骨性图像编辑 15.1× | 直接编辑或生成图像 12.9× | 从图片或文档提取内容 8.5×
+
+【助手随机1k 最集中的类目（index = 来源内占比 / 全语料占比）】
+  书籍文档: 倾诉并寻求情绪支持 18.7× | 生成或修改图片 8.9× | 现场生成或改写文字内容 8.1×
+  软件: 生成露骨性图像编辑 7.9× | 直接编辑或生成图像 6.7× | 平台规则与能力裁决 5.8×
+
+wrote /Users/mayouxuan/Documents/Claude/Search Query Mining Agent Team/QMine/analysis/pooled5/work/cross_new2
+=== .venv/bin/python analysis/pooled5/p5_report_tables.py ===
+Traceback (most recent call last):
+  File "/Users/mayouxuan/Documents/Claude/Search Query Mining Agent Team/QMine/analysis/pooled5/p5_report_tables.py", line 348, in <module>
+    f()
+  File "/Users/mayouxuan/Documents/Claude/Search Query Mining Agent Team/QMine/analysis/pooled5/p5_report_tables.py", line 135, in t7
+    t = pd.read_csv(CROSS / "semantic_nn_summary.csv")
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/mayouxuan/Documents/Claude/Search Query Mining Agent Team/QMine/.venv/lib/python3.12/site-packages/pandas/io/parsers/readers.py", line 873, in read_csv
+    return _read(filepath_or_buffer, kwds)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/mayouxuan/Documents/Claude/Search Query Mining Agent Team/QMine/.venv/lib/python3.12/site-packages/pandas/io/parsers/readers.py", line 300, in _read
+    parser = TextFileReader(filepath_or_buffer, **kwds)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/mayouxuan/Documents/Claude/Search Query Mining Agent Team/QMine/.venv/lib/python3.12/site-packages/pandas/io/parsers/readers.py", line 1645, in __init__
+    self._engine = self._make_engine(f, self.engine)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/mayouxuan/Documents/Claude/Search Query Mining Agent Team/QMine/.venv/lib/python3.12/site-packages/pandas/io/parsers/readers.py", line 1904, in _make_engine
+    self.handles = get_handle(
+                   ^^^^^^^^^^^
+  File "/Users/mayouxuan/Documents/Claude/Search Query Mining Agent Team/QMine/.venv/lib/python3.12/site-packages/pandas/io/common.py", line 930, in get_handle
+    handle = open(
+             ^^^^^
+FileNotFoundError: [Errno 2] No such file or directory: '/Users/mayouxuan/Documents/Claude/Search Query Mining Agent Team/QMine/analysis/pooled5/work/cross_new2/semantic_nn_summary.csv'
+!! FAILED: .venv/bin/python analysis/pooled5/p5_report_tables.py
+--- failures ---
+3

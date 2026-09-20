@@ -514,7 +514,15 @@ def p5_granularity(state: PipelineState, deps: Deps) -> dict[str, Any]:
             "p5_k_references_agree", phase="p5",
             passed=False,
             observed={"located_k_by_reference": located, "chosen_k": k,
-                      "deciding_reference": "phrasing_groups"},
+                      # NAME THE REFERENCE THAT ACTUALLY LOCATED K — the literal
+                      # "phrasing_groups" stood here, so every run where a declared
+                      # column located K and the references disagreed (health-pool2,
+                      # live42, live44 ...) printed the wrong reference in this gate
+                      # row, beside the right `deciding_reference` in the same artifact.
+                      # When triangulate_k fell back to stability the chosen column
+                      # located nothing, so no reference is named.
+                      "deciding_reference": (tri.get("deciding_reference")
+                                             if tri.get("locator") == locator_key else None)},
             threshold={"rule": "every available reference partition should locate the same K"},
             message=("不同参照系定位到不同的 K —— 交付的 K 是**相对于当选参照系**的"
                      "粒度锚点, 不是语料常数。请连同参照系一起阅读这个 K。"),

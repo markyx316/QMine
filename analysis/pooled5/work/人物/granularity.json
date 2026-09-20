@@ -1,0 +1,249 @@
+{
+  "k_sweep": [
+    {
+      "k": 6,
+      "intent_alignment_ami": 0.2802,
+      "stability_ari": 0.9622,
+      "silhouette": 0.0679,
+      "template_fragmentation": 2.4699
+    },
+    {
+      "k": 8,
+      "intent_alignment_ami": 0.3009,
+      "stability_ari": 0.5955,
+      "silhouette": 0.0577,
+      "template_fragmentation": 3.1938
+    },
+    {
+      "k": 10,
+      "intent_alignment_ami": 0.3512,
+      "stability_ari": 0.9912,
+      "silhouette": 0.0383,
+      "template_fragmentation": 3.4346
+    },
+    {
+      "k": 12,
+      "intent_alignment_ami": 0.3302,
+      "stability_ari": 0.7046,
+      "silhouette": 0.0225,
+      "template_fragmentation": 3.7195
+    },
+    {
+      "k": 15,
+      "intent_alignment_ami": 0.3642,
+      "stability_ari": 0.7871,
+      "silhouette": 0.0314,
+      "template_fragmentation": 4.1652
+    },
+    {
+      "k": 18,
+      "intent_alignment_ami": 0.4061,
+      "stability_ari": 0.6412,
+      "silhouette": 0.0268,
+      "template_fragmentation": 4.3617
+    },
+    {
+      "k": 20,
+      "intent_alignment_ami": 0.3819,
+      "stability_ari": 0.6156,
+      "silhouette": 0.037,
+      "template_fragmentation": 5.5148
+    },
+    {
+      "k": 25,
+      "intent_alignment_ami": 0.3781,
+      "stability_ari": 0.5311,
+      "silhouette": 0.038,
+      "template_fragmentation": 6.4759
+    },
+    {
+      "k": 30,
+      "intent_alignment_ami": 0.3589,
+      "stability_ari": 0.566,
+      "silhouette": 0.033,
+      "template_fragmentation": 7.4526
+    },
+    {
+      "k": 40,
+      "intent_alignment_ami": 0.3443,
+      "stability_ari": 0.6745,
+      "silhouette": 0.0427,
+      "template_fragmentation": 8.6195
+    },
+    {
+      "k": 50,
+      "intent_alignment_ami": 0.3555,
+      "stability_ari": 0.4959,
+      "silhouette": 0.0525,
+      "template_fragmentation": 9.5385
+    },
+    {
+      "k": 65,
+      "intent_alignment_ami": 0.3589,
+      "stability_ari": 0.6003,
+      "silhouette": 0.0717,
+      "template_fragmentation": 10.7465
+    },
+    {
+      "k": 80,
+      "intent_alignment_ami": 0.3404,
+      "stability_ari": 0.5302,
+      "silhouette": 0.0657,
+      "template_fragmentation": 12.3763
+    },
+    {
+      "k": 100,
+      "intent_alignment_ami": 0.3607,
+      "stability_ari": 0.3859,
+      "silhouette": 0.077,
+      "template_fragmentation": 14.211
+    },
+    {
+      "k": 120,
+      "intent_alignment_ami": 0.3554,
+      "stability_ari": 0.4241,
+      "silhouette": 0.0882,
+      "template_fragmentation": 14.5091
+    }
+  ],
+  "deep_aligned": {
+    "k_overcluster": 45,
+    "survival_threshold": 484.5,
+    "k_estimate": 18,
+    "size_distribution": {
+      "max": 1939,
+      "median": 253,
+      "min": 51
+    }
+  },
+  "triangulation": {
+    "estimates": {
+      "located_k": 18,
+      "located_by": "intent_alignment_ami",
+      "deep_aligned_leaf_k": 18,
+      "deep_aligned_implied_family_k": 6.0,
+      "expert_range": [
+        10,
+        20
+      ],
+      "silhouette_peak_k": 120
+    },
+    "chosen_family_k": 18,
+    "locator": "intent_alignment_ami",
+    "stability_floor": 0.55,
+    "n_rejected_as_unstable": 5,
+    "tie_set": [
+      {
+        "k": 18,
+        "intent_alignment_ami": 0.4061,
+        "stability_ari": 0.6412,
+        "template_fragmentation": 4.3617
+      },
+      {
+        "k": 20,
+        "intent_alignment_ami": 0.3819,
+        "stability_ari": 0.6156,
+        "template_fragmentation": 5.5148
+      }
+    ],
+    "chosen_by": "stability >= 0.55 rejects irreproducible K; among survivors the highest intent_alignment_ami; ties within 0.04141 — 2x measured noise (se=0.020705) — broken toward the simpler tree",
+    "converged": false,
+    "agreement": "none",
+    "measured_estimators_agree": false,
+    "prior_agrees": true,
+    "divergence_note": "两个实测估计彼此不一致。**记录分歧而不取平均** — 平均出来的 K 谁也说服不了。定案由「intent_alignment_ami」给出 (稳定性只负责剔除不可复现的 K, 不负责排序); 家族层按暂定读取, 细分靠叶层。",
+    "silhouette_disagrees": true,
+    "reference_sensitivity": {
+      "by_reference": {
+        "phrasing_groups": {
+          "locates_k": 18,
+          "peak_value": 0.4061,
+          "value_at_chosen_k": 0.4061,
+          "decides": true
+        }
+      },
+      "chosen_k": 18,
+      "note_scope": "raw argmax per reference, before the stability veto and the tie band",
+      "located_k_values": {
+        "phrasing_groups": 18
+      },
+      "n_references": 1,
+      "references_agree": null
+    },
+    "locator_reach": {
+      "phrasing_groups": {
+        "reach": 0.6,
+        "mass": 0.2775,
+        "n_clusters_reached": 15,
+        "n_clusters": 25,
+        "row_coverage": 0.228,
+        "min_share": 0.1,
+        "column": "intent_alignment_ami",
+        "discrimination": 6.08
+      }
+    },
+    "deciding_reference": "phrasing_groups"
+  },
+  "locator_reference": {
+    "reference": "phrasing (template) groups",
+    "n_classes": 9,
+    "coverage": 0.228,
+    "n_rows_scored": 4972,
+    "caveat": "这是**措辞群**参照系的画像, 不一定是最终定位 K 的那个参照系 —— 后者见 `triangulation.deciding_reference`。定位到的 K 跟着参照系**触及到多少簇**走 (不是它的类目数: 固定行集、只改类目数, 6/9/25 类都定位到同一个 K), 参照系没覆盖到的行则完全不计分。换一个参照系, 答案就会变。",
+    "is_the_deciding_reference": true,
+    "deciding_reference": "phrasing_groups"
+  },
+  "grid_proposal": {
+    "incumbent": [
+      8,
+      10,
+      12,
+      15,
+      18,
+      20,
+      25,
+      30,
+      40,
+      50,
+      65,
+      80,
+      100,
+      120
+    ],
+    "proposed_kept": [
+      6
+    ],
+    "proposed_rejected": [],
+    "n_extra_comparisons": 1,
+    "widened": [
+      6,
+      8,
+      10,
+      12,
+      15,
+      18,
+      20,
+      25,
+      30,
+      40,
+      50,
+      65,
+      80,
+      100,
+      120
+    ],
+    "rationale": "该语料为 people_zh 垂直领域，查询集中在人物信息。12 个 phrasing groups 覆盖 24.6% 行，但从命名看多个 group 可能归并为同一顶层意图：bio_intro_suffix、bio_resume_suffix、bio_profile_data_suffix 同属人物简介/履历类；state_post_holder、party_post_holder、slot_holder_who_is 同属任职/身份类。因此顶层 cluster 数量可能低于现有网格起点 8。增加 6 用于探索窄垂直场景下更少但可命名的顶层簇；n_rows=21804 时 K=6 平均每簇约 3600 行，流量足以支撑。",
+    "corpus_signals": [
+      "n_rows",
+      "n_phrasing_groups",
+      "phrasing_group_coverage",
+      "phrasing_group_names",
+      "domain",
+      "language_shares"
+    ],
+    "drop_advisory_ignored": [],
+    "chosen": 18,
+    "a_proposed_value_won": false,
+    "verdict": "the incumbent grid still held the winner — these additions cost comparisons and returned nothing"
+  }
+}

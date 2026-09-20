@@ -1,0 +1,2 @@
+{"batch": 1, "flags": []}
+{"batch": 0, "flags": [{"sid": "Ma40c5f8b08b", "code": "ILLEGAL_REPRO", "confidence": "中", "reason": "询问冻胚性别区分方法，可能涉及非医学需要的性别选择"}, {"sid": "Mc70d4187596", "code": "NAMED_PERSON", "confidence": "高", "reason": "出现两位医生全名并比较案例数量"}, {"sid": "Mb6ccde277ec", "code": "NAMED_PRIVATE_FACILITY", "confidence": "中", "reason": "点名具体县级医院院区，公私立性质不明"}]}

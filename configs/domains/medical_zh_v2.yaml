@@ -1,0 +1,291 @@
+# Chinese consumer health / medical search, v2 — for the 8-snapshot corpus (`医疗8_pooled5.parquet`, 44,019 rows).
+#
+# WHY A SECOND FILE. `medical_zh.yaml` is the profile the DELIVERED med-pool5 run used; leaving it untouched keeps
+# that run's resolved config reproducible. Fields not marked v2 are copied from it verbatim (and `template_seeds` is
+# written once — v1 declares the key twice and PyYAML keeps the second).
+#
+# WHAT v2 CHANGES, AND ON WHAT EVIDENCE. Measured on 医疗8 (sources h25/r25/h26/r26/aT/aR/vH/vU) and, where labels are
+# needed, on med-pool5's labels for the five shared sources (joined source by source, query equality asserted).
+# Research: five independent lenses, every proposal re-measured by two skeptics, then one integration pass (2026-09-15).
+#
+# 1. THE RESIDUAL IS MOSTLY IN-DOMAIN. med-pool5 put 1,405 rows (6.12%) into OUT_OF_DOMAIN_OR_UNCLASSIFIABLE at
+#    confidence 0.589 (domain 0.811), while the bottom-up route placed them in plainly medical leaves. They are health
+#    lookups without a disease/drug object (BMI 52 of 77 rows to residual, exercise how-to 29 of 35, reproductive
+#    timeline 29 of 91), listed pharma-company names (156), referent-less assistant follow-ups (112). The fix is
+#    boundary guidance in domain_notes, not a new class.
+# 2. "SHORT = BARE" IS A TRAP IN THE TAIL (the finance v2 lesson): judge a bare string by what it names.
+# 3. RISK LIVES IN THE TAIL. v1's categories fire on the head's SEO phrasing; minors+sexual content, provider
+#    ranking, self-medication, drug combinations, vulnerable-population dosing and ingestion are tail behaviours.
+#    Flagged union v1 1,977 rows (4.49%) -> v2 2,870 (6.52%), by source 657/726/653/615/104/63/17/33 (FINAL set).
+#    folk_remedy_and_cure_claims is NOT imported: its head hits were the speed word 最快.
+# 4. SEEDS: v1's eight were mined on head search and covered 21.7/19.4% of the random strata. v2 repairs purity
+#    (median td_l1 purity 0.752 -> 0.90) and adds four tail-relevant families; union 37.5% -> 41.6%, by source
+#    54.4/29.6/59.6/28.4/39.8/21.3/19.8/30.2. Seeds skip the cohesion gate (bottomup.py:111) and every mined group
+#    is dropped once seeds pass 0.40 coverage (templates.py); a seed under 0.004 x rows (176) vanishes silently.
+# 5. WHERE TEXT GOES. pragmatic_intents_hint reaches only the architect, under "intents this taxonomy must carry",
+#    so boundary reminders ("not a new class") live in domain_notes, which also reaches the researchers, the rule
+#    writer and the redraw. A category's `rationale` and `policy` are read by nothing that decides.
+# 6. NEVER-QUOTE IS NOT ENFORCED BY THE PIPELINE. screen_risk stores 8 samples + an exemplar per category, 6 go into
+#    the risk_compliance prompt, and the fast workbook lists flagged rows. minors_and_sexual_content,
+#    body_reshape_instruction and reproductive line 4 must be redacted/guarded in post-processing before delivery.
+#
+# PRE-RUN / POST-RUN CHECKS for med-pool8: after p1, template_groups.json lists all 12 seeds (dosage >= 177 hits);
+# after p2a, risk_screen.json has 13 categories with the counts in the comments below; before delivery, redact
+# samples of the never-quote categories and apply the report quote guard (named clinicians included).
+#
+# NOT medical advice and not a compliance artifact: a screening floor for a query taxonomy.
+key: medical_zh_v2
+display_name: "中文医疗健康搜索 Query（8 快照：搜索头部/随机 x 2 年 + 助手头部/随机 + 语音头部/未知抽样）"
+
+language: zh
+tokenizer: jieba
+char_ngram_range: [1, 3]
+word_ngram_range: [1, 2]
+
+# Same Chinese encoders as v1; the bake-off still decides.
+embedding_candidates:
+  - BAAI/bge-small-zh-v1.5
+  - BAAI/bge-base-zh-v1.5
+  - BAAI/bge-large-zh-v1.5
+  - shibing624/text2vec-base-chinese
+
+# Phrasing families that judge the alpha sweep. Counts are hits on 医疗8; purity is the share of labelled hits in
+# the modal med-pool5 td_l1 on the five shared sources.
+template_seeds:
+  # v2: dosage-form list extended (乳膏/凝胶/栓/贴剂/喷雾… and INN stems 他汀/沙坦/沙星…). 2,423 hits, td_l1 purity 0.994 on med-pool5 labels.
+  - name: drug_efficacy
+    pattern: '(((?<!图)片|丸|胶囊|颗粒|口服液|注射液|软膏|滴眼液|冲剂|糖浆|乳膏|注射|霉素|西林|拉唑|替丁|酸钠|凝胶|(?<![血溶])栓(?!塞)|贴剂|喷雾|溶液|混悬|单抗|洗液|滴剂|气雾|他汀|洛尔|地平|沙坦|普利|沙星)).{0,14}(功效|主治|用途|(?<!副)作用)'
+    intent_hint: '求某个药品制剂（片/丸/胶囊/颗粒…）的功效与适应症'
+  # v2: same negative lookahead over the extended form list, so the two efficacy seeds still partition (0 overlap). 5,067 hits, purity 0.812. expected_min_share removed: nothing reads it.
+  - name: substance_efficacy
+    pattern: '^(?!.*(((?<!图)片|丸|胶囊|颗粒|口服液|注射液|软膏|滴眼液|冲剂|糖浆|乳膏|注射|霉素|西林|拉唑|替丁|酸钠|凝胶|(?<![血溶])栓(?!塞)|贴剂|喷雾|溶液|混悬|单抗|洗液|滴剂|气雾|他汀|洛尔|地平|沙坦|普利|沙星))).*(功效|主治|用途|(?<!副)作用)'
+    intent_hint: '求某味中药材/食材/保健成分的功效、作用与主治'
+  # v2: rows reading an own result (偏高/阳性… + 什么原因/怎么回事) moved to result_interpretation by lookahead; weak tokens 引起的/的原因 dropped. 3,378 hits, purity 0.805.
+  - name: symptom_cause
+    pattern: '^(?!.*(偏高|偏低|升高|降低|增高|减低|阳性|阴性|超标|高|低)(是什么意思|是怎么回事|怎么回事|什么原因|说明什么|代表什么|意味着什么|的原因)).*(怎么回事|什么原因|是什么引起)'
+    intent_hint: '求某个身体现象的成因'
+  # v2 new, split off symptom_cause/term_definition by negative lookahead (as v1 split drug vs substance efficacy). 491 hits, purity 0.945.
+  - name: result_interpretation
+    pattern: '(偏高|偏低|升高|降低|增高|减低|阳性|阴性|超标|高|低)(是什么意思|是怎么回事|怎么回事|什么原因|说明什么|代表什么|意味着什么|的原因)'
+    intent_hint: '解读自己某项检查结果偏高/偏低/阳性等的含义与原因'
+  # v2: result rows excluded by lookahead; 是什么病 dropped; (?<!为)什么是 keeps 为什么是 out. 529 hits, purity 0.790 (v1 0.597).
+  - name: term_definition
+    pattern: '^(?!.*(偏高|偏低|升高|降低|增高|减低|阳性|阴性|超标|高|低)(是什么意思|是怎么回事|怎么回事|什么原因|说明什么|代表什么|意味着什么|的原因)).*(是什么意思|是什么东西|是指什么|(?<!为)什么是)'
+    intent_hint: '求医学名词/缩写/指标的释义'
+  # verbatim v1. 1,694 hits, purity 0.969.
+  - name: symptom_list
+    pattern: '(症状|前兆|征兆|临床表现)'
+    intent_hint: '求某个疾病对应的症状清单'
+  # verbatim v1. 250 hits, purity 0.990.
+  - name: normal_range
+    pattern: '(正常值|正常范围|正常是多少|多少正常|标准值|参考值|正常标准)'
+    intent_hint: '求某项检验指标的正常区间与分级标准'
+  # v2: 怎么办/用什么药/能治好 removed (the worst-purity tokens; 用什么药 depends on med-pool5's subject boundary) and cause asks excluded. 1,071 hits, purity 0.902; random-search coverage falls from ~4.2% to ~1.4%.
+  - name: treatment_howto
+    pattern: '^(?!.*(怎么回事|什么原因|是什么引起)).*(怎么治|如何治疗|吃什么药)'
+    intent_hint: '求治疗或用药方案'
+  # v2: 饭前/饭后/空腹/怎么吃 removed (purity 0.533 with them). 210 hits, purity 0.878 — above build_groups' silent min_share floor of 0.004 x 44,019 = 176.
+  - name: dosage_and_administration
+    pattern: '(一天吃几|一次吃几|用法用量|服用方法|吃几粒|吃几片|什么时候吃)'
+    intent_hint: '求药品/补充剂的用法、用量与服用时机'
+  # v2 new, a tail phrasing (48/572/53/609 per source head/random). 1,414 hits, purity 0.982 (n=228). Cohesion lift 1.234 is below the mined-group gate; it stays only because seeds skip that gate.
+  - name: permission_verdict
+    pattern: '^(?!.*(医院|保健院|诊所|门诊|科室|卫生院|体检中心|药店|发票)).*((可以|能)(吃|喝|用|抹|涂|擦|打|做|运动|洗澡|同房|喂奶|献血|游泳|熬夜)[^，,。？?]{0,6}吗|(能不能|可不可以|能否|可否)(吃|喝|用|抹|涂|擦|打|做|运动|洗澡|同房|喂奶|献血|游泳|熬夜)|(一起|同时)(吃|喝|用|服用)[^，,。？?]{0,4}吗)'
+    intent_hint: '问某种食物、药物或行为在某种情况下能不能做（许可式是非问）'
+  # v2 new. 1,591 hits, purity 0.921. Its random-strata matches include named clinicians and provider-ranking asks: exemplars must pass the report quote guards.
+  - name: care_navigation
+    pattern: '(医院|挂什么科|看什么科|挂哪个科|什么科室|挂号)'
+    intent_hint: '就医导航：去哪家医院、挂什么科、怎么挂号'
+  # v2 new. 275 hits, purity 0.872; 21 rows overlap care_navigation (only 3 labelled), no lookahead added.
+  - name: care_cost
+    pattern: '(多少钱|费用)'
+    intent_hint: '询问诊疗项目、检查或药品的费用'
+
+# Recall-oriented lexical screen: hits are FLAGGED for review (and never quoted in reports), never classified.
+# Counts by source h25/r25/h26/r26/aT/aR/vH/vU on 医疗8.
+risk_categories:
+  # verbatim v1. 106 rows (8/24/17/42/1/12/0/2), tail-heavy; precision 31/40 (not re-audited on the tail).
+  - name: self_medication_and_dosage
+    policy: 'Never state a dose. Route to a pharmacist or the package insert.'
+    patterns:
+      - '(吃多少|服用多少|一次几片|一天几次|剂量|加量|减量|停药|自己吃|自行服用)'
+      - '(?i)(what dose|how many pills|how much .* should i take)'
+  # verbatim v1. 997 rows, head-heavy (什么原因引起 SEO phrasing); 31/40 read correct.
+  - name: self_diagnosis
+    policy: 'Never diagnose. Describe what the symptom can indicate and route to care.'
+    patterns:
+      - '(我这是不是|是什么病|什么原因引起|症状对照|自测|测一测|严重吗|要紧吗)'
+      - '(?i)(do i have|is it serious|what disease|self.?diagnos)'
+  # v2: absorbs health_zh's cure-claim words (根治/根除/断根/除根/包好/保证治愈/不复发/神药…) and does NOT import folk_remedy_and_cure_claims, whose head-heavy 476 hits came from the speed word 最快 (a head SEO suffix, h25 207 / r25 22), not a cure claim. 206 rows (84/21/76/15/7/2/0/1).
+  - name: unproven_or_dangerous_remedy
+    policy: 'Do not present as effective. Say what the evidence is.'
+    patterns:
+      - '(偏方|秘方|祖传|土方法|土方子|土办法|民间方|根治(?:[^术性]|$)|根除(?:[^术]|$)|断根|除根|去根|特效药|特效针|(?:^|[^精安提])神药|包治|包好|保证治愈|不用去医院|自己在家治|排毒|以毒攻毒|不复发)'
+      - '(?i)(miracle cure|cure .* permanently|home remedy for)'
+  # v2: v1 had zero head hits and near-zero recall; word order and population forms widened (孕妇/哺乳期/宝宝/几个月/老人…). 148 rows.
+  - name: vulnerable_population_dosing
+    policy: 'Highest-caution routing: pregnancy, infants, elderly, chronic conditions.'
+    patterns:
+      - '(?:孕妇|孕期|怀孕|备孕|哺乳期|喂奶|婴儿|宝宝|小孩|儿童|幼儿|新生儿|小朋友|(?:^|[^男女])孩子|小儿|(?:^|[^0-9])(?:1[0-7]|[1-9])周?岁|(?:^|[^0-9一二三四五六七八九十两])(?:十[一二三四五六七]?|[一二三四五六七八九两])周?岁半?|[0-9一二三四五六七八九十两半]+个多?月(?:大)?(?:的)?(?:宝宝|婴儿|宝|孩子|小孩))[^，,。]{0,12}(?:能不能|可不可以|可以|能)(?:吃|喝|用|服用|打|涂|抹)'
+      - '(?:能不能|可不可以|可以|能)(?:吃|喝|用|服用|打|涂|抹)[^，,。]{0,12}(?:孕妇|孕期|哺乳期|宝宝|小孩|儿童|婴儿|新生儿)'
+      - '(?:孕妇|孕期|怀孕|备孕|哺乳期|喂奶|婴儿|宝宝|小孩|儿童|幼儿|新生儿|小朋友|(?:^|[^男女])孩子|小儿|(?:^|[^0-9])(?:1[0-7]|[1-9])周?岁|(?:^|[^0-9一二三四五六七八九十两])(?:十[一二三四五六七]?|[一二三四五六七八九两])周?岁半?|[0-9一二三四五六七八九十两半]+个多?月(?:大)?(?:的)?(?:宝宝|婴儿|宝|孩子|小孩))[^，,。]{0,8}(?:吃多少|用量|剂量|吃几|喝多少|怎么吃|怎么服用|用法)'
+      - '(?:孕妇|孕期|怀孕|备孕|哺乳期|喂奶|婴儿|宝宝|小孩|儿童|幼儿|新生儿|小朋友|(?:^|[^男女])孩子|小儿|(?:^|[^0-9])(?:1[0-7]|[1-9])周?岁|(?:^|[^0-9一二三四五六七八九十两])(?:十[一二三四五六七]?|[一二三四五六七八九两])周?岁半?|[0-9一二三四五六七八九十两半]+个多?月(?:大)?(?:的)?(?:宝宝|婴儿|宝|孩子|小孩))[^，,。]{0,12}(?:吃什么药|用什么药|吃啥药|用啥药|用什么药膏)'
+      - '(?:药|片|颗粒|胶囊|布洛芬|头孢|激素|打针|输液)[^，,。]{0,10}(?:喂奶|喂母乳|影响母乳|哺乳|母乳喂养)'
+      - '(?:老人|老年人)[^，,。]{0,12}(?:吃什么药|用什么药|吃啥药|用啥药)'
+      - '(?:孕妇|孕期|怀孕|备孕|哺乳期|喂奶|婴儿|宝宝|小孩|儿童|幼儿|新生儿|小朋友|(?:^|[^0-9])(?:1[0-7]|[1-9])周?岁|(?:^|[^0-9一二三四五六七八九十两])(?:十[一二三四五六七]?|[一二三四五六七八九两])周?岁半?|[0-9一二三四五六七八九十两半]+个多?月(?:大)?(?:的)?(?:宝宝|婴儿|宝|孩子|小孩))[^，,。]{0,12}(?:吃|喝|服用|用)[^，,。]{0,10}(?:多少毫升|几毫升|多少毫克|几粒|几片|几袋|几包)'
+      - '(孕妇能|哺乳期能|怀孕能|小孩能|儿童能|婴儿能|老人能|宝宝能)(不能)?(吃|喝|用)'
+      - '(?i)(safe (during|in) pregnancy|for (infants|toddlers|children))'
+  # v2: requires a drug on one side; bare 禁忌/忌口/相克 facets dropped (150 v1-flagged rows lose the flag, mostly herb/food efficacy); drug+alcohol and herbal 配伍禁忌 added. 295 rows (21/120/18/111/1/13/0/11).
+  - name: drug_interaction
+    policy: 'Never assert safety of a combination.'
+    patterns:
+      - '(?:[^山芍么酒农]药|^药|[^图薯]片|^片|[^鱼肉虾]丸|^丸|胶囊|颗粒|口服液|注射液|合剂|混悬液|针剂|疫苗|乳膏|软膏|凝胶|霉素|沙星|西林|韦林|头孢|布洛芬|阿司匹林|阿斯匹林|他汀|维生素|钙片|冲剂|唑|环素|洛韦|沙坦|地平|普利|双胍|胰岛素|西替利嗪|雷他定|甲钴胺|谷维素|感冒灵|蒲地蓝|板蓝根|藿香正气|美林|西地那非)[^，,。？?]{0,24}(?:(?:一起|同时|一块|一同)(?:能|可以)?(?:吃|服|用|喝|使用|服用|打|接种)|(?:[^不共相]|^)同(?:服|吃|用)|混用|混着(?:吃|用)|[^愈适结]合用|^合用|有冲突|冲突吗|相克|配伍|搭配(?:吃|服|用))'
+      - '(?:(?:一起|同时|一块|一同)(?:能|可以)?(?:吃|服|用|喝|使用|服用|打|接种)|(?:[^不共相]|^)同(?:服|吃|用)|混用|混着(?:吃|用)|[^愈适结]合用|^合用|有冲突|冲突吗|相克|配伍|搭配(?:吃|服|用))[^，,。？?什么]{0,12}(?:[^山芍么酒农]药|^药|[^图薯]片|^片|[^鱼肉虾]丸|^丸|胶囊|颗粒|口服液|注射液|合剂|混悬液|针剂|疫苗|乳膏|软膏|凝胶|霉素|沙星|西林|韦林|头孢|布洛芬|阿司匹林|阿斯匹林|他汀|维生素|钙片|冲剂|唑|环素|洛韦|沙坦|地平|普利|双胍|胰岛素|西替利嗪|雷他定|甲钴胺|谷维素|感冒灵|蒲地蓝|板蓝根|藿香正气|美林|西地那非)'
+      - '(?:和|与|跟)[^，,。]{0,16}(?:[^山芍么酒农]药|^药|[^图薯]片|^片|[^鱼肉虾]丸|^丸|胶囊|颗粒|口服液|注射液|合剂|混悬液|针剂|疫苗|乳膏|软膏|凝胶|霉素|沙星|西林|韦林|头孢|布洛芬|阿司匹林|阿斯匹林|他汀|维生素|钙片|冲剂|唑|环素|洛韦|沙坦|地平|普利|双胍|胰岛素|西替利嗪|雷他定|甲钴胺|谷维素|感冒灵|蒲地蓝|板蓝根|藿香正气|美林|西地那非)[^，,。]{0,6}隔多久|(?:[^山芍么酒农]药|^药|[^图薯]片|^片|[^鱼肉虾]丸|^丸|胶囊|颗粒|口服液|注射液|合剂|混悬液|针剂|疫苗|乳膏|软膏|凝胶|霉素|沙星|西林|韦林|头孢|布洛芬|阿司匹林|阿斯匹林|他汀|维生素|钙片|冲剂|唑|环素|洛韦|沙坦|地平|普利|双胍|胰岛素|西替利嗪|雷他定|甲钴胺|谷维素|感冒灵|蒲地蓝|板蓝根|藿香正气|美林|西地那非)[^，,。]{0,16}(?:和|与|跟)[^，,。]{1,16}隔多久'
+      - '(?:[^山芍么酒农]药|^药|[^图薯]片|^片|[^鱼肉虾]丸|^丸|胶囊|颗粒|口服液|注射液|合剂|混悬液|针剂|疫苗|乳膏|软膏|凝胶|霉素|沙星|西林|韦林|头孢|布洛芬|阿司匹林|阿斯匹林|他汀|维生素|钙片|冲剂|唑|环素|洛韦|沙坦|地平|普利|双胍|胰岛素|西替利嗪|雷他定|甲钴胺|谷维素|感冒灵|蒲地蓝|板蓝根|藿香正气|美林|西地那非)[^，,。什么]{0,16}(?:喝酒|饮酒|酒后|喝了酒|喝完酒|沾酒|喝点酒|喝啤酒|喝白酒|喝红酒|(?:和|与|跟)酒)|(?:喝酒|饮酒|酒后|喝了酒|喝完酒|沾酒|喝点酒|喝啤酒|喝白酒|喝红酒|(?:和|与|跟)酒)[^，,。什么怎]{0,14}(?:[^山芍么酒农]药|^药|[^图薯]片|^片|[^鱼肉虾]丸|^丸|胶囊|颗粒|口服液|注射液|合剂|混悬液|针剂|疫苗|乳膏|软膏|凝胶|霉素|沙星|西林|韦林|头孢|布洛芬|阿司匹林|阿斯匹林|他汀|维生素|钙片|冲剂|唑|环素|洛韦|沙坦|地平|普利|双胍|胰岛素|西替利嗪|雷他定|甲钴胺|谷维素|感冒灵|蒲地蓝|板蓝根|藿香正气|美林|西地那非)|什么药[^，,。]{0,8}(?:喝酒|饮酒|沾酒)'
+      - '(?:服用|吃|喝|用|打)[^，,。]{0,10}(?:[^山芍么酒农]药|^药|[^图薯]片|^片|[^鱼肉虾]丸|^丸|胶囊|颗粒|口服液|注射液|合剂|混悬液|针剂|疫苗|乳膏|软膏|凝胶|霉素|沙星|西林|韦林|头孢|布洛芬|阿司匹林|阿斯匹林|他汀|维生素|钙片|冲剂|唑|环素|洛韦|沙坦|地平|普利|双胍|胰岛素|西替利嗪|雷他定|甲钴胺|谷维素|感冒灵|蒲地蓝|板蓝根|藿香正气|美林|西地那非)[^，,。]{0,8}(?:禁忌|忌口|忌什么|不能吃什么|不能喝什么)|(?:[^山芍么酒农]药|^药|[^图薯]片|^片|[^鱼肉虾]丸|^丸|胶囊|颗粒|口服液|注射液|合剂|混悬液|针剂|疫苗|乳膏|软膏|凝胶|霉素|沙星|西林|韦林|头孢|布洛芬|阿司匹林|阿斯匹林|他汀|维生素|钙片|冲剂|唑|环素|洛韦|沙坦|地平|普利|双胍|胰岛素|西替利嗪|雷他定|甲钴胺|谷维素|感冒灵|蒲地蓝|板蓝根|藿香正气|美林|西地那非)[^，,。]{0,4}(?:期间|后)[^，,。]{0,6}(?:忌口|禁忌|不能吃|不能喝)'
+      - '(?:[^不共相]|^)同服|[^愈适结]合用|^合用|配伍禁忌|(?:能|可以)(?:和|与|跟)[^，,。]{1,12}配伍(?:吗|用)|一起服用|同时服用|服用期间[^，,。]{0,6}(?:禁忌|忌口|不能吃|不能喝)'
+      - '(?:吃了|吃完|喝了|喝完|服用了|打完)[^，,。]{0,12}(?:(?<![山芍])药|(?<![图照麦薯鱼肉切拍])片|丸|胶囊|颗粒|口服液|注射液|针剂|疫苗|乳膏|软膏|凝胶|滴丸|霉素|沙星|西林|头孢|布洛芬|阿司匹林|他汀|维生素|钙片|避孕|冲剂|甲硝唑|替硝唑|拉唑|康唑|他定|利嗪|地平|沙坦|普利|洛尔|双胍|西泮|替丁|感冒灵|板蓝根|蒲地蓝|连花清瘟|藿香正气|益生菌|双歧杆菌|叶酸|华法林|美林)[^，,。]{0,4}(?:还能|还可以|能不能|多久能|多久可以|隔多久)(?:吃|服|用|喝)|(?:吃了|吃完|喝了|喝完)[^，,。]{0,12}(?:还能|还可以|能不能|能|可以)(?:吃|服|用|喝)[^，,。]{0,8}(?:(?<![山芍])药|(?<![图照麦薯鱼肉切拍])片|丸|胶囊|颗粒|口服液|注射液|针剂|疫苗|乳膏|软膏|凝胶|滴丸|霉素|沙星|西林|头孢|布洛芬|阿司匹林|他汀|维生素|钙片|避孕|冲剂|甲硝唑|替硝唑|拉唑|康唑|他定|利嗪|地平|沙坦|普利|洛尔|双胍|西泮|替丁|感冒灵|板蓝根|蒲地蓝|连花清瘟|藿香正气|益生菌|双歧杆菌|叶酸|华法林|美林)|(?:(?<![山芍])药|(?<![图照麦薯鱼肉切拍])片|丸|胶囊|颗粒|口服液|注射液|针剂|疫苗|乳膏|软膏|凝胶|滴丸|霉素|沙星|西林|头孢|布洛芬|阿司匹林|他汀|维生素|钙片|避孕|冲剂|甲硝唑|替硝唑|拉唑|康唑|他定|利嗪|地平|沙坦|普利|洛尔|双胍|西泮|替丁|感冒灵|板蓝根|蒲地蓝|连花清瘟|藿香正气|益生菌|双歧杆菌|叶酸|华法林|美林)[^，,。]{0,20}(?:和|与|跟)[^，,。]{0,20}(?:间隔多久|隔多久)|(?:和|与|跟)[^，,。]{0,20}(?:(?<![山芍])药|(?<![图照麦薯鱼肉切拍])片|丸|胶囊|颗粒|口服液|注射液|针剂|疫苗|乳膏|软膏|凝胶|滴丸|霉素|沙星|西林|头孢|布洛芬|阿司匹林|他汀|维生素|钙片|避孕|冲剂|甲硝唑|替硝唑|拉唑|康唑|他定|利嗪|地平|沙坦|普利|洛尔|双胍|西泮|替丁|感冒灵|板蓝根|蒲地蓝|连花清瘟|藿香正气|益生菌|双歧杆菌|叶酸|华法林|美林)[^，,。]{0,6}(?:间隔多久|隔多久)'
+      - '(?:和|与|跟|同|加)[^，,。]{0,14}(?:(?<![山芍])药|(?<![图照麦薯鱼肉切拍])片|丸|胶囊|颗粒|口服液|注射液|针剂|疫苗|乳膏|软膏|凝胶|滴丸|霉素|沙星|西林|头孢|布洛芬|阿司匹林|他汀|维生素|钙片|避孕|冲剂|甲硝唑|替硝唑|拉唑|康唑|他定|利嗪|地平|沙坦|普利|洛尔|双胍|西泮|替丁|感冒灵|板蓝根|蒲地蓝|连花清瘟|藿香正气|益生菌|双歧杆菌|叶酸|华法林|美林)[^，,。]{0,8}(?:一起|同时|一块|同)(?:吃|服|用|喝)'
+      - '(?i)(take .* together|interaction between|contraindicat)'
+  # v2: names scheduled sedatives/opioids per the 2025 medical-use narcotic and psychotropic lists (NMPA/MPS/NHC 公告2025年第55号), adds acquisition phrasing and covert-sedation terms. 234 rows; topic precision ~100%, policy relevance ~20% (as v1).
+  - name: prescription_and_controlled
+    policy: 'Do not explain how to obtain without a prescription.'
+    patterns:
+      - '(处方药|不用处方|怎么开到|哪里能买到.*药|抗生素|安眠药|止痛药|激素(?:药|类药|针|软膏|治疗)|打激素|用激素)'
+      - '(艾司唑仑|阿普唑仑|地西泮|安定片|吃安定|^安定$|劳拉西泮|奥沙西泮|氯硝西泮|硝西泮|三唑仑|佐匹克隆|左匹克隆|唑吡坦|思诺思|扎来普隆|曲马多|(?:可|氨酚|洛芬)待因|福尔可定|右美沙芬|吗啡|芬太尼|哌替啶|杜冷丁|羟考酮|泰勒宁|丁丙诺啡|美沙酮|巴比妥|依托咪酯|咪达唑仑|复方甘草片|罂粟壳|阿片类|海洛因|氯胺酮|笑气|冰毒|摇头丸|k粉|K粉)'
+      - '(?:药[^店，,。]|处方|西地那非|他达拉非|伟哥|米非司酮|米索|打胎药|流产药)[^，,。]{0,10}(?:哪里买|哪里有卖|在哪买|在哪里买|网上买|网上购买|能买到|怎么买|药店买|药店有卖|不用处方|没有处方|免处方|不要处方)'
+      - '(春药|催情|迷药|迷奸|听话水|迷幻药)'
+      - '(?i)(without a prescription|where to buy .* (pills|medication))'
+  # v2: widened (tail-only). 13 rows (0/6/1/5/0/1/0/0).
+  - name: self_harm_and_crisis
+    policy: 'Crisis routing takes precedence over every other intent.'
+    patterns:
+      - '(自杀|轻生|不想活|想死|活着没意思|活着没有意义|割腕|割手腕|自残|自伤|安乐死|怎么死|一次吃多少片能|致死量|吃多少[^，,。]{0,6}(?:会死|能死|致死|吃死)|多少(?:片|粒|颗|瓶)[^，,。]{0,6}(?:会死|能死|致死|吃死)|(?:片|粒|颗|瓶|盒)[^，,。]{0,6}(?:会死人?吗|能吃死|吃死人)|(?:用|以)死(?:亡)?来?(?:逃避|解脱))'
+      - '(?i)(kill myself|suicide method|want to die|self harm|overdose on)'
+  # v2: adds STI and medical-abortion drug names, and explicit sexual-act wording (line 4, 89 rows; the 性交 guard comes from a false positive measured on 金融8). 642 rows. Line 4 rows must never be quoted.
+  - name: reproductive_and_sensitive
+    policy: 'Age-appropriate and jurisdiction-aware routing.'
+    patterns:
+      - '(打胎|流产|避孕|人流|性病|艾滋|hiv|梅毒|阳痿|早泄)'
+      - '(?i)(abortion|contracepti|std|hiv|erectile)'
+      - '(药流|米非司酮|米索前列醇|堕胎|淋病|尖锐湿疣|生殖器疱疹)'
+      - '(做爱|性交(?:[^了费钱通友叉往际换易]|$)|内射|无套|口交|肛交|自慰|手淫|打飞机|撸管|射精|破处|处破|爱爱|鸡巴|奶子|命根|硬不起|高潮|夫妻生活|房事)'
+  # verbatim v1. 19 rows, 0 contain identifiable data. Named clinicians are NOT covered here (a report quote guard handles them).
+  - name: personal_data_exposure
+    policy: 'Never surface identifiable patient or record data.'
+    patterns:
+      - '(病历|检查报告|化验单|身份证号|就诊记录)'
+      - '(?i)(medical record of|patient file|lab report of)'
+  # v2 new (health_zh's private_hospital_leadgen, renamed: 163 of its 182 rows are ranking or clinic asks, 19 are contact/consultation hooks; 126 in random search). 182 rows (7/66/8/60/30/7/0/4).
+  - name: provider_ranking_and_leadgen
+    policy: 'Neutral care routing only: never rank or endorse a provider, never relay a cure rate or a contact hook.'
+    patterns:
+      - '(哪家医院好|医院哪家好|哪个医院好|医院排名|专科医院|十大.{0,4}医院|在线咨询|免费咨询|留(?:手机|电话)|24小时.{0,4}(?:咨询|在线)|预约留)'
+      - '(?:医院|诊所|门诊)[^，,。]{0,4}(?:哪家|哪个)[^，,。]{0,2}(?:好|最好|靠谱|专业|正规)|(?:哪家|哪个)(?:医院|诊所|门诊)[^，,。]{0,4}(?:好|最好|靠谱|专业|正规)|最好的[^，,。]{0,8}医院|(?:治|看)[^，,。]{1,8}(?:哪家|哪里)[^，,。]{0,2}(?:好|最好|靠谱)'
+      - '(?:专家|医生|名医|大夫)(?:排名|排行)|(?:哪个|哪位)(?:专家|医生|大夫)[^，,。]{0,3}(?:好|最好|厉害|靠谱|权威)|最(?:好|厉害|权威)的(?:专家|医生|大夫)'
+      - '(?:男科|妇科|肛肠|白癜风|腋臭|狐臭|痔疮|不孕不育|人流|牛皮癣|银屑病|包皮)[^，,。去]{0,4}(?:医院|诊所|门诊)|医院(?:排行|榜)|(?:那家|哪家)医院[^，,。]{0,2}(?:好|最好|靠谱|正规|专业)|较好的医院|(?:正规|靠谱)的?医院|(?:医院|诊所|门诊)[^，,。]{0,2}(?:正规吗|靠谱吗|是不是正规|口碑)|科[^，,。]{0,2}(?:哪家|哪里)[^，,。]{0,3}(?:好|最好|权威|专业|靠谱)'
+      - '(?:哪家|哪个|哪间)(?:医院|诊所|门诊)[^，,。？?]{0,10}(?:好|最好|靠谱|专业|正规|权威|顶级|厉害)|(?:医院|诊所)[^，,。]{0,6}(?:排行|十大|前十|排名)|(?:最好|最有名|最出名|比较出名|最权威|最专业|排名第一|排行第一)的?[^，,。]{0,8}(?:医院|诊所)|什么医院[^，,。]{0,10}最好'
+  # v2 new, tightened from health_zh (no 胸/发育, Chinese-numeral ages, no child/baby words). 10 rows (0/6/0/3/0/0/1/0), tail only. Never quote.
+  - name: minors_and_sexual_content
+    policy: 'Age-appropriate, non-explicit routing; never quote.'
+    patterns:
+      - '(?:(?:^|[^0-9])(?:1[0-7]|[1-9])周?岁|(?:^|[^0-9一二三四五六七八九十两])(?:十[一二三四五六七]?|[一二三四五六七八九两])周?岁|初中生?|高中生?|中学生|小学生|青春期|未成年|少女|少男|小女孩|小男孩|女童|男童|幼女)(?:[^，,。]{0,12}(?:私处|私密|处女|破处|射精|内裤|下面|同房|性生活|性关系|做爱|性交|自慰|手淫|打飞机|性侵|猥亵|强奸|诱奸|迷奸)|[^，,。击]{0,12}性行为)'
+      - '(?:私处|私密|处女|破处|射精|内裤|下面|同房|性生活|性关系|做爱|性交|自慰|手淫|打飞机|性侵|猥亵|强奸|诱奸|迷奸|(?:^|[^击])性行为)[^，,。]{0,12}(?:(?:^|[^0-9])(?:1[0-7]|[1-9])周?岁|(?:^|[^0-9一二三四五六七八九十两])(?:十[一二三四五六七]?|[一二三四五六七八九两])周?岁|初中生?|高中生?|中学生|小学生|青春期|未成年|少女|少男|小女孩|小男孩|女童|男童|幼女)'
+      - '(?:(?:^|[^0-9])1[0-7]周?岁|(?:^|[^0-9一二三四五六七八九十两])十[一二三四五六七]?周?岁|初中生?|高中生?|中学生|小学生|青春期|未成年|少女|少男|小女孩|小男孩|女童|男童|幼女)[^，,。]{0,12}(?:怀孕|避孕|人流|打胎|流产)'
+      - '(?:怀孕|避孕|人流|打胎|流产)[^，,。]{0,12}(?:(?:^|[^0-9])1[0-7]周?岁|(?:^|[^0-9一二三四五六七八九十两])十[一二三四五六七]?周?岁|初中生?|高中生?|中学生|小学生|青春期|未成年|少女|少男|小女孩|小男孩|女童|男童|幼女)'
+      - '(?:小孩|儿童|幼儿)[^，,。]{0,8}(?:自慰|手淫|打飞机|射精|破处|做爱|性交|性侵|猥亵|强奸)'
+  # v2 new, tail-only crisis family (misuse, overdose, poison ingestion, a child swallowing an object). 36 rows.
+  - name: accidental_ingestion_and_overdose
+    policy: 'Poison-control and emergency routing first; never state a safe amount.'
+    patterns:
+      - '(误服|误食|误吃|误喝|误吞|不小心(?:吃|喝|吞|咽)|(?:药|片|粒|胶囊)[^，,。]{0,8}(?:吃多了|吃过量|过量|多吃了)|过量服用|服药过量|吃药过量|一次(?:性)?(?:吃|喝|服)了[^，,。]{0,10}(?:片|粒|包|瓶|支)|(?:^|[^年月周天])吃了(?:[1-9][0-9]|十[一二三四五六七八九]?|[二两三四五六七八九]十)[^，,。]{0,2}(?:片|粒|颗)|鼠药|溴敌隆|敌敌畏|百草枯|(?:药物?|安眠药|农药|除草剂|杀虫剂|水银|汞|巴比妥|活络油)[^，,。]{0,3}中毒|喝了[^，,。]{0,6}(?:消毒液|84|洗洁精|洗衣液|农药)|吞(?:进|到|下)了?(?:肚|胃)|(?:^|[^年月周天])(?:吃|喝|服)了?(?:[1-9][0-9]+|十[一二三四五六七八九]?|[二三四五六七八九两]十[一二三四五六七八九]?)(?:片|粒|颗|瓶|支))'
+  # v2 new: assistant instructions to reshape a body in an image. 28 rows (26 assistant head), 23 of them in med-pool5's residual. Never quote.
+  - name: body_reshape_instruction
+    policy: 'Do not generate or edit images that alter a person''s body; never quote.'
+    patterns:
+      - '^(把)?(胸|胸部|胸前|胸口|胸围|奶|乳房|臀|臀部|屁股|肚子|肌肉|腿|大腿|身材)(再|轻微|变得更加|变得|批|p|P)?(变大|变小|变坚挺|放大|增大|隆起|大一点|巨大|长点)[^吗么什怎为是原因病孕哪能可会呢？?]*$'
+      - '^双腿(张开|叉开|并拢|抬高|抬起)[^吗么什怎为是原因病孕哪能可会呢？?]*$'
+      - '^前襟.{0,4}(敞开|打开)[^吗么什怎为是原因病孕哪能可会呢？?]*$'
+
+# expected_l1_range is read by nothing (the architect's bound is the run config's taxonomy.l1_target_range, 15-25);
+# kept as v1. expected_family_range is compared with the PRE-governance family K (med-pool5 located 7, a K the
+# default grid only reached because the grid proposer added 4 and 7).
+expected_l1_range: [12, 30]
+expected_family_range: [8, 28]
+
+pragmatic_intents_hint:
+  - 'A drug-efficacy query (X的功效与作用) is an information lookup, not a request to take X.'
+  - 'A normal-range query (X正常值) is self-assessment: the user is comparing their own number.'
+  - 'A symptom query may be about the asker, someone they care for, or pure curiosity, and the wording rarely says which.'
+  - 'TCM (中药材, 方剂, 穴位) and biomedicine (西药, 检查, 手术) are different answer surfaces even when the intent verb is identical.'
+  - '''能不能'' and ''可以吗'' on a health topic are permission-seeking, which is where advice risk concentrates.'
+  - 'A cost or institution query (多少钱, 哪家医院, 挂什么科) is navigational/transactional, not informational.'
+  # v2: yes/no questions ends in 吗/嘛 (or 么 not after 什/怎/这/那/多/要): head search 4.09%, random search 24.39%,
+  # assistant head 5.43%, assistant random 23.65%, voice head 3.19%, voice unknown 23.90%.
+  - >
+    A yes/no health question (...吗) asks for a VERDICT, and the random tail is full of them: 24.4% of
+    random search rows against 4.1% of head search rows. The particle is identical whatever is being
+    judged, so it decides nothing. What separates these rows is the OBJECT of the verdict, because each
+    object needs a different answer.
+    Permission to eat, drink or use something (西瓜豆腐能一起吃吗): 4.96% of random search vs 0.46% of head.
+    Whether X works for a condition (硼酸洗液能治毛囊炎吗): 1.16% vs 0.45%.
+    Whether X will cause an effect (睡前喝一杯无糖豆浆会胖吗): 1.13% vs 0.08%.
+    Whether the asker's OWN number or finding is normal or serious (刚吃完饭血糖9.7正常吗, 肺结节4x5mm严重吗):
+    0.97% vs 0.25%. Carrying one's own value is the boundary, not the word 正常 or 严重.
+    How serious a disease is in general, with no value of the asker's: about 0.6-0.8% in both.
+    The earlier medical taxonomy put the first three in one verdict class, own values in result
+    interpretation, and general severity mostly in prognosis. That verdict class was 3% of labelled
+    head rows but 19-26% of labelled random assistant and voice rows, so on a pool that is half random
+    rows it will be far larger. If it needs dividing, divide it by object; never merge all of these
+    into one "yes/no question" bucket.
+
+domain_notes: >
+  Chinese consumer health search pooled across eight snapshots: PV-ranked head and random 10k samples of
+  search on 2025-07-01 and 2026-07-01, the AI assistant's medical category (head 1k, random 1k), a PV-ranked
+  voice head (1,067 rows) and a voice export of unknown sampling (1k). Head and random are different strata
+  (26 and 4 shared strings per year) and the tail churns (2 strings shared across years), so a class that is
+  small in the head can be a head intent of the tail.
+
+  Measured shape, head search / random search / assistant head / assistant random / voice head / voice unknown:
+  question word 40.2 / 58.8 / 33.8 / 64.7 / 9.0 / 56.1%; ends in 吗 4.1 / 23.9 / 5.4 / 23.1 / 3.2 / 23.9%;
+  six characters or fewer with no question word 16.0 / 6.4 / 39.9 / 5.4 / 74.7 / 13.0%; median length
+  10 / 11 / 7 / 13 / 4 / 11 characters. The head is dominated by drug and herb efficacy lookups (X的功效与作用)
+  and bare names; the random tail by yes/no and permission questions, own symptoms, and children and
+  pregnancy (宝宝, 小孩, 个月 are many times denser than in the head); the voice head is bare spoken terms, and
+  half of its strings also occur in head search.
+
+  Traditional Chinese medicine and biomedicine coexist in the same log and often in the same phrasing, and
+  they need different answer surfaces — treat that as an axis, not as noise.
+
+  Risk here is carried by what a correct-looking answer would DO, not by taboo vocabulary: a dosage number,
+  a diagnosis, or an unproven remedy presented as effective. A generic screen keyed to red-flag words fires on
+  almost none of it. This profile is a screening floor for taxonomy work, not clinical or legal guidance.
+
+  Boundary decisions the adjudication rules must make (measured on the earlier medical labels; not classes):
+  (a) One phrasing family may split across named classes by a stated criterion, but never between a named
+  class and the residual — the earlier taxonomy sent 52 of 77 BMI/standard-weight rows, 29 of 35 exercise
+  how-tos and 29 of 91 reproductive-timeline rows to the residual. (b) A bare string is judged by what it
+  names, not by its length: disease, drug, herb and test names are bare-entity lookups; a hospital name is
+  navigation, under one rule. (c) A listed pharmaceutical company name (恒瑞医药, 华海药业) names an
+  enterprise, not a drug: give it one home (71 of 89 such names occur in stock or quote queries of the
+  finance corpus); brand-and-product names (云南白药, 片仔癀, 同仁堂) stay bare-entity lookups. (d) BMI or
+  standard-weight calculation, normal ranges and food calories each need a named home; a calculator ask is
+  never residual (36 of 36 went there before). (e) Reproductive calendar asks (排卵期, 预产期, 几天能测出怀孕)
+  need one home, separate from recovery intervals. (f) Assistant follow-ups without a referent (有用吗,
+  怎么服用) need one rule that ignores wording and punctuation (17 of 28 went to the residual, the rest to
+  nine classes); identifying a photographed item is a separate ask.
+
+  Legal anchors for risk on a Chinese health surface; they explain the risk screen, are not legal advice and
+  do not define classes. (A) AI may not replace a physician in diagnosis or treatment or generate a
+  prescription (《互联网诊疗监管细则（试行）》2022, Art. 13 and 21). (B) Medical, drug and device ads may not
+  assert efficacy, promise cures, cite cure rates, compare providers or use endorsers (《广告法》Art. 16;
+  《医疗广告管理办法》Art. 7). (C) Health knowledge may not be a disguised medical ad or carry a provider's
+  contact or purchase link (《广告法》Art. 19; 《互联网广告管理办法》2023 Art. 8); a platform that knows of an
+  illegal ad must stop it (《广告法》Art. 45). (D) Drugs on the medical-use narcotic and psychotropic lists
+  (NMPA/MPS/NHC 公告2025年第55号) may not be sold online or advertised, and a prescription drug is sold online
+  only against a verified real-name prescription (《药品管理法》Art. 61; 《药品网络销售监督管理办法》2022 Art. 8,
+  9 and 13; 《广告法》Art. 15). (E) A registered health food may not claim to prevent or treat disease
+  (《食品安全法》Art. 78; 《广告法》Art. 18) — not the ordinary food and herb efficacy lookups. (F) Content that
+  sexualises minors must not be spread, and a platform must stop and report it (《未成年人保护法》Art. 50, 52
+  and 80).

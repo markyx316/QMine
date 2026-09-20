@@ -1,0 +1,17 @@
+{
+ "domain": "书籍文档",
+ "n_rows": 21786,
+ "sources": {
+  "2025search": 9988,
+  "2026search": 9995,
+  "assistant_top": 850,
+  "assistant_random": 953
+ },
+ "cramers_v_td_l1_name": 0.4118,
+ "n_classes_td_l1_name": 20,
+ "cramers_v_bu_family_final": 0.4035,
+ "n_classes_bu_family_final": 21,
+ "cramers_v_bu_leaf_name": 0.4777,
+ "n_classes_bu_leaf_name": 30,
+ "risk_total": 1096
+}

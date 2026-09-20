@@ -1,0 +1,3 @@
+domain,source,pairs,same_intent,median_added
+教育,assistant_random,121,0.4214876033057851,12.0
+教育,assistant_top,37,0.6216216216216216,5.0

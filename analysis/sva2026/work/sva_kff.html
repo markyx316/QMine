@@ -1,0 +1,1267 @@
+<!DOCTYPE html>
+<html lang="en-US" class="no-js">
+	<head>
+		<meta charset="UTF-8" /><script type="text/javascript">(window.NREUM||(NREUM={})).init={ajax:{deny_list:["bam.nr-data.net"]}};(window.NREUM||(NREUM={})).loader_config={licenseKey:"1fa8b5b91a",applicationID:"211788170",browserID:"211943346"};;/*! For license information please see nr-loader-rum-1.321.0.min.js.LICENSE.txt */
+(()=>{var e={8122(e,t,r){"use strict";r.d(t,{a:()=>i});var n=r(944);function i(e,t){try{if(!e||"object"!=typeof e)return(0,n.R)(3);if(!t||"object"!=typeof t)return(0,n.R)(4);const r=Object.create(Object.getPrototypeOf(t),Object.getOwnPropertyDescriptors(t)),a=0===Object.keys(r).length?e:r;for(let s in a)if(void 0!==e[s])try{if(null===e[s]){r[s]=null;continue}Array.isArray(e[s])&&Array.isArray(t[s])?r[s]=Array.from(new Set([...e[s],...t[s]])):e[s]instanceof Map||e[s]instanceof Set||e[s]instanceof Date||e[s]instanceof RegExp?r[s]=e[s]:"object"==typeof e[s]&&null!==t[s]&&"object"==typeof t[s]?r[s]=i(e[s],t[s]):r[s]=e[s]}catch(e){r[s]||(0,n.R)(1,e)}return r}catch(e){(0,n.R)(2,e)}}},2555(e,t,r){"use strict";r.d(t,{f:()=>s});var n=r(384),i=r(8122);const a={beacon:n.NT.beacon,errorBeacon:n.NT.errorBeacon,licenseKey:void 0,applicationID:void 0,sa:void 0,queueTime:void 0,applicationTime:void 0,ttGuid:void 0,user:void 0,account:void 0,product:void 0,extra:void 0,jsAttributes:{},userAttributes:void 0,atts:void 0,transactionName:void 0,tNamePlain:void 0};function s(e){try{return!!e.licenseKey&&!!e.errorBeacon&&!!e.applicationID}catch(e){return!1}}r.d(t,["D",0,e=>(0,i.a)(e,a)])},7699(e,t,r){"use strict";var n=r(860);const i={[n.K7.logging]:!0,[n.K7.genericEvents]:!0,[n.K7.jserrors]:!0,[n.K7.ajax]:!0};r.d(t,["It",0,1e6,"KC",0,i,"qh",0,"SESSION_ERROR"])},9324(e,t,r){"use strict";r.d(t,["xv",0,"1.321.0"])},981(e,t,r){"use strict";r.d(t,["R",0,{AJAX:"AjaxRequest",PA:"PageAction",UA:"UserAction",BP:"BrowserPerformance",WS:"WebSocket",SPV:"SecurityPolicyViolation",JSE:"JavaScriptError",LOG:"Log",PVE:"PageView",PVT:"PageViewTiming",SR:"SessionReplay",ST:"SessionTrace",BI:"BrowserInteraction"}])},6154(e,t,r){"use strict";var n=r(1863);const i="undefined"!=typeof window&&!!window.document,a="undefined"!=typeof WorkerGlobalScope&&("undefined"!=typeof self&&self instanceof WorkerGlobalScope&&self.navigator instanceof WorkerNavigator||"undefined"!=typeof globalThis&&globalThis instanceof WorkerGlobalScope&&globalThis.navigator instanceof WorkerNavigator),s=i?window:"undefined"!=typeof WorkerGlobalScope&&("undefined"!=typeof self&&self instanceof WorkerGlobalScope&&self||"undefined"!=typeof globalThis&&globalThis instanceof WorkerGlobalScope&&globalThis),o=Boolean("hidden"===s?.document?.visibilityState),c=""+s?.location,u=/iPad|iPhone|iPod/.test(s.navigator?.userAgent),d=u&&"undefined"==typeof SharedWorker,l=((()=>{const e=s.navigator?.userAgent?.match(/Firefox[/\s](\d+\.\d+)/);Array.isArray(e)&&e.length>=2&&e[1]})(),Date.now()-(0,n.t)());r.d(t,["OF",0,u,"RI",0,i,"WN",0,l,"bv",0,a,"gm",0,s,"m",0,c,"mw",0,o,"sb",0,d,"zk",0,()=>{const e=s?.performance?.getEntriesByType?.("navigation")?.[0];if(e&&e.responseStart>0&&e.responseStart<s.performance.now())return e}])},3241(e,t,r){"use strict";r.d(t,{W:()=>i});var n=r(6154);function i(e={}){try{n.gm.dispatchEvent(new CustomEvent("newrelic",{detail:e}))}catch(e){}}},1687(e,t,r){"use strict";r.d(t,{Ak:()=>o,Ze:()=>u,x3:()=>c});var n=r(3241),i=r(3606),a=r(860),s=r(2646);function o(e,t){if(!e)return;const r={staged:!1,priority:a.P3[t]||0};e.runtime.drainRegistry.get(t)||e.runtime.drainRegistry.set(t,r)}function c(e,t){if(!e)return;const r=e.runtime.drainRegistry;r&&(r.get(t)&&r.delete(t),l(e,t,!1),r.size&&d(e))}function u(e,t="feature",r=!1){if(e){if(!e.runtime.drainRegistry.get(t)||r)return l(e,t);e.runtime.drainRegistry.get(t).staged=!0,d(e)}}function d(e){if(!e)return;const t=Array.from(e.runtime.drainRegistry);t.every(([e,t])=>t.staged)&&(t.sort((e,t)=>e[1].priority-t[1].priority),t.forEach(([t])=>{e.runtime.drainRegistry.delete(t),l(e,t)}))}function l(e,t,r=!0){if(!e)return;const a=e.ee,o=i.i.handlers;if(a&&!a.aborted&&a.backlog&&o){if((0,n.W)({type:"lifecycle",name:"drain",feature:t}),r){const e=a.backlog[t],r=o[t];if(r){for(let t=0;e&&t<e.length;++t)f(e[t],r);Object.entries(r).forEach(([e,t])=>{Object.values(t||{}).forEach(t=>{t[0]?.on&&t[0].context()instanceof s.y&&!t[0].listeners(e).includes(t[1])&&t[0].on(e,t[1])})})}}a.isolatedBacklog||delete o[t],a.backlog[t]=null,a.emit("drain-"+t,[])}}function f(e,t){var r=e[1];Object.values(t[r]||{}).forEach(t=>{var r=e[0];if(t[0]===r){var n=t[1],i=e[3],a=e[2];n.apply(i,a)}})}},7836(e,t,r){"use strict";var n=r(384),i=r(8990),a=r(2646),s=r(5607);const o="nr@context:".concat(s.W),c=function e(t,r){var n={},s={},d={},l=!1;try{l=16===r.length&&u.initializedAgents?.[r]?.runtime.isolatedBacklog}catch(e){}var f={on:p,addEventListener:p,removeEventListener:function(e,t){var r=n[e];if(!r)return;for(var i=0;i<r.length;i++)r[i]===t&&r.splice(i,1)},emit:function(e,r,n,i,a){!1!==a&&(a=!0);if(c.aborted&&!i)return;t&&a&&t.emit(e,r,n);var o=g(n);m(e).forEach(e=>{e.apply(o,r)});var u=v()[s[e]];u&&u.push([f,e,r,o]);return o},get:h,listeners:m,context:g,buffer:function(e,t){const r=v();if(t=t||"feature",f.aborted)return;Object.entries(e||{}).forEach(([e,n])=>{s[n]=t,t in r||(r[t]=[])})},abort:function(){f._aborted=!0,Object.keys(f.backlog).forEach(e=>{delete f.backlog[e]})},isBuffering:function(e){return!!v()[s[e]]},debugId:r,backlog:l?{}:t&&"object"==typeof t.backlog?t.backlog:{},isolatedBacklog:l};return Object.defineProperty(f,"aborted",{get:()=>{let e=f._aborted||!1;return e||(t&&(e=t.aborted),e)}}),f;function g(e){return e&&e instanceof a.y?e:e?(0,i.I)(e,o,()=>new a.y(o)):new a.y(o)}function p(e,t){n[e]=m(e).concat(t)}function m(e){return n[e]||[]}function h(t){return d[t]=d[t]||e(f,t)}function v(){return f.backlog}}(void 0,"globalEE"),u=(0,n.Zm)();u.ee||(u.ee=c),r.d(t,["P",0,o,"ee",0,c])},2646(e,t,r){"use strict";r.d(t,{y:()=>n});class n{constructor(e){this.contextId=e}}},9908(e,t,r){"use strict";r.d(t,{d:()=>n,p:()=>i});var n=r(7836).ee.get("handle");function i(e,t,r,i,a){a?(a.buffer([e],i),a.emit(e,t,r)):(n.buffer([e],i),n.emit(e,t,r))}},3606(e,t,r){"use strict";r.d(t,{i:()=>a});var n=r(9908);a.on=s;var i=a.handlers={};function a(e,t,r,a){s(a||n.d,i,e,t,r)}function s(e,t,r,i,a){a||(a="feature"),e||(e=n.d);var s=t[a]=t[a]||{};(s[r]=s[r]||[]).push([e,i])}},3878(e,t,r){"use strict";function n(e,t){return{capture:e,passive:!1,signal:t}}function i(e,t,r=!1,i){window.addEventListener(e,t,n(r,i))}function a(e,t,r=!1,i){document.addEventListener(e,t,n(r,i))}r.d(t,{DD:()=>a,jT:()=>n,sp:()=>i})},5607(e,t,r){"use strict";const n=(0,r(9566).bz)();r.d(t,["W",0,n])},9566(e,t,r){"use strict";r.d(t,{LA:()=>s,bz:()=>a});var n=r(6154);function i(e,t){return e?15&e[t]:16*Math.random()|0}function a(){const e=n.gm?.crypto||n.gm?.msCrypto;let t,r=0;return e&&e.getRandomValues&&(t=e.getRandomValues(new Uint8Array(30))),"xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".split("").map(e=>"x"===e?i(t,r++).toString(16):"y"===e?(3&i()|8).toString(16):e).join("")}function s(e){const t=n.gm?.crypto||n.gm?.msCrypto;let r,a=0;t&&t.getRandomValues&&(r=t.getRandomValues(new Uint8Array(e)));const s=[];for(var o=0;o<e;o++)s.push(i(r,a++).toString(16));return s.join("")}},2614(e,t,r){"use strict";r.d(t,["BB",0,18e5,"Wt",0,"NRBA_SESSION::","iL",0,{SAME_TAB:"same-tab",CROSS_TAB:"cross-tab"},"tS",0,{STARTED:"session-started",PAUSE:"session-pause",RESET:"session-reset",RESUME:"session-resume",UPDATE:"session-update"},"wk",0,144e5])},1863(e,t,r){"use strict";function n(){return Math.floor(performance.now())}r.d(t,{t:()=>n})},944(e,t,r){"use strict";r.d(t,{R:()=>i});var n=r(3241);function i(e,t){"function"==typeof console.debug&&(console.debug("New Relic Warning: https://github.com/newrelic/newrelic-browser-agent/blob/main/docs/warning-codes.md#".concat(e),t),(0,n.W)({drained:null,type:"data",name:"warn",feature:"warn",data:{code:e,secondary:t}}))}},8990(e,t,r){"use strict";r.d(t,{I:()=>i});var n=Object.prototype.hasOwnProperty;function i(e,t,r){if(n.call(e,t))return e[t];var i=r();if(Object.defineProperty&&Object.keys)try{return Object.defineProperty(e,t,{value:i,writable:!0,enumerable:!1}),i}catch(e){}return e[t]=i,i}},6389(e,t,r){"use strict";function n(e,t=500,r={}){const n=r?.leading||!1;let i;return(...r)=>{n&&void 0===i&&(e.apply(this,r),i=setTimeout(()=>{i=clearTimeout(i)},t)),n||(clearTimeout(i),i=setTimeout(()=>{e.apply(this,r)},t))}}function i(e){let t=!1;return(...r)=>{t||(t=!0,e.apply(this,r))}}r.d(t,{J:()=>i,s:()=>n})},1910(e,t,r){"use strict";r.d(t,{i:()=>a});var n=r(944);const i=new Map;function a(...e){return e.every(e=>{if(i.has(e))return i.get(e);const t="function"==typeof e?e.toString():"",r=t.includes("[native code]"),a=t.includes("nrWrapper");return r||a||(0,n.R)(64,e?.name||t),i.set(e,r),r})}},5289(e,t,r){"use strict";r.d(t,{GG:()=>s,Qr:()=>c,sB:()=>o});var n=r(3878),i=r(6389);function a(){return"undefined"==typeof document||"complete"===document.readyState}function s(e,t){if(a())return e();const r=(0,i.J)(e),s=setInterval(()=>{a()&&(clearInterval(s),r())},500);(0,n.sp)("load",r,t)}function o(e){if(a())return e();(0,n.DD)("DOMContentLoaded",e)}function c(e){if(a())return e();(0,n.sp)("popstate",e)}},384(e,t,r){"use strict";r.d(t,{Zm:()=>c,bQ:()=>d,dV:()=>u,pV:()=>l});var n=r(6154),i=r(1863),a=r(944),s=r(1910);const o={beacon:"bam.nr-data.net",errorBeacon:"bam.nr-data.net"};function c(){return n.gm.NREUM||(n.gm.NREUM={}),void 0===n.gm.newrelic&&(n.gm.newrelic=n.gm.NREUM),n.gm.NREUM}function u(){let e=c();return e.o||(e.o={ST:n.gm.setTimeout,SI:n.gm.setImmediate||n.gm.setInterval,CT:n.gm.clearTimeout,XHR:n.gm.XMLHttpRequest,REQ:n.gm.Request,EV:n.gm.Event,PR:n.gm.Promise,MO:n.gm.MutationObserver,FETCH:n.gm.fetch,WS:n.gm.WebSocket},(0,s.i)(...Object.values(e.o))),e}function d(e,t){let r=c();r.initializedAgents??={},t.initializedAt={ms:(0,i.t)(),date:new Date},r.initializedAgents[e]=t,2===Object.keys(r.initializedAgents).length&&(0,a.R)(69)}function l(){return function(){let e=c();const t=e.info||{};e.info={beacon:o.beacon,errorBeacon:o.errorBeacon,...t}}(),function(){let e=c();const t=e.init||{};e.init={...t}}(),u(),function(){let e=c();const t=e.loader_config||{};e.loader_config={...t}}(),c()}r.d(t,["NT",0,o])},2843(e,t,r){"use strict";r.d(t,{G:()=>a,u:()=>i});var n=r(3878);function i(e,t=!1,r,i){(0,n.DD)("visibilitychange",function(){if(t)return void("hidden"===document.visibilityState&&e());e(document.visibilityState)},r,i)}function a(e,t,r){(0,n.sp)("pagehide",e,t,r)}},9300(e,t,r){"use strict";r(860).K7.ajax;r.d(t,["mo",0,{NONE:"none",FAILURES:"failures",ALL:"all"}])},3969(e,t,r){"use strict";const n=r(860).K7.metrics;r.d(t,["TZ",0,n,"XG",0,"storeEventMetrics","xV",0,"storeSupportabilityMetrics"])},6630(e,t,r){"use strict";const n=r(860).K7.pageViewEvent;r.d(t,["T",0,n])},782(e,t,r){"use strict";const n=r(860).K7.pageViewTiming;r.d(t,["T",0,n])},4234(e,t,r){"use strict";r.d(t,{W:()=>i});var n=r(1687);class i{constructor(e,t){this.agentRef=e,this.ee=e?.ee,this.featureName=t,this.blocked=!1}deregisterDrain(){(0,n.x3)(this.agentRef,this.featureName)}}},7767(e,t,r){"use strict";var n=r(6154);r.d(t,["V",0,e=>n.RI&&!0===e?.privacy.cookies_enabled])},8362(e,t,r){"use strict";r.d(t,{d:()=>a});var n=r(9566),i=r(1741);class a extends i.W{agentIdentifier=(0,n.LA)(16)}},1741(e,t,r){"use strict";r.d(t,{W:()=>a});var n=r(944),i=r(4261);class a{#e(e,...t){if(this[e]!==a.prototype[e])return this[e](...t);(0,n.R)(35,e)}addPageAction(e,t){return this.#e(i.hG,e,t)}register(e){return this.#e(i.eY,e)}recordCustomEvent(e,t){return this.#e(i.fF,e,t)}setPageViewName(e,t){return this.#e(i.Fw,e,t)}setCustomAttribute(e,t,r){return this.#e(i.cD,e,t,r)}noticeError(e,t){return this.#e(i.o5,e,t)}setUserId(e,t=!1){return this.#e(i.Dl,e,t)}setApplicationVersion(e){return this.#e(i.nb,e)}setErrorHandler(e){return this.#e(i.bt,e)}addRelease(e,t){return this.#e(i.k6,e,t)}log(e,t){return this.#e("log",e,t)}start(){return this.#e("start")}finished(e){return this.#e(i.BL,e)}recordReplay(){return this.#e(i.CH)}pauseReplay(){return this.#e(i.Tb)}addToTrace(e){return this.#e(i.U2,e)}setCurrentRouteName(e){return this.#e(i.PA,e)}interaction(e){return this.#e(i.dT,e)}wrapLogger(e,t,r){return this.#e(i.Wb,e,t,r)}measure(e,t){return this.#e(i.V1,e,t)}consent(e){return this.#e(i.Pv,e)}}},4261(e,t,r){"use strict";r.d(t,["BL",0,"finished","CH",0,"recordReplay","Dl",0,"setUserId","Fw",0,"setPageViewName","PA",0,"setCurrentRouteName","Pv",0,"consent","Tb",0,"pauseReplay","U2",0,"addToTrace","V1",0,"measure","Wb",0,"wrapLogger","bt",0,"setErrorHandler","cD",0,"setCustomAttribute","dT",0,"interaction","eY",0,"register","fF",0,"recordCustomEvent","hG",0,"addPageAction","k6",0,"addRelease","nb",0,"setApplicationVersion","o5",0,"noticeError"])},1738(e,t,r){"use strict";r.d(t,{U:()=>l,Y:()=>d});var n=r(3241),i=r(9908),a=r(1863),s=r(944),o=r(3969),c=r(8362),u=r(860);function d(e,t,r,a){const d=a||r;!d||d[e]&&d[e]!==c.d.prototype[e]||(d[e]=function(){(0,i.p)(o.xV,["API/"+e+"/called"],void 0,u.K7.metrics,r.ee),(0,n.W)({drained:!!r.runtime?.activatedFeatures,type:"data",name:"api",feature:"api-"+e,data:{}});try{return t.apply(this,arguments)}catch(e){(0,s.R)(23,e)}})}function l(e,t,r,n,s){const o=e.info;null===r?delete o.jsAttributes[t]:o.jsAttributes[t]=r,(s||null===r)&&(0,i.p)("api-"+n,[(0,a.t)(),t,r],void 0,"session",e.ee)}},8374(e,t,r){r.nc=(()=>{try{return document?.currentScript?.nonce}catch(e){}return""})()},860(e,t,r){"use strict";const n="events",i="jserrors",a="browser/blobs",s="browser/logs",o={ajax:"ajax",genericEvents:"generic_events",jserrors:i,logging:"logging",metrics:"metrics",pageAction:"page_action",pageViewEvent:"page_view_event",pageViewTiming:"page_view_timing",sessionReplay:"session_replay",sessionTrace:"session_trace",softNav:"soft_navigations"},c={[o.pageViewEvent]:1,[o.pageViewTiming]:2,[o.metrics]:3,[o.jserrors]:4,[o.softNav]:5,[o.ajax]:6,[o.sessionTrace]:7,[o.sessionReplay]:8,[o.logging]:9,[o.genericEvents]:10},u={[o.pageViewEvent]:"rum",[o.pageViewTiming]:n,[o.ajax]:n,[o.softNav]:n,[o.metrics]:i,[o.jserrors]:i,[o.sessionTrace]:a,[o.sessionReplay]:a,[o.logging]:s,[o.genericEvents]:"ins"};r.d(t,["$J",0,u,"K7",0,o,"P3",0,c,"XX",0,i,"Yy",0,s,"df",0,a,"hg",0,"connect"])}};const t={};function r(n){const i=t[n];if(void 0!==i)return i.exports;const a=t[n]={exports:{}};return e[n](a,a.exports,r),a.exports}r.m=e,r.d=(e,t)=>{if(Array.isArray(t))for(var n=0;n<t.length;){var i=t[n++],a=t[n++];r.o(e,i)?0===a&&n++:0===a?Object.defineProperty(e,i,{enumerable:!0,value:t[n++]}):Object.defineProperty(e,i,{enumerable:!0,get:a})}else for(var i in t)r.o(t,i)&&!r.o(e,i)&&Object.defineProperty(e,i,{enumerable:!0,get:t[i]})},r.f={},r.e=e=>Promise.all(Object.keys(r.f).reduce((t,n)=>(r.f[n](e,t),t),[])),r.u=e=>"nr-rum-1.321.0.min.js",r.o=(e,t)=>Object.prototype.hasOwnProperty.call(e,t),(()=>{const e={},t="NRBA-1.321.0.PROD:";r.l=(n,i,a,s)=>{if(e[n])return void e[n].push(i);let o,c;if(void 0!==a){const e=document.getElementsByTagName("script");for(var u=0;u<e.length;u++){const r=e[u];if(r.getAttribute("src")==n||r.getAttribute("data-webpack")==t+a){o=r;break}}}if(!o){c=!0;var d={296:"sha512-auOJN989wXoxmQeiyRE/ZlrR6yqeuq5/WjLH1btsNQ6Iqm/RK+IqmjTuvad7oOBZyozPaWg6y2Uu2qAZy3e0cQ=="};o=document.createElement("script"),o.charset="utf-8",r.nc&&o.setAttribute("nonce",r.nc),o.setAttribute("data-webpack",t+a),o.src=n,0!==o.src.indexOf(window.location.origin+"/")&&(o.crossOrigin="anonymous"),d[s]&&(o.integrity=d[s])}e[n]=[i];const l=(t,r)=>{o.onerror=o.onload=null,clearTimeout(f);const i=e[n];if(delete e[n],o.parentNode?.removeChild(o),i?.forEach(e=>e(r)),t)return t(r)},f=setTimeout(l.bind(null,void 0,{type:"timeout",target:o}),12e4);o.onerror=l.bind(null,o.onerror),o.onload=l.bind(null,o.onload),c&&document.head.appendChild(o)}})(),r.r=e=>{Symbol.toStringTag&&Object.defineProperty(e,Symbol.toStringTag,{value:"Module"}),Object.defineProperty(e,"__esModule",{value:!0})},r.p="https://js-agent.newrelic.com/",(()=>{const e={374:0,840:0};r.f.j=(t,n)=>{let i=r.o(e,t)?e[t]:void 0;if(0!==i)if(i)n.push(i[2]);else{const a=new Promise((r,n)=>i=e[t]=[r,n]);n.push(i[2]=a);const s=r.p+r.u(t),o=new Error,c=n=>{if(r.o(e,t)&&(i=e[t],0!==i&&(e[t]=void 0),i)){const e=n&&("load"===n.type?"missing":n.type),r=n&&n.target&&n.target.src;o.message="Loading chunk "+t+" failed: ("+e+": "+r+")",o.name="ChunkLoadError",o.type=e,o.request=r,i[1](o)}};r.l(s,c,"chunk-"+t,t)}};const t=(t,n)=>{let[i,a,s]=n;var o,c,u=0;if(i.some(t=>0!==e[t])){for(o in a)r.o(a,o)&&(r.m[o]=a[o]);if(s)s(r)}for(t&&t(n);u<i.length;u++)c=i[u],r.o(e,c)&&e[c]&&e[c][0](),e[c]=0},n=self["webpackChunk:NRBA-1.321.0.PROD"]=self["webpackChunk:NRBA-1.321.0.PROD"]||[];n.forEach(t.bind(null,0)),n.push=t.bind(null,n.push.bind(n))})(),(()=>{"use strict";r(8374);var e=r(8362),t=r(860);const n=Object.values(t.K7);var i=r(384),a=r(1741);var s=r(2555),o=r(981);t.K7.genericEvents,o.R.PA,o.R.UA,o.R.BP;const c={RESOURCES:"experimental.resources",REGISTER:"register"};var u=r(9300);const d=e=>{if(!e||"string"!=typeof e)return!1;try{document.createDocumentFragment().querySelector(e)}catch{return!1}return!0};var l=r(2614),f=r(944),g=r(8122);const p="[data-nr-mask]",m=e=>(0,g.a)(e,(()=>{const e={feature_flags:[],experimental:{register:!1,resources:!1,iframe_bridge:!1,iframe_domains:[]},mask_selector:"*",block_selector:"[data-nr-block]",mask_input_options:{color:!1,date:!1,"datetime-local":!1,email:!1,month:!1,number:!1,range:!1,search:!1,tel:!1,text:!1,time:!1,url:!1,week:!1,textarea:!1,select:!1,password:!0}};return{ajax:{deny_list:void 0,block_internal:!0,enabled:!0,autoStart:!0,capture_payloads:u.mo.NONE},api:{register:{get enabled(){return e.feature_flags.includes(c.REGISTER)||e.experimental.register},set enabled(t){e.experimental.register=t},duplicate_data_to_container:!1,get allow_iframe_bridge(){return e.feature_flags.includes(c.IFRAME_BRIDGE)||e.experimental.iframe_bridge},set allow_iframe_bridge(t){e.experimental.iframe_bridge=t},get iframe_domains(){return e.experimental.iframe_domains},set iframe_domains(t){Array.isArray(t)?e.experimental.iframe_domains=t:(0,f.R)(1,t)}}},browser_consent_mode:{enabled:!1},distributed_tracing:{enabled:void 0,exclude_newrelic_header:void 0,cors_use_newrelic_header:void 0,cors_use_tracecontext_headers:void 0,allowed_origins:void 0},get feature_flags(){return e.feature_flags},set feature_flags(t){e.feature_flags=t},generic_events:{enabled:!0,autoStart:!0},harvest:{interval:30},jserrors:{enabled:!0,autoStart:!0},logging:{enabled:!0,autoStart:!0},metrics:{enabled:!0,autoStart:!0},obfuscate:void 0,page_action:{enabled:!0},page_view_event:{enabled:!0,autoStart:!0},page_view_timing:{enabled:!0,autoStart:!0},performance:{capture_marks:!1,capture_measures:!1,capture_detail:!0,resources:{get enabled(){return e.feature_flags.includes(c.RESOURCES)||e.experimental.resources},set enabled(t){e.experimental.resources=t},asset_types:[],first_party_domains:[],ignore_newrelic:!0}},privacy:{cookies_enabled:!0},proxy:{assets:void 0,beacon:void 0},session:{expiresMs:l.wk,inactiveMs:l.BB},session_replay:{autoStart:!0,enabled:!1,preload:!1,sampling_rate:10,error_sampling_rate:100,collect_fonts:!1,inline_images:!1,fix_stylesheets:!0,mask_all_inputs:!0,get mask_text_selector(){return e.mask_selector},set mask_text_selector(t){d(t)?e.mask_selector="".concat(t,",").concat(p):""===t||null===t?e.mask_selector=p:(0,f.R)(5,t)},get block_class(){return"nr-block"},get ignore_class(){return"nr-ignore"},get mask_text_class(){return"nr-mask"},get block_selector(){return e.block_selector},set block_selector(t){d(t)?e.block_selector+=",".concat(t):""!==t&&(0,f.R)(6,t)},get mask_input_options(){return e.mask_input_options},set mask_input_options(t){t&&"object"==typeof t?e.mask_input_options={...t,password:!0}:(0,f.R)(7,t)}},session_trace:{enabled:!0,autoStart:!0},soft_navigations:{enabled:!0,autoStart:!0},ssl:void 0,user_actions:{enabled:!0,elementAttributes:["id","className","tagName","type"]},web_sockets:{enabled:!1}}})());var h=r(6154),v=r(9324);let b=0;const y={buildEnv:"PROD",distMethod:"CDN",version:v.xv,originTime:h.WN},_={consented:!1},w={activatedFeatures:void 0,appMetadata:{},configured:!1,get consented(){return this.session?.state?.consent||_.consented},set consented(e){_.consented=e},customTransaction:void 0,denyList:[],disabled:!1,drainRegistry:new Map,connector:void 0,harvester:void 0,v2Target:void 0,isolatedBacklog:!1,isRecording:!1,loaderType:void 0,maxBytes:3e4,obfuscator:void 0,onerror:void 0,ptid:void 0,releaseIds:{},session:void 0,timeKeeper:void 0,registeredEntities:[],jsAttributesMetadata:{bytes:0},get harvestCount(){return++b},listeningForIframeMessages:!1},R="BA";var A=r(7836),x=r(3241);const E={accountID:void 0,trustKey:void 0,agentID:void 0,licenseKey:void 0,applicationID:void 0,xpid:void 0};var S=r(9908);const k="newrelic-iframe-";function T(e,t={},n,o){let{init:c,info:u,loader_config:d,runtime:l={},exposed:f=!0}=t;if(!u){const e=(0,i.pV)();c=e.init,u=e.info,d=e.loader_config}var p;e.init=m(c||{}),e.loader_config=(p=d||{},(0,g.a)(p,E)),u.jsAttributes??={},h.bv&&(u.jsAttributes.isWorker=!0),e.info=(0,s.D)(u);const v=e.init;e.runtime??=(e=>{const t=(0,g.a)(e,w),r=Object.keys(y).reduce((e,t)=>(e[t]={value:y[t],writable:!1,configurable:!0,enumerable:!0},e),{});return Object.defineProperties(t,r)})(l),e.runtime.v2Target??={type:R,instance:e.agentIdentifier,get id(){return e.runtime.appMetadata?.agents?.[0]?.entityGuid},get attributes(){return{"entity.guid":this.id,appId:e.info.applicationID}}},v.proxy.assets&&(e=>{const t=e.startsWith("http");e+="/",r.p=t?e:"https://"+e})(v.proxy.assets),e.runtime.configured||(Object.defineProperty(e,"beacons",{get:()=>[e.info.beacon,e.info.errorBeacon,e.init.proxy.assets,e.init.proxy.beacon].filter(Boolean)}),Object.defineProperty(e.runtime,"denyList",{get:()=>[...e.init.ajax.deny_list||[],...e.init.ajax.block_internal?e.beacons:[]]}),e.runtime.ptid=e.agentIdentifier,function(e){const t=(0,i.pV)();Object.getOwnPropertyNames(a.W.prototype).forEach(r=>{const n=a.W.prototype[r];if("function"!=typeof n||"constructor"===n)return;let i=t[r];e[r]&&!1!==e.exposed&&"micro-agent"!==e.runtime?.loaderType&&(t[r]=(...t)=>{const n=e[r](...t);return i?i(...t):n})})}(e),e.runtime.loaderType=n,e.ee=A.ee.get(e.agentIdentifier),e.exposed=f,(0,x.W)({drained:!!e.runtime.activatedFeatures,type:"lifecycle",name:"initialize",feature:void 0,data:e.config}),e.init.api.register.allow_iframe_bridge&&h.gm.addEventListener("message",t=>{"string"==typeof t.data?.type&&t.data.type.startsWith(k)&&(0,S.p)("iframe-message",[t],void 0,"IFRAME",e.ee)}),e.runtime.configured=!0)}var j=r(1863),P=r(4261),N=r(1738);var O=r(1687),M=r(4234),I=r(5289),D=r(7767);function V(e){return!!(0,i.dV)().o.MO&&(0,D.V)(e)&&!0===e?.session_trace.enabled}var W=r(6389),B=r(7699);const C=new WeakSet,K=new WeakMap;class U extends M.W{constructor(e,t){super(e,t),this.abortHandler=void 0,this.featAggregate=void 0,this.loadedSuccessfully=void 0,this.onAggregateImported=new Promise(e=>{this.loadedSuccessfully=e}),this.deferred=Promise.resolve(),!1===e.init[this.featureName].autoStart?this.deferred=new Promise((t,r)=>{this.ee.on("manual-start-all",(0,W.J)(()=>{(0,O.Ak)(e,this.featureName),t()}))}):(0,O.Ak)(e,t)}importAggregator(e,t,n={}){if(this.featAggregate)return;const i=async()=>{if(await this.deferred,this.#t(e),!(0,s.f)(e.info))return(0,f.R)(43),e.ee.abort(),void this.loadedSuccessfully(!1);try{await async function(e,t,n){if(K.has(e))return K.get(e);const i=(async()=>{if((0,D.V)(e.init))try{const{setupAgentSession:t}=await r.e(296).then(r.bind(r,8391));t(e)}catch(e){(0,f.R)(20,e),t.emit("internal-error",[e]),(0,S.p)(B.qh,[e],void 0,n,t)}if(e.init.api.register.allow_iframe_bridge)try{const{setupIframeMFEMessageListener:t}=await Promise.resolve().then(function(){const e=new Error("Cannot find module '../../loaders/configure/iframe-message-handler'");throw e.code="MODULE_NOT_FOUND",e});t(e)}catch(e){(0,f.R)(23,e)}const[{Connector:i},{Harvester:a}]=await Promise.all([r.e(296).then(r.bind(r,6589)),r.e(296).then(r.bind(r,5237))]);e.runtime.connector=new i(e),e.runtime.harvester=new a(e);const s=Object.values(e.features).filter(t=>e.runtime.drainRegistry.has(t.featureName));Promise.all(s.map(e=>e.onAggregateImported)).then(()=>e.runtime.harvester.startTimer())})();K.set(e,i),await i}(e,this.ee,this.featureName)}catch(e){return(0,f.R)(79,e),this.ee.abort(),void this.loadedSuccessfully(!1)}try{if(!this.#r(this.featureName,e.runtime.session,e.init))return this.abortHandler?.(),(0,O.Ze)(this.agentRef,this.featureName),void this.loadedSuccessfully(!1);const{Aggregate:r}=await t();this.featAggregate=new r(e,n),e.runtime.harvester.initializedAggregates.push(this.featAggregate),this.loadedSuccessfully(!0)}catch(e){(0,f.R)(34,e),this.abortHandler?.(),(0,O.Ze)(this.agentRef,this.featureName,!0),this.loadedSuccessfully(!1)}};h.RI?(0,I.GG)(()=>i(),!0):i()}#r(e,r,n){if(this.blocked)return!1;switch(e){case t.K7.sessionReplay:return V(n)&&!!r;case t.K7.sessionTrace:return!!r;default:return!0}}#t(e){if(!C.has(e)&&(C.add(e),!(0,s.f)(e.info))){const t=(0,i.pV)();let r={...t.info?.jsAttributes};try{r={...r,...e.info?.jsAttributes}}catch(e){}T(e,{...t,info:{...t.info,jsAttributes:r},runtime:e.runtime},e.runtime.loaderType)}}}var L=r(6630);class F extends U{static featureName=L.T;constructor(e){var t;super(e,L.T),this.setupInspectionEvents(),t=e,(0,N.Y)(P.Fw,function(e,r){"string"==typeof e&&("/"!==e.charAt(0)&&(e="/"+e),t.runtime.customTransaction=(r||"http://custom.transaction")+e,(0,S.p)("api-"+P.Fw,[(0,j.t)()],void 0,void 0,t.ee))},t),this.importAggregator(e,()=>e.init.feature_flags.includes("rum_v2")?r.e(296).then(r.bind(r,908)):r.e(296).then(r.bind(r,7927)))}setupInspectionEvents(){const e=(e,t)=>{e&&(0,x.W)({timeStamp:e.timeStamp,loaded:"complete"===e.target.readyState,type:"window",name:t,data:e.target.location+""})};(0,I.sB)(t=>{e(t,"DOMContentLoaded")}),(0,I.GG)(t=>{e(t,"load")}),(0,I.Qr)(t=>{e(t,"navigate")}),this.ee.on(l.tS.UPDATE,(e,t)=>{(0,x.W)({type:"lifecycle",name:"session",data:t})})}}class G extends e.d{constructor(e){var t;(super(),h.gm)?(this.features={},(0,i.bQ)(this.agentIdentifier,this),this.desiredFeatures=new Set(e.features||[]),this.desiredFeatures.add(F),T(this,e,e.loaderType||"agent"),t=this,(0,N.Y)(P.cD,function(e,r,n=!1){if("string"==typeof e){if(["string","number","boolean"].includes(typeof r)||null===r)return(0,N.U)(t,e,r,P.cD,n);(0,f.R)(40,typeof r)}else(0,f.R)(39,typeof e)},t),function(e){(0,N.Y)(P.Dl,function(t,r=!1){if("string"!=typeof t&&null!==t)return void(0,f.R)(41,typeof t);const n=e.info.jsAttributes["enduser.id"];r&&null!=n&&n!==t?(0,S.p)("api-setUserIdAndResetSession",[t],void 0,"session",e.ee):(0,N.U)(e,"enduser.id",t,P.Dl,!0)},e)}(this),function(e){(0,N.Y)(P.nb,function(t){if("string"==typeof t||null===t)return(0,N.U)(e,"application.version",t,P.nb,!1);(0,f.R)(42,typeof t)},e)}(this),function(e){(0,N.Y)("start",function(){e.ee.emit("manual-start-all")},e)}(this),function(e){(0,N.Y)(P.Pv,function(t=!0){if("boolean"==typeof t){if((0,S.p)("api-"+P.Pv,[t],void 0,"session",e.ee),e.runtime.consented=t,t){const t=e.features.page_view_event;t.onAggregateImported.then(e=>{const r=t.featAggregate;e&&!r.sentRum&&r.sendRum?.()})}}else(0,f.R)(65,typeof t)},e)}(this),this.run()):(0,f.R)(21)}get config(){return{info:this.info,init:this.init,loader_config:this.loader_config,runtime:this.runtime}}get api(){return this}run(){try{const e=function(e){const t={};return n.forEach(r=>{t[r]=!!e[r]?.enabled}),t}(this.init),r=[...this.desiredFeatures],i=this.init.feature_flags.includes("rum_v2");r.sort((e,r)=>t.P3[e.featureName]-t.P3[r.featureName]),r.forEach(r=>{if(!e[r.featureName]&&(i||r.featureName!==t.K7.pageViewEvent))return;const n=function(e){switch(e){case t.K7.ajax:return[t.K7.jserrors];case t.K7.sessionTrace:return[t.K7.ajax,t.K7.pageViewEvent];case t.K7.sessionReplay:return[t.K7.sessionTrace];case t.K7.pageViewTiming:return[t.K7.pageViewEvent];default:return[]}}(r.featureName).filter(e=>!(e in this.features));n.length>0&&(0,f.R)(36,{targetFeature:r.featureName,missingDependencies:n}),this.features[r.featureName]=new r(this)})}catch(e){(0,f.R)(22,e);for(const e in this.features)this.features[e].abortHandler?.();const t=(0,i.Zm)();delete t.initializedAgents[this.agentIdentifier]?.features,delete this.sharedAggregator;return t.ee.get(this.agentIdentifier).abort(),!1}}}var H=r(2843),z=r(782);class Y extends U{static featureName=z.T;constructor(e){super(e,z.T),h.RI&&((0,H.u)(()=>(0,S.p)("docHidden",[(0,j.t)()],void 0,z.T,this.ee),!0),(0,H.G)(()=>(0,S.p)("winPagehide",[(0,j.t)()],void 0,z.T,this.ee)),this.importAggregator(e,()=>r.e(296).then(r.bind(r,9981))))}}var Z=r(3969);class q extends U{static featureName=Z.TZ;constructor(e){super(e,Z.TZ),this.importAggregator(e,()=>r.e(296).then(r.bind(r,9623)))}}new G({features:[F,Y,q],loaderType:"lite"})})()})();</script>
+		<meta name="viewport" content="width=device-width, initial-scale=1" />
+		<script>(function(html){html.className = html.className.replace(/\bno-js\b/,'js')})(document.documentElement);</script>
+<meta name='robots' content='index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1' />
+	<style>img:is([sizes="auto" i], [sizes^="auto," i]) { contain-intrinsic-size: 3000px 1500px }</style>
+	
+	<!-- This site is optimized with the Yoast SEO Premium plugin v28.2 (Yoast SEO v28.2) - https://yoast.com/product/yoast-seo-premium-wordpress/ -->
+	<title>Poll: 1 in 3 Adults Are Turning to AI Chatbots for Health Information, Equaling the Share Who Use Social Media for Health | KFF</title>
+	<meta name="description" content="About a third (32%) of adults nationally say they have turned to artificial intelligence (AI) chatbots in the past year for health information, a new KFF Tracking Poll on Health Information and Trust finds. Most who turned to AI for health information say they were in search of quick and immediate advice, though challenges affording and accessing health care also play a role, particularly for younger adults." />
+	<link rel="canonical" href="https://www.kff.org/health-information-trust/poll-1-in-3-adults-are-turning-to-ai-chatbots-for-health-information-equaling-the-share-who-use-social-media-for-health/" />
+	<meta property="og:locale" content="en_US" />
+	<meta property="og:type" content="article" />
+	<meta property="og:title" content="Poll: 1 in 3 Adults Are Turning to AI Chatbots for Health Information, Equaling the Share Who Use Social Media for Health | KFF" />
+	<meta property="og:description" content="About a third (32%) of adults nationally say they have turned to artificial intelligence (AI) chatbots in the past year for health information, a new KFF Tracking Poll on Health Information and Trust finds. Most who turned to AI for health information say they were in search of quick and immediate advice, though challenges affording and accessing health care also play a role, particularly for younger adults." />
+	<meta property="og:url" content="https://www.kff.org/health-information-trust/poll-1-in-3-adults-are-turning-to-ai-chatbots-for-health-information-equaling-the-share-who-use-social-media-for-health/" />
+	<meta property="og:site_name" content="KFF" />
+	<meta property="article:published_time" content="2026-03-25T09:00:00+00:00" />
+	<meta property="article:modified_time" content="2026-04-09T19:49:50+00:00" />
+	<meta property="og:image" content="https://www.kff.org/wp-content/uploads/sites/7/2026/03/f9tja-larger-shares-of-younger-adults-black-and-hispanic-adults-and-those-who-are-uninsured-are-turning-to-ai-for-mental-health-advice-.png" />
+	<meta property="og:image:width" content="1640" />
+	<meta property="og:image:height" content="1274" />
+	<meta property="og:image:type" content="image/png" />
+	<meta name="author" content="kffrainl" />
+	<meta name="twitter:card" content="summary_large_image" />
+	<meta name="twitter:label1" content="Written by" />
+	<meta name="twitter:data1" content="kffrainl" />
+	<meta name="twitter:label2" content="Est. reading time" />
+	<meta name="twitter:data2" content="4 minutes" />
+	<script type="application/ld+json" class="yoast-schema-graph">{"@context":"https:\/\/schema.org","@graph":[{"@type":"Article","@id":"https:\/\/www.kff.org\/health-information-trust\/poll-1-in-3-adults-are-turning-to-ai-chatbots-for-health-information-equaling-the-share-who-use-social-media-for-health\/#article","isPartOf":{"@id":"https:\/\/www.kff.org\/health-information-trust\/poll-1-in-3-adults-are-turning-to-ai-chatbots-for-health-information-equaling-the-share-who-use-social-media-for-health\/"},"author":{"name":"kffrainl","@id":"https:\/\/www.kff.org\/#\/schema\/person\/98eb2dc15b566aa133dd2a7aaa523fa2"},"headline":"Poll: 1 in 3 Adults Are Turning to AI Chatbots for Health Information, Equaling the Share Who Use Social Media for Health","datePublished":"2026-03-25T09:00:00+00:00","dateModified":"2026-04-09T19:49:50+00:00","mainEntityOfPage":{"@id":"https:\/\/www.kff.org\/health-information-trust\/poll-1-in-3-adults-are-turning-to-ai-chatbots-for-health-information-equaling-the-share-who-use-social-media-for-health\/"},"wordCount":587,"commentCount":0,"publisher":{"@id":"https:\/\/www.kff.org\/#organization"},"image":{"@id":"https:\/\/www.kff.org\/health-information-trust\/poll-1-in-3-adults-are-turning-to-ai-chatbots-for-health-information-equaling-the-share-who-use-social-media-for-health\/#primaryimage"},"thumbnailUrl":"https:\/\/www.kff.org\/wp-content\/uploads\/sites\/7\/2026\/03\/f9tja-larger-shares-of-younger-adults-black-and-hispanic-adults-and-those-who-are-uninsured-are-turning-to-ai-for-mental-health-advice-.png","keywords":["Artificial Intelligence","Public Health","Vaccines"],"articleSection":["Health Information and Trust"],"inLanguage":"en-US","potentialAction":[{"@type":"CommentAction","name":"Comment","target":["https:\/\/www.kff.org\/health-information-trust\/poll-1-in-3-adults-are-turning-to-ai-chatbots-for-health-information-equaling-the-share-who-use-social-media-for-health\/#respond"]}],"description":"About a third (32%) of adults nationally say they have turned to artificial intelligence (AI) chatbots in the past year for health information, a new KFF Tracking Poll on Health Information and Trust finds. Most who turned to AI for health information say they were in search of quick and immediate advice, though challenges affording and accessing health care also play a role, particularly for younger adults."},{"@type":"WebPage","@id":"https:\/\/www.kff.org\/health-information-trust\/poll-1-in-3-adults-are-turning-to-ai-chatbots-for-health-information-equaling-the-share-who-use-social-media-for-health\/","url":"https:\/\/www.kff.org\/health-information-trust\/poll-1-in-3-adults-are-turning-to-ai-chatbots-for-health-information-equaling-the-share-who-use-social-media-for-health\/","name":"Poll: 1 in 3 Adults Are Turning to AI Chatbots for Health Information, Equaling the Share Who Use Social Media for Health | KFF","isPartOf":{"@id":"https:\/\/www.kff.org\/#website"},"primaryImageOfPage":{"@id":"https:\/\/www.kff.org\/health-information-trust\/poll-1-in-3-adults-are-turning-to-ai-chatbots-for-health-information-equaling-the-share-who-use-social-media-for-health\/#primaryimage"},"image":{"@id":"https:\/\/www.kff.org\/health-information-trust\/poll-1-in-3-adults-are-turning-to-ai-chatbots-for-health-information-equaling-the-share-who-use-social-media-for-health\/#primaryimage"},"thumbnailUrl":"https:\/\/www.kff.org\/wp-content\/uploads\/sites\/7\/2026\/03\/f9tja-larger-shares-of-younger-adults-black-and-hispanic-adults-and-those-who-are-uninsured-are-turning-to-ai-for-mental-health-advice-.png","datePublished":"2026-03-25T09:00:00+00:00","dateModified":"2026-04-09T19:49:50+00:00","breadcrumb":{"@id":"https:\/\/www.kff.org\/health-information-trust\/poll-1-in-3-adults-are-turning-to-ai-chatbots-for-health-information-equaling-the-share-who-use-social-media-for-health\/#breadcrumb"},"inLanguage":"en-US","potentialAction":[{"@type":"ReadAction","target":["https:\/\/www.kff.org\/health-information-trust\/poll-1-in-3-adults-are-turning-to-ai-chatbots-for-health-information-equaling-the-share-who-use-social-media-for-health\/"]}]},{"@type":"ImageObject","inLanguage":"en-US","@id":"https:\/\/www.kff.org\/health-information-trust\/poll-1-in-3-adults-are-turning-to-ai-chatbots-for-health-information-equaling-the-share-who-use-social-media-for-health\/#primaryimage","url":"https:\/\/www.kff.org\/wp-content\/uploads\/sites\/7\/2026\/03\/f9tja-larger-shares-of-younger-adults-black-and-hispanic-adults-and-those-who-are-uninsured-are-turning-to-ai-for-mental-health-advice-.png","contentUrl":"https:\/\/www.kff.org\/wp-content\/uploads\/sites\/7\/2026\/03\/f9tja-larger-shares-of-younger-adults-black-and-hispanic-adults-and-those-who-are-uninsured-are-turning-to-ai-for-mental-health-advice-.png","width":1640,"height":1274},{"@type":"WebSite","@id":"https:\/\/www.kff.org\/#website","url":"https:\/\/www.kff.org\/","name":"KFF - The independent source for health policy research, polling, and news","description":"The independent source for health policy research, polling, and news","publisher":{"@id":"https:\/\/www.kff.org\/#organization"},"potentialAction":[{"@type":"SearchAction","target":{"@type":"EntryPoint","urlTemplate":"https:\/\/www.kff.org\/?s={search_term_string}"},"query-input":{"@type":"PropertyValueSpecification","valueRequired":true,"valueName":"search_term_string"}}],"inLanguage":"en-US"},{"@type":"Organization","@id":"https:\/\/www.kff.org\/#organization","name":"KFF","url":"https:\/\/www.kff.org\/","logo":{"@type":"ImageObject","inLanguage":"en-US","@id":"https:\/\/www.kff.org\/#\/schema\/logo\/image\/","url":"https:\/\/www.kff.org\/wp-content\/uploads\/sites\/7\/2025\/04\/KFF_Black.png","contentUrl":"https:\/\/www.kff.org\/wp-content\/uploads\/sites\/7\/2025\/04\/KFF_Black.png","width":3186,"height":1296,"caption":"KFF"},"image":{"@id":"https:\/\/www.kff.org\/#\/schema\/logo\/image\/"}},{"@type":"BreadcrumbList","@id":"https:\/\/www.kff.org\/health-information-trust\/poll-1-in-3-adults-are-turning-to-ai-chatbots-for-health-information-equaling-the-share-who-use-social-media-for-health\/#breadcrumb","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https:\/\/www.kff.org"},{"@type":"ListItem","position":2,"name":"Topics","item":"https:\/\/www.kff.org\/topics\/"},{"@type":"ListItem","position":3,"name":"Health Information and Trust","item":"https:\/\/www.kff.org\/topic\/health-information-trust\/"},{"@type":"ListItem","position":4,"name":"Poll: 1 in 3 Adults Are Turning to AI Chatbots for Health Information, Equaling the Share Who Use Social Media for Health"}]}]}</script>
+	<!-- / Yoast SEO Premium plugin. -->
+
+
+<link rel='dns-prefetch' href='//secure.gravatar.com' />
+<link rel='dns-prefetch' href='//www.google.com' />
+<link rel='dns-prefetch' href='//stats.wp.com' />
+<link rel='dns-prefetch' href='//v0.wordpress.com' />
+<link rel="alternate" type="application/rss+xml" title="KFF &raquo; Feed" href="https://www.kff.org/feed/" />
+<link rel="alternate" type="application/rss+xml" title="KFF &raquo; Comments Feed" href="https://www.kff.org/comments/feed/" />
+<link rel="alternate" type="application/rss+xml" title="KFF &raquo; Poll: 1 in 3 Adults Are Turning to AI Chatbots for Health Information, Equaling the Share Who Use Social Media for Health Comments Feed" href="https://www.kff.org/health-information-trust/poll-1-in-3-adults-are-turning-to-ai-chatbots-for-health-information-equaling-the-share-who-use-social-media-for-health/feed/" />
+<link rel='stylesheet' id='wp-block-library-css' href='https://www.kff.org/wp-includes/css/dist/block-library/style.min.css?ver=6.8.8' type='text/css' media='all' />
+<link rel='stylesheet' id='jetpack-forms-layout-css' href='https://www.kff.org/wp-content/mu-plugins/jetpack-15.7/jetpack_vendor/automattic/jetpack-forms/src/../dist/contact-form/css/jetpack-forms-layout.css?ver=15.7.2' type='text/css' media='all' />
+<style id='kff-common-guided-content-entry-style-inline-css' type='text/css'>
+.gc-entry-meta{align-items:center;-moz-column-gap:1.25rem;column-gap:1.25rem;display:flex;flex-wrap:wrap;margin-bottom:.5rem;order:-1;row-gap:.5rem}.gc-entry-meta p{font-weight:600!important;line-height:1.3!important}.gc-entry-label{background-color:#d9d9d9;border-radius:2px;margin:0;padding:.375rem .75rem}.gc-entry-eyebrow{font-weight:400;margin:0;padding:.375rem 0;width:-moz-fit-content;width:fit-content}.gc-entry__subtitle{font-size:11px;font-weight:500;line-height:1.4;margin-top:0;text-transform:uppercase}
+
+</style>
+<style id='kff-common-share-tools-style-inline-css' type='text/css'>
+.wp-block-kff-common-share-tools .share{margin:20px 0}
+
+</style>
+<style id='kff-common-pym-embed-style-inline-css' type='text/css'>
+@media(max-width:768px){.wp-block-kff-common-pym-embed{height:auto!important;width:100%!important}}@media screen and (min-width:768px){.has-blocks .article-body .wp-block-kff-common-pym-embed.alignfull,.has-blocks .article-body .wp-block-kff-common-pym-embed.alignwide{padding:0 1.5rem}}.wp-block-kff-common-pym-embed .pymjs-embed-inner.pymjs-has-custom-width{display:block;margin-left:auto;margin-right:auto}
+
+</style>
+<style id='kff-shared-authors-style-inline-css' type='text/css'>
+.wp-block-kff-shared-authors{align-items:center;display:flex;gap:var(--m-3)}.wp-block-kff-shared-authors__title{flex-shrink:0;font-size:var(--fs-body-md);font-weight:var(--fw-bold);line-height:var(--lh-m)}.wp-block-kff-shared-authors__list{display:flex;flex-wrap:wrap}@media (min-width:48em){.wp-block-kff-shared-authors__list{gap:var(--m-3)}.wp-block-kff-shared-authors__list.wp-block-kff-shared-authors__list--show-seperators{gap:var(--m-0)}.wp-block-kff-shared-authors__list.wp-block-kff-shared-authors__list--show-seperators .wp-block-kff-shared-authors__seperator{display:block}}.wp-block-kff-shared-authors__author{font-size:var(--fs-body-md);font-weight:var(--fw-semi-bold);line-height:var(--lh-m)}@media (min-width:48em){.wp-block-kff-shared-authors__author{align-items:center;display:flex;gap:var(--m-1)}}a.wp-block-kff-shared-authors__author{color:var(--c-text-action-hover);-webkit-text-decoration:none;text-decoration:none}a.wp-block-kff-shared-authors__author:hover{-webkit-text-decoration:underline;text-decoration:underline}img.wp-block-kff-shared-authors__image{border-radius:50%;display:none;height:50px;-o-object-fit:cover;object-fit:cover;width:50px}@media (min-width:48em){img.wp-block-kff-shared-authors__image{display:block}}.post-type-archive-quick-take img.wp-block-kff-shared-authors__image{display:block}.wp-block-kff-shared-authors__seperator{margin-right:.3125rem}@media (min-width:48em){.wp-block-kff-shared-authors__seperator{display:none}}
+
+</style>
+<style id='kff-shared-contact-info-style-inline-css' type='text/css'>
+.wp-block-kff-shared-contact-info__details span{display:block}.wp-block-kff-shared-contact-info__details a{color:var(--c-text-hover);-webkit-text-decoration:none;text-decoration:none}.wp-block-kff-shared-contact-info__details a:hover{color:var(--c-text-action-hover);-webkit-text-decoration:underline;text-decoration:underline}.wp-block-kff-shared-contact-info__name{font-size:var(--fs-body-lg)}.wp-block-kff-shared-contact-info__title{font-size:var(--fs-body-md)}.wp-block-kff-shared-contact-info__email,.wp-block-kff-shared-contact-info__phone{align-items:center;display:inline-flex;font-size:var(--fs-body-sm);gap:var(--m-1)}.wp-block-kff-shared-contact-info__title-wrapper{margin-bottom:var(--m-2)}
+
+</style>
+<style id='kff-shared-content-main-style-inline-css' type='text/css'>
+.no-sidebar.wp-block-kff-shared-content .wp-block-kff-shared-content-main{max-width:100%}.no-sidebar.wp-block-kff-shared-content .wp-block-kff-shared-content-main .wp-block-kff-shared-content-main__content__inner{max-width:1060px}.wp-block-kff-shared-content-main{margin:0;max-width:910px;padding:0;width:100%}@media (min-width:48em){.wp-block-kff-shared-content-main{flex:1}.wp-block-kff-shared-content-main:has(.wp-block-advgb-table){overflow:hidden}}.wp-block-kff-shared-content-main__content__inner{margin:0 auto;max-width:836px;width:100%}.no-sidebar.wp-block-kff-shared-content.wp-block-kff-shared-content--blank-slate .wp-block-kff-shared-content-main .wp-block-kff-shared-content-main__content__inner,.no-sidebar.wp-block-kff-shared-content.wp-block-kff-shared-content--extra-wide .wp-block-kff-shared-content-main .wp-block-kff-shared-content-main__content__inner{max-width:1280px}.no-sidebar.wp-block-kff-shared-content.wp-block-kff-shared-content--blank-slate .wp-block-kff-shared-content-main__content__inner>:first-child{margin-top:0}
+
+</style>
+<link rel='stylesheet' id='kff-shared-content-sidebar-style-css' href='https://www.kff.org/wp-content/plugins/kff-shared/dist/blocks/content-sidebar/style.css?ver=8daa2f5128cfeae9c2435492025383ac8731eb2850530351c855237edb5426e2' type='text/css' media='all' />
+<style id='kff-shared-content-style-inline-css' type='text/css'>
+.wp-block-kff-shared-content{display:flex;flex-direction:column;margin:var(--m-0);padding:var(--p-0);row-gap:var(--p-2)}@media (min-width:48em){.wp-block-kff-shared-content{-moz-column-gap:var(--p-10);column-gap:var(--p-10);flex-direction:row;justify-content:space-between}}.wp-block-kff-shared-content--extra-wide .post-header{max-width:1280px;text-align:center}.wp-block-kff-shared-content--extra-wide .post-header__social-sharing{justify-content:center}
+
+</style>
+<style id='kff-shared-description-details-style-inline-css' type='text/css'>
+
+
+</style>
+<style id='kff-shared-description-list-style-inline-css' type='text/css'>
+
+
+</style>
+<style id='kff-shared-description-term-style-inline-css' type='text/css'>
+
+
+</style>
+<style id='tenup-editorial-update-item-style-inline-css' type='text/css'>
+.wp-block-tenup-editorial-update-item{border-bottom:1px solid var(--c-border-primary);display:flex;flex-direction:column;gap:var(--m-0-5);padding:var(--p-1) var(--p-0)}.wp-block-tenup-editorial-update-item:last-child{border-bottom:none}.wp-block-tenup-editorial-update-item .editorial-update-item__date{color:var(--c-text-primary);font-size:var(--fs-body-lg);font-weight:var(--fw-semi-bold);line-height:var(--lh-m);margin:var(--m-0);padding:var(--p-0)}.wp-block-tenup-editorial-update-item .editorial-update-item__content{color:var(--c-text-primary);font-size:var(--fs-body-sm);font-weight:var(--fw-normal);line-height:var(--lh-m);margin:var(--m-0);padding:var(--p-0)}.wp-block-tenup-editorial-update-item .editorial-update-item__content a{color:var(--c-text-hover)}.wp-block-tenup-editorial-update-item .editorial-update-item__content a:hover{-webkit-text-decoration:none;text-decoration:none}.wp-block-tenup-editorial-update-item .editorial-update-item__content a:visited{color:var(--c-text-visited)}
+
+</style>
+<link rel='stylesheet' id='tenup-editorial-updates-style-css' href='https://www.kff.org/wp-content/plugins/kff-shared/dist/blocks/editorial-updates/style.css?ver=75943d8add94249060e6f0ca3a4f577fbfd9785d813c7edb09ae0ecba86a1170' type='text/css' media='all' />
+<style id='kff-shared-embeddable-map-style-inline-css' type='text/css'>
+
+
+</style>
+<style id='kff-shared-exhibit-style-inline-css' type='text/css'>
+.wp-block-kff-shared-exhibit__toggle{background:none;border:none;color:var(--c-text-hover);cursor:pointer;font-size:var(--fs-button-lg);font-weight:var(--fw-semi-bold);line-height:var(--lh-m);margin:var(--m-0);padding:var(--p-0);-webkit-text-decoration:none;text-decoration:none}.wp-block-kff-shared-exhibit__toggle:hover{-webkit-text-decoration:underline;text-decoration:underline}.wp-block-kff-shared-exhibit__list{display:none}.wp-block-kff-shared-exhibit.open .wp-block-kff-shared-exhibit__list{display:block}.wp-block-kff-shared-exhibit__link{background:none;border:0;color:var(--c-text-hover);cursor:pointer;margin:var(--m-0);padding:var(--p-0);-webkit-text-decoration:underline;text-decoration:underline}.wp-block-kff-shared-exhibit__link:hover{-webkit-text-decoration:none;text-decoration:none}
+
+</style>
+<style id='kff-shared-indicator-style-inline-css' type='text/css'>
+
+
+</style>
+<style id='kff-shared-people-style-inline-css' type='text/css'>
+.wp-block-kff-shared-people{display:flex;flex-direction:column;gap:var(--m-3)}.wp-block-kff-shared-people__title{font-size:var(--fs-heading-3);font-weight:var(--fw-semi-bold);line-height:var(--lh-s);margin:var(--m-0);padding:var(--p-0)}.wp-block-kff-shared-people__list{display:flex;flex-direction:column;gap:var(--m-3)}@media (min-width:48em){.wp-block-kff-shared-people__list{display:grid;grid-template-columns:repeat(4,minmax(0,210px))}}
+
+</style>
+<style id='kff-shared-person-style-inline-css' type='text/css'>
+.wp-block-kff-shared-person{border-bottom:1px solid var(--c-border-primary);padding-bottom:var(--m-3)}@media (min-width:48em){.wp-block-kff-shared-person{border-bottom:none}}.wp-block-kff-shared-person__image{display:block;height:auto;max-width:100%;width:100%}.wp-block-kff-shared-person__name{color:var(--c-text-primary);font-size:var(--fs-body-lg);font-weight:var(--fw-semi-bold);line-height:var(--lh-m);margin:var(--m-1) var(--m-0) var(--m-0) var(--m-0);padding:var(--p-0)}.wp-block-kff-shared-person__name a{color:var(--c-text-hover);-webkit-text-decoration:none;text-decoration:none}.wp-block-kff-shared-person__name a:hover{-webkit-text-decoration:underline;text-decoration:underline}.wp-block-kff-shared-person__title{color:var(--c-text-primary);font-size:var(--fs-body-lg);font-weight:var(--fw-normal);line-height:var(--lh-m);margin:var(--m-0-5) var(--m-0) var(--m-0) var(--m-0);padding:var(--p-0)}.wp-block-kff-shared-person.is-selected{border-bottom:0;padding-bottom:var(--p-0)}
+
+</style>
+<link rel='stylesheet' id='kff-shared-post-card-style-css' href='https://www.kff.org/wp-content/plugins/kff-shared/dist/blocks/post-card/style-index.css?ver=5.0.0' type='text/css' media='all' />
+<style id='kff-shared-quick-take-type-style-inline-css' type='text/css'>
+.wp-block-kff-shared-quick-take-type{line-height:0;margin-bottom:var(--m-2)}.wp-block-kff-shared-quick-take-type svg{height:18px;width:auto}
+
+</style>
+<style id='kff-shared-related-content-link-style-inline-css' type='text/css'>
+
+
+</style>
+<style id='kff-shared-related-content-post-style-inline-css' type='text/css'>
+
+
+</style>
+<style id='kff-shared-related-content-style-inline-css' type='text/css'>
+
+
+</style>
+<style id='kff-shared-river-style-inline-css' type='text/css'>
+.wp-block-kff-shared-river__header{color:var(--c-text-primary);display:flex;flex-direction:column-reverse;font-size:var(--fs-body-sm);font-weight:var(--fw-bold);gap:var(--m-0-5);letter-spacing:4%;line-height:var(--lh-ms);padding:var(--p-5) var(--p-0);text-transform:uppercase}@media (min-width:64em){.wp-block-kff-shared-river__header{align-items:center;flex-direction:row;gap:var(--m-1-25);justify-content:space-between}}.wp-block-kff-shared-river__text{flex-shrink:0}.wp-block-kff-shared-river__bar{background-color:var(--c-text-hover);height:4px;position:relative;width:100%}.wp-block-kff-shared-river__bar:before{background-color:var(--c-surface-accent-2);content:"";height:4px;left:0;position:absolute;top:0;width:80px}
+
+</style>
+<style id='kff-shared-rstudio-style-inline-css' type='text/css'>
+.wp-block-kff-shared-rstudio{margin:var(--wp--preset--spacing--m-3) auto}@media (min-width:64em){.wp-block-kff-shared-rstudio{margin:var(--wp--preset--spacing--m-5) auto}}
+
+</style>
+<link rel='stylesheet' id='kff-shared-section-heading-style-css' href='https://www.kff.org/wp-content/plugins/kff-shared/dist/blocks/section-heading/style.css?ver=0f67cedbbe6b2a2e5c037f95a11c8cd451ec6effd6bb44ced1a4f8f66546bec7' type='text/css' media='all' />
+<link rel='stylesheet' id='kff-shared-slab-style-css' href='https://www.kff.org/wp-content/plugins/kff-shared/dist/blocks/slab/style.css?ver=d7ab038f704c0656b0165a713571cc935b531547dfe8d8393f46cd7c66643ae5' type='text/css' media='all' />
+<link rel='stylesheet' id='tenup-table-of-contents-style-css' href='https://www.kff.org/wp-content/plugins/kff-shared/dist/blocks/table-of-contents/style.css?ver=1.0.0' type='text/css' media='all' />
+<style id='advgb-table-style-inline-css' type='text/css'>
+.editor-styles-wrapper .wp-block[data-align=center]>.wp-block-advgb-table td{text-align:left}.advgb-table-wrapper{overflow-x:auto;overflow-y:hidden;overflow:auto hidden}.wp-block-advgb-table{border:none;border-collapse:collapse;border-spacing:0;color:var(--c-text-primary,var(--wp--preset--color--neutral-700));display:table;font-size:var(--fs-body-md);font-weight:var(--fw-normal);letter-spacing:0;line-height:var(--lh-m);margin:0 auto 1em;max-width:100%;min-width:100%;-webkit-overflow-scrolling:touch;table-layout:fixed}@media (--bp-medium ){.wp-block-advgb-table{-webkit-overflow-scrolling:auto;overflow-x:hidden;vertical-align:middle}}.wp-block-advgb-table.aligncenter{display:table;text-align:left}.wp-block-advgb-table th{border-bottom:1px solid var(--wp--preset--color--neutral-700);padding:var(--p-1) var(--p-2);text-align:left}.wp-block-advgb-table tbody{border-bottom:1px solid var(--wp--preset--color--neutral-400)}.wp-block-advgb-table tbody td{border:1px solid var(--wp--preset--color--neutral-300);padding:var(--p-1) var(--p-2)}.wp-block-advgb-table tbody tr td:first-child{border-left:transparent}.wp-block-advgb-table tbody tr td:last-child{border-right:transparent}.wp-block-advgb-table tbody a{color:var(--c-text-hover)}.wp-block-advgb-table tbody a:hover{-webkit-text-decoration:none;text-decoration:none}.wp-block-advgb-table tfoot{font-size:var(--fs-subhead-sm)}.wp-block-advgb-table tfoot td{padding:var(--p-4) var(--p-2)}.wp-block-advgb-table.is-style-stripes tbody tr:nth-child(odd){background-color:var(--wp--preset--color--neutral-200)}
+
+</style>
+<style id='kff-shared-tableau-style-inline-css' type='text/css'>
+.wp-block-kff-shared-tableau{margin:var(--wp--preset--spacing--m-3) auto}@media (min-width:64em){.wp-block-kff-shared-tableau{margin:var(--wp--preset--spacing--m-5) auto}}
+
+</style>
+<style id='kff-shared-where-to-listen-style-inline-css' type='text/css'>
+.wp-block-kff-shared-where-to-listen{display:flex;flex-direction:column;gap:var(--m-3)}@media (min-width:48em){.wp-block-kff-shared-where-to-listen{flex-direction:row;gap:var(--m-5)}}.wp-block-kff-shared-where-to-listen__content{display:flex;flex-direction:column;gap:var(--m-1)}@media (min-width:48em){.wp-block-kff-shared-where-to-listen__content{gap:var(--m-1-5);min-width:140px}}.wp-block-kff-shared-where-to-listen__title{color:var(--c-text-primary);font-size:var(--fs-subhead-md);font-weight:var(--fw-bold);letter-spacing:4%;line-height:var(--lh-ms);margin:var(--m-0);padding:var(--p-0);text-transform:uppercase}.wp-block-kff-shared-where-to-listen__list{display:flex;flex-wrap:wrap;gap:var(--m-1);list-style:none;margin:var(--m-0);padding:var(--p-0)}@media (min-width:48em){.wp-block-kff-shared-where-to-listen__list{flex-direction:column}}.wp-block-kff-shared-where-to-listen__list-item{color:var(--c-text-primary);display:flex;font-size:var(--fs-button-lg);font-weight:var(--fw-normal);letter-spacing:0;line-height:var(--lh-s);text-transform:capitalize}.wp-block-kff-shared-where-to-listen__link{color:var(--c-text-hover);-webkit-text-decoration:none;text-decoration:none}.wp-block-kff-shared-where-to-listen__link:hover{-webkit-text-decoration:underline;text-decoration:underline}@media (min-width:48em){.wp-block-kff-shared-where-to-listen__comma{display:none}}
+
+</style>
+<style id='kff-shared-wufoo-style-inline-css' type='text/css'>
+
+
+</style>
+<style id='republication-tracker-tool-republish-button-style-inline-css' type='text/css'>
+.wp-block-republication-tracker-tool-republish-button{cursor:pointer}.wp-block-republication-tracker-tool-republish-button__license{margin-top:.5em}.wp-block-republication-tracker-tool-republish-button__license img{height:auto;max-width:100%}
+
+</style>
+<link rel='stylesheet' id='createwithrani-superlist-block-style-css' href='https://www.kff.org/wp-content/plugins/superlist-block/build/superlist/style-index.css?ver=0.1.3' type='text/css' media='all' />
+<style id='createwithrani-superlist-item-style-inline-css' type='text/css'>
+.wp-block-createwithrani-superlist-item{--textColor:var(--wp--custom--superlist-item--color--text,inherit);--linkColor:var(--wp--custom--superlist-item--color--link,inherit);--backgroundColor:var( --wp--custom--superlist-item--color--background-color,inherit );--fontSize:var(--wp--custom--superlist-item--typography--font-size,inherit);--fontFamily:var( --wp--custom--superlist-item--typography--font-family,inherit );--lineHeight:var( --wp--custom--superlist-item--typography--line-height,inherit );--textTransform:var( --wp--custom--superlist-item--typography--text-transform,inherit );--fontWeight:var( --wp--custom--superlist-item--typography--font-weight,inherit );--margin:var(--wp--custom--superlist-item--spacing--margin,inherit);--padding:var(--wp--custom--superlist-item--spacing--padding,inherit);background-color:var(--backgroundColor);color:var(--textColor);font-family:var(--fontFamily);font-size:var(--fontSize);font-weight:var(--fontWeight);line-height:var(--lineHeight);margin:var(--margin);padding:var(--padding);text-transform:var(--textTransform)}.wp-block-createwithrani-superlist-item a{color:var(--linkColor)}
+
+</style>
+<style id='tenup-accordion-content-style-inline-css' type='text/css'>
+.wp-block-tenup-accordion-content{display:grid;grid-template-rows:0fr;transition:grid-template-rows .3s ease-in-out,padding .3s ease-in-out}.wp-block-tenup-accordion-content[aria-hidden=true],.wp-block-tenup-accordion-content[aria-hidden=true] .wp-block-tenup-accordion-content__body{padding-bottom:0!important;padding-top:0!important}.wp-block-tenup-accordion-content[aria-hidden=false]{grid-template-rows:1fr}.wp-block-tenup-accordion.has-child-selected .wp-block-tenup-accordion-content,.wp-block-tenup-accordion.is-selected .wp-block-tenup-accordion-content{display:grid;grid-template-rows:1fr;height:100%}[data-type="tenup/accordion"] .wp-block-tenup-accordion-content{transition:none!important}.wp-block-tenup-accordion-content__body{margin-trim:block;overflow:hidden}
+
+</style>
+<style id='tenup-accordion-group-style-inline-css' type='text/css'>
+.wp-block-tenup-accordion-group{align-items:stretch!important}
+
+</style>
+<style id='tenup-accordion-header-style-inline-css' type='text/css'>
+.wp-block-tenup-accordion-header{-webkit-appearance:none;-moz-appearance:none;appearance:none;background-color:transparent;border-color:transparent;border-width:0;cursor:pointer;flex-shrink:0;font-size:var(--wp--custom--font--size--base,1rem);padding:0;transition:all .2s ease-in-out;width:100%}.wp-block-tenup-accordion-header.icon-position-left{flex-direction:row-reverse;justify-content:flex-end}.wp-block-tenup-accordion-item__title{text-align:left}.wp-block-tenup-accordion-item__icon{display:flex;fill:currentColor;width:1rem}.wp-block-tenup-accordion-item{overflow:hidden}[aria-expanded=false] .icon--expanded,[aria-expanded=true] .icon--collapsed{display:none}
+
+</style>
+<style id='tenup-accordion-style-inline-css' type='text/css'>
+.wp-block-tenup-accordion,.wp-block-tenup-accordion *>*{box-sizing:border-box}.wp-block-tenup-accordion.is-layout-flex{align-items:stretch!important}
+
+</style>
+<link rel='stylesheet' id='tenup-tabs-style-css' href='https://www.kff.org/wp-content/plugins/ui-kit-tabs/dist/blocks/tabs/style.css?ver=d9e546ecfb4ef89d7e21005d5679016cec7ce695ded434391a72013332746bc5' type='text/css' media='all' />
+<style id='kaiser-health-news-common-inline-sidebar-promo-style-inline-css' type='text/css'>
+.wp-block-inline-sidebar-promo{border-bottom:4px solid #004b87;border-top:4px solid #004b87;margin:24px 0;padding:15px}.wp-block-inline-sidebar-promo .wp-block-inline-sidebar-promo{border-bottom:unset;border-top:unset;margin:unset;padding:unset}@media(min-width:960px){.wp-block-inline-sidebar-promo{float:right;margin:24px 0 24px 24px;width:400px}}.wp-block-inline-sidebar-promo h5{font-size:21px;font-weight:700;line-height:30px;text-transform:unset}.wp-block-inline-sidebar-promo p{font-size:14px;font-weight:400;line-height:20px}
+
+</style>
+<link rel='stylesheet' id='mediaelement-css' href='https://www.kff.org/wp-includes/js/mediaelement/mediaelementplayer-legacy.min.css?ver=4.2.17' type='text/css' media='all' />
+<link rel='stylesheet' id='wp-mediaelement-css' href='https://www.kff.org/wp-includes/js/mediaelement/wp-mediaelement.min.css?ver=6.8.8' type='text/css' media='all' />
+<style id='jetpack-sharing-buttons-style-inline-css' type='text/css'>
+.jetpack-sharing-buttons__services-list{display:flex;flex-direction:row;flex-wrap:wrap;gap:0;list-style-type:none;margin:5px;padding:0}.jetpack-sharing-buttons__services-list.has-small-icon-size{font-size:12px}.jetpack-sharing-buttons__services-list.has-normal-icon-size{font-size:16px}.jetpack-sharing-buttons__services-list.has-large-icon-size{font-size:24px}.jetpack-sharing-buttons__services-list.has-huge-icon-size{font-size:36px}@media print{.jetpack-sharing-buttons__services-list{display:none!important}}.editor-styles-wrapper .wp-block-jetpack-sharing-buttons{gap:0;padding-inline-start:0}ul.jetpack-sharing-buttons__services-list.has-background{padding:1.25em 2.375em}
+</style>
+<link rel='stylesheet' id='elasticpress-facet-style-css' href='https://www.kff.org/wp-content/mu-plugins/search/elasticpress/dist/css/facets-styles.min.css?ver=6.8.8' type='text/css' media='all' />
+<link rel='stylesheet' id='elasticpress-related-posts-block-css' href='https://www.kff.org/wp-content/mu-plugins/search/elasticpress/dist/css/related-posts-block-styles.min.css?ver=4.2.2' type='text/css' media='all' />
+<style id='htgb-block-glossary-style-inline-css' type='text/css'>
+.hg-glossary *,.hg-glossary :after,.hg-glossary :before{box-sizing:border-box;word-break:normal}.hg-glossary .hg-glossary__header{margin:0 0 1em}.hg-glossary.is-style-boxed{background:#fafafa;padding:4rem}.hg-glossary.is-style-boxed .hg-content .hg-content__letter{border-bottom:1px solid;padding:1rem 0}.hg-glossary .hg-nav{display:flex;flex-wrap:wrap;justify-content:center;margin:0 0 1rem}.hg-glossary .hg-nav a.htgb_active_nav{text-decoration:underline}.hg-glossary .hg-nav a.htgb_disabled,.hg-glossary .hg-nav a.htgb_search_disabled{color:#494c4d;pointer-events:none}.hg-glossary .hg-nav a{display:block;line-height:1;padding:8px;text-decoration:none}.hg-glossary .hg-search{margin:0 0 1rem}.hg-glossary .hg-search input{border:1px solid #ccc;border-radius:4px;max-width:100%;padding:1rem 1.4rem;width:100%}.hg-glossary .hg-content .hg-content__letter{background-color:#fafafa;display:block;font-size:1.1em;font-weight:600;margin:0 0 2rem;padding:1rem 1.1rem}.hg-glossary .hg-content dl{display:flex;flex-flow:row wrap;flex-wrap:nowrap;margin:1rem 0;padding:0}.hg-glossary .hg-content dl dt{flex-basis:20%;font-weight:600;margin:0 20px 0 0}.hg-glossary .hg-content dl dd{flex-basis:80%;flex-grow:1;margin:0}.hg-glossary .hg-content .hg-item-description>p{margin:0}.hg-glossary .hg-nullsearch{display:none;margin:0 0 1em}
+
+</style>
+<style id='filebird-block-filebird-gallery-style-inline-css' type='text/css'>
+ul.filebird-block-filebird-gallery{margin:auto!important;padding:0!important;width:100%}ul.filebird-block-filebird-gallery.layout-grid{display:grid;grid-gap:20px;align-items:stretch;grid-template-columns:repeat(var(--columns),1fr);justify-items:stretch}ul.filebird-block-filebird-gallery.layout-grid li img{border:1px solid #ccc;box-shadow:2px 2px 6px 0 rgba(0,0,0,.3);height:100%;max-width:100%;-o-object-fit:cover;object-fit:cover;width:100%}ul.filebird-block-filebird-gallery.layout-masonry{-moz-column-count:var(--columns);column-count:var(--columns);-moz-column-gap:var(--space);column-gap:var(--space);display:block;overflow:auto}ul.filebird-block-filebird-gallery.layout-masonry li{margin-bottom:var(--space)}ul.filebird-block-filebird-gallery li{list-style:none}ul.filebird-block-filebird-gallery li figure{height:100%;margin:0;padding:0;position:relative;width:100%}ul.filebird-block-filebird-gallery li figure figcaption{background:linear-gradient(0deg,rgba(0,0,0,.7),rgba(0,0,0,.3) 70%,transparent);bottom:0;box-sizing:border-box;color:#fff;font-size:.8em;margin:0;max-height:100%;overflow:auto;padding:3em .77em .7em;position:absolute;text-align:center;width:100%;z-index:2}ul.filebird-block-filebird-gallery li figure figcaption a{color:inherit}
+
+</style>
+<style id='global-styles-inline-css' type='text/css'>
+:root{--wp--preset--aspect-ratio--square: 1;--wp--preset--aspect-ratio--4-3: 4/3;--wp--preset--aspect-ratio--3-4: 3/4;--wp--preset--aspect-ratio--3-2: 3/2;--wp--preset--aspect-ratio--2-3: 2/3;--wp--preset--aspect-ratio--16-9: 16/9;--wp--preset--aspect-ratio--9-16: 9/16;--wp--preset--color--black: #000000;--wp--preset--color--cyan-bluish-gray: #abb8c3;--wp--preset--color--white: #ffffff;--wp--preset--color--pale-pink: #f78da7;--wp--preset--color--vivid-red: #cf2e2e;--wp--preset--color--luminous-vivid-orange: #ff6900;--wp--preset--color--luminous-vivid-amber: #fcb900;--wp--preset--color--light-green-cyan: #7bdcb5;--wp--preset--color--vivid-green-cyan: #00d084;--wp--preset--color--pale-cyan-blue: #8ed1fc;--wp--preset--color--vivid-cyan-blue: #0693e3;--wp--preset--color--vivid-purple: #9b51e0;--wp--preset--color--neutral-800: #000;--wp--preset--color--neutral-700: #333;--wp--preset--color--neutral-600: #474747;--wp--preset--color--neutral-500: #666;--wp--preset--color--neutral-400: #999;--wp--preset--color--neutral-300: #ccc;--wp--preset--color--neutral-200: #e5e5e5;--wp--preset--color--neutral-100: #fff;--wp--preset--color--primary-600: #001e36;--wp--preset--color--primary-400: #003c6c;--wp--preset--color--primary-300: #004b88;--wp--preset--color--primary-200: #336f9f;--wp--preset--color--primary-000: #e6edf3;--wp--preset--color--purple-100: #f2eaf3;--wp--preset--color--accent-100: #1a81d4;--wp--preset--color--accent-200: #00b588;--wp--preset--color--accent-300: #93509e;--wp--preset--color--accent-400: #fdc82f;--wp--preset--color--information-400: #0065bd;--wp--preset--gradient--vivid-cyan-blue-to-vivid-purple: linear-gradient(135deg,rgba(6,147,227,1) 0%,rgb(155,81,224) 100%);--wp--preset--gradient--light-green-cyan-to-vivid-green-cyan: linear-gradient(135deg,rgb(122,220,180) 0%,rgb(0,208,130) 100%);--wp--preset--gradient--luminous-vivid-amber-to-luminous-vivid-orange: linear-gradient(135deg,rgba(252,185,0,1) 0%,rgba(255,105,0,1) 100%);--wp--preset--gradient--luminous-vivid-orange-to-vivid-red: linear-gradient(135deg,rgba(255,105,0,1) 0%,rgb(207,46,46) 100%);--wp--preset--gradient--very-light-gray-to-cyan-bluish-gray: linear-gradient(135deg,rgb(238,238,238) 0%,rgb(169,184,195) 100%);--wp--preset--gradient--cool-to-warm-spectrum: linear-gradient(135deg,rgb(74,234,220) 0%,rgb(151,120,209) 20%,rgb(207,42,186) 40%,rgb(238,44,130) 60%,rgb(251,105,98) 80%,rgb(254,248,76) 100%);--wp--preset--gradient--blush-light-purple: linear-gradient(135deg,rgb(255,206,236) 0%,rgb(152,150,240) 100%);--wp--preset--gradient--blush-bordeaux: linear-gradient(135deg,rgb(254,205,165) 0%,rgb(254,45,45) 50%,rgb(107,0,62) 100%);--wp--preset--gradient--luminous-dusk: linear-gradient(135deg,rgb(255,203,112) 0%,rgb(199,81,192) 50%,rgb(65,88,208) 100%);--wp--preset--gradient--pale-ocean: linear-gradient(135deg,rgb(255,245,203) 0%,rgb(182,227,212) 50%,rgb(51,167,181) 100%);--wp--preset--gradient--electric-grass: linear-gradient(135deg,rgb(202,248,128) 0%,rgb(113,206,126) 100%);--wp--preset--gradient--midnight: linear-gradient(135deg,rgb(2,3,129) 0%,rgb(40,116,252) 100%);--wp--preset--font-size--small: 13px;--wp--preset--font-size--medium: 20px;--wp--preset--font-size--large: 36px;--wp--preset--font-size--x-large: 42px;--wp--preset--font-size--display-lg: clamp(3.625rem, 3.625rem + ((1vw - 0.2rem) * 0.469), 4rem);--wp--preset--font-size--heading-1: clamp(2.75rem, 2.75rem + ((1vw - 0.2rem) * 0.548), 3.1875rem);--wp--preset--font-size--heading-2: clamp(2.375rem, 2.375rem + ((1vw - 0.2rem) * 0.469), 2.75rem);--wp--preset--font-size--heading-3: clamp(2rem, 2rem + ((1vw - 0.2rem) * 0.469), 2.375rem);--wp--preset--font-size--heading-4: clamp(1.75rem, 1.75rem + ((1vw - 0.2rem) * 0.313), 2rem);--wp--preset--font-size--heading-5: 1.625rem;--wp--preset--font-size--heading-6: 1.5rem;--wp--preset--font-size--51: 3.1875rem;--wp--preset--font-size--38: 2.375rem;--wp--preset--font-size--32: 2rem;--wp--preset--font-size--28: 1.75rem;--wp--preset--font-size--26: 1.625rem;--wp--preset--font-size--24: 1.5rem;--wp--preset--font-size--20: 1.25rem;--wp--preset--font-size--18: 1.125rem;--wp--preset--font-size--16: 1rem;--wp--preset--font-size--14: 0.875rem;--wp--preset--font-size--12: 0.75rem;--wp--preset--font-size--9: 0.5625rem;--wp--preset--spacing--20: 0.44rem;--wp--preset--spacing--30: 0.67rem;--wp--preset--spacing--40: 1rem;--wp--preset--spacing--50: 1.5rem;--wp--preset--spacing--60: 2.25rem;--wp--preset--spacing--70: 3.38rem;--wp--preset--spacing--80: 5.06rem;--wp--preset--spacing--d-0: 0;--wp--preset--spacing--d-0-25: 0.125rem;--wp--preset--spacing--d-0-5: 0.25rem;--wp--preset--spacing--d-0-75: 0.375rem;--wp--preset--spacing--d-1: 0.5rem;--wp--preset--spacing--d-1-25: 0.625rem;--wp--preset--spacing--d-1-5: 0.75rem;--wp--preset--spacing--d-2: 1rem;--wp--preset--spacing--d-2-5: 1.25rem;--wp--preset--spacing--d-3: 1.5rem;--wp--preset--spacing--d-4: 2rem;--wp--preset--spacing--d-5: 2.5rem;--wp--preset--spacing--d-6: 3rem;--wp--preset--spacing--d-7: 3.5rem;--wp--preset--spacing--d-8: 4rem;--wp--preset--spacing--d-9: 4.5rem;--wp--preset--spacing--d-10: 5rem;--wp--preset--spacing--d-11: 5.5rem;--wp--preset--spacing--d-12: 6rem;--wp--preset--spacing--d-13: 6.5rem;--wp--preset--shadow--natural: 6px 6px 9px rgba(0, 0, 0, 0.2);--wp--preset--shadow--deep: 12px 12px 50px rgba(0, 0, 0, 0.4);--wp--preset--shadow--sharp: 6px 6px 0px rgba(0, 0, 0, 0.2);--wp--preset--shadow--outlined: 6px 6px 0px -3px rgba(255, 255, 255, 1), 6px 6px rgba(0, 0, 0, 1);--wp--preset--shadow--crisp: 6px 6px 0px rgba(0, 0, 0, 1);--wp--custom--uikit--separator-height: 1;--wp--custom--tenup--icon-position: right;--wp--custom--tenup--icon--icon-set: kff-icons;--wp--custom--tenup--icon--icon-name: plus;--wp--custom--tenup--expanded--icon--icon-set: kff-icons;--wp--custom--tenup--expanded--icon--icon-name: minus;}.wp-block-cover{--wp--custom--tenup--play-icon--icon-set: uikit;--wp--custom--tenup--play-icon--icon-name: play;--wp--custom--tenup--pause-icon--icon-set: uikit;--wp--custom--tenup--pause-icon--icon-name: pause;--wp--custom--tenup--enable-video-cover-controls: 1;}.wp-block-tenup-accordion-header{--wp--custom--tenup--icon-position: right;--wp--custom--tenup--icon--icon-set: kff-icons;--wp--custom--tenup--icon--icon-name: plus;--wp--custom--tenup--expanded--icon--icon-set: kff-icons;--wp--custom--tenup--expanded--icon--icon-name: minus;}.wp-block-tenup-tabs{--wp--custom--tenup--max-number-of-tabs: 5;--wp--custom--tenup--tabs-spacing: var(--wp--preset--spacing--base, 1rem);}:root { --wp--style--global--content-size: 1280px;--wp--style--global--wide-size: 1280px; }:where(body) { margin: 0; }.wp-site-blocks > .alignleft { float: left; margin-right: 2em; }.wp-site-blocks > .alignright { float: right; margin-left: 2em; }.wp-site-blocks > .aligncenter { justify-content: center; margin-left: auto; margin-right: auto; }:where(.wp-site-blocks) > * { margin-block-start: 24px; margin-block-end: 0; }:where(.wp-site-blocks) > :first-child { margin-block-start: 0; }:where(.wp-site-blocks) > :last-child { margin-block-end: 0; }:root { --wp--style--block-gap: 24px; }:root :where(.is-layout-flow) > :first-child{margin-block-start: 0;}:root :where(.is-layout-flow) > :last-child{margin-block-end: 0;}:root :where(.is-layout-flow) > *{margin-block-start: 24px;margin-block-end: 0;}:root :where(.is-layout-constrained) > :first-child{margin-block-start: 0;}:root :where(.is-layout-constrained) > :last-child{margin-block-end: 0;}:root :where(.is-layout-constrained) > *{margin-block-start: 24px;margin-block-end: 0;}:root :where(.is-layout-flex){gap: 24px;}:root :where(.is-layout-grid){gap: 24px;}.is-layout-flow > .alignleft{float: left;margin-inline-start: 0;margin-inline-end: 2em;}.is-layout-flow > .alignright{float: right;margin-inline-start: 2em;margin-inline-end: 0;}.is-layout-flow > .aligncenter{margin-left: auto !important;margin-right: auto !important;}.is-layout-constrained > .alignleft{float: left;margin-inline-start: 0;margin-inline-end: 2em;}.is-layout-constrained > .alignright{float: right;margin-inline-start: 2em;margin-inline-end: 0;}.is-layout-constrained > .aligncenter{margin-left: auto !important;margin-right: auto !important;}.is-layout-constrained > :where(:not(.alignleft):not(.alignright):not(.alignfull)){max-width: var(--wp--style--global--content-size);margin-left: auto !important;margin-right: auto !important;}.is-layout-constrained > .alignwide{max-width: var(--wp--style--global--wide-size);}body .is-layout-flex{display: flex;}.is-layout-flex{flex-wrap: wrap;align-items: center;}.is-layout-flex > :is(*, div){margin: 0;}body .is-layout-grid{display: grid;}.is-layout-grid > :is(*, div){margin: 0;}body{padding-top: 0px;padding-right: 0px;padding-bottom: 0px;padding-left: 0px;}a:where(:not(.wp-element-button)){color: var(--wp--preset--color--neutral-700);text-decoration: underline;}h1{font-size: var(--wp--preset--font-size--heading-1);font-weight: 600;line-height: 1.2;}h2{font-size: var(--wp--preset--font-size--heading-2);font-weight: 600;line-height: 1.2;}h3{font-size: var(--wp--preset--font-size--heading-3);font-weight: 600;line-height: 1.2;}h4{font-size: var(--wp--preset--font-size--heading-4);font-weight: 600;line-height: 1.3;}h5{font-size: var(--wp--preset--font-size--heading-5);font-weight: 600;line-height: 1.3;}h6{font-size: var(--wp--preset--font-size--heading-6);font-weight: 600;line-height: 1.3;}:root :where(.wp-element-button, .wp-block-button__link){background-color: #32373c;border-width: 0;color: #fff;font-family: inherit;font-size: inherit;line-height: inherit;padding: calc(0.667em + 2px) calc(1.333em + 2px);text-decoration: none;}.has-black-color{color: var(--wp--preset--color--black) !important;}.has-cyan-bluish-gray-color{color: var(--wp--preset--color--cyan-bluish-gray) !important;}.has-white-color{color: var(--wp--preset--color--white) !important;}.has-pale-pink-color{color: var(--wp--preset--color--pale-pink) !important;}.has-vivid-red-color{color: var(--wp--preset--color--vivid-red) !important;}.has-luminous-vivid-orange-color{color: var(--wp--preset--color--luminous-vivid-orange) !important;}.has-luminous-vivid-amber-color{color: var(--wp--preset--color--luminous-vivid-amber) !important;}.has-light-green-cyan-color{color: var(--wp--preset--color--light-green-cyan) !important;}.has-vivid-green-cyan-color{color: var(--wp--preset--color--vivid-green-cyan) !important;}.has-pale-cyan-blue-color{color: var(--wp--preset--color--pale-cyan-blue) !important;}.has-vivid-cyan-blue-color{color: var(--wp--preset--color--vivid-cyan-blue) !important;}.has-vivid-purple-color{color: var(--wp--preset--color--vivid-purple) !important;}.has-neutral-800-color{color: var(--wp--preset--color--neutral-800) !important;}.has-neutral-700-color{color: var(--wp--preset--color--neutral-700) !important;}.has-neutral-600-color{color: var(--wp--preset--color--neutral-600) !important;}.has-neutral-500-color{color: var(--wp--preset--color--neutral-500) !important;}.has-neutral-400-color{color: var(--wp--preset--color--neutral-400) !important;}.has-neutral-300-color{color: var(--wp--preset--color--neutral-300) !important;}.has-neutral-200-color{color: var(--wp--preset--color--neutral-200) !important;}.has-neutral-100-color{color: var(--wp--preset--color--neutral-100) !important;}.has-primary-600-color{color: var(--wp--preset--color--primary-600) !important;}.has-primary-400-color{color: var(--wp--preset--color--primary-400) !important;}.has-primary-300-color{color: var(--wp--preset--color--primary-300) !important;}.has-primary-200-color{color: var(--wp--preset--color--primary-200) !important;}.has-primary-000-color{color: var(--wp--preset--color--primary-000) !important;}.has-purple-100-color{color: var(--wp--preset--color--purple-100) !important;}.has-accent-100-color{color: var(--wp--preset--color--accent-100) !important;}.has-accent-200-color{color: var(--wp--preset--color--accent-200) !important;}.has-accent-300-color{color: var(--wp--preset--color--accent-300) !important;}.has-accent-400-color{color: var(--wp--preset--color--accent-400) !important;}.has-information-400-color{color: var(--wp--preset--color--information-400) !important;}.has-black-background-color{background-color: var(--wp--preset--color--black) !important;}.has-cyan-bluish-gray-background-color{background-color: var(--wp--preset--color--cyan-bluish-gray) !important;}.has-white-background-color{background-color: var(--wp--preset--color--white) !important;}.has-pale-pink-background-color{background-color: var(--wp--preset--color--pale-pink) !important;}.has-vivid-red-background-color{background-color: var(--wp--preset--color--vivid-red) !important;}.has-luminous-vivid-orange-background-color{background-color: var(--wp--preset--color--luminous-vivid-orange) !important;}.has-luminous-vivid-amber-background-color{background-color: var(--wp--preset--color--luminous-vivid-amber) !important;}.has-light-green-cyan-background-color{background-color: var(--wp--preset--color--light-green-cyan) !important;}.has-vivid-green-cyan-background-color{background-color: var(--wp--preset--color--vivid-green-cyan) !important;}.has-pale-cyan-blue-background-color{background-color: var(--wp--preset--color--pale-cyan-blue) !important;}.has-vivid-cyan-blue-background-color{background-color: var(--wp--preset--color--vivid-cyan-blue) !important;}.has-vivid-purple-background-color{background-color: var(--wp--preset--color--vivid-purple) !important;}.has-neutral-800-background-color{background-color: var(--wp--preset--color--neutral-800) !important;}.has-neutral-700-background-color{background-color: var(--wp--preset--color--neutral-700) !important;}.has-neutral-600-background-color{background-color: var(--wp--preset--color--neutral-600) !important;}.has-neutral-500-background-color{background-color: var(--wp--preset--color--neutral-500) !important;}.has-neutral-400-background-color{background-color: var(--wp--preset--color--neutral-400) !important;}.has-neutral-300-background-color{background-color: var(--wp--preset--color--neutral-300) !important;}.has-neutral-200-background-color{background-color: var(--wp--preset--color--neutral-200) !important;}.has-neutral-100-background-color{background-color: var(--wp--preset--color--neutral-100) !important;}.has-primary-600-background-color{background-color: var(--wp--preset--color--primary-600) !important;}.has-primary-400-background-color{background-color: var(--wp--preset--color--primary-400) !important;}.has-primary-300-background-color{background-color: var(--wp--preset--color--primary-300) !important;}.has-primary-200-background-color{background-color: var(--wp--preset--color--primary-200) !important;}.has-primary-000-background-color{background-color: var(--wp--preset--color--primary-000) !important;}.has-purple-100-background-color{background-color: var(--wp--preset--color--purple-100) !important;}.has-accent-100-background-color{background-color: var(--wp--preset--color--accent-100) !important;}.has-accent-200-background-color{background-color: var(--wp--preset--color--accent-200) !important;}.has-accent-300-background-color{background-color: var(--wp--preset--color--accent-300) !important;}.has-accent-400-background-color{background-color: var(--wp--preset--color--accent-400) !important;}.has-information-400-background-color{background-color: var(--wp--preset--color--information-400) !important;}.has-black-border-color{border-color: var(--wp--preset--color--black) !important;}.has-cyan-bluish-gray-border-color{border-color: var(--wp--preset--color--cyan-bluish-gray) !important;}.has-white-border-color{border-color: var(--wp--preset--color--white) !important;}.has-pale-pink-border-color{border-color: var(--wp--preset--color--pale-pink) !important;}.has-vivid-red-border-color{border-color: var(--wp--preset--color--vivid-red) !important;}.has-luminous-vivid-orange-border-color{border-color: var(--wp--preset--color--luminous-vivid-orange) !important;}.has-luminous-vivid-amber-border-color{border-color: var(--wp--preset--color--luminous-vivid-amber) !important;}.has-light-green-cyan-border-color{border-color: var(--wp--preset--color--light-green-cyan) !important;}.has-vivid-green-cyan-border-color{border-color: var(--wp--preset--color--vivid-green-cyan) !important;}.has-pale-cyan-blue-border-color{border-color: var(--wp--preset--color--pale-cyan-blue) !important;}.has-vivid-cyan-blue-border-color{border-color: var(--wp--preset--color--vivid-cyan-blue) !important;}.has-vivid-purple-border-color{border-color: var(--wp--preset--color--vivid-purple) !important;}.has-neutral-800-border-color{border-color: var(--wp--preset--color--neutral-800) !important;}.has-neutral-700-border-color{border-color: var(--wp--preset--color--neutral-700) !important;}.has-neutral-600-border-color{border-color: var(--wp--preset--color--neutral-600) !important;}.has-neutral-500-border-color{border-color: var(--wp--preset--color--neutral-500) !important;}.has-neutral-400-border-color{border-color: var(--wp--preset--color--neutral-400) !important;}.has-neutral-300-border-color{border-color: var(--wp--preset--color--neutral-300) !important;}.has-neutral-200-border-color{border-color: var(--wp--preset--color--neutral-200) !important;}.has-neutral-100-border-color{border-color: var(--wp--preset--color--neutral-100) !important;}.has-primary-600-border-color{border-color: var(--wp--preset--color--primary-600) !important;}.has-primary-400-border-color{border-color: var(--wp--preset--color--primary-400) !important;}.has-primary-300-border-color{border-color: var(--wp--preset--color--primary-300) !important;}.has-primary-200-border-color{border-color: var(--wp--preset--color--primary-200) !important;}.has-primary-000-border-color{border-color: var(--wp--preset--color--primary-000) !important;}.has-purple-100-border-color{border-color: var(--wp--preset--color--purple-100) !important;}.has-accent-100-border-color{border-color: var(--wp--preset--color--accent-100) !important;}.has-accent-200-border-color{border-color: var(--wp--preset--color--accent-200) !important;}.has-accent-300-border-color{border-color: var(--wp--preset--color--accent-300) !important;}.has-accent-400-border-color{border-color: var(--wp--preset--color--accent-400) !important;}.has-information-400-border-color{border-color: var(--wp--preset--color--information-400) !important;}.has-vivid-cyan-blue-to-vivid-purple-gradient-background{background: var(--wp--preset--gradient--vivid-cyan-blue-to-vivid-purple) !important;}.has-light-green-cyan-to-vivid-green-cyan-gradient-background{background: var(--wp--preset--gradient--light-green-cyan-to-vivid-green-cyan) !important;}.has-luminous-vivid-amber-to-luminous-vivid-orange-gradient-background{background: var(--wp--preset--gradient--luminous-vivid-amber-to-luminous-vivid-orange) !important;}.has-luminous-vivid-orange-to-vivid-red-gradient-background{background: var(--wp--preset--gradient--luminous-vivid-orange-to-vivid-red) !important;}.has-very-light-gray-to-cyan-bluish-gray-gradient-background{background: var(--wp--preset--gradient--very-light-gray-to-cyan-bluish-gray) !important;}.has-cool-to-warm-spectrum-gradient-background{background: var(--wp--preset--gradient--cool-to-warm-spectrum) !important;}.has-blush-light-purple-gradient-background{background: var(--wp--preset--gradient--blush-light-purple) !important;}.has-blush-bordeaux-gradient-background{background: var(--wp--preset--gradient--blush-bordeaux) !important;}.has-luminous-dusk-gradient-background{background: var(--wp--preset--gradient--luminous-dusk) !important;}.has-pale-ocean-gradient-background{background: var(--wp--preset--gradient--pale-ocean) !important;}.has-electric-grass-gradient-background{background: var(--wp--preset--gradient--electric-grass) !important;}.has-midnight-gradient-background{background: var(--wp--preset--gradient--midnight) !important;}.has-small-font-size{font-size: var(--wp--preset--font-size--small) !important;}.has-medium-font-size{font-size: var(--wp--preset--font-size--medium) !important;}.has-large-font-size{font-size: var(--wp--preset--font-size--large) !important;}.has-x-large-font-size{font-size: var(--wp--preset--font-size--x-large) !important;}.has-display-lg-font-size{font-size: var(--wp--preset--font-size--display-lg) !important;}.has-heading-1-font-size{font-size: var(--wp--preset--font-size--heading-1) !important;}.has-heading-2-font-size{font-size: var(--wp--preset--font-size--heading-2) !important;}.has-heading-3-font-size{font-size: var(--wp--preset--font-size--heading-3) !important;}.has-heading-4-font-size{font-size: var(--wp--preset--font-size--heading-4) !important;}.has-heading-5-font-size{font-size: var(--wp--preset--font-size--heading-5) !important;}.has-heading-6-font-size{font-size: var(--wp--preset--font-size--heading-6) !important;}.has-51-font-size{font-size: var(--wp--preset--font-size--51) !important;}.has-38-font-size{font-size: var(--wp--preset--font-size--38) !important;}.has-32-font-size{font-size: var(--wp--preset--font-size--32) !important;}.has-28-font-size{font-size: var(--wp--preset--font-size--28) !important;}.has-26-font-size{font-size: var(--wp--preset--font-size--26) !important;}.has-24-font-size{font-size: var(--wp--preset--font-size--24) !important;}.has-20-font-size{font-size: var(--wp--preset--font-size--20) !important;}.has-18-font-size{font-size: var(--wp--preset--font-size--18) !important;}.has-16-font-size{font-size: var(--wp--preset--font-size--16) !important;}.has-14-font-size{font-size: var(--wp--preset--font-size--14) !important;}.has-12-font-size{font-size: var(--wp--preset--font-size--12) !important;}.has-9-font-size{font-size: var(--wp--preset--font-size--9) !important;}
+:root :where(.wp-block-pullquote){font-size: 1.5em;line-height: 1.6;}
+:root :where(.wp-block-tenup-accordion){background-color: var(--wp--preset--color--surface-primary);border-radius: 8px;border-color: var(--wp--custom--color--neutrals--300);border-width: 1px;border-style: solid;color: var(--wp--preset--color--surface-inverted);font-size: var(--wp--preset--font-size--body);}
+:root :where(.wp-block-tenup-accordion-header){font-weight: 700;padding-top: var(--wp--preset--spacing--xs);padding-right: var(--wp--preset--spacing--s);padding-bottom: var(--wp--preset--spacing--xs);padding-left: var(--wp--preset--spacing--s);}
+:root :where(.wp-block-tenup-accordion-content){margin-top: 0;margin-right: var(--wp--preset--spacing--s);margin-bottom: 0;margin-left: var(--wp--preset--spacing--s);padding-top: 0;padding-bottom: var(--wp--preset--spacing--xs);}
+:root :where(.wp-block-tenup-tabs-is-layout-flow) > :first-child{margin-block-start: 0;}:root :where(.wp-block-tenup-tabs-is-layout-flow) > :last-child{margin-block-end: 0;}:root :where(.wp-block-tenup-tabs-is-layout-flow) > *{margin-block-start: var(--wp--preset--spacing--base, 1rem);margin-block-end: 0;}:root :where(.wp-block-tenup-tabs-is-layout-constrained) > :first-child{margin-block-start: 0;}:root :where(.wp-block-tenup-tabs-is-layout-constrained) > :last-child{margin-block-end: 0;}:root :where(.wp-block-tenup-tabs-is-layout-constrained) > *{margin-block-start: var(--wp--preset--spacing--base, 1rem);margin-block-end: 0;}:root :where(.wp-block-tenup-tabs-is-layout-flex){gap: var(--wp--preset--spacing--base, 1rem);}:root :where(.wp-block-tenup-tabs-is-layout-grid){gap: var(--wp--preset--spacing--base, 1rem);}
+</style>
+<link rel='stylesheet' id='kff_shared_plugin_shared-css' href='https://www.kff.org/wp-content/plugins/kff-shared/dist/css/shared.css?ver=8c5b220bf6f482881a90' type='text/css' media='all' />
+<link rel='stylesheet' id='kff_shared_plugin_frontend-css' href='https://www.kff.org/wp-content/plugins/kff-shared/dist/css/frontend.css?ver=19db8bec6677a678c1c0' type='text/css' media='all' />
+<style id='kff_shared_plugin_frontend-inline-css' type='text/css'>
+
+			.datawrapper-embed.has-no-top-border,
+			.flourish-embed.has-no-top-border {
+				border-top: none !important;
+				border-block-start: none !important;
+			}
+			.datawrapper-embed.has-no-bottom-border,
+			.flourish-embed.has-no-bottom-border {
+				border-bottom: none !important;
+				border-block-end: none !important;
+			}
+		
+</style>
+<link rel='stylesheet' id='ui-kit-video-cover-controls-styles-css' href='https://www.kff.org/wp-content/plugins/ui-kit-core/dist/css/video-cover-controls-styles.css?ver=4f4139d1d1013647d8e2' type='text/css' media='all' />
+<link rel='stylesheet' id='styles-css' href='https://www.kff.org/wp-content/themes/kff-org-modern/dist/css/frontend.css?ver=f69f711f08a724611637' type='text/css' media='all' />
+<script type="text/javascript" src="https://www.kff.org/wp-content/plugins/kaiser-foundation/lib/datawrapper.js?ver=6.8.8" id="kaiser-founcation-datawrapper-fix-js"></script>
+<link rel="https://api.w.org/" href="https://www.kff.org/wp-json/" /><link rel="alternate" title="JSON" type="application/json" href="https://www.kff.org/wp-json/wp/v2/posts/705448" /><link rel='shortlink' href='https://wp.me/pgulFb-2Xwc' />
+<link rel="alternate" title="oEmbed (JSON)" type="application/json+oembed" href="https://www.kff.org/wp-json/oembed/1.0/embed?url=https%3A%2F%2Fwww.kff.org%2Fhealth-information-trust%2Fpoll-1-in-3-adults-are-turning-to-ai-chatbots-for-health-information-equaling-the-share-who-use-social-media-for-health%2F" />
+<link rel="alternate" title="oEmbed (XML)" type="text/xml+oembed" href="https://www.kff.org/wp-json/oembed/1.0/embed?url=https%3A%2F%2Fwww.kff.org%2Fhealth-information-trust%2Fpoll-1-in-3-adults-are-turning-to-ai-chatbots-for-health-information-equaling-the-share-who-use-social-media-for-health%2F&#038;format=xml" />
+	<style>img#wpstats{display:none}</style>
+		<link rel="icon" href="https://www.kff.org/wp-content/uploads/sites/7/2023/04/3976_KFF_favicon_256x256_revised.png?w=32" sizes="32x32" />
+<link rel="icon" href="https://www.kff.org/wp-content/uploads/sites/7/2023/04/3976_KFF_favicon_256x256_revised.png?w=192" sizes="192x192" />
+<link rel="apple-touch-icon" href="https://www.kff.org/wp-content/uploads/sites/7/2023/04/3976_KFF_favicon_256x256_revised.png?w=180" />
+<meta name="msapplication-TileImage" content="https://www.kff.org/wp-content/uploads/sites/7/2023/04/3976_KFF_favicon_256x256_revised.png?w=256" />
+		<style type="text/css" id="wp-custom-css">
+			
+
+/* Custom for Email Signup Form */
+
+.mp_gf_featured {
+	background-color:#E5EDF4!important;
+	padding:10px!important;
+	margin-top:-40px!important;
+border-bottom-left-radius: 20px !important;
+    border-bottom-right-radius: 20px !important;
+	padding-bottom:20px!important
+}
+
+/* END Custom for Email Signup Form */
+
+
+
+
+
+
+
+/* Hide Breadcrumbs on Specific Post Ids */
+.postid-706579 #main > .breadcrumbs span,
+.postid-706714 #main > .breadcrumbs span {
+    display: none !important;
+}
+/* END Breadcrumbs on Specific Post Ids */
+
+
+
+
+/* CSS TO CONTROL PLACEMENT OF FLOURISH SCROLLYTELLY LABELS */
+
+
+
+@media screen and (min-width: 600px) {
+	
+	
+	/* VERSION 03 */
+	
+	.flourish-embed-scrolly-story-03 {
+    margin-right: 20%!important;
+}
+
+.flourish-embed-scrolly-story-03 .fl-scrolly-caption {
+	width:40%!important;
+ 	}
+	
+.flourish-embed-scrolly-story-03 .fl-scrolly-caption p {
+font-size:18px
+
+ 	}
+
+	
+/* VERSION 02 */
+	
+.flourish-embed-scrolly-story-02 {
+    margin-right: 0%!important;
+}
+
+.flourish-embed-scrolly-story-02 .fl-scrolly-caption{
+		
+ width:50%!important;
+ margin-left: 60%!important;
+ margin-right: 10%!important;
+
+	}
+
+/* VERSION 01 */
+	
+.flourish-embed-scrolly-story {
+    margin-right: 30%!important;
+}
+	
+.fl-scrolly-caption{
+    margin-left: 100%!important;
+    width: 50%!important;
+}
+
+	
+/* CLOSE FOR MOBILE/
+}
+
+/* END FLOURISH */
+
+.mp_query_loop_quick_takes{
+	margin-top:30px !important;
+	margin-bottom:0px !important;
+}
+
+.mp_group_full_bleed{
+	
+	
+	border-top: solid;
+	border-bottom:solid;
+	border-color:#909090;
+	border-width:.5px;
+margin-left: calc((100vw - 100% - var(--scrollbar)) / -2);
+    padding-bottom: var(--p-8);
+    padding-left: 0;
+    padding-right: 0;
+    padding-top: var(--p-8);
+    width: 100cqw;
+	
+}
+
+.mp_three_across h2{
+	font-size:26px;
+}
+
+.mp_news_release{
+	background-color: #F2EAF3!important;
+}
+
+.roper-container .kksiKu.search-container {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 0;
+	padding-top: 40px;
+}
+
+.roper-container .kksiKu.search-container .header {
+	min-height: auto;
+}
+
+.interactive-template-single-interactive-custom .sticky-select.is-stuck {
+	display: none;
+}		</style>
+			</head>
+	<body class="wp-singular post-template-default single single-post postid-705448 single-format-standard wp-theme-kff-org-modern">
+		
+			<script>
+			window.dataLayer = window.dataLayer || [];
+			window.dataLayer.push({
+				event: 'page_attributes',
+				publication_date: '2026-03-25',
+				authors: '',
+				update_date: '2026-04-09',
+				topics: 'Health Information and Trust',
+				content_types: 'News Release',
+				series: 'Health Information and Trust Tracking Poll',
+				tags: 'Artificial Intelligence, Public Health, Vaccines',
+				id: '705448'
+				
+			});
+		</script>
+
+		<!-- Google Tag Manager -->
+		<noscript><iframe src="//www.googletagmanager.com/ns.html?id=GTM-PPSVK8"
+		height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
+		<script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
+		new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
+		j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
+		'//www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
+		})(window,document,'script','dataLayer','GTM-PPSVK8');</script>
+		<!-- End Google Tag Manager -->
+
+		<!-- IpMeta must be included after Google Analytics -->
+				<script src="https://ipmeta.io/plugin.js"></script>
+
+		<script>
+			var data  = provideGtmPlugin({
+				gtmEventKey: 'ipmeta_loaded',
+				apiKey: 'cfa8e242ccc23303b21a00da541b3e18fd358f1eb9c5888ce796bd3fff889fff',
+			});
+			window.dataLayer = window.dataLayer || [];
+			window.dataLayer.push(data);
+		</script>
+
+				<div class="wp-block-button is-style-outline">
+				<a href="#main" class="wp-block-button__link wp-element-button skip-to-content-link visually-hidden-focusable">
+					Skip to main content				</a>
+			</div>
+
+			
+<header class="header">
+	<div class="print-container">
+	<div class="print-container__inner print-container__inner--nav">
+		<div class="print__logo">
+			<svg class="print__logo-svg print__logo-svg--nav" xmlns="http://www.w3.org/2000/svg" width="59" height="25" viewBox="0 0 59 25" fill="none">
+				<path d="m13.685.5-7.22 10.351h-.07V.5H0v24h6.396V14.149h.069l7.22 10.351h7.701l-8.872-12 8.872-12h-7.701Zm10.074 0h16.058v4.539h-9.662v5.26h9.25v4.54h-9.25V24.5H23.76V.5Zm19.118 0h16.057v4.539h-9.661v5.26h9.249v4.54h-9.25V24.5h-6.395V.5Z" fill="black"/>
+			</svg>
+		</div>
+		<p class="print__tagline">
+			The independent source for health policy research, polling, and news.		</p>
+	</div>
+</div>
+	
+<nav class="primary-nav">
+	<div class="primary-nav__inner">
+		<div class="primary-nav__header">
+			<a class="primary-nav__logo" href="/">
+				<svg xmlns="http://www.w3.org/2000/svg" width="59" height="25" viewBox="0 0 59 25" fill="none">
+					<path d="m13.685.5-7.22 10.351h-.07V.5H0v24h6.396V14.149h.069l7.22 10.351h7.701l-8.872-12 8.872-12h-7.701Zm10.074 0h16.058v4.539h-9.662v5.26h9.25v4.54h-9.25V24.5H23.76V.5Zm19.118 0h16.057v4.539h-9.661v5.26h9.249v4.54h-9.25V24.5h-6.395V.5Z" fill="white"/>
+				</svg>
+			</a>
+			<p class="primary-nav__tagline">
+				The independent source for health policy research, polling, and news.			</p>
+		</div>
+		<div class="primary-nav__links">
+			<a href="https://www.kff.org/about-us/email/" class="primary-nav__link">Subscribe</a>
+			<a href="https://www.kff.org/about-us/follow-us/" class="primary-nav__link">Follow Us</a>
+			<a href="https://www.kff.org/about-us/conference-centers/" class="primary-nav__link">Conference Centers</a>
+			<a href="https://www.kff.org/about-us/support-our-work/" class="button button--sm">Donate</a>
+			<div class="primary-nav__divider primary-nav__desktop-only"></div>
+			<button class="primary-nav__link primary-nav__link--search" aria-label="Search the site">
+				<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" viewBox="0 0 20 20"><path fill="#000" fill-rule="evenodd" d="M19.18 17.665c.426.42.426 1.103 0 1.523a1.09 1.09 0 0 1-1.526 0L13.296 14.9a8.1 8.1 0 0 1-4.723 1.505C4.122 16.405.5 12.852.5 8.453.5 4.053 4.122.5 8.573.5s8.073 3.553 8.074 7.953a7.83 7.83 0 0 1-1.78 4.967zM2.665 8.453c0 3.199 2.638 5.806 5.908 5.806s5.908-2.607 5.908-5.806c0-3.2-2.638-5.806-5.908-5.806S2.665 5.254 2.665 8.453" clip-rule="evenodd" /></svg>				<span>Search</span>
+			</button>
+			<div class="primary-nav__divider primary-nav__mobile-only"></div>
+			<button aria-label="Open menu" class="primary-nav__link--menu" aria-controls="secondary-nav">
+				<span></span>
+				<span></span>
+				<span></span>
+			</button>
+			<div class="primary-nav__search">
+				
+<div itemscope itemtype="http://schema.org/WebSite">
+	<form role="search" id="searchform" class="search-form" method="get" action="https://www.kff.org/">
+		<meta itemprop="target" content="https://www.kff.org/?s={s}" />
+		<label for="search-field">
+			Search for:		</label>
+		<input itemprop="query-input" type="search" id="search-field" value="" placeholder="Search &hellip;" name="s" />
+		<input type="submit" value="Submit">
+	</form>
+</div>
+				<button class="primary-nav__search-close" aria-label="Close search">
+					<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" viewBox="0 0 24 24"><path fill="#004B88" d="M18.555 4 4 18.213l1.286 1.532L19.84 5.532z" /><path fill="#004B88" d="M12 11h-1v2h1z" /><path fill="#004B88" d="M19.84 18.213 5.286 4 4 5.532l14.555 14.213z" /></svg>				</button>
+			</div>
+		</div>
+	</div>
+</nav>
+	
+<div class="secondary-nav" id="secondary-nav">
+	<a href="/" class="secondary-nav__logo">
+		<svg xmlns="http://www.w3.org/2000/svg" width="40" height="17" viewBox="0 0 40 17" fill="none">
+			<path d="M9.12319 0.5L4.3097 7.40096H4.2637V0.5H0V16.5H4.2637V9.59911H4.3097L9.12296 16.5H14.2576L8.34281 8.49993L14.2576 0.5H9.12319ZM15.8396 0.5H26.5445V3.52578H20.1034V7.03281H26.2694V10.0587H20.1034V16.5H15.8396V0.5ZM28.5848 0.5H39.2896V3.52578H32.8484V7.03281H39.0147V10.0587H32.8484V16.5H28.5848V0.5Z" fill="black"></path>
+		</svg>
+	</a>
+
+	<div class="menu-primary-container"><ul id="menu-main-menu" class="menu"><li id="menu-item-180520" class="menu-item menu-item-type-custom menu-item-object-custom tray__item menu-item-180520"><a href="#">Topics</a><div class="tray tray--custom"><div class="tray__inner"><button aria-label="Close submenu" class="tray__close">Back</button><hr class="secondary-nav__divider" />
+<h2 class="tray__title">Topics</h2><hr class="secondary-nav__divider" /><div class="tray__template">
+<div class="wp-block-columns is-layout-flex wp-container-core-columns-is-layout-744a75a8 wp-block-columns-is-layout-flex" style="margin-top:0">
+<div class="wp-block-column is-layout-flow wp-block-column-is-layout-flow" style="flex-basis:195px">
+<ul class="wp-block-list">
+<li class="wp-block-list-item"><a href="/topic/affordable-care-act/">Affordable Care Act</a></li>
+
+
+
+<li class="wp-block-list-item"><a href="/topic/elections/" data-type="from-drew-altman" data-id="642026">Elections</a></li>
+
+
+
+<li class="wp-block-list-item"><a href="/topic/global-health-policy/">Global Health Policy</a></li>
+
+
+
+<li class="wp-block-list-item"><a href="/topic/health-costs/">Health Costs</a></li>
+
+
+
+<li class="wp-block-list-item"><a href="/topic/health-information-trust/" data-type="page" data-id="623485">Health Information and Trust</a></li>
+</ul>
+</div>
+
+
+
+<div class="wp-block-column is-layout-flow wp-block-column-is-layout-flow" style="flex-basis:195px">
+<ul class="wp-block-list">
+<li class="wp-block-list-item"><a href="/topic/hivaids/">HIV/AIDS</a></li>
+
+
+
+<li class="wp-block-list-item"><a href="/topic/immigrant-health/">Immigrant Health</a></li>
+
+
+
+<li class="wp-block-list-item"><a href="/topic/lgbtq/">LGBTQ</a></li>
+
+
+
+<li class="wp-block-list-item"><a href="/topic/medicaid/">Medicaid</a></li>
+
+
+
+<li class="wp-block-list-item"><a href="/topic/medicare/">Medicare</a></li>
+</ul>
+</div>
+
+
+
+<div class="wp-block-column is-layout-flow wp-block-column-is-layout-flow" style="flex-basis:195px">
+<ul class="wp-block-list">
+<li class="wp-block-list-item"><a href="/topic/mental-health/">Mental Health</a></li>
+
+
+
+<li class="wp-block-list-item"><a href="/topic/patient-consumer-protections/">Patient and Consumer Protections</a></li>
+
+
+
+<li class="wp-block-list-item"><a href="/topic/public-opinion/">Public Opinion</a></li>
+
+
+
+<li class="wp-block-list-item"><a href="/topic/private-insurance/" data-type="page" data-id="536301">Private Insurance</a></li>
+</ul>
+</div>
+
+
+
+<div class="wp-block-column is-layout-flow wp-block-column-is-layout-flow" style="flex-basis:195px">
+<ul class="wp-block-list">
+<li class="wp-block-list-item"><a href="/topic/racial-equity-and-health-policy/">Racial Equity and Health Policy</a></li>
+
+
+
+<li class="wp-block-list-item"><a href="/topic/state-health-policy-data/">State Health Policy and Data</a></li>
+
+
+
+<li class="wp-block-list-item"><a href="/topic/uninsured/">Uninsured</a></li>
+
+
+
+<li class="wp-block-list-item"><a href="/topic/womens-health-policy/" data-type="post" data-id="625971">Women's Health Policy</a></li>
+</ul>
+</div>
+
+
+
+<div class="wp-block-column featured-tray is-layout-flow wp-block-column-is-layout-flow">
+<ul class="wp-block-list">
+<li class="wp-block-list-item"><strong>FEATURED CONTENT</strong></li>
+
+
+
+<li class="wp-block-list-item"><a href="https://www.kff.org/interactive/subsidy-calculator/">Health Insurance Marketplace Calculator</a></li>
+
+
+
+<li class="wp-block-list-item"><a href="https://www.healthsystemtracker.org/">Peterson-KFF Health System Tracker</a></li>
+</ul>
+</div>
+</div>
+
+
+
+<div class="wp-block-group is-layout-constrained wp-block-group-is-layout-constrained" style="margin-top:30px;margin-bottom:100px">
+<div class="wp-block-buttons is-layout-flex wp-block-buttons-is-layout-flex">
+<div class="wp-block-button is-style-arrow"><a class="wp-block-button__link wp-element-button" href="/topics/">Explore all Topics</a></div>
+</div>
+</div>
+</div></div></div></li>
+<li id="menu-item-681986" class="menu-item menu-item-type-custom menu-item-object-custom tray__item menu-item-681986"><a href="#">Policy Research</a><div class="tray tray--custom-column"><div class="tray__inner"><button aria-label="Close submenu" class="tray__close">Back</button><hr class="secondary-nav__divider" />
+<h2 class="tray__title">Policy Research</h2><hr class="secondary-nav__divider" /><div class="tray__template">
+<p class="has-18-font-size wp-block-paragraph" style="margin-top:var(--wp--preset--spacing--d-0)">KFF’s policy research provides facts and analysis on a wide range of policy issues and public programs.&nbsp;<br></p>
+
+
+
+<div class="wp-block-buttons is-layout-flex wp-block-buttons-is-layout-flex">
+<div class="wp-block-button is-style-arrow"><a class="wp-block-button__link wp-element-button" href="/policy-research/">Explore all Policy Research</a></div>
+</div>
+</div></div></div></li>
+<li id="menu-item-180531" class="menu-item menu-item-type-custom menu-item-object-custom tray__item menu-item-180531"><a href="#">Polling</a><div class="tray tray--custom-column"><div class="tray__inner"><button aria-label="Close submenu" class="tray__close">Back</button><hr class="secondary-nav__divider" />
+<h2 class="tray__title">Polling</h2><hr class="secondary-nav__divider" /><div class="tray__template">
+<p class="mp_menu_tray_text has-18-font-size wp-block-paragraph" style="margin-top:0px">KFF designs, conducts and analyzes original public opinion and survey research on Americans’ attitudes, knowledge, and experiences with the health care system to help amplify the public’s voice in major national debates.</p>
+
+
+
+<div class="wp-block-buttons is-layout-flex wp-block-buttons-is-layout-flex">
+<div class="wp-block-button is-style-arrow"><a class="wp-block-button__link wp-element-button" href="/topic/public-opinion/">View all Poll Findings</a></div>
+</div>
+</div></div></div></li>
+<li id="menu-item-180551" class="menu-item menu-item-type-custom menu-item-object-custom tray__item menu-item-180551"><a href="http://www.kffhealthnews.org/">Health News</a><div class="tray tray--custom-column"><div class="tray__inner"><button aria-label="Close submenu" class="tray__close">Back</button><hr class="secondary-nav__divider" />
+<h2 class="tray__title">Health News</h2><hr class="secondary-nav__divider" /><div class="tray__template">
+<p class="mp_menu_tray_text has-18-font-size wp-block-paragraph" style="margin-top:0"><a href="https://kffhealthnews.org/">KFF Health News</a> is a national newsroom that produces in-depth journalism about health issues and is one of the organization’s core operating programs.</p>
+
+
+
+<div class="wp-block-buttons is-layout-flex wp-block-buttons-is-layout-flex">
+<div class="wp-block-button is-style-arrow"><a class="wp-block-button__link wp-element-button" href="https://kffhealthnews.org/">Explore KFF Health News</a></div>
+</div>
+</div></div></div></li>
+<li id="menu-item-681989" class="menu-item menu-item-type-custom menu-item-object-custom tray__item menu-item-681989"><a href="#">Data &#038; Features</a><div class="tray tray--custom"><div class="tray__inner"><button aria-label="Close submenu" class="tray__close">Back</button><hr class="secondary-nav__divider" />
+<h2 class="tray__title">Data &amp; Features</h2><hr class="secondary-nav__divider" /><div class="tray__template">
+<div class="wp-block-columns is-layout-flex wp-container-core-columns-is-layout-4b8af773 wp-block-columns-is-layout-flex" style="margin-top:0px;margin-bottom:var(--wp--preset--spacing--d-0);padding-top:0px">
+<div class="wp-block-column is-layout-flow wp-container-core-column-is-layout-e87aaff6 wp-block-column-is-layout-flow" style="padding-bottom:var(--wp--preset--spacing--d-4);padding-left:0;flex-basis:250px">
+<ul class="wp-block-list">
+<li class="wp-block-list-item"><strong>FROM THE CEO</strong></li>
+
+
+
+<li class="wp-block-list-item"><a href="/from-drew-altman/">From Drew Altman</a></li>
+
+
+
+<li class="wp-block-list-item"><a href="/series/beyond-the-data/">Beyond the Data</a></li>
+</ul>
+
+
+
+<ul class="wp-block-list">
+<li class="wp-block-list-item"><strong><a href="/content-type/feature/?view=grid" data-type="post" data-id="684558">FEATURES</a></strong></li>
+
+
+
+<li class="wp-block-list-item"><a href="https://www.kff.org/quick-take/">Quick Insights</a></li>
+
+
+
+<li class="wp-block-list-item"><a href="https://www.kff.org/series/the-monitor/">The Monitor</a></li>
+
+
+
+<li class="wp-block-list-item"><a href="/other-health/health-policy-101-introduction/">Health Policy 101</a></li>
+
+
+
+<li class="wp-block-list-item"><a href="https://www.kff.org/series/business-of-health/">The Business of Health Podcast with Chip Kahn</a></li>
+
+
+
+<li class="wp-block-list-item"><a href="https://www.kff.org/series/health-wonk-shop/">The Health Wonk Shop</a></li>
+
+
+
+<li class="wp-block-list-item"><a href="https://www.kff.org/interactive/subsidy-calculator/">ACA Health Insurance Marketplace Calculator</a></li>
+
+
+
+<li class="wp-block-list-item"><a href="https://www.kff.org/health-costs/2025-employer-health-benefits-survey/">Employer Health Benefits Survey</a></li>
+
+
+
+<li class="wp-block-list-item"><a href="/medicaid/50-state-medicaid-budget-survey-fy-2024-2025/#2b7b5dc2-25f2-4343-9fbe-915b48e0aef5">Medicaid Budget Survey</a></li>
+</ul>
+</div>
+
+
+
+<div class="wp-block-column is-layout-flow wp-container-core-column-is-layout-313692ca wp-block-column-is-layout-flow" style="flex-basis:250px">
+<ul class="wp-block-list">
+<li class="wp-block-list-item"><strong><a href="/topic/public-opinion/">POLLING</a></strong></li>
+
+
+
+<li class="wp-block-list-item"><a href="/series/health-tracking-poll/">KFF Health Tracking Poll</a></li>
+
+
+
+<li class="wp-block-list-item"><a href="https://www.kff.org/affordable-care-act/the-publics-views-on-the-aca-tracker/">Tracking the Public’s Views on the ACA</a></li>
+
+
+
+<li class="wp-block-list-item"><a href="https://www.kff.org/public-opinion/kff-polling-on-health-information-and-trust/">Polling on Health Information and Trust</a></li>
+
+
+
+<li class="wp-block-list-item"><a href="#"></a><a href="#"></a><a href="/womens-health-policy/womens-health-survey/">Women's Health Survey</a></li>
+</ul>
+
+
+
+<ul class="wp-block-list">
+<li class="wp-block-list-item"><strong><a href="https://www.kff.org/faqs/">FAQS</a></strong></li>
+
+
+
+<li class="wp-block-list-item"><a href="#"></a><a href="https://www.kff.org/faqs/faqs-health-insurance-marketplace-and-the-aca/">Health Insurance Marketplace and the ACA</a></li>
+
+
+
+<li class="wp-block-list-item"><a href="#"></a><a href="https://www.kff.org/faqs/medicare-open-enrollment-faqs/">Medicare Open Enrollment</a></li>
+</ul>
+</div>
+
+
+
+<div class="wp-block-column is-layout-flow wp-container-core-column-is-layout-313692ca wp-block-column-is-layout-flow" style="flex-basis:250px">
+<ul class="wp-block-list">
+<li class="wp-block-list-item"><strong><a href="/content-type/tracker/">TRACKERS</a></strong></li>
+
+
+
+<li class="wp-block-list-item"><a href="/affordable-care-act/aca-preventive-services-tracker/">ACA Preventive Services Tracker</a></li>
+
+
+
+<li class="wp-block-list-item"><a href="/medicaid/medicaid-waiver-tracker-approved-and-pending-section-1115-waivers-by-state/">Medicaid Waiver Tracker</a></li>
+
+
+
+<li class="wp-block-list-item"><a href="https://www.kff.org/medicaid/medicaid-work-requirements-tracker-overview/">Medicaid Work Requirements Tracker</a></li>
+
+
+
+<li class="wp-block-list-item"><a href="/interactive/u-s-global-health-budget-tracker/">Global Health Budget Tracker</a></li>
+
+
+
+<li class="wp-block-list-item"><a href="/covid-19/global-covid-19-tracker/">Global COVID-19 Tracker</a></li>
+
+
+
+<li class="wp-block-list-item"><a href="https://www.healthsystemtracker.org/" data-type="link" data-id="https://www.healthsystemtracker.org/" target="_blank" rel="noreferrer noopener">Peterson-KFF Health System Tracker</a></li>
+</ul>
+
+
+
+<ul class="wp-block-list">
+<li class="wp-block-list-item"><strong>DASHBOARDS</strong></li>
+
+
+
+<li class="wp-block-list-item"><a href="/womens-health-policy/abortion-in-the-u-s-dashboard/">Abortion in the U.S.</a></li>
+
+
+
+<li class="wp-block-list-item"><a href="/racial-equity-and-health-policy/key-data-on-health-and-health-care-by-race-and-ethnicity/" data-type="post" data-id="624173">Key Data on Health Care by Race and Ethnicity</a></li>
+</ul>
+</div>
+
+
+
+<div class="wp-block-column is-layout-flow wp-container-core-column-is-layout-313692ca wp-block-column-is-layout-flow" style="flex-basis:250px">
+<ul class="wp-block-list">
+<li class="wp-block-list-item"><strong>DATABASES</strong></li>
+
+
+
+<li class="wp-block-list-item"><a href="/state-health-facts/">State Health Facts</a></li>
+
+
+
+<li class="wp-block-list-item"><a href="#"></a><a href="#"></a><a href="/state-health-facts/custom/">Custom State Reports</a></li>
+</ul>
+
+
+
+<ul class="wp-block-list">
+<li class="wp-block-list-item"><strong>STATE FACT SHEETS</strong><a href="#"></a></li>
+
+
+
+<li class="wp-block-list-item"><a href="#"></a><a href="/interactive/medicaid-state-fact-sheets/">Medicaid Fact Sheets</a></li>
+
+
+
+<li class="wp-block-list-item"><a href="#"></a><a href="/interactive/mental-health-and-substance-use-state-fact-sheets/">Mental Health and Substance<br>Use Fact Sheets</a></li>
+
+
+
+<li class="wp-block-list-item"><a href="/interactive/election-state-fact-sheets/">State Health Care Snapshots</a></li>
+</ul>
+
+
+
+<ul class="wp-block-list">
+<li class="wp-block-list-item"><strong>STATE PROFILES</strong></li>
+
+
+
+<li class="wp-block-list-item"><a href="#"></a><a href="#"></a><a href="/interactive/state-profiles-for-dual-eligible-individuals/united-states/enrollment-and-spending-for-dual-eligible-individuals/">State Profiles of Dual-Eligible Individuals </a></li>
+
+
+
+<li class="wp-block-list-item"><a href="/womens-health-policy/state-profiles-for-womens-health/">State Profiles of Women’s Health</a></li>
+</ul>
+</div>
+</div>
+
+
+
+<div class="wp-block-group is-layout-constrained wp-container-core-group-is-layout-f45b68ee wp-block-group-is-layout-constrained" style="margin-top:0px;margin-bottom:100px;padding-top:0;padding-bottom:0">
+<div class="wp-block-buttons is-layout-flex wp-block-buttons-is-layout-flex">
+<div class="wp-block-button is-style-arrow"><a class="wp-block-button__link wp-element-button" href="/content-type/feature/?view=grid">View all Features</a></div>
+</div>
+</div>
+</div></div></div></li>
+<li id="menu-item-681990" class="menu-item menu-item-type-custom menu-item-object-custom tray__item menu-item-681990"><a href="#">For Media</a><div class="tray tray--custom"><div class="tray__inner"><button aria-label="Close submenu" class="tray__close">Back</button><hr class="secondary-nav__divider" />
+<h2 class="tray__title">For Media</h2><hr class="secondary-nav__divider" /><div class="tray__template">
+<div class="wp-block-columns is-layout-flex wp-container-core-columns-is-layout-7528fa30 wp-block-columns-is-layout-flex" style="margin-top:0;margin-bottom:0;padding-top:0;padding-bottom:0">
+<div class="wp-block-column is-layout-flow wp-block-column-is-layout-flow" style="flex-basis:948px"></div>
+
+
+
+<div class="wp-block-column is-layout-flow wp-block-column-is-layout-flow" style="flex-basis:332px">
+<ul class="wp-block-list">
+<li class="wp-block-list-item"><a href="/media-resources/#media-contacts">Media Contacts</a></li>
+
+
+
+<li class="wp-block-list-item"><a href="/about-us/permissions-citations-reprints/">Citations and Reprints</a></li>
+
+
+
+<li class="wp-block-list-item"><a href="/content-type/news-release/">News Releases</a></li>
+</ul>
+
+
+
+<div class="wp-block-buttons is-layout-flex wp-block-buttons-is-layout-flex">
+<div class="wp-block-button is-style-arrow"><a class="wp-block-button__link wp-element-button" href="/about-us/media-resources/">Explore all Media Resources</a></div>
+</div>
+</div>
+</div>
+</div></div></div></li>
+<li id="menu-item-681991" class="menu-item menu-item-type-custom menu-item-object-custom tray__item menu-item-681991"><a href="#">About</a><div class="tray tray--custom"><div class="tray__inner"><button aria-label="Close submenu" class="tray__close">Back</button><hr class="secondary-nav__divider" />
+<h2 class="tray__title">About</h2><hr class="secondary-nav__divider" /><div class="tray__template">
+<div class="wp-block-columns is-layout-flex wp-container-core-columns-is-layout-4db4c9a1 wp-block-columns-is-layout-flex" style="margin-top:0px;margin-bottom:0">
+<div class="wp-block-column is-layout-flow wp-block-column-is-layout-flow" style="flex-basis:195px"></div>
+
+
+
+<div class="wp-block-column is-layout-flow wp-block-column-is-layout-flow" style="flex-basis:195px"></div>
+
+
+
+<div class="wp-block-column is-layout-flow wp-block-column-is-layout-flow" style="padding-bottom:0;flex-basis:195px">
+<ul class="wp-block-list">
+<li class="wp-block-list-item"><a href="https://www.kff.org/about-us/">About Us</a></li>
+
+
+
+<li class="wp-block-list-item"><a href="/people/">Our People</a></li>
+
+
+
+<li class="wp-block-list-item"><a href="/about-us/our-programs/" data-type="page" data-id="624972">Our Work</a></li>
+
+
+
+<li class="wp-block-list-item"><a href="/about-us/board-of-trustees/">Board of Trustees</a></li>
+</ul>
+</div>
+
+
+
+<div class="wp-block-column is-layout-flow wp-block-column-is-layout-flow" style="flex-basis:195px">
+<ul class="wp-block-list">
+<li class="wp-block-list-item"><a href="/about-us/conference-centers/">Conference Centers</a></li>
+
+
+
+<li class="wp-block-list-item"><a href="/events/">Events</a></li>
+
+
+
+<li class="wp-block-list-item"><a href="/about-us/contact-us/" data-type="post" data-id="257855">Contact Us</a></li>
+
+
+
+<li class="wp-block-list-item"><a href="/about-us/employment-opportunities/">Join Our Team</a></li>
+</ul>
+</div>
+
+
+
+<div class="wp-block-column featured-tray is-layout-flow wp-block-column-is-layout-flow">
+<ul class="wp-block-list">
+<li class="wp-block-list-item"><strong>From CEO Drew Altman</strong></li>
+
+
+
+<li class="wp-block-list-item"><a href="https://www.kff.org/about-us/presidents-message/">President's Message</a></li>
+
+
+
+<li class="wp-block-list-item"><a href="/from-drew-altman/questions-i-get-about-the-standards-and-practices-for-organizations-in-an-era-of-misinformation-and-declining-trust/">Our Standards &amp; Practices</a></li>
+
+
+
+<li class="wp-block-list-item"><a href="/series/beyond-the-data/">Beyond the Data Columns</a></li>
+
+
+
+<li class="wp-block-list-item"><a href="https://www.kff.org/from-drew-altman/">View All</a></li>
+</ul>
+</div>
+</div>
+
+
+
+<div class="wp-block-columns is-layout-flex wp-container-core-columns-is-layout-5642b425 wp-block-columns-is-layout-flex" style="margin-top:0px;margin-bottom:0;padding-top:0;padding-bottom:0">
+<div class="wp-block-column is-layout-flow wp-block-column-is-layout-flow" style="flex-basis:195px"></div>
+
+
+
+<div class="wp-block-column is-layout-flow wp-block-column-is-layout-flow" style="flex-basis:195px"></div>
+
+
+
+<div class="wp-block-column is-layout-flow wp-block-column-is-layout-flow" style="padding-bottom:0;flex-basis:195px">
+<div class="wp-block-buttons is-layout-flex wp-block-buttons-is-layout-flex">
+<div class="wp-block-button is-style-arrow"><a class="wp-block-button__link wp-element-button" href="/about-us/">About KFF</a></div>
+</div>
+</div>
+
+
+
+<div class="wp-block-column is-layout-flow wp-block-column-is-layout-flow" style="flex-basis:195px"></div>
+
+
+
+<div class="wp-block-column featured-tray is-layout-flow wp-block-column-is-layout-flow"></div>
+</div>
+</div></div></div></li>
+</ul></div>	<hr class="secondary-nav__divider" />
+
+	<div class="secondary-nav__links">
+		<a href="https://www.kff.org/about-us/follow-us/" class="secondary-nav__link">Follow Us</a>
+		<a href="https://www.kff.org/about-us/email/" class="secondary-nav__link">Subscribe</a>
+	</div>
+
+	<div class="secondary-nav__search-wrapper">
+		<button class="secondary-nav__link secondary-nav__link--search" aria-label="Search the site">
+			<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" viewBox="0 0 20 20"><path fill="#000" fill-rule="evenodd" d="M19.18 17.665c.426.42.426 1.103 0 1.523a1.09 1.09 0 0 1-1.526 0L13.296 14.9a8.1 8.1 0 0 1-4.723 1.505C4.122 16.405.5 12.852.5 8.453.5 4.053 4.122.5 8.573.5s8.073 3.553 8.074 7.953a7.83 7.83 0 0 1-1.78 4.967zM2.665 8.453c0 3.199 2.638 5.806 5.908 5.806s5.908-2.607 5.908-5.806c0-3.2-2.638-5.806-5.908-5.806S2.665 5.254 2.665 8.453" clip-rule="evenodd" /></svg>			<span>Search</span>
+		</button>
+		<div class="secondary-nav__search">
+			
+<div itemscope itemtype="http://schema.org/WebSite">
+	<form role="search" id="searchform" class="search-form" method="get" action="https://www.kff.org/">
+		<meta itemprop="target" content="https://www.kff.org/?s={s}" />
+		<label for="search-field">
+			Search for:		</label>
+		<input itemprop="query-input" type="search" id="search-field" value="" placeholder="Search &hellip;" name="s" />
+		<input type="submit" value="Submit">
+	</form>
+</div>
+			<button class="secondary-nav__search-close" aria-label="Close search">
+				<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" viewBox="0 0 24 24"><path fill="#004B88" d="M18.555 4 4 18.213l1.286 1.532L19.84 5.532z" /><path fill="#004B88" d="M12 11h-1v2h1z" /><path fill="#004B88" d="M19.84 18.213 5.286 4 4 5.532l14.555 14.213z" /></svg>			</button>
+		</div>
+	</div>
+
+</div>
+</header>
+							
+		<main id="main" role="main" tabindex="-1">
+
+							<div class="breadcrumbs">
+					<span><span><a href="https://www.kff.org">Home</a></span>  <span><a href="https://www.kff.org/topics/">Topics</a></span>  <span><a href="https://www.kff.org/topic/health-information-trust/">Health Information and Trust</a></span></span>				</div>
+			
+			<div class="site-container">
+						<div
+	class="wp-block-kff-shared-content--news-release wp-block-kff-shared-content">
+	
+
+<section class="wp-block-kff-shared-content-main">
+			<div class="post-header">
+			<div class="post-header__tag">News Release</div>
+					
+	<h1 class="post-header__title">Poll: 1 in 3 Adults Are Turning to AI Chatbots for Health Information, Equaling the Share Who Use Social Media for Health</h1>
+
+			<h2 class="post-header__subheading">1 in 5 Who Use AI for Health Cite Affordability and Access Concerns as Major Reasons, Including Larger Shares of Young and Lower Income People</h2>
+	
+			<div class="post-header__meta">
+				<div>
+			<span class="post-header__meta-label">Published:</span>
+			<date>Mar 25, 2026</date>
+		</div>
+		</div>
+	
+	<div class="post-header__social-sharing">
+		<button class="post-header__social-sharing__button print">
+			<svg width="16" height="17" fill="none" xmlns="http://www.w3.org/2000/svg">
+				<path d="M4.348 2.5v3.391H2.783A.787.787 0 0 0 2 6.674v4.696c0 .429.353.782.783.782h1.565V14.5h7.304v-2.348h1.565c.43 0 .783-.353.783-.782V6.674a.787.787 0 0 0-.783-.783h-1.565V2.5H4.348Zm.522.522h6.26v2.87H4.87v-2.87ZM2.783 6.413h1.782a.26.26 0 0 0 .085 0h6.697a.26.26 0 0 0 .086 0h1.784c.148 0 .261.114.261.26v4.697c0 .147-.113.26-.26.26h-1.566V9.283H4.348v2.347H2.783a.257.257 0 0 1-.261-.26V6.674c0-.147.113-.261.26-.261Zm9.39.783a.522.522 0 1 0 0 1.043.522.522 0 0 0 0-1.043ZM4.87 9.804h6.26v2.043a.264.264 0 0 0 0 .086v2.045H4.87v-2.043a.261.261 0 0 0 0-.085V9.804Zm1.043.783a.262.262 0 0 0-.265.26.26.26 0 0 0 .265.262h4.174a.26.26 0 1 0 0-.522H5.913Zm0 1.043a.26.26 0 1 0 0 .522h3.13a.26.26 0 1 0 0-.522h-3.13Zm0 1.044a.26.26 0 1 0 0 .522h4.174a.262.262 0 0 0 .264-.261.26.26 0 0 0-.264-.261H5.913Z" fill="#004B88" stroke="#004B88" stroke-width=".5"/>
+			</svg>
+
+			Print		</button>
+		<a href="mailto:?subject=Poll%3A%201%20in%203%20Adults%20Are%20Turning%20to%20AI%20Chatbots%20for%20Health%20Information%2C%20Equaling%20the%20Share%20Who%20Use%20Social%20Media%20for%20Health&#038;body=https%3A%2F%2Fwww.kff.org%2Fhealth-information-trust%2Fpoll-1-in-3-adults-are-turning-to-ai-chatbots-for-health-information-equaling-the-share-who-use-social-media-for-health%2F" class="post-header__social-sharing__button">
+			<svg width="16" height="17" fill="none" xmlns="http://www.w3.org/2000/svg">
+				<path d="M2.333 4.25h-.25v9.14h12.5V4.25H2.333Zm1.083 1.693-.353-.2V5.23h10.54v.513l-.353.2L8.333 8.73 3.416 5.943Zm-.353 6.467V6.884l.107.06 5.04 2.857.123.07.123-.07 5.04-2.857.107-.06v5.526H3.063Z" fill="#004B88" stroke="#004B88" stroke-width=".5"/>
+			</svg>
+
+			Email		</a>
+		<button class="post-header__social-sharing__button copy">
+			<svg width="16" height="17" fill="none" xmlns="http://www.w3.org/2000/svg">
+				<path d="M11.533 2.9c-.615 0-1.23.235-1.697.702L8.502 4.936a2.4 2.4 0 0 0-.575 2.46l.958-.958a1.32 1.32 0 0 1 .371-.748l1.334-1.333a1.331 1.331 0 0 1 1.886 0c.52.52.52 1.365 0 1.885l-1.334 1.333c-.21.21-.474.331-.748.372l-.958.958a2.393 2.393 0 0 0 2.46-.576l1.334-1.333a2.402 2.402 0 0 0 0-3.394 2.393 2.393 0 0 0-1.697-.702Zm-1.61 3.46a.533.533 0 0 0-.367.162l-3.2 3.2a.533.533 0 1 0 .754.754l3.2-3.2a.534.534 0 0 0-.387-.915ZM6.586 7.973a2.388 2.388 0 0 0-1.816.697l-1.334 1.333a2.403 2.403 0 0 0 0 3.394 2.393 2.393 0 0 0 1.697.702c.614 0 1.229-.234 1.697-.702l1.333-1.334a2.4 2.4 0 0 0 .576-2.46l-.959.958a1.32 1.32 0 0 1-.37.749l-1.334 1.333a1.334 1.334 0 0 1-1.886-1.885l1.334-1.334c.21-.21.474-.331.748-.372l.958-.957c-.21-.07-.426-.11-.644-.122Z" fill="#004B88"/>
+			</svg>
+
+			<span>Copy Link</span>
+		</button>
+		<a href="https://google.com/preferences/source?q=kff.org" target="_blank" class="post-header__social-sharing__button">
+			<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 12 12" fill="none">
+				<path d="M4.82919 0.115002C5.99297 -0.116424 7.19964 0.00329215 8.29587 0.457359C9.39193 0.911469 10.3292 1.68013 10.9884 2.66659C11.6476 3.6532 12 4.81351 12 6.00007C11.9982 7.59064 11.3652 9.11615 10.2406 10.2409C9.11589 11.3656 7.59029 11.9978 5.99976 11.9997C4.81323 11.9997 3.65291 11.6479 2.6663 10.9887C1.67979 10.3295 0.91053 9.39238 0.456433 8.29618C0.00235662 7.19987 -0.116124 5.9933 0.115365 4.82949C0.34689 3.66575 0.917983 2.59634 1.757 1.75729C2.59607 0.918306 3.66545 0.346491 4.82919 0.115002ZM5.99976 1.05069C5.02121 1.0507 4.06434 1.34118 3.25062 1.88471C2.43681 2.42848 1.80211 3.20195 1.42751 4.10616C1.05298 5.01045 0.955334 6.00599 1.14629 6.966C1.33731 7.92581 1.80828 8.80756 2.50027 9.49958C3.19238 10.1916 4.07458 10.6632 5.03448 10.8542C5.99426 11.045 6.98955 10.9468 7.89366 10.5723C8.79776 10.1977 9.57139 9.56354 10.1151 8.74987C10.6588 7.93609 10.9485 6.97877 10.9485 6.00007C10.9469 4.68807 10.425 3.43027 9.49733 2.50249C8.62755 1.63274 7.46757 1.11921 6.24495 1.05713L5.99976 1.05069ZM6.52424 5.47559H9.51277V6.5239H6.52424V9.51245H5.47593V6.5239H2.48804V5.47559H5.47593V2.48769H6.52424V5.47559Z" fill="#004B87"/>
+			</svg>
+			Add KFF on Google		</a>
+			</div>
+	</div>
+			
+
+<p class="wp-block-paragraph">About a third (32%) of adults nationally say they have turned to artificial intelligence (AI) chatbots in the past year for health information, a <a href="https://www.kff.org/public-opinion/kff-tracking-poll-on-health-information-and-trust-use-of-ai-for-health-information-and-advice/" id="https://www.kff.org/public-opinion/kff-tracking-poll-on-health-information-and-trust-use-of-ai-for-health-information-and-advice/">new KFF Tracking Poll on Health Information and Trust</a> finds. Most who turned to AI for health information say they were in search of quick and immediate advice, though challenges affording and accessing health care also play a role, particularly for younger adults.</p>
+
+
+
+<p class="wp-block-paragraph">The share using AI for health advice includes about 3 in 10 (29%) who have sought information related to their physical health and about 1 in 6 (16%) who have sought information related to their mental health. People are about as likely to use AI as social media to find health information.</p>
+
+
+
+<p class="wp-block-paragraph">As with AI use generally, younger adults are more likely than older adults to rely on AI for health information, particularly for mental health.</p>
+
+
+
+<p class="wp-block-paragraph">For example, adults under age 30 are about three times as likely as adults ages 50 and older to use AI for mental health information (28% vs. 8%). Uninsured adults are also more likely than those with insurance to do so (30% vs. 14%), as are Black and Hispanic adults compared to White adults.</p>
+
+
+
+<figure class="wp-block-image size-large"><a href="https://www.kff.org/wp-content/uploads/sites/7/2026/03/f9tja-larger-shares-of-younger-adults-black-and-hispanic-adults-and-those-who-are-uninsured-are-turning-to-ai-for-mental-health-advice-_af8e87.png"><img fetchpriority="high" decoding="async" height="795" width="1024" src="https://www.kff.org/wp-content/uploads/sites/7/2026/03/f9tja-larger-shares-of-younger-adults-black-and-hispanic-adults-and-those-who-are-uninsured-are-turning-to-ai-for-mental-health-advice-_af8e87.png?w=1024" alt="" class="wp-image-705457" srcset="https://www.kff.org/wp-content/uploads/sites/7/2026/03/f9tja-larger-shares-of-younger-adults-black-and-hispanic-adults-and-those-who-are-uninsured-are-turning-to-ai-for-mental-health-advice-_af8e87.png 1640w, https://www.kff.org/wp-content/uploads/sites/7/2026/03/f9tja-larger-shares-of-younger-adults-black-and-hispanic-adults-and-those-who-are-uninsured-are-turning-to-ai-for-mental-health-advice-_af8e87.png?resize=300,233 300w, https://www.kff.org/wp-content/uploads/sites/7/2026/03/f9tja-larger-shares-of-younger-adults-black-and-hispanic-adults-and-those-who-are-uninsured-are-turning-to-ai-for-mental-health-advice-_af8e87.png?resize=768,597 768w, https://www.kff.org/wp-content/uploads/sites/7/2026/03/f9tja-larger-shares-of-younger-adults-black-and-hispanic-adults-and-those-who-are-uninsured-are-turning-to-ai-for-mental-health-advice-_af8e87.png?resize=1024,795 1024w, https://www.kff.org/wp-content/uploads/sites/7/2026/03/f9tja-larger-shares-of-younger-adults-black-and-hispanic-adults-and-those-who-are-uninsured-are-turning-to-ai-for-mental-health-advice-_af8e87.png?resize=1536,1193 1536w" sizes="(max-width: 1024px) 100vw, 1024px" /></a></figure>
+
+
+
+<p class="wp-block-paragraph">When asked why they consulted AI for health information, about two-thirds (65%) of users say that a major reason was to get quick or immediate information or support. Substantial shares also cite wanting to look up information before deciding whether to see a provider (41%) or feeling more comfortable looking up information privately (36%).</p>
+
+
+
+<p class="wp-block-paragraph">Challenges affording and accessing health care are also driving some to rely on AI, particularly for younger adults and those with lower incomes. About 1 in 5 say that not being able to afford the cost of seeing a health professional (19%) or not having a regular doctor or not being able to get an appointment (18%) was a major reason for turning to AI.</p>
+
+
+
+<p class="wp-block-paragraph">Larger shares of young users (under age 30) cite barriers to affording (29%) or accessing (38%) health care as a major reason they relied on AI for health advice. Similarly, users with low incomes (less than $40,000 annually) are more likely to cite both health care costs (32%) and access (25%) as major factors for using AI.</p>
+
+
+
+<figure class="wp-block-image size-large"><a href="https://www.kff.org/wp-content/uploads/sites/7/2026/03/GPYMg-younger-and-lower-income-adults-are-much-more-likely-to-cite-not-being-able-to-access-or-afford-health-care-as-a-reason-they-turned-to-ai-for-health-advice-.png"><img decoding="async" height="688" width="1024" src="https://www.kff.org/wp-content/uploads/sites/7/2026/03/GPYMg-younger-and-lower-income-adults-are-much-more-likely-to-cite-not-being-able-to-access-or-afford-health-care-as-a-reason-they-turned-to-ai-for-health-advice-.png?w=1024" alt="" class="wp-image-705459" srcset="https://www.kff.org/wp-content/uploads/sites/7/2026/03/GPYMg-younger-and-lower-income-adults-are-much-more-likely-to-cite-not-being-able-to-access-or-afford-health-care-as-a-reason-they-turned-to-ai-for-health-advice-.png 1640w, https://www.kff.org/wp-content/uploads/sites/7/2026/03/GPYMg-younger-and-lower-income-adults-are-much-more-likely-to-cite-not-being-able-to-access-or-afford-health-care-as-a-reason-they-turned-to-ai-for-health-advice-.png?resize=300,202 300w, https://www.kff.org/wp-content/uploads/sites/7/2026/03/GPYMg-younger-and-lower-income-adults-are-much-more-likely-to-cite-not-being-able-to-access-or-afford-health-care-as-a-reason-they-turned-to-ai-for-health-advice-.png?resize=768,516 768w, https://www.kff.org/wp-content/uploads/sites/7/2026/03/GPYMg-younger-and-lower-income-adults-are-much-more-likely-to-cite-not-being-able-to-access-or-afford-health-care-as-a-reason-they-turned-to-ai-for-health-advice-.png?resize=1024,688 1024w, https://www.kff.org/wp-content/uploads/sites/7/2026/03/GPYMg-younger-and-lower-income-adults-are-much-more-likely-to-cite-not-being-able-to-access-or-afford-health-care-as-a-reason-they-turned-to-ai-for-health-advice-.png?resize=1536,1032 1536w" sizes="(max-width: 1024px) 100vw, 1024px" /></a></figure>
+
+
+
+<p class="wp-block-paragraph">Many people who consult AI for health information say they did not follow up with a doctor or other health professional afterward, including most (58%) who asked about mental health, and 42% who asked about physical health. Younger adults are more likely than older adults to have used AI for health advice and then not followed up with a doctor.</p>
+
+
+
+<p class="wp-block-paragraph"><strong>Many AI Users Upload Personal Health Information Despite Privacy Concerns</strong></p>
+
+
+
+<p class="wp-block-paragraph">Among those who use AI for health information, 41% say that they have uploaded personal medical information like test results or doctors’ notes into an AI tool or chatbot to get personalized explanations or advice related to their health. This means 13% of the public has uploaded personal medical information to an AI chatbot for this purpose.</p>
+
+
+
+<p class="wp-block-paragraph">Among the public at large, about three-quarters (77%) say that they are concerned about the privacy of personal medical information provided to AI tools, including most (65%) of those who have shared personal medical information with AI.</p>
+
+
+
+<p class="wp-block-paragraph">Designed and analyzed by public opinion researchers at KFF, this survey was conducted February 24-March 2, 2026, online and by telephone among a nationally representative sample of 1,343 U.S. adults in English and in Spanish. The margin of sampling error is plus or minus 3 percentage points for the full sample. For results based on other subgroups, the margin of sampling error may be higher.</p>
+
+	<div class="post-footer">
+	<div class="post-footer__title">More On</div>
+	<div class="post-footer__links">
+								<a href="https://www.kff.org/topic/health-information-trust/">
+				Health Information and Trust			</a>
+								<a href="https://www.kff.org/tag/artificial-intelligence/">
+				Artificial Intelligence			</a>
+								<a href="https://www.kff.org/tag/public-health/">
+				Public Health			</a>
+								<a href="https://www.kff.org/tag/vaccines/">
+				Vaccines			</a>
+			</div>
+</div>
+	</section>
+
+
+<section class="wp-block-kff-shared-content-sidebar">
+			
+		
+<div class="wp-block-kff-shared-contact-info">
+
+	<div class="wp-block-kff-shared-section-heading wp-block-kff-shared-section-heading--green is-spacing-narrow wp-block-kff-shared-section-heading--stacked">
+		<h2 class="wp-block-kff-shared-section-heading__title">
+			Contact		</h2>
+	</div>
+
+	
+	<div class="wp-block-kff-shared-contact-info__details">
+				<div class="wp-block-kff-shared-contact-info__name-wrapper">
+			<span class="wp-block-kff-shared-contact-info__name">
+				Craig Palosky			</span>
+		</div>
+		
+		
+				<div class="wp-block-kff-shared-contact-info__email-wrapper">
+			<a href="mailto:CraigP@kff.org"
+				class="wp-block-kff-shared-contact-info__email">
+				<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 17"><path fill="#004B88" stroke="#004B88" stroke-width=".5" d="M2.334 4.583h-.25v9.14h12.5v-9.14zm1.083 1.693-.354-.2v-.513h10.54v.513l-.353.2-4.917 2.787zm-.353 6.467V7.217l.106.06 5.04 2.857.123.07.124-.07 5.04-2.857.106-.06v5.526z" /></svg>				CraigP@kff.org			</a>
+		</div>
+		
+			</div>
+</div>
+
+
+
+<p class="wp-block-paragraph"></p>
+
+
+					<div class="wp-block-kff-shared-content-sidebar__extra-wrapper">
+									<div class="wp-block-kff-shared-content-sidebar__series-wrapper">
+						<h2 class="wp-block-kff-shared-content-sidebar__series-title">Series</h2>
+						
+						<h3 class="wp-block-kff-shared-content-sidebar__series-item-title">
+							<a href="https://www.kff.org/series/health-information-and-trust-tracking-poll/">
+								Health Information and Trust Tracking Poll							</a>
+						</h3>
+
+						
+						<p class="wp-block-kff-shared-content-sidebar__series-item-description"><div><a href="https://www.kff.org/series/health-information-and-trust-tracking-poll/"><img decoding="async" class="alignnone size-medium wp-image-683638" src="https://www.kff.org/wp-content/uploads/sites/7/2025/08/250429_KFF-Health-Misinfo-and-Trust-Tracking-Poll.png?w=300" alt="" width="300" height="169" srcset="https://www.kff.org/wp-content/uploads/sites/7/2025/08/250429_KFF-Health-Misinfo-and-Trust-Tracking-Poll.png 3840w, https://www.kff.org/wp-content/uploads/sites/7/2025/08/250429_KFF-Health-Misinfo-and-Trust-Tracking-Poll.png?resize=300,169 300w, https://www.kff.org/wp-content/uploads/sites/7/2025/08/250429_KFF-Health-Misinfo-and-Trust-Tracking-Poll.png?resize=768,432 768w, https://www.kff.org/wp-content/uploads/sites/7/2025/08/250429_KFF-Health-Misinfo-and-Trust-Tracking-Poll.png?resize=1024,576 1024w, https://www.kff.org/wp-content/uploads/sites/7/2025/08/250429_KFF-Health-Misinfo-and-Trust-Tracking-Poll.png?resize=1536,864 1536w, https://www.kff.org/wp-content/uploads/sites/7/2025/08/250429_KFF-Health-Misinfo-and-Trust-Tracking-Poll.png?resize=2048,1152 2048w, https://www.kff.org/wp-content/uploads/sites/7/2025/08/250429_KFF-Health-Misinfo-and-Trust-Tracking-Poll.png?resize=250,141 250w, https://www.kff.org/wp-content/uploads/sites/7/2025/08/250429_KFF-Health-Misinfo-and-Trust-Tracking-Poll.png?resize=500,282 500w, https://www.kff.org/wp-content/uploads/sites/7/2025/08/250429_KFF-Health-Misinfo-and-Trust-Tracking-Poll.png?resize=834,469 834w, https://www.kff.org/wp-content/uploads/sites/7/2025/08/250429_KFF-Health-Misinfo-and-Trust-Tracking-Poll.png?resize=1280,720 1280w" sizes="(max-width: 300px) 100vw, 300px" /></a></div>
+<p><span data-sheets-root="1">The Health Information and Trust Tracking Poll is part of KFF’s Health Information and Trust Initiative, which tracks health misinformation in the U.S, analyzes its impact on the American people, and mobilizes media to address the problem.</span></p>
+</p>
+
+											</div>
+				
+				
+
+									<div class="wp-block-kff-shared-content-sidebar__terms-wrapper">
+						<h2 class="wp-block-kff-shared-content-sidebar__terms-title">More On</h2>
+
+						<ul class="wp-block-kff-shared-content-sidebar__terms-list">
+																							<li>
+									<a href="https://www.kff.org/topic/health-information-trust/" class="wp-block-kff-shared-content-sidebar__terms-link">
+										Health Information and Trust									</a>
+								</li>
+																							<li>
+									<a href="https://www.kff.org/tag/artificial-intelligence/" class="wp-block-kff-shared-content-sidebar__terms-link">
+										Artificial Intelligence									</a>
+								</li>
+																							<li>
+									<a href="https://www.kff.org/tag/public-health/" class="wp-block-kff-shared-content-sidebar__terms-link">
+										Public Health									</a>
+								</li>
+																							<li>
+									<a href="https://www.kff.org/tag/vaccines/" class="wp-block-kff-shared-content-sidebar__terms-link">
+										Vaccines									</a>
+								</li>
+													</ul>
+						<div class="wp-block-button is-style-arrow wp-block-kff-shared-content-sidebar__view-all">
+							<a href="/topics/" class="wp-block-button__link wp-element-button">View all Topics</a>
+						</div>
+					</div>
+							</div>
+			</section>
+
+</div>
+		
+		
+						</div>
+		</main>
+		<script type="speculationrules">
+{"prefetch":[{"source":"document","where":{"and":[{"href_matches":"\/*"},{"not":{"href_matches":["\/wp-*.php","\/wp-admin\/*","\/wp-content\/uploads\/sites\/7\/*","\/wp-content\/*","\/wp-content\/plugins\/*","\/wp-content\/themes\/kff-org-modern\/*","\/*\\?(.+)"]}},{"not":{"selector_matches":"a[rel~=\"nofollow\"]"}},{"not":{"selector_matches":".no-prefetch, .no-prefetch a"}}]},"eagerness":"conservative"}]}
+</script>
+<script type="importmap" id="wp-importmap">
+{"imports":{"@wordpress\/interactivity":"https:\/\/www.kff.org\/wp-includes\/js\/dist\/script-modules\/interactivity\/index.min.js?ver=55aebb6e0a16726baffb"}}
+</script>
+<script type="module" src="https://www.kff.org/wp-content/plugins/ui-kit-core/dist/js/cover-block-video-controls.js?ver=5f6bf4f921a78432eb80" id="ui-kit-cover-block-video-controls-js-module"></script>
+<link rel="modulepreload" href="https://www.kff.org/wp-includes/js/dist/script-modules/interactivity/index.min.js?ver=55aebb6e0a16726baffb" id="@wordpress/interactivity-js-modulepreload">					<!-- Start of Async HubSpot Analytics Code -->
+					<script type="text/javascript">
+					(function(d,s,i,r) {
+					if (d.getElementById(i)){return;}
+					var n=d.createElement(s),e=d.getElementsByTagName(s)[0];
+					n.id=i;n.src='//js.hs-analytics.net/analytics/'+(Math.ceil(new Date()/r)*r)+'/292449.js';
+					e.parentNode.insertBefore(n, e);
+					})(document,"script","hs-analytics",300000);
+					</script>
+					<!-- End of Async HubSpot Analytics Code -->
+				<style id='core-block-supports-inline-css' type='text/css'>
+.wp-container-core-columns-is-layout-744a75a8{flex-wrap:nowrap;gap:2em 42px;}.wp-container-core-column-is-layout-e87aaff6 > *{margin-block-start:0;margin-block-end:0;}.wp-container-core-column-is-layout-e87aaff6 > * + *{margin-block-start:2.8rem;margin-block-end:0;}.wp-container-core-column-is-layout-313692ca > *{margin-block-start:0;margin-block-end:0;}.wp-container-core-column-is-layout-313692ca > * + *{margin-block-start:var(--wp--preset--spacing--d-5);margin-block-end:0;}.wp-container-core-columns-is-layout-4b8af773{flex-wrap:nowrap;gap:0px 80px;}.wp-container-core-group-is-layout-f45b68ee > *{margin-block-start:0;margin-block-end:0;}.wp-container-core-group-is-layout-f45b68ee > * + *{margin-block-start:var(--wp--preset--spacing--d-0);margin-block-end:0;}.wp-container-core-columns-is-layout-7528fa30{flex-wrap:nowrap;gap:2em 0;}.wp-container-core-columns-is-layout-4db4c9a1{flex-wrap:nowrap;gap:2em 42px;}.wp-container-core-columns-is-layout-5642b425{flex-wrap:nowrap;gap:2em 42px;}
+</style>
+<script type="text/javascript" src="https://www.kff.org/wp-content/plugins/kff-shared/dist/js/shared.js?ver=8c5b220bf6f482881a90" id="kff_shared_plugin_shared-js"></script>
+<script type="text/javascript" src="https://www.kff.org/wp-includes/js/dist/vendor/lodash.min.js?ver=4.17.21" id="lodash-js"></script>
+<script type="text/javascript" id="lodash-js-after">
+/* <![CDATA[ */
+window.lodash = _.noConflict();
+/* ]]> */
+</script>
+<script type="text/javascript" src="https://www.kff.org/wp-content/plugins/kff-shared/dist/js/frontend.js?ver=19db8bec6677a678c1c0" id="kff_shared_plugin_frontend-js"></script>
+<script type="text/javascript" src="https://www.kff.org/wp-content/themes/kff-org-modern/dist/js/frontend.js?ver=f69f711f08a724611637" id="frontend-js"></script>
+<script type="text/javascript" id="gforms_recaptcha_recaptcha-js-extra">
+/* <![CDATA[ */
+var gforms_recaptcha_recaptcha_strings = {"nonce":"ab29a0b41c","disconnect":"Disconnecting","change_connection_type":"Resetting","spinner":"https:\/\/www.kff.org\/wp-content\/plugins\/gravityforms\/images\/spinner.svg","connection_type":"classic","disable_badge":"","change_connection_type_title":"Change Connection Type","change_connection_type_message":"Changing the connection type will delete your current settings.  Do you want to proceed?","disconnect_title":"Disconnect","disconnect_message":"Disconnecting from reCAPTCHA will delete your current settings.  Do you want to proceed?","site_key":"6LdmpmosAAAAAHnQmQZ-y7isyAWF37t2s5Bou6dj"};
+/* ]]> */
+</script>
+<script type="text/javascript" src="https://www.google.com/recaptcha/api.js?render=6LdmpmosAAAAAHnQmQZ-y7isyAWF37t2s5Bou6dj&amp;ver=2.2.2" id="gforms_recaptcha_recaptcha-js" defer="defer" data-wp-strategy="defer"></script>
+<script type="text/javascript" src="https://www.kff.org/wp-content/plugins/gravityformsrecaptcha/js/frontend.min.js?ver=2.2.2" id="gforms_recaptcha_frontend-js" defer="defer" data-wp-strategy="defer"></script>
+<script type="text/javascript" id="jetpack-stats-js-before">
+/* <![CDATA[ */
+_stq = window._stq || [];
+_stq.push([ "view", {"v":"ext","blog":"243654493","post":"705448","tz":"-4","srv":"www.kff.org","hp":"vip","j":"1:15.7.2"} ]);
+_stq.push([ "clickTrackerInit", "243654493", "705448" ]);
+/* ]]> */
+</script>
+<script type="text/javascript" src="https://stats.wp.com/e-202637.js" id="jetpack-stats-js" defer="defer" data-wp-strategy="defer"></script>
+					
+<nav class="footer-nav">
+	<div class="footer-nav__container">
+		<a href="/" class="footer-nav__logo">
+			<svg xmlns="http://www.w3.org/2000/svg" width="118" height="48" fill="none"><path fill="#fff" d="M27.56 0 13.175 20.703h-.138V0H.298v48h12.74V27.297h.138L27.559 48h15.343L25.227 24 42.902 0zm20.07 0h31.988v9.077H60.37v10.521h18.425v9.078H60.37V48H47.63zm38.085 0h31.988v9.077H98.455v10.521h18.426v9.078H98.455V48h-12.74z" /></svg>		</a>
+					<div class="footer-nav__column">
+				<ul class="footer-nav__list"><li id="menu-item-682619" class="menu-item menu-item-type-custom menu-item-object-custom menu-item-682619"><a href="https://www.kff.org/policy-research/">Policy Research</a></li>
+<li id="menu-item-682620" class="menu-item menu-item-type-custom menu-item-object-custom menu-item-682620"><a href="https://www.kff.org/topic/public-opinion">Polling</a></li>
+<li id="menu-item-682621" class="menu-item menu-item-type-custom menu-item-object-custom menu-item-682621"><a href="https://www.kffhealthnews.org/">Health News</a></li>
+</ul>			</div>
+							<div class="footer-nav__column">
+				<p class="footer-nav__heading">
+					About Us				</p>
+				<ul class="footer-nav__sub-list"><li id="menu-item-682610" class="menu-item menu-item-type-custom menu-item-object-custom menu-item-682610"><a href="/about-us/conference-centers/">Conference Centers</a></li>
+<li id="menu-item-682612" class="menu-item menu-item-type-custom menu-item-object-custom menu-item-682612"><a href="/about-us/employment-opportunities/">Join Our Team</a></li>
+<li id="menu-item-682614" class="menu-item menu-item-type-custom menu-item-object-custom menu-item-682614"><a href="/about-us/contact-us/">Contact Us</a></li>
+<li id="menu-item-682616" class="menu-item menu-item-type-custom menu-item-object-custom menu-item-682616"><a href="/about-us/follow-us/">Follow Us</a></li>
+</ul>			</div>
+									<div class="footer-nav__cta">
+				<h3 class="footer-nav__cta-heading">Sign up for emails</h3>
+				<p class="footer-nav__cta-excerpt">Join our email list for regular updates based on your personal preferences.</p>
+				<a href="https://www.kff.org/about-us/email/" class="button button--md"><span>Sign up</span></a>
+			</div>
+			</div>
+			<div class="footer-nav__legal">
+			<ul class="footer-nav__legal-list"><li id="menu-item-683457" class="menu-item menu-item-type-custom menu-item-object-custom menu-item-683457"><a href="https://www.kff.org/about-us/privacy-policy/">Privacy Policy</a></li>
+<li id="menu-item-682627" class="menu-item menu-item-type-custom menu-item-object-custom menu-item-682627"><a href="https://www.kff.org/about-us/permissions-citations-reprints/">Citations and Reprints</a></li>
+</ul>		</div>
+	</nav>
+
+<div class="print-container">
+	<div class="print-container__inner print-container__inner--footer">
+		<div class="print__logo">
+			<svg class="print__logo-svg print__logo-svg--footer" xmlns="http://www.w3.org/2000/svg" width="59" height="25" viewBox="0 0 59 25" fill="none">
+				<path d="m13.685.5-7.22 10.351h-.07V.5H0v24h6.396V14.149h.069l7.22 10.351h7.701l-8.872-12 8.872-12h-7.701Zm10.074 0h16.058v4.539h-9.662v5.26h9.25v4.54h-9.25V24.5H23.76V.5Zm19.118 0h16.057v4.539h-9.661v5.26h9.249v4.54h-9.25V24.5h-6.395V.5Z" fill="black"/>
+			</svg>
+		</div>
+		<p class="print__tagline">
+			© 2026 KFF		</p>
+	</div>
+</div>
+			<script type="text/javascript">window.NREUM||(NREUM={});NREUM.info={"beacon":"bam.nr-data.net","licenseKey":"1fa8b5b91a","applicationID":"211788170","transactionName":"YgMBZ0cFWUFUUBEICVtJIlBBDVhcGloLBQNN","queueTime":0,"applicationTime":790,"atts":"TkQWEQ8fSh4XUkdbHUgb","errorBeacon":"bam.nr-data.net","agent":""}</script></body>
+</html>

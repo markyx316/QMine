@@ -1,0 +1,17 @@
+{
+ "domain": "影视",
+ "n_rows": 21934,
+ "sources": {
+  "2025search": 9998,
+  "2026search": 9999,
+  "assistant_top": 955,
+  "assistant_random": 982
+ },
+ "cramers_v_td_l1_name": 0.3605,
+ "n_classes_td_l1_name": 17,
+ "cramers_v_bu_family_final": 0.2525,
+ "n_classes_bu_family_final": 16,
+ "cramers_v_bu_leaf_name": 0.2818,
+ "n_classes_bu_leaf_name": 19,
+ "risk_total": 960
+}

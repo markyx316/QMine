@@ -842,7 +842,10 @@ def triangulate_k(
         "prior_agrees": bool(prior_agrees),
         "divergence_note": note,
         "silhouette_disagrees": sil_peak["k"] != peak["k"],
-        "reference_sensitivity": reference_sensitivity(sweep, peak["k"]),
+        # Pass the column that actually located K. In the fallback `locator` is a
+        # free-text stability string and nothing was located, so no reference decides.
+        "reference_sensitivity": reference_sensitivity(
+            sweep, peak["k"], locator_column=locator_key if located else None),
     }
 
 
@@ -969,7 +972,8 @@ def choose_locator(reach: dict[str, dict[str, Any]], want: str = "auto", *,
     return rec["column"], name
 
 
-def reference_sensitivity(sweep: list[dict[str, Any]], chosen_k: int) -> dict[str, Any]:
+def reference_sensitivity(sweep: list[dict[str, Any]], chosen_k: int, *,
+                          locator_column: str | None) -> dict[str, Any]:
     """Where each available reference would have located K, and whether they agree.
 
     **This is disclosure, not a decision.** Nothing here can change the chosen K.
@@ -995,6 +999,19 @@ def reference_sensitivity(sweep: list[dict[str, Any]], chosen_k: int) -> dict[st
     found the same structure — would stop being a measurement and become the
     objective that was fitted. `BlindnessFirewall.add_taxonomy` forbids it
     architecturally for the same reason.
+
+    ``locator_column`` is the SWEEP KEY that actually located K — the same
+    namespace as ``triangulate_k``'s ``locator_key`` (``intent_alignment_ami`` or
+    ``ami_vs_<col>``), not the reference name — or ``None`` when no reference
+    located it (the stability fallback). It is required and has no default on
+    purpose: ``decides`` used to be ``key == "intent_alignment_ami"``, correct
+    while the phrasing groups were the only locator and silently wrong once a
+    declared column could win. health-pool2, live41/42/44 and the offline k12_zh
+    runs located K by ``ami_vs_legacy_*`` (ai04 and aiwire01 by ``ami_vs_l2`` and
+    ``ami_vs_l1``) while this block credited ``phrasing_groups`` and its note said
+    so — the same artifact contradicting ``triangulation.locator`` and
+    ``deciding_reference``. A default would let the next caller reproduce that
+    without a sound.
     """
     keys = sorted({k for r in sweep for k in r if k.startswith("ami_vs_")}
                   | ({"intent_alignment_ami"} if any("intent_alignment_ami" in r for r in sweep) else set()))
@@ -1018,7 +1035,9 @@ def reference_sensitivity(sweep: list[dict[str, Any]], chosen_k: int) -> dict[st
             "locates_k": int(best["k"]),
             "peak_value": round(float(best[key]), 4),
             "value_at_chosen_k": round(float(at_chosen), 4) if at_chosen is not None else None,
-            "decides": key == "intent_alignment_ami",
+            # The reference that LOCATED K, not the one that used to be the
+            # only locator. None (stability fallback) marks nothing.
+            "decides": key == locator_column,
         }
     out["located_k_values"] = located
     out["n_references"] = len(located)

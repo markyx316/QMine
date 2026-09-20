@@ -1,0 +1,19 @@
+[
+ {
+  "domain": "软件",
+  "n_rows": 21920,
+  "sources": {
+   "2025search": 9997,
+   "2026search": 9999,
+   "assistant_top": 940,
+   "assistant_random": 984
+  },
+  "cramers_v_td_l1_name": 0.3769,
+  "n_classes_td_l1_name": 24,
+  "cramers_v_bu_family_final": 0.3574,
+  "n_classes_bu_family_final": 26,
+  "cramers_v_bu_leaf_name": 0.3627,
+  "n_classes_bu_leaf_name": 39,
+  "risk_total": 1150
+ }
+]

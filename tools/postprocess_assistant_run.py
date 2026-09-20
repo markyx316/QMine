@@ -41,6 +41,44 @@ import pandas as pd
 _FROM_CORPUS = ["snapshot", "l1", "l2", "weight"]
 
 
+def attach_raw_pv(df: pd.DataFrame, raw: pd.DataFrame) -> pd.DataFrame:
+    """Put the ORIGINAL `search_num` back beside the normalised weight.
+
+    The run keeps only `weight` — traffic normalised WITHIN (stratum, category)
+    so the 33 categories become comparable. That is the right weight for every
+    metric in the run and the wrong number to show a reader who wants to know how
+    much traffic a query actually had. Both belong in the table, labelled.
+
+    Joined by position and CHECKED, like everything else here: the prepared
+    corpus is what p1 read, so row i of one is row i of the other — but a
+    positional join that is silently wrong gives every row another query's
+    traffic, and the table still looks fine.
+    """
+    if len(raw) != len(df):
+        sys.exit(f"source corpus has {len(raw):,} rows against {len(df):,} in the "
+                 f"labels — refusing to attach traffic by position")
+    bad = (raw["query"].astype(str).to_numpy() != df["query"].astype(str).to_numpy())
+    if bad.any():
+        sys.exit(f"{int(bad.sum()):,} rows disagree on `query` between the source "
+                 f"corpus and the labels — refusing to attach traffic by position")
+    out = df.copy()
+    out["search_num"] = raw["search_num"].to_numpy()
+    # A second, independent check: `weight` was DERIVED from `search_num` by
+    # normalising within (stratum, category). If the join were misaligned the
+    # derivation would not reproduce, so this catches an alignment error that
+    # slipped past the query comparison (identical duplicate strings, say).
+    cell = out.groupby([c for c in ("snapshot", "l1") if c in out.columns],
+                       observed=True)["search_num"].transform("sum")
+    recomputed = out["search_num"] / cell * 1000.0
+    gap = float((recomputed - out["weight"]).abs().max())
+    if gap > 1e-6:
+        sys.exit(f"attaching traffic failed its own check: `weight` does not "
+                 f"reproduce from `search_num` (max gap {gap:.3g}). The two "
+                 f"frames are not the same rows.")
+    print(f"  attached raw traffic `search_num`; it reproduces `weight` to {gap:.1e}")
+    return out
+
+
 def _load(run: Path) -> tuple[pd.DataFrame, pd.DataFrame]:
     lab_p, cor_p = run / "labels_full.csv", run / "corpus.parquet"
     for p in (lab_p, cor_p):
@@ -204,6 +242,12 @@ def main() -> int:
     run = Path(a.run_dir)
     labels, corpus = _load(run)
     df = join_verified(labels, corpus)
+    raw_src = pd.read_parquet(a.source_corpus) if a.source_corpus else None
+    if raw_src is not None and "search_num" in raw_src.columns:
+        df = attach_raw_pv(df, raw_src)
+    elif raw_src is None:
+        print("  ⚠ no --source-corpus: the table will carry the NORMALISED weight "
+              "only, which is not the query's actual traffic")
 
     col = a.stratum_column
     mapping = dict(kv.split("=", 1) for kv in a.rename.split(",") if "=" in kv)
@@ -226,8 +270,9 @@ def main() -> int:
                                                              if v not in order],
                                  ordered=True)
     sort_cols = [c for c in a.sort_by.split(",") if c in df.columns]
-    if "weight" in df.columns:
-        df = df.sort_values(sort_cols + ["weight"],
+    _by = "search_num" if "search_num" in df.columns else "weight"
+    if _by in df.columns:
+        df = df.sort_values(sort_cols + [_by],
                             ascending=[True] * len(sort_cols) + [False])
     else:
         df = df.sort_values(sort_cols)
@@ -273,8 +318,7 @@ def main() -> int:
                         "（逐行标签，已补回分层列并按垂类排序）")
         head_v = mapping.get("head", "head")
         rand_v = mapping.get("tail", "tail")
-        _raw = (pd.read_parquet(a.source_corpus) if a.source_corpus else None)
-        md += stratum_addendum(df, col, head_v, rand_v, raw=_raw)
+        md += stratum_addendum(df, col, head_v, rand_v, raw=raw_src)
         (outdir / src_md.name).write_text(md, encoding="utf-8")
         print(f"  wrote {outdir / src_md.name}  (renamed + addendum)")
     if col in df.columns:

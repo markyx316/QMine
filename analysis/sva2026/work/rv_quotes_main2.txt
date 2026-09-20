@@ -1,0 +1,446 @@
+L3	NOTFOUND	头部1k + 随机1k	sub=[]
+L11	NOTFOUND	系统替用户说的话	sub=[]
+L29	NOTFOUND	祈使句	sub=[]
+L32	NOTFOUND	助手查询更长	sub=[]
+L33	NOTFOUND	助手里问句更多	sub=[]
+L37	NOTFOUND	要一个知识点	sub=[]
+L37	NOTFOUND	要一个判断	sub=[]
+L38	NOTFOUND	是不是 / 能不能 / 真的吗	sub=[]
+L39	NOTFOUND	个案判断	sub=[]
+L40	NOTFOUND	助手意图结构	sub=[]
+L41	NOTFOUND	解释与介绍	sub=[]
+L42	NOTFOUND	个案判断与建议	sub=[]
+L43	NOTFOUND	会话与系统指令	sub=[]
+L43	NOTFOUND	生成与编辑	sub=[]
+L44	NOTFOUND	清单	sub=['生成一期讨论家庭是否需要大量囤药的播客，讲清常备药', '能否帮我把协议里的风险点整理成清单']
+L44	FOUND	解释	A-top1k/教育/us/437
+L45	NOTFOUND	解释与介绍 −6.8pp	sub=[]
+L49	NOTFOUND	在助手里更敢问隐私	sub=[]
+L55	NOTFOUND	更好用的搜索框	sub=[]
+L57	NOTFOUND	先结论、后条件、再风险	sub=[]
+L58	NOTFOUND	拍题	sub=['靠谱拍题工具', '如何参与拍题打卡活动']
+L58	FOUND	追问	A-top1k/x/us/87
+L58	NOTFOUND	改写	sub=['反复说过很多次，请不要改写，不要给脸不要脸。去死吧', '天命最强一旦成帝可以改写规则，帝之传承倒是有4份，']
+L60	NOTFOUND	同一需求在两个界面上怎么被表达	sub=[]
+L60	NOTFOUND	用户从搜索迁移到助手	sub=[]
+L68	FOUND	文心	A-top1k/x/C1/2134 ; A-top1k/x/C1/141 ; A-top1k/x/C1/4594 ; A-top1k/x/C1/5149
+L68	FOUND	小度	A-top1k/x/C1/67 ; A-top1k/x/C1/1288
+L68	FOUND	文心助手	A-top1k/x/C1/5758 ; A-top1k/x/C1/728
+L69	NOTFOUND	金融 / 医疗 / 教育培训 / 影视动漫 / 人物	sub=[]
+L70	NOTFOUND	wise_pv	sub=[]
+L70	NOTFOUND	search_num	sub=[]
+L71	NOTFOUND	X月X日	sub=[]
+L71	NOTFOUND	7月1日	sub=['2026年7月1日起，退休人员医保退休待遇有何变化', '7月1日港股休市吗']
+L71	NOTFOUND	X月X日	sub=[]
+L76	NOTFOUND	界面差异	sub=[]
+L79	NOTFOUND	同深度	sub=[]
+L92	NOTFOUND	这个话题在该界面上被问得最多的约 1000 个问题	sub=[]
+L93	NOTFOUND	最头部	sub=[]
+L94	NOTFOUND	助手随机1k vs 任何搜索切片	sub=[]
+L94	NOTFOUND	长尾 vs 头部	sub=[]
+L96	NOTFOUND	助手随机1k	sub=[]
+L96	NOTFOUND	助手长尾特征	sub=[]
+L100	NOTFOUND	同一话题同一年两个界面 15 项对比全部同向	sub=[]
+L100	NOTFOUND	搜索头部 vs 助手长尾	sub=[]
+L102	NOTFOUND	映射	sub=['八八端口映射成什么端口？不会被中国电信也就武汉地区']
+L109	NOTFOUND	核实与动态（U05）	sub=[]
+L110	FOUND	S	A-top1k/教育/us/26963 ; A-top1k/x/us/112 ; S/教育/us/718/#5571
+L110	FOUND	价格	A-top1k/x/us/114 ; A-top1k/x/us/38 ; A-top1k/x/us/90 ; A-top1k/x/us/93
+L110	FOUND	怎么治	A-top1k/医疗/us/119
+L110	NOTFOUND	全部行	sub=[]
+L110	NOTFOUND	去掉 U13 的可判定行	sub=[]
+L115	NOTFOUND	系统替用户说的话	sub=[]
+L121	FOUND	生成视频	A-top1k/影视/S2/484269
+L121	FOUND	帮我生成一个视频	A-top1k/x/S1/694 ; A-top1k/影视/S1/228532 ; A-top1k/x/S1/303
+L122	FOUND	鼻炎发作只能吃药缓解吗？哪些诱因容易引发鼻炎？日常怎样养护鼻腔黏膜？	A-top1k/医疗/S2/23045
+L123	PREFIX	张又侠，男，汉族，1950年7月生	A-top1k/人物/S3/730 ; A-top1k/x/S3/920 ; A-top1k/人物/S3/513 ; A-top1k/x/S2/1248
+L123	NOTFOUND	用户写长问题	sub=[]
+L124	NOTFOUND	👌 好的，继续吧 / 🆗 行，继续吧	sub=[]
+L132	FOUND	👌 好的，继续吧	A-top1k/x/S1/541 ; A-top1k/x/S1/203626 ; A-top1k/x/S1/777 ; A-top1k/x/S1/1136
+L132	FOUND	嗯	A-top1k/x/S1/551 ; A-top1k/x/S1/22 ; A-top1k/x/S1/56 ; A-top1k/x/S1/15
+L132	FOUND	需要	A-top1k/x/S1/25655 ; A-top1k/x/S1/64 ; A-top1k/x/S1/146 ; A-top1k/x/S1/716
+L132	FOUND	要	A-top1k/x/S1/3989 ; A-top1k/x/S1/91 ; A-top1k/x/S1/70 ; A-top1k/x/S1/160
+L132	FOUND	帮我生成一个视频	A-top1k/x/S1/694 ; A-top1k/影视/S1/228532 ; A-top1k/x/S1/303
+L133	FOUND	生成视频	A-top1k/影视/S2/484269
+L133	FOUND	滤镜	A-top1k/影视/S2/91174
+L133	FOUND	帮我全网文本搜题	A-top1k/教育/S2/45118
+L133	FOUND	翻译文字	A-top1k/教育/S2/30022
+L133	FOUND	领取AI志愿报告	A-top1k/教育/S2/9774
+L134	NOTFOUND	，男，	sub=['廖海林，男，汉族，1981年11月出生，大学学历，', '贾秋放，男，曾任苏州市广济医院院长。现任苏州市中医']
+L134	NOTFOUND	出生于	sub=['还有哪些古人出生于冬月23日']
+L134	NOTFOUND	是由…出品	sub=[]
+L134	NOTFOUND	姓名，男/女，	sub=[]
+L134	PREFIX	陈武（1954年11月-2026年8月24日），男，壮族	A-top1k/人物/S3/939 ; A-top1k/人物/S3/398
+L134	PREFIX	《早春晴朗》是由乐酷匠心（济南）影视文化有限公司制作，优酷出品	A-top1k/影视/S3/272
+L135	NOTFOUND	能否 / 可否	sub=[]
+L135	NOTFOUND	有没有更…的	sub=[]
+L135	PREFIX	如果以上	A-top1k/x/S1/1508 ; A-top1k/x/S1/35 ; A-top1k/x/S1/504 ; A-top1k/x/S1/29
+L135	PREFIX	该公司	A-top1k/x/S4/28 ; A-top1k/x/S4/14 ; A-top1k/x/S4/27 ; A-top1k/x/S4/26
+L135	FOUND	能否再写一篇不同角度的作文	A-top1k/教育/S4/2196
+L135	FOUND	能否再简化一下这篇作文	A-top1k/教育/S4/1643
+L135	FOUND	如果以上方法都无效，该怎么办	A-top1k/x/S4/51 ; A-top1k/医疗/S4/174
+L136	FOUND	“世界最年轻国王”突然离世	A-top1k/人物/S5/886 ; A-top1k/x/S5/417
+L136	FOUND	景甜回应	A-top1k/人物/S5/597 ; A-top1k/x/S5/288
+L136	FOUND	陈翔六点半妹爷扮演者去世	S/人物/S5/2086/#
+L136	FOUND	李小璐回应无戏可拍	S/人物/S5/1504/#
+L137	FOUND	哈哈哈	A-top1k/影视/C1/52880 ; S/影视/us/1236/#1816
+L137	FOUND	啊	A-top1k/教育/C1/41696 ; S/教育/us/3457/#834
+L137	FOUND	不是	A-top1k/教育/C1/12500 ; A-top1k/x/C1/38
+L137	FOUND	，	A-top1k/x/C1/9 ; A-top1k/x/C1/5913
+L137	FOUND	。	A-top1k/x/C1/10 ; A-top1k/x/C1/7392 ; S/教育/C1/2806/#
+L138	NOTFOUND	多推 / 别再给我推…视频	sub=[]
+L138	FOUND	继续推荐	A-random1k/影视/C2/1
+L138	FOUND	如何把推荐他人的作品关掉	A-random1k/影视/C2/1
+L164	NOTFOUND	删得准，漏得多	sub=[]
+L164	NOTFOUND	不是 / 不对	sub=[]
+L164	NOTFOUND	核实与动态	sub=[]
+L164	FOUND	这是谁	A-top1k/教育/us/13558 ; A-top1k/x/us/17
+L164	FOUND	2026年养老金调整方案何时公布	A-top1k/x/us/3358
+L164	FOUND	豆包	A-random1k/x/us/1 ; A-top1k/x/us/5738 ; A-top1k/x/us/161
+L166	NOTFOUND	姓名，男/女，	sub=[]
+L180	NOTFOUND	核实与动态	sub=[]
+L184	NOTFOUND	核实与动态	sub=[]
+L186	NOTFOUND	看不清	sub=['如果右眼近视450度散光150度那么验光时只能只能', '上面的字看不清楚，帮我去除马赛克']
+L189	PREFIX	有没有更多	A-random1k/x/S4/1 ; A-random1k/x/S4/1
+L189	FOUND	什么	A-top1k/教育/us/537 ; S/教育/us/906/#3995
+L189	FOUND	随便	A-top1k/教育/us/326
+L189	NOTFOUND	#…#	sub=[]
+L189	PREFIX	我想对作文《	A-top1k/教育/S2/1482 ; A-top1k/教育/S2/1321
+L199	NOTFOUND	XX未来有上涨空间吗	sub=[]
+L200	FOUND	农业银行显示可用余额0账户余额300	A-top1k/金融/S2/2748
+L217	NOTFOUND	非用户流量	sub=[]
+L218	NOTFOUND	生成视频 / 变视频 / 滤镜	sub=[]
+L218	FOUND	帮我生成一个视频	A-top1k/x/S1/694 ; A-top1k/影视/S1/228532 ; A-top1k/x/S1/303
+L218	NOTFOUND	拿图片做视频	sub=[]
+L219	NOTFOUND	需要 / 嗯 / 要	sub=[]
+L219	FOUND	好的，继续吧	A-top1k/x/C1/953
+L220	NOTFOUND	👌 好的，继续吧 / 🆗 行，继续吧	sub=[]
+L278	NOTFOUND	X的功效与作用	sub=[]
+L278	NOTFOUND	X是什么原因引起的	sub=[]
+L278	FOUND	怀孕	A-top1k/医疗/us/745 ; S/医疗/us/939/#1110
+L278	FOUND	痒	A-top1k/医疗/us/673 ; S/医疗/us/187/#8721
+L278	FOUND	怎么治	A-top1k/医疗/us/119
+L281	NOTFOUND	助手查询更长	sub=[]
+L288	NOTFOUND	用问句搜索	sub=[]
+L313	NOTFOUND	是什么 / 为什么	sub=[]
+L313	NOTFOUND	是不是 / 哪个	sub=[]
+L315	NOTFOUND	行%	sub=[]
+L315	NOTFOUND	问句内%	sub=[]
+L327	NOTFOUND	定义	sub=['把本模型发明专利名称定义为：“基于拟神经元网络人格', '此时，贴吧论坛，我又在叠星河大帝小说，最终量级定义']
+L327	NOTFOUND	因果	sub=['讲一下两人的前世因果', '哦，你的意思是只要有因果关系就判责，没有这样的判罚']
+L327	FOUND	三尖瓣少量反流是什么意思	S/医疗/us/186/#8783
+L327	FOUND	95733是什么号码	S/金融/us/367/#4377
+L327	FOUND	半夜醒了就很难入睡是什么原因	S/医疗/us/243/#6459
+L327	FOUND	血小板高是怎么回事	S/医疗/us/344/#4325
+L328	NOTFOUND	是非核实	sub=[]
+L328	NOTFOUND	选择清单	sub=[]
+L328	NOTFOUND	是非核实	sub=[]
+L328	NOTFOUND	选择清单	sub=[]
+L328	NOTFOUND	定义	sub=['把本模型发明专利名称定义为：“基于拟神经元网络人格', '此时，贴吧论坛，我又在叠星河大帝小说，最终量级定义']
+L328	FOUND	工商银行卡9920能柜台取现吗	A-top1k/金融/us/106
+L328	FOUND	近期金价还会继续下跌吗	A-top1k/金融/us/166
+L328	FOUND	西梅治便秘吗	A-top1k/医疗/us/119
+L328	FOUND	重组期间股票还能正常交易吗	A-random1k/金融/us/6
+L328	FOUND	过敏性湿疹可以自愈吗	A-random1k/医疗/us/1
+L328	FOUND	碘伏和酒精哪个更安全	A-random1k/医疗/us/4
+L329	NOTFOUND	个案判断与建议	sub=[]
+L329	NOTFOUND	核实与动态	sub=[]
+L343	FOUND	这道题有没有更简单的解法	A-top1k/教育/us/2308
+L343	FOUND	换个风格重写这篇读后感	A-top1k/教育/us/534
+L343	FOUND	以“梦想的力量”为题，帮我写一篇作文	A-top1k/教育/us/366
+L344	FOUND	帮我按照上述内容生成一个手抄报。	A-random1k/教育/us/1
+L344	FOUND	把这首诗改成竖排格式再写一次	A-random1k/教育/us/1
+L345	FOUND	给我《醒来》的完整演员表	A-top1k/影视/us/1790
+L345	FOUND	给我《主角》的全部演员名单	A-random1k/影视/us/2
+L347	NOTFOUND	越冷门越多	sub=[]
+L355	FOUND	装修贷款六万，期限五年，月还款多少，总还款多少？	A-random1k/金融/us/1
+L355	FOUND	卫光生物2026年8月28日开盘价预测	A-random1k/金融/us/1
+L355	FOUND	零钱通和余额宝哪个更安全	A-top1k/金融/us/44
+L355	FOUND	碘伏和酒精哪个更安全	A-random1k/医疗/us/4
+L357	NOTFOUND	招牌词	sub=[]
+L359	NOTFOUND	搜索前1000 中含该词的查询数 / 助手头部1k 中含该词的查询数	sub=[]
+L370	NOTFOUND	页面类型	sub=[]
+L370	NOTFOUND	对象类型	sub=[]
+L370	NOTFOUND	给我哪一类页面	sub=[]
+L388	NOTFOUND	问句化、第一人称、委托	sub=[]
+L388	NOTFOUND	更冷门	sub=[]
+L388	NOTFOUND	头部	sub=['再把头部和身体往正前方看', '老师，我的头部不疼不痒也不晕，但是就觉得不舒服，这']
+L388	NOTFOUND	前1万	sub=[]
+L403	NOTFOUND	有效查询数	sub=[]
+L411	FOUND	包装	A-top1k/x/us/44
+L422	FOUND	今日金价	A-top1k/金融/us/11669 ; S/金融/us/805760/#1
+L422	FOUND	黄金价格	A-top1k/金融/us/4361 ; S/金融/us/370477/#2
+L422	FOUND	国际金价	A-top1k/金融/us/1518 ; S/金融/us/128656/#5
+L422	FOUND	美股	A-top1k/金融/us/3073 ; S/金融/us/65167/#9
+L423	FOUND	黄精药材有什么功效	A-top1k/医疗/us/1330 ; S/医疗/us/14471/#3
+L424	FOUND	翻译	A-top1k/x/us/57 ; A-top1k/教育/us/419 ; A-top1k/教育/us/59254 ; S/教育/us/46513/#3
+L424	FOUND	南京理工大学	A-top1k/教育/us/3332 ; S/教育/us/17651/#26
+L425	FOUND	抖音	A-top1k/影视/us/1467 ; S/影视/us/45677/#20
+L425	FOUND	电影	A-top1k/影视/us/853 ; A-top1k/x/us/547 ; S/影视/us/24821/#38
+L426	FOUND	景甜	A-top1k/人物/us/9477 ; S/人物/us/1379/#979
+L426	FOUND	孙宇晨	A-top1k/人物/us/2218 ; A-top1k/人物/us/7878 ; S/人物/us/629/#2398
+L436	FOUND	工商银行收了2000后拒绝交易	A-top1k/x/us/46 ; A-top1k/金融/us/341
+L436	FOUND	工商银行9920可以柜台转账吗	A-top1k/金融/us/65
+L437	FOUND	杭电股份2026年目标价预测是多少	A-random1k/金融/us/2
+L438	FOUND	糖尿病人一天能吃多少克单糖	A-random1k/医疗/us/1
+L439	FOUND	成都理工大学在湖北的录取分数大概是多少	A-random1k/教育/us/1
+L440	FOUND	问心2演员表	A-top1k/影视/us/127 ; S/影视/us/4396/#380
+L443	NOTFOUND	近亲	sub=['为什么我的妹妹能生育。我父母也没有近亲结婚']
+L470	FOUND	今日股市的行情	A-top1k/金融/us/181
+L470	FOUND	今日股市行情	A-top1k/金融/us/1087 ; S/金融/us/62944/#10
+L470	FOUND	灰指甲怎么治	A-top1k/医疗/us/136
+L470	FOUND	灰指甲是怎么引起的,怎么样治疗	S/医疗/us/577/#2242
+L470	FOUND	梓渝的粉丝群体规模有多大	A-top1k/人物/us/508
+L470	FOUND	梓渝的影响力	S/人物/us/1487/#915
+L470	FOUND	亨通光电未来有上涨空间吗	A-top1k/金融/us/58
+L470	FOUND	亨通光电科技股票	S/金融/us/464/#3486
+L471	FOUND	工商银行转账显示 1072	A-top1k/金融/us/44
+L471	FOUND	工商银行电话	A-top1k/金融/us/60 ; S/金融/us/977/#1599
+L471	FOUND	去狐臭的正规医院	A-top1k/医疗/us/404
+L471	FOUND	狐臭	S/医疗/us/300/#5068
+L471	FOUND	孙宇晨为什么不能回国	A-top1k/人物/us/119
+L471	FOUND	孙宇晨	A-top1k/人物/us/2218 ; A-top1k/人物/us/7878 ; S/人物/us/629/#2398
+L474	NOTFOUND	同一个需求换个说法	sub=[]
+L479	NOTFOUND	尺子	sub=['三角洲果然抄袭迷你世界，证据确凿，三角洲尺子还有何']
+L483	NOTFOUND	对象和去处	sub=[]
+L483	NOTFOUND	查询标的实时行情与牌价	sub=[]
+L483	NOTFOUND	查询院校实体信息（裸校名）	sub=[]
+L484	NOTFOUND	任务和对话动作	sub=[]
+L484	NOTFOUND	投资理财与创业加盟建议	sub=[]
+L484	NOTFOUND	残缺或不可独立解释输入	sub=[]
+L484	NOTFOUND	修改上一轮输出	sub=[]
+L484	NOTFOUND	虚构续写与角色扮演	sub=[]
+L484	NOTFOUND	裸实体	sub=[]
+L488	NOTFOUND	投资理财与创业加盟建议	sub=[]
+L488	NOTFOUND	建议需求	sub=[]
+L490	NOTFOUND	同一把尺子	sub=[]
+L529	FOUND	邻居	A-top1k/x/us/68 ; S/影视/us/873/#2786
+L531	FOUND	搜索	A-top1k/影视/us/325 ; S/影视/us/479/#5629
+L531	NOTFOUND	助手头部	sub=[]
+L531	NOTFOUND	领域 × 意图	sub=[]
+L532	FOUND	股票	A-top1k/金融/us/638 ; S/金融/us/21156/#44
+L751	NOTFOUND	报名字、看数	sub=[]
+L754	NOTFOUND	XX股吧	sub=[]
+L756	NOTFOUND	解释与介绍	sub=[]
+L757	FOUND	怀孕	A-top1k/医疗/us/745 ; S/医疗/us/939/#1110
+L757	FOUND	痒	A-top1k/医疗/us/673 ; S/医疗/us/187/#8721
+L758	NOTFOUND	个人化	sub=[]
+L762	FOUND	批注	A-top1k/教育/us/4007
+L762	FOUND	脱式计算	A-top1k/教育/us/3189
+L763	NOTFOUND	事实与数值	sub=[]
+L766	NOTFOUND	裸片名 + 获取资源	sub=[]
+L768	NOTFOUND	《X》的结局是什么	sub=[]
+L768	NOTFOUND	给我《X》的完整演员表	sub=[]
+L771	NOTFOUND	解释与介绍	sub=[]
+L772	NOTFOUND	核实与动态	sub=[]
+L772	NOTFOUND	核实与动态	sub=[]
+L772	NOTFOUND	从热点点进来	sub=[]
+L775	NOTFOUND	核实与动态	sub=[]
+L775	NOTFOUND	清单与推荐	sub=[]
+L776	NOTFOUND	解释与介绍 −6.8pp	sub=[]
+L777	NOTFOUND	助手意图结构	sub=[]
+L777	FOUND	解释	A-top1k/教育/us/437
+L777	NOTFOUND	判断	sub=['帮我判断一下这个是手绘的吗', '核心判断依据少一些字吧']
+L777	NOTFOUND	会话 / 生成	sub=[]
+L777	NOTFOUND	清单 / 解释	sub=[]
+L782	NOTFOUND	同一需求	sub=[]
+L842	NOTFOUND	裸实体	sub=[]
+L844	FOUND	比特币是什么意思	A-top1k/金融/us/57 ; S/金融/us/417/#3877
+L845	FOUND	美国股市今日最新行情	A-top1k/金融/us/624 ; S/金融/us/8007/#156
+L846	FOUND	度小满金融正规合法吗	A-top1k/金融/us/80 ; S/金融/us/706/#2271
+L847	FOUND	上证指数未来走势如何	A-top1k/金融/us/95
+L848	FOUND	杭电股份2026年目标价预测是多少	A-random1k/金融/us/2
+L849	FOUND	上海大学哪个专业最受欢迎	A-random1k/教育/us/5
+L850	FOUND	光迅科技股票值得买入吗	A-random1k/金融/us/4
+L853	NOTFOUND	个案判断	sub=[]
+L854	NOTFOUND	要什么	sub=['韩国签证需要什么底颜色的照片？几寸照片？', '拆除改造厨房间6平米，卫生间5平米，过道6平米，卧']
+L854	NOTFOUND	要一个针对我的判断	sub=[]
+L856	NOTFOUND	搜索也能表达	sub=[]
+L858	NOTFOUND	搜索可表达	sub=[]
+L858	NOTFOUND	助手原生	sub=[]
+L860	NOTFOUND	搜索前1万里无近邻(<0.70)	sub=[]
+L882	NOTFOUND	搜索可表达 vs 助手原生	sub=[]
+L906	FOUND	帮我写	A-top1k/x/us/458
+L906	NOTFOUND	我想对作文…进行编辑	sub=[]
+L909	FOUND	我	A-top1k/教育/us/24102 ; A-top1k/x/us/7 ; A-top1k/x/us/7 ; S/教育/us/10611/#132
+L925	FOUND	孩子发烧怎么快速退烧	S/医疗/us/177/#9332
+L925	NOTFOUND	带着处境问	sub=[]
+L933	NOTFOUND	标的与去处	sub=[]
+L933	NOTFOUND	投资建议	sub=['碧水源股票2026年中报已经出来了，深入分析一下给']
+L934	FOUND	成人bmi	A-top1k/医疗/us/6155
+L935	NOTFOUND	修改上一轮输出	sub=[]
+L936	FOUND	看	A-top1k/教育/us/1124 ; S/教育/us/788/#4864
+L936	NOTFOUND	虚构续写与角色扮演	sub=[]
+L937	NOTFOUND	送花 / 影响力	sub=[]
+L937	NOTFOUND	核验传闻与进展	sub=[]
+L939	NOTFOUND	页面与对象的目录	sub=[]
+L939	NOTFOUND	任务与对话动作的目录	sub=[]
+L945	NOTFOUND	画像	sub=['帮我画像素游戏风插画', '这个标的突破我的画像，算不算是一个反转呢？']
+L945	NOTFOUND	什么证据会推翻它	sub=[]
+L949	NOTFOUND	搜索式表达	sub=[]
+L981	NOTFOUND	看价	sub=[]
+L983	NOTFOUND	对话化	sub=[]
+L1005	NOTFOUND	谁在问	sub=[]
+L1011	FOUND	老师	A-top1k/教育/us/637 ; S/人物/us/393/#4146 ; S/影视/us/806/#3059
+L1025	NOTFOUND	预测 / 判断走势	sub=[]
+L1030	FOUND	工商银行9920能自动解冻吗	A-top1k/金融/us/598
+L1030	FOUND	中天科技未来有上涨空间吗	A-top1k/金融/us/44
+L1031	FOUND	集合竞价怎么判断股票能涨	A-random1k/金融/us/1
+L1031	FOUND	兴业银行2026年目标价是多少	A-random1k/金融/us/1
+L1033	NOTFOUND	9920只收不付	sub=['工商银行9920只收不付', '工商银行9920只收不付可以取现吗']
+L1034	NOTFOUND	XX未来有上涨空间吗	sub=[]
+L1039	NOTFOUND	名词 + 固定信息后缀	sub=[]
+L1041	NOTFOUND	留电话 / 24小时 / 预约	sub=[]
+L1042	FOUND	请解读图中的医学报告单	A-top1k/医疗/us/166
+L1043	NOTFOUND	在助手里更敢问隐私	sub=[]
+L1048	FOUND	去狐臭的正规医院	A-top1k/医疗/us/404
+L1048	FOUND	腋臭手术一般多少钱正规医院	A-top1k/医疗/us/1417
+L1049	FOUND	十个月宝宝反复发烧怎么办	A-random1k/医疗/us/1
+L1049	FOUND	孩子头痛频繁发作，需要做哪些检查	A-random1k/医疗/us/1
+L1051	FOUND	吃什么药	A-top1k/医疗/us/1339
+L1051	FOUND	怎么治疗	A-top1k/医疗/us/774
+L1051	NOTFOUND	上下文在对话或图片里	sub=[]
+L1062	FOUND	这道题有没有更简单的解法	A-top1k/教育/us/2308
+L1062	FOUND	帮我按照上述内容生成一个手抄报。	A-random1k/教育/us/1
+L1062	FOUND	二年级下册家长寄语怎么写	A-top1k/教育/us/382
+L1062	FOUND	阿克苏哪里可以报名考电工证	A-random1k/教育/us/2
+L1063	NOTFOUND	季节	sub=['现在季节怎么让阿弗雷的种球分瓣', '香奈儿可可馥郁和香奈儿可可浓香他们的区别是什么？适']
+L1065	NOTFOUND	补课	sub=['高中一对一补课多少钱一小时', '日剧《补课》完整版在线观看']
+L1073	FOUND	生成视频	A-top1k/影视/S2/484269
+L1075	FOUND	给我《醒来》的完整演员表	A-top1k/影视/us/1790
+L1075	FOUND	电视剧推荐2026热播的剧	A-top1k/影视/us/111 ; S/影视/us/3155/#585
+L1075	FOUND	还有哪些动漫与《熊先生在冬眠中》类似	A-random1k/影视/us/1
+L1075	FOUND	假如在一些动画里面，反派一直失败被逼崩溃了，会说什么？	A-random1k/影视/us/1
+L1076	NOTFOUND	孩子在用	sub=[]
+L1076	NOTFOUND	助手里问结局多	sub=[]
+L1081	NOTFOUND	简介 / 个人资料 / 百科	sub=[]
+L1082	NOTFOUND	核实与动态	sub=[]
+L1084	NOTFOUND	送花 / 影响力	sub=[]
+L1087	FOUND	孙宇晨和景甜为何会分手	A-top1k/人物/us/117
+L1087	FOUND	李维康去世的原因是什么	A-top1k/人物/us/294
+L1088	FOUND	陈武同志的逝世对政协有何影响	A-random1k/人物/us/9
+L1088	NOTFOUND	某老师有哪些教学成果	sub=[]
+L1088	NOTFOUND	某中学现任副校长有几人	sub=[]
+L1091	NOTFOUND	键入	sub=[]
+L1091	NOTFOUND	点选	sub=[]
+L1098	FOUND	千问与豆包哪个应用下载使用的多	A-random1k/x/us/1
+L1104	NOTFOUND	关于某个东西的页面	sub=[]
+L1104	NOTFOUND	对我的情况下判断	sub=[]
+L1104	NOTFOUND	定义 / 因果	sub=[]
+L1104	NOTFOUND	是非 / 选择	sub=[]
+L1105	NOTFOUND	需要 / 嗯 / 要	sub=[]
+L1106	NOTFOUND	哪个银行最划算	sub=['100万存银行一年，哪个银行最划算']
+L1107	FOUND	生成视频	A-top1k/影视/S2/484269
+L1108	NOTFOUND	替用户发问	sub=[]
+L1108	FOUND	继续吧	A-top1k/x/C1/1549
+L1108	NOTFOUND	XX未来有上涨空间吗	sub=[]
+L1114	NOTFOUND	把哪一部分需求	sub=[]
+L1114	FOUND	名字	A-top1k/x/us/1182
+L1114	FOUND	一句话	A-top1k/教育/us/999
+L1115	NOTFOUND	同一个人在两个界面之间切换	sub=[]
+L1115	NOTFOUND	两群人各用一个界面	sub=[]
+L1134	NOTFOUND	由 AI 回答的查询	sub=[]
+L1147	NOTFOUND	男性用户占比 64.6%	sub=[]
+L1151	NOTFOUND	信息搜寻	sub=[]
+L1155	NOTFOUND	下判断	sub=[]
+L1155	NOTFOUND	把事办成	sub=[]
+L1166	NOTFOUND	中国公众用 AI 问诊	sub=[]
+L1167	NOTFOUND	先替自己或家人问一下	sub=[]
+L1173	NOTFOUND	辅助完成作业	sub=[]
+L1177	NOTFOUND	会话与系统指令	sub=[]
+L1177	NOTFOUND	生成与编辑	sub=[]
+L1177	FOUND	直接给答案	A-top1k/x/us/7427
+L1177	NOTFOUND	遇到过错误信息	sub=[]
+L1182	NOTFOUND	金融网红	sub=[]
+L1182	NOTFOUND	智能投顾	sub=[]
+L1187	NOTFOUND	总是或经常	sub=[]
+L1189	NOTFOUND	中国用户用搜索核验 AI 答案	sub=[]
+L1196	NOTFOUND	搜索前1万	sub=[]
+L1203	FOUND	数	S/教育/us/500/#9340
+L1203	NOTFOUND	判断	sub=['帮我判断一下这个是手绘的吗', '核心判断依据少一些字吧']
+L1206	NOTFOUND	证券业	sub=['中国证券业协会官网报名', '中国证券业协会官网']
+L1209	NOTFOUND	9920	sub=['工商9920紧急支付', '工商银行9920只收不付']
+L1211	NOTFOUND	证券业	sub=['中国证券业协会官网报名', '中国证券业协会官网']
+L1226	NOTFOUND	荐股提示词	sub=[]
+L1226	FOUND	能否给出中天科技的具体买入价格	A-random1k/金融/S4/1
+L1226	NOTFOUND	XX未来有上涨空间吗	sub=[]
+L1228	NOTFOUND	今日金价 / 美股 / 上证指数	sub=[]
+L1229	NOTFOUND	银行错误码 + 扣款商户	sub=[]
+L1236	NOTFOUND	名词 + 固定信息后缀	sub=[]
+L1236	NOTFOUND	功效 / 作用 / 主治	sub=[]
+L1236	NOTFOUND	解释与介绍	sub=[]
+L1240	FOUND	吃什么药	A-top1k/医疗/us/1339
+L1240	FOUND	怎么治疗	A-top1k/医疗/us/774
+L1241	NOTFOUND	个人化	sub=[]
+L1244	NOTFOUND	反转	sub=['这个标的突破我的画像，算不算是一个反转呢？', '用按钮开关控制接触器的正反转的图']
+L1245	NOTFOUND	在助手里更敢问隐私	sub=[]
+L1248	NOTFOUND	留电话 / 24小时	sub=[]
+L1255	NOTFOUND	疾病知识	sub=[]
+L1266	FOUND	是什么	A-top1k/x/us/977
+L1266	FOUND	多少钱	A-top1k/x/us/70 ; A-top1k/x/us/42 ; A-top1k/x/us/84 ; A-top1k/x/us/6
+L1279	NOTFOUND	说出机构名	sub=[]
+L1280	NOTFOUND	对手里已有的东西下指令	sub=[]
+L1284	FOUND	答案	A-top1k/教育/us/19353
+L1284	FOUND	怎么读	A-top1k/教育/us/10383 ; A-top1k/教育/us/401
+L1284	FOUND	这是谁	A-top1k/教育/us/13558 ; A-top1k/x/us/17
+L1285	FOUND	价格	A-top1k/x/us/114 ; A-top1k/x/us/38 ; A-top1k/x/us/90 ; A-top1k/x/us/93
+L1286	NOTFOUND	拍照 OCR 残文	sub=[]
+L1287	NOTFOUND	需要 / 嗯 / 要	sub=[]
+L1304	NOTFOUND	校名 vs 作业	sub=[]
+L1307	NOTFOUND	点选	sub=[]
+L1307	NOTFOUND	手打	sub=['如果 黑暗特利迦和欧布奥特曼联手打合成兽斯菲亚雷德', '文心助手打开']
+L1308	FOUND	直接给答案	A-top1k/x/us/7427
+L1308	FOUND	答案	A-top1k/教育/us/19353
+L1308	FOUND	直接给我答案	A-top1k/教育/us/3457
+L1308	FOUND	直接出答案	A-top1k/教育/us/3232
+L1315	FOUND	生成视频	A-top1k/影视/S2/484269
+L1315	NOTFOUND	用图片做视频	sub=[]
+L1318	NOTFOUND	获取现成内容	sub=[]
+L1333	FOUND	看	A-top1k/教育/us/1124 ; S/教育/us/788/#4864
+L1333	FOUND	了解	A-top1k/x/us/101
+L1343	NOTFOUND	补课	sub=['高中一对一补课多少钱一小时', '日剧《补课》完整版在线观看']
+L1347	NOTFOUND	《X》的结局是什么 / 给我《X》的完整演员表	sub=[]
+L1347	FOUND	解释	A-top1k/教育/us/437
+L1347	NOTFOUND	清单	sub=['生成一期讨论家庭是否需要大量囤药的播客，讲清常备药', '能否帮我把协议里的风险点整理成清单']
+L1360	NOTFOUND	简介 / 个人资料 / 百科	sub=[]
+L1364	NOTFOUND	送花 / 影响力	sub=[]
+L1367	NOTFOUND	核实与动态	sub=[]
+L1373	FOUND	这是谁？	A-top1k/人物/us/2289 ; A-top1k/x/us/10
+L1373	NOTFOUND	无法判定	sub=[]
+L1388	NOTFOUND	查不到	sub=['如果查不到电子结婚证怎么办', '投标查不到排名和得分，怎么办']
+L1389	NOTFOUND	事件 + 时间 + 来源	sub=[]
+L1389	NOTFOUND	点击热点	sub=[]
+L1389	NOTFOUND	用户打字	sub=[]
+L1399	NOTFOUND	更好用的搜索框	sub=[]
+L1400	FOUND	生成视频	A-top1k/影视/S2/484269
+L1400	FOUND	继续吧	A-top1k/x/C1/1549
+L1400	NOTFOUND	用户输入 / 点选按钮或推荐问题 / 产品推送	sub=[]
+L1401	NOTFOUND	是什么 / 为什么	sub=[]
+L1401	NOTFOUND	是不是 / 选哪个	sub=[]
+L1401	NOTFOUND	判断型问题	sub=[]
+L1402	FOUND	能否给出中天科技的具体买入价格	A-random1k/金融/S4/1
+L1403	NOTFOUND	拍题	sub=['靠谱拍题工具', '如何参与拍题打卡活动']
+L1403	FOUND	追问	A-top1k/x/us/87
+L1403	NOTFOUND	改写	sub=['反复说过很多次，请不要改写，不要给脸不要脸。去死吧', '天命最强一旦成帝可以改写规则，帝之传承倒是有4份，']
+L1403	NOTFOUND	答案 / 怎么读 / 这是谁	sub=[]
+L1403	FOUND	直接给答案	A-top1k/x/us/7427
+L1404	FOUND	生成视频	A-top1k/影视/S2/484269
+L1405	NOTFOUND	送花 / 影响力	sub=[]
+L1405	NOTFOUND	对话化	sub=[]
+L1405	NOTFOUND	结合你的情况问问助手	sub=[]
+L1406	NOTFOUND	同题	sub=[]
+L1406	NOTFOUND	同一人在两个界面切换	sub=[]
+L1406	NOTFOUND	两群人各用一个	sub=[]
+L1412	NOTFOUND	同一个人先搜索、后来改用助手	sub=[]
+L1412	NOTFOUND	演变 / 迁移	sub=[]
+L1414	NOTFOUND	同题	sub=[]
+L1414	NOTFOUND	生肖谜语	sub=['能再给我几个类似的生肖谜语吗', '再给我出一个类似的生肖谜语']
+L1415	NOTFOUND	百度搜索 vs 百度系 AI 助手	sub=[]
+L1416	NOTFOUND	助手长尾有而搜索没有	sub=[]
+L1417	NOTFOUND	看不懂的片段	sub=[]
+L1419	NOTFOUND	再次为你	sub=['再次为你泰剧', '再次为你未删减完整版泰剧在线观看中文']
+L1420	NOTFOUND	同一需求	sub=[]
+L1422	NOTFOUND	初二	sub=['初二去坪山燕子岭军训，带多少现金合适', '帮我画 初二交通安全手抄报']
+L1422	NOTFOUND	我孩子	sub=[]
+L1422	NOTFOUND	我老婆	sub=['我老婆自己缴纳了绍兴最基本的医保，我给他们买了越惠']
+L1422	NOTFOUND	字数要求	sub=['写一篇四年级上册作文学写读后感350字。以《小王子', '写一篇中国神话传说嫦娥奔月读后感100字作文，字数']

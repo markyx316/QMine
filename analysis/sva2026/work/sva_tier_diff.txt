@@ -1,0 +1,87 @@
+
+#### 5域 top1k: rows 5,000; changed 78 (1.6%), PV 90,585 (2.1%)
+   user rows v2→v3: 4673→4611 ; user PV share 42.0%→41.2%
+                                       rows     pv
+v2                 v3                             
+user               S4_suggested_chip     43  23580
+                   S5_headline           22   6346
+S2_system_template user                   8  27459
+user               C1_content_free        4  23426
+                   S2_system_template     1   9774
+
+#### 5域 random1k: rows 5,000; changed 86 (1.7%), PV 91 (1.5%)
+   user rows v2→v3: 4973→4887 ; user PV share 98.8%→97.3%
+                        rows  pv
+v2   v3                         
+user S4_suggested_chip    85  90
+     S3_card_passage       1   1
+
+#### 全33 top1k: rows 32,986; changed 1,607 (4.9%), PV 601,394 (2.0%)
+   user rows v2→v3: 30781→29312 ; user PV share 24.2%→22.7%
+                                       rows      pv
+v2                 v3                              
+user               S5_headline          904  276958
+                   S4_suggested_chip    581  170400
+                   C1_content_free       41   51560
+S1_system_repeated user                  33    9625
+S2_system_template user                  26   64976
+user               S2_system_template    12   20773
+C1_content_free    user                  10    7102
+
+#### 全33 random1k: rows 33,000; changed 573 (1.7%), PV 698 (1.6%)
+   user rows v2→v3: 32518→31969 ; user PV share 96.0%→94.5%
+                                   rows   pv
+v2              v3                          
+user            S4_suggested_chip   557  663
+C1_content_free user                 12   27
+user            C1_content_free       2    6
+                S3_card_passage       2    2
+
+#### 5域 by domain × snapshot: user rows and user PV share v2→v3; tier composition v3 (rows%/PV%)
+  金融 top1k: user 953→950 ; userPV 57.4%→57.7%  ||  S1_system_repeated 4.5%/41.1% | S2_system_template 0.1%/1.0% | S5_headline 0.4%/0.3% | user 95.0%/57.7%
+  金融 random1k: user 1000→987 ; userPV 100.0%→98.9%  ||  S4_suggested_chip 1.3%/1.1% | user 98.7%/98.9%
+  医疗 top1k: user 959→958 ; userPV 60.7%→60.9%  ||  C1_content_free 0.1%/0.1% | S1_system_repeated 2.5%/7.5% | S2_system_template 1.4%/31.4% | S4_suggested_chip 0.1%/0.0% | S5_headline 0.1%/0.0% | user 95.8%/60.9%
+  医疗 random1k: user 1000→998 ; userPV 100.0%→99.8%  ||  S4_suggested_chip 0.2%/0.2% | user 99.8%/99.8%
+  教育 top1k: user 903→859 ; userPV 44.2%→42.2%  ||  C1_content_free 3.7%/9.3% | S1_system_repeated 4.6%/41.9% | S2_system_template 1.6%/5.4% | S4_suggested_chip 4.0%/1.1% | S5_headline 0.2%/0.1% | user 85.9%/42.2%
+  教育 random1k: user 999→970 ; userPV 99.9%→97.4%  ||  S3_card_passage 0.1%/0.1% | S4_suggested_chip 2.9%/2.5% | user 97.0%/97.4%
+  影视 top1k: user 954→955 ; userPV 21.2%→21.7%  ||  C1_content_free 0.3%/4.3% | S1_system_repeated 2.9%/23.2% | S2_system_template 0.7%/50.8% | S3_card_passage 0.4%/0.1% | S4_suggested_chip 0.2%/0.0% | user 95.5%/21.7%
+  影视 random1k: user 994→982 ; userPV 99.5%→98.3%  ||  C2_feed_control 0.2%/0.2% | S3_card_passage 0.4%/0.3% | S4_suggested_chip 1.2%/1.2% | user 98.2%/98.3%
+  人物 top1k: user 904→889 ; userPV 67.2%→66.6%  ||  C1_content_free 0.2%/0.6% | S1_system_repeated 3.0%/25.8% | S2_system_template 0.4%/1.4% | S3_card_passage 6.0%/4.4% | S5_headline 1.5%/1.2% | user 88.9%/66.6%
+  人物 random1k: user 980→950 ; userPV 94.9%→92.6%  ||  S3_card_passage 2.1%/5.2% | S4_suggested_chip 2.9%/2.2% | user 95.0%/92.6%
+
+#### EXAMPLES (5 domains) — newly removed (v2 user → v3 non-user) and restored (v2 non-user → v3 user)
+
+== 金融 ==
+  S2_system_template→user n=1 PV=1,566: 农业银行账户余额200可用余额0是什么(top,1566)
+  user→S4_suggested_chip n=13 PV=13: 能否提供完整的docx文档报价表(ran,1) | 有没有更安全的闪电贷取现方法(ran,1) | 能否把复盘模板改成手机便签格式(ran,1) | 能否推荐一些适合保守型投资者的股票(ran,1) | 能否推荐几个适合5日线操作的个股(ran,1) | 能否提供一个侧重主力资金流向的选股公式(ran,1) | 能否提供东成DFF05-80的完整操作步骤(ran,1) | 能否提供哈药股份的详细技术分析(ran,1) | 能否整理出8月27日资金流入最多的股票(ran,1) | 能否给出中天科技的具体买入价格(ran,1)
+  user→S5_headline n=4 PV=711: 日赚3.7亿元 科创板最大IPO要来了(top,280) | 宇树股价正式“腰斩”(top,153) | “寿险一哥”上半年净利大涨228.6%(top,151) | 股价0.85元 “中华老字号”锁定退市(top,127)
+
+== 医疗 ==
+  S2_system_template→user n=1 PV=1,207: 晚上爱磨牙，牙套+咬合垫组合能解决吗(top,1207)
+  user→S4_suggested_chip n=3 PV=176: 如果以上方法都无效，该怎么办(top,174) | 能否提供类似医案的详细解析(ran,1) | 能否提供夺天丹治阳痿的12方示例(ran,1)
+  user→S5_headline n=1 PV=176: “陪诊服务”对独居老人就医体验的改善(top,176)
+
+== 教育 ==
+  S2_system_template→user n=2 PV=16,134: 这是谁(top,13558) | 光电信息科学与工程去年分数线是多少(top,2576)
+  user→C1_content_free n=3 PV=23,129: 不是(top,12500) | 不对(top,9650) | 晚安(top,979)
+  user→S2_system_template n=1 PV=9,774: 领取AI志愿报告(top,9774)
+  user→S4_suggested_chip n=69 PV=23,120: 能否再写一篇不同角度的作文(top,2196) | 能否再简化一下这篇作文(top,1643) | 能否用其他方法解这道题(top,1606) | 能否再写一篇不同角度的读后感(top,1563) | 能否再写一篇不同风格的作文(top,924) | 能否再增加一些细节描写(top,714) | 有没有更难的脑筋急转弯(top,686) | 能否再写一篇更简短的读后感(top,685) | 能否再详细赏析一下这首诗(top,606) | 能否将这篇作文缩短至600字左右(top,572)
+  user→S5_headline n=2 PV=1,131: 大学专业迎来一轮“上新”(top,706) | 民办教育正在“洗牌”(top,425)
+
+== 影视 ==
+  S2_system_template→user n=3 PV=6,263: 日本免费高清观看电视剧百度云下载(top,2725) | 早春晴朗电视剧免费观看全集在线播放男主叫什么(top,2440) | 早春晴朗电视剧免费观看全集高清完整(top,1098)
+  user→S4_suggested_chip n=14 PV=332: 能否分享一些类似《萌宝加油站》的情景剧？(top,171) | 有没有更详细的安装视频(top,146) | 有没有更详细的开锁视频(ran,3) | 能否再增加一些工藤新一对基德的关心(ran,2) | 能否给出敌方势力联军的具体设定(ran,1) | 有没有更多两个男生的综艺推荐(ran,1) | 有没有更多有感情线的推理日剧(ran,1) | 有没有更多没有被爱过的女人相关作品(ran,1) | 能否再详细描述一下该电视台的高清化历程(ran,1) | 能否提供《大先生》系列纪录片的第一集详细内容(ran,1)
+
+== 人物 ==
+  S2_system_template→user n=1 PV=2,289: 这是谁？(top,2289)
+  user→C1_content_free n=1 PV=297: 早安(top,297)
+  user→S3_card_passage n=1 PV=1: 徐晖，女，上海市闵行区科学技术委员会成果转化科科长。 徐晖在(ran,1)
+  user→S4_suggested_chip n=29 PV=29: 能否再详细描述一下八魔将的成员(ran,1) | 能否再增加一些太宰治的痴女行为(ran,1) | 能否查询李志伟在这些企业的任职年限(ran,1) | 能否查询刘玄成在崂山实验室的履历(ran,1) | 能否查询刘栋民的个人背景信息(ran,1) | 能否提供胡泽兵的完整官方简历(ran,1) | 能否提供王健更早期的任职信息(ran,1) | 能否提供毛大勇的详细履历时间线(ran,1) | 能否提供李潮的完整简历(ran,1) | 能否提供更多张业学的公开报道(ran,1)
+  user→S5_headline n=15 PV=4,328: “世界最年轻国王”突然离世(top,886) | 景甜回应(top,597) | 梅艳芳母亲去世(top,380) | 日本艺术家草间弥生去世(top,339) | 挪威国王去世(top,311) | 102岁网红“兰家奶奶”离世(top,300) | “奶茶姐姐”当选香飘飘副董事长(top,268) | 叶建春落马后江西省长由谁接任(top,188) | 四万亿元投资来了(top,186) | 李维康去世(top,176)
+
+#### SEARCH v2→v3 by domain
+  金融: changed 1; user→S5_headline 1: “今日金价”(#7812)
+  医疗: changed 2; user→S5_headline 2: 专家:把肺结节“管”起来(#4095) | 入夏多吃8种“碱性菜”(#4744)
+  教育: changed 13; C1_content_free→user 13: 嗯(#112) | 啊(#834) | 好(#1026) | 是(#1386) | 哦(#1674) | hello(#2704) | 对(#2870) | 行(#3187)
+  影视: changed 3; C1_content_free→user 2: 哈哈哈(#1816) | 哈哈哈哈哈(#4392) ; user→S5_headline 1: 召唤魅魔结果是义魔母来了(#1925)
+  人物: changed 19; C1_content_free→user 1: 哈哈(#2528) ; user→S5_headline 18: 陈翔六点半妹爷扮演者去世(#438) | 李小璐回应无戏可拍(#896) | 金鹰奖投票曝光演员本名!(#1394) | 《陈翔六点半》"妹爷"扮演者去世(#2183) | 演员“妹爷”逝世 终年82岁(#2198) | 47岁廖碧儿新恋情曝光(#2404) | 冯小刚对韩红言论有何回应(#2475) | “七一勋章”获得者全名单公布(#2590)

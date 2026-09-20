@@ -1,0 +1,1 @@
+[{"chunk": "00", "ok": true, "n_read": 11, "n_rows": 11, "flags": [{"sid": "Mf09183a68ae", "code": "NAMED_PRIVATE_FACILITY", "confidence": "高", "reason": "点名一家民营医院并查地址"}, {"sid": "M2eec9773dcf", "code": "NAMED_PRIVATE_FACILITY", "confidence": "中", "reason": "编号医院，公立性质不明，按标准从严"}]}]

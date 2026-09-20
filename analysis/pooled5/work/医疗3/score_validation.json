@@ -1,0 +1,8 @@
+{
+ "n": 20316,
+ "sparse_reproduction_max_abs_diff": 0.0,
+ "bu_leaf_一致率%": 95.51,
+ "bu_family_final_一致率%": 95.51,
+ "td_l1_一致率%": 100.0,
+ "td_l2_一致率%": 99.57
+}

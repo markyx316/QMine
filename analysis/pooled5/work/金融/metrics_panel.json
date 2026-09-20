@@ -1,0 +1,1069 @@
+{
+  "table": {
+    "panel_id": "ce51490b34f2",
+    "panel_config": {
+      "code_version": "panel-v1",
+      "subsample": 8000,
+      "seed": 0,
+      "replay_seeds": [
+        0,
+        1
+      ],
+      "n_rows": 22934
+    },
+    "metrics": [
+      {
+        "name": "ambiguous_rate",
+        "authority": "diagnostic",
+        "higher_is_better": false
+      },
+      {
+        "name": "coherence",
+        "authority": "decisive",
+        "higher_is_better": true
+      },
+      {
+        "name": "distill_accuracy",
+        "authority": "diagnostic",
+        "higher_is_better": true
+      },
+      {
+        "name": "heldout_reproduction",
+        "authority": "decisive",
+        "higher_is_better": true
+      },
+      {
+        "name": "kmeans_refit_stability",
+        "authority": "advisory",
+        "higher_is_better": true
+      },
+      {
+        "name": "n_clusters",
+        "authority": "diagnostic",
+        "higher_is_better": true
+      },
+      {
+        "name": "silhouette",
+        "authority": "advisory",
+        "higher_is_better": true
+      },
+      {
+        "name": "stability_ari",
+        "authority": "decisive",
+        "higher_is_better": true
+      },
+      {
+        "name": "template_fragmentation",
+        "authority": "decisive",
+        "higher_is_better": false
+      }
+    ],
+    "rows": [
+      {
+        "subject": "leaves",
+        "ambiguous_rate": 0.07164035929188105,
+        "coherence": 3.907,
+        "distill_accuracy": 0.9623,
+        "heldout_reproduction": 0.9108,
+        "kmeans_refit_stability": 0.6352,
+        "n_clusters": 68.0,
+        "silhouette": 0.1132,
+        "stability_ari": 0.9674,
+        "template_fragmentation": 6.0884
+      },
+      {
+        "subject": "families_pre_governance",
+        "ambiguous_rate": null,
+        "coherence": null,
+        "distill_accuracy": null,
+        "heldout_reproduction": null,
+        "kmeans_refit_stability": 0.7628,
+        "n_clusters": 25.0,
+        "silhouette": 0.1206,
+        "stability_ari": 0.9805,
+        "template_fragmentation": 3.4658
+      },
+      {
+        "subject": "families_final",
+        "ambiguous_rate": null,
+        "coherence": null,
+        "distill_accuracy": null,
+        "heldout_reproduction": null,
+        "kmeans_refit_stability": 0.638,
+        "n_clusters": 55.0,
+        "silhouette": 0.0928,
+        "stability_ari": 0.9617,
+        "template_fragmentation": 5.5225
+      },
+      {
+        "subject": "alpha_0.0",
+        "ambiguous_rate": null,
+        "coherence": null,
+        "distill_accuracy": null,
+        "heldout_reproduction": null,
+        "kmeans_refit_stability": 0.7033,
+        "n_clusters": 25.0,
+        "silhouette": 0.1123,
+        "stability_ari": 0.9726,
+        "template_fragmentation": 4.5559
+      },
+      {
+        "subject": "alpha_0.1",
+        "ambiguous_rate": null,
+        "coherence": null,
+        "distill_accuracy": null,
+        "heldout_reproduction": null,
+        "kmeans_refit_stability": 0.6398,
+        "n_clusters": 25.0,
+        "silhouette": 0.0901,
+        "stability_ari": 0.9618,
+        "template_fragmentation": 4.3232
+      },
+      {
+        "subject": "alpha_0.2",
+        "ambiguous_rate": null,
+        "coherence": null,
+        "distill_accuracy": null,
+        "heldout_reproduction": null,
+        "kmeans_refit_stability": 0.7281,
+        "n_clusters": 25.0,
+        "silhouette": 0.101,
+        "stability_ari": 0.9708,
+        "template_fragmentation": 4.8541
+      },
+      {
+        "subject": "alpha_0.3",
+        "ambiguous_rate": null,
+        "coherence": null,
+        "distill_accuracy": null,
+        "heldout_reproduction": null,
+        "kmeans_refit_stability": 0.7694,
+        "n_clusters": 25.0,
+        "silhouette": 0.1077,
+        "stability_ari": 0.9732,
+        "template_fragmentation": 3.9599
+      },
+      {
+        "subject": "alpha_0.5",
+        "ambiguous_rate": null,
+        "coherence": null,
+        "distill_accuracy": null,
+        "heldout_reproduction": null,
+        "kmeans_refit_stability": 0.7149,
+        "n_clusters": 25.0,
+        "silhouette": 0.1077,
+        "stability_ari": 0.9745,
+        "template_fragmentation": 3.7937
+      },
+      {
+        "subject": "topdown_l1",
+        "ambiguous_rate": null,
+        "coherence": null,
+        "distill_accuracy": null,
+        "heldout_reproduction": null,
+        "kmeans_refit_stability": null,
+        "n_clusters": 18.0,
+        "silhouette": 0.0061,
+        "stability_ari": null,
+        "template_fragmentation": 2.2239
+      },
+      {
+        "subject": "topdown_l2",
+        "ambiguous_rate": null,
+        "coherence": null,
+        "distill_accuracy": null,
+        "heldout_reproduction": null,
+        "kmeans_refit_stability": null,
+        "n_clusters": 41.0,
+        "silhouette": 0.0204,
+        "stability_ari": null,
+        "template_fragmentation": 3.5514
+      }
+    ],
+    "footnotes": [
+      "Every number in this table was produced by the same code under seed 0 (panel ce51490b34f2). Metrics that sub-sample use 8000 rows; the rest run on the full corpus. Each metric carries its own n — read it before comparing two of them.",
+      "Silhouette is ADVISORY. It is maximised by clusters that are tight in surface form, which is precisely the failure mode — one intent split into several phrasing-shaped families — that the decisive metrics exist to detect. It is reported for completeness and given no vote.",
+      "Template fragmentation is POSITIVELY correlated with cluster count: a partition with more clusters has more places to fragment into. Read it beside n_clusters and phrase conclusions as two-condition statements (\"finer AND less fragmented\"), never as a bare comparison.",
+      "Distillation accuracy measures learnability of the cluster labels, not agreement with human judgment. Human agreement requires a gold set (Phase 2b) and adversarial validation (Phase 2d)."
+    ]
+  },
+  "sets": {
+    "leaves": {
+      "subject": "leaves",
+      "panel_id": "ce51490b34f2",
+      "metrics": {
+        "n_clusters": {
+          "name": "n_clusters",
+          "value": 68.0,
+          "authority": "diagnostic",
+          "higher_is_better": true,
+          "panel_id": "ce51490b34f2",
+          "subject": "leaves",
+          "n": 22934,
+          "seed": 0,
+          "detail": {},
+          "note": ""
+        },
+        "silhouette": {
+          "name": "silhouette",
+          "value": 0.1132,
+          "authority": "advisory",
+          "higher_is_better": true,
+          "panel_id": "ce51490b34f2",
+          "subject": "leaves",
+          "n": 8000,
+          "seed": 0,
+          "detail": {},
+          "note": "advisory only — maximised by phrasing-tight clusters (Principle 3)"
+        },
+        "stability_ari": {
+          "name": "stability_ari",
+          "value": 0.9674,
+          "authority": "decisive",
+          "higher_is_better": true,
+          "panel_id": "ce51490b34f2",
+          "subject": "leaves",
+          "n": 8000,
+          "seed": null,
+          "detail": {
+            "method": "half-sample centroid replay on this partition",
+            "sd": 0.0044,
+            "n_splits": 3,
+            "values": [
+              0.9725,
+              0.9651,
+              0.9647
+            ]
+          },
+          "note": ""
+        },
+        "kmeans_refit_stability": {
+          "name": "kmeans_refit_stability",
+          "value": 0.6352,
+          "authority": "advisory",
+          "higher_is_better": true,
+          "panel_id": "ce51490b34f2",
+          "subject": "leaves",
+          "n": 8000,
+          "seed": null,
+          "detail": {
+            "seeds": [
+              0,
+              1
+            ],
+            "note": "re-runs KMeans at this k; does not depend on the candidate"
+          },
+          "note": ""
+        },
+        "template_fragmentation": {
+          "name": "template_fragmentation",
+          "value": 6.0884,
+          "authority": "decisive",
+          "higher_is_better": false,
+          "panel_id": "ce51490b34f2",
+          "subject": "leaves",
+          "n": 22934,
+          "seed": null,
+          "detail": {
+            "per_group": {
+              "news_latest": 18.0767,
+              "quote_lookup": 3.0129,
+              "term_definition": 1.3443,
+              "rate_lookup": 1.9196
+            },
+            "n_groups_scored": 4,
+            "n_clusters": 68
+          },
+          "note": "compare only against partitions of similar size (this one has 68 clusters; fewer clusters fragment less by construction)"
+        },
+        "heldout_reproduction": {
+          "name": "heldout_reproduction",
+          "value": 0.9108,
+          "authority": "decisive",
+          "higher_is_better": true,
+          "panel_id": "ce51490b34f2",
+          "subject": "leaves",
+          "n": 4587,
+          "seed": null,
+          "detail": {
+            "agreement": 0.9108,
+            "n_test": 4587,
+            "train_fraction": 0.8
+          },
+          "note": ""
+        },
+        "ambiguous_rate": {
+          "name": "ambiguous_rate",
+          "value": 0.07164035929188105,
+          "authority": "diagnostic",
+          "higher_is_better": false,
+          "panel_id": "ce51490b34f2",
+          "subject": "leaves",
+          "n": 22934,
+          "seed": null,
+          "detail": {
+            "threshold": 0.02,
+            "median_margin": 0.1065
+          },
+          "note": "rows whose top-2 centroids are near-tied; these route to fallback in Phase 10"
+        },
+        "distill_accuracy": {
+          "name": "distill_accuracy",
+          "value": 0.9623,
+          "authority": "diagnostic",
+          "higher_is_better": true,
+          "panel_id": "ce51490b34f2",
+          "subject": "leaves",
+          "n": 22934,
+          "seed": null,
+          "detail": {},
+          "note": "measures how LEARNABLE these clusters are, NOT agreement with human judgment (Principle 12)"
+        },
+        "coherence": {
+          "name": "coherence",
+          "value": 3.907,
+          "authority": "decisive",
+          "higher_is_better": true,
+          "panel_id": "ce51490b34f2",
+          "subject": "leaves",
+          "n": null,
+          "seed": null,
+          "detail": {},
+          "note": "mean blind-review coherence, 1-5"
+        }
+      }
+    },
+    "families_pre_governance": {
+      "subject": "families_pre_governance",
+      "panel_id": "ce51490b34f2",
+      "metrics": {
+        "n_clusters": {
+          "name": "n_clusters",
+          "value": 25.0,
+          "authority": "diagnostic",
+          "higher_is_better": true,
+          "panel_id": "ce51490b34f2",
+          "subject": "families_pre_governance",
+          "n": 22934,
+          "seed": 0,
+          "detail": {},
+          "note": ""
+        },
+        "silhouette": {
+          "name": "silhouette",
+          "value": 0.1206,
+          "authority": "advisory",
+          "higher_is_better": true,
+          "panel_id": "ce51490b34f2",
+          "subject": "families_pre_governance",
+          "n": 8000,
+          "seed": 0,
+          "detail": {},
+          "note": "advisory only — maximised by phrasing-tight clusters (Principle 3)"
+        },
+        "stability_ari": {
+          "name": "stability_ari",
+          "value": 0.9805,
+          "authority": "decisive",
+          "higher_is_better": true,
+          "panel_id": "ce51490b34f2",
+          "subject": "families_pre_governance",
+          "n": 8000,
+          "seed": null,
+          "detail": {
+            "method": "half-sample centroid replay on this partition",
+            "sd": 0.0024,
+            "n_splits": 3,
+            "values": [
+              0.9781,
+              0.9806,
+              0.9829
+            ]
+          },
+          "note": ""
+        },
+        "kmeans_refit_stability": {
+          "name": "kmeans_refit_stability",
+          "value": 0.7628,
+          "authority": "advisory",
+          "higher_is_better": true,
+          "panel_id": "ce51490b34f2",
+          "subject": "families_pre_governance",
+          "n": 8000,
+          "seed": null,
+          "detail": {
+            "seeds": [
+              0,
+              1
+            ],
+            "note": "re-runs KMeans at this k; does not depend on the candidate"
+          },
+          "note": ""
+        },
+        "template_fragmentation": {
+          "name": "template_fragmentation",
+          "value": 3.4658,
+          "authority": "decisive",
+          "higher_is_better": false,
+          "panel_id": "ce51490b34f2",
+          "subject": "families_pre_governance",
+          "n": 22934,
+          "seed": null,
+          "detail": {
+            "per_group": {
+              "news_latest": 8.2236,
+              "quote_lookup": 2.7179,
+              "term_definition": 1.1018,
+              "rate_lookup": 1.8198
+            },
+            "n_groups_scored": 4,
+            "n_clusters": 25
+          },
+          "note": "compare only against partitions of similar size (this one has 25 clusters; fewer clusters fragment less by construction)"
+        }
+      }
+    },
+    "families_final": {
+      "subject": "families_final",
+      "panel_id": "ce51490b34f2",
+      "metrics": {
+        "n_clusters": {
+          "name": "n_clusters",
+          "value": 55.0,
+          "authority": "diagnostic",
+          "higher_is_better": true,
+          "panel_id": "ce51490b34f2",
+          "subject": "families_final",
+          "n": 22934,
+          "seed": 0,
+          "detail": {},
+          "note": ""
+        },
+        "silhouette": {
+          "name": "silhouette",
+          "value": 0.0928,
+          "authority": "advisory",
+          "higher_is_better": true,
+          "panel_id": "ce51490b34f2",
+          "subject": "families_final",
+          "n": 8000,
+          "seed": 0,
+          "detail": {},
+          "note": "advisory only — maximised by phrasing-tight clusters (Principle 3)"
+        },
+        "stability_ari": {
+          "name": "stability_ari",
+          "value": 0.9617,
+          "authority": "decisive",
+          "higher_is_better": true,
+          "panel_id": "ce51490b34f2",
+          "subject": "families_final",
+          "n": 8000,
+          "seed": null,
+          "detail": {
+            "method": "half-sample centroid replay on this partition",
+            "sd": 0.0051,
+            "n_splits": 3,
+            "values": [
+              0.9674,
+              0.9601,
+              0.9577
+            ]
+          },
+          "note": ""
+        },
+        "kmeans_refit_stability": {
+          "name": "kmeans_refit_stability",
+          "value": 0.638,
+          "authority": "advisory",
+          "higher_is_better": true,
+          "panel_id": "ce51490b34f2",
+          "subject": "families_final",
+          "n": 8000,
+          "seed": null,
+          "detail": {
+            "seeds": [
+              0,
+              1
+            ],
+            "note": "re-runs KMeans at this k; does not depend on the candidate"
+          },
+          "note": ""
+        },
+        "template_fragmentation": {
+          "name": "template_fragmentation",
+          "value": 5.5225,
+          "authority": "decisive",
+          "higher_is_better": false,
+          "panel_id": "ce51490b34f2",
+          "subject": "families_final",
+          "n": 22934,
+          "seed": null,
+          "detail": {
+            "per_group": {
+              "news_latest": 15.8868,
+              "quote_lookup": 2.9395,
+              "term_definition": 1.3443,
+              "rate_lookup": 1.9196
+            },
+            "n_groups_scored": 4,
+            "n_clusters": 55
+          },
+          "note": "compare only against partitions of similar size (this one has 55 clusters; fewer clusters fragment less by construction)"
+        }
+      }
+    },
+    "alpha_0.0": {
+      "subject": "alpha_0.0",
+      "panel_id": "ce51490b34f2",
+      "metrics": {
+        "n_clusters": {
+          "name": "n_clusters",
+          "value": 25.0,
+          "authority": "diagnostic",
+          "higher_is_better": true,
+          "panel_id": "ce51490b34f2",
+          "subject": "alpha_0.0",
+          "n": 22934,
+          "seed": 0,
+          "detail": {},
+          "note": ""
+        },
+        "silhouette": {
+          "name": "silhouette",
+          "value": 0.1123,
+          "authority": "advisory",
+          "higher_is_better": true,
+          "panel_id": "ce51490b34f2",
+          "subject": "alpha_0.0",
+          "n": 8000,
+          "seed": 0,
+          "detail": {},
+          "note": "advisory only — maximised by phrasing-tight clusters (Principle 3)"
+        },
+        "stability_ari": {
+          "name": "stability_ari",
+          "value": 0.9726,
+          "authority": "decisive",
+          "higher_is_better": true,
+          "panel_id": "ce51490b34f2",
+          "subject": "alpha_0.0",
+          "n": 8000,
+          "seed": null,
+          "detail": {
+            "method": "half-sample centroid replay on this partition",
+            "sd": 0.0059,
+            "n_splits": 3,
+            "values": [
+              0.9657,
+              0.9756,
+              0.9764
+            ]
+          },
+          "note": ""
+        },
+        "kmeans_refit_stability": {
+          "name": "kmeans_refit_stability",
+          "value": 0.7033,
+          "authority": "advisory",
+          "higher_is_better": true,
+          "panel_id": "ce51490b34f2",
+          "subject": "alpha_0.0",
+          "n": 8000,
+          "seed": null,
+          "detail": {
+            "seeds": [
+              0,
+              1
+            ],
+            "note": "re-runs KMeans at this k; does not depend on the candidate"
+          },
+          "note": ""
+        },
+        "template_fragmentation": {
+          "name": "template_fragmentation",
+          "value": 4.5559,
+          "authority": "decisive",
+          "higher_is_better": false,
+          "panel_id": "ce51490b34f2",
+          "subject": "alpha_0.0",
+          "n": 22934,
+          "seed": null,
+          "detail": {
+            "per_group": {
+              "news_latest": 7.2277,
+              "quote_lookup": 3.922,
+              "term_definition": 5.0673,
+              "rate_lookup": 2.0068
+            },
+            "n_groups_scored": 4,
+            "n_clusters": 25
+          },
+          "note": "compare only against partitions of similar size (this one has 25 clusters; fewer clusters fragment less by construction)"
+        }
+      }
+    },
+    "alpha_0.1": {
+      "subject": "alpha_0.1",
+      "panel_id": "ce51490b34f2",
+      "metrics": {
+        "n_clusters": {
+          "name": "n_clusters",
+          "value": 25.0,
+          "authority": "diagnostic",
+          "higher_is_better": true,
+          "panel_id": "ce51490b34f2",
+          "subject": "alpha_0.1",
+          "n": 22934,
+          "seed": 0,
+          "detail": {},
+          "note": ""
+        },
+        "silhouette": {
+          "name": "silhouette",
+          "value": 0.0901,
+          "authority": "advisory",
+          "higher_is_better": true,
+          "panel_id": "ce51490b34f2",
+          "subject": "alpha_0.1",
+          "n": 8000,
+          "seed": 0,
+          "detail": {},
+          "note": "advisory only — maximised by phrasing-tight clusters (Principle 3)"
+        },
+        "stability_ari": {
+          "name": "stability_ari",
+          "value": 0.9618,
+          "authority": "decisive",
+          "higher_is_better": true,
+          "panel_id": "ce51490b34f2",
+          "subject": "alpha_0.1",
+          "n": 8000,
+          "seed": null,
+          "detail": {
+            "method": "half-sample centroid replay on this partition",
+            "sd": 0.0061,
+            "n_splits": 3,
+            "values": [
+              0.9566,
+              0.9603,
+              0.9684
+            ]
+          },
+          "note": ""
+        },
+        "kmeans_refit_stability": {
+          "name": "kmeans_refit_stability",
+          "value": 0.6398,
+          "authority": "advisory",
+          "higher_is_better": true,
+          "panel_id": "ce51490b34f2",
+          "subject": "alpha_0.1",
+          "n": 8000,
+          "seed": null,
+          "detail": {
+            "seeds": [
+              0,
+              1
+            ],
+            "note": "re-runs KMeans at this k; does not depend on the candidate"
+          },
+          "note": ""
+        },
+        "template_fragmentation": {
+          "name": "template_fragmentation",
+          "value": 4.3232,
+          "authority": "decisive",
+          "higher_is_better": false,
+          "panel_id": "ce51490b34f2",
+          "subject": "alpha_0.1",
+          "n": 22934,
+          "seed": null,
+          "detail": {
+            "per_group": {
+              "news_latest": 6.3818,
+              "quote_lookup": 3.7468,
+              "term_definition": 4.6062,
+              "rate_lookup": 2.5582
+            },
+            "n_groups_scored": 4,
+            "n_clusters": 25
+          },
+          "note": "compare only against partitions of similar size (this one has 25 clusters; fewer clusters fragment less by construction)"
+        }
+      }
+    },
+    "alpha_0.2": {
+      "subject": "alpha_0.2",
+      "panel_id": "ce51490b34f2",
+      "metrics": {
+        "n_clusters": {
+          "name": "n_clusters",
+          "value": 25.0,
+          "authority": "diagnostic",
+          "higher_is_better": true,
+          "panel_id": "ce51490b34f2",
+          "subject": "alpha_0.2",
+          "n": 22934,
+          "seed": 0,
+          "detail": {},
+          "note": ""
+        },
+        "silhouette": {
+          "name": "silhouette",
+          "value": 0.101,
+          "authority": "advisory",
+          "higher_is_better": true,
+          "panel_id": "ce51490b34f2",
+          "subject": "alpha_0.2",
+          "n": 8000,
+          "seed": 0,
+          "detail": {},
+          "note": "advisory only — maximised by phrasing-tight clusters (Principle 3)"
+        },
+        "stability_ari": {
+          "name": "stability_ari",
+          "value": 0.9708,
+          "authority": "decisive",
+          "higher_is_better": true,
+          "panel_id": "ce51490b34f2",
+          "subject": "alpha_0.2",
+          "n": 8000,
+          "seed": null,
+          "detail": {
+            "method": "half-sample centroid replay on this partition",
+            "sd": 0.0023,
+            "n_splits": 3,
+            "values": [
+              0.9709,
+              0.9685,
+              0.9731
+            ]
+          },
+          "note": ""
+        },
+        "kmeans_refit_stability": {
+          "name": "kmeans_refit_stability",
+          "value": 0.7281,
+          "authority": "advisory",
+          "higher_is_better": true,
+          "panel_id": "ce51490b34f2",
+          "subject": "alpha_0.2",
+          "n": 8000,
+          "seed": null,
+          "detail": {
+            "seeds": [
+              0,
+              1
+            ],
+            "note": "re-runs KMeans at this k; does not depend on the candidate"
+          },
+          "note": ""
+        },
+        "template_fragmentation": {
+          "name": "template_fragmentation",
+          "value": 4.8541,
+          "authority": "decisive",
+          "higher_is_better": false,
+          "panel_id": "ce51490b34f2",
+          "subject": "alpha_0.2",
+          "n": 22934,
+          "seed": null,
+          "detail": {
+            "per_group": {
+              "news_latest": 8.4129,
+              "quote_lookup": 4.1052,
+              "term_definition": 5.0364,
+              "rate_lookup": 1.8619
+            },
+            "n_groups_scored": 4,
+            "n_clusters": 25
+          },
+          "note": "compare only against partitions of similar size (this one has 25 clusters; fewer clusters fragment less by construction)"
+        }
+      }
+    },
+    "alpha_0.3": {
+      "subject": "alpha_0.3",
+      "panel_id": "ce51490b34f2",
+      "metrics": {
+        "n_clusters": {
+          "name": "n_clusters",
+          "value": 25.0,
+          "authority": "diagnostic",
+          "higher_is_better": true,
+          "panel_id": "ce51490b34f2",
+          "subject": "alpha_0.3",
+          "n": 22934,
+          "seed": 0,
+          "detail": {},
+          "note": ""
+        },
+        "silhouette": {
+          "name": "silhouette",
+          "value": 0.1077,
+          "authority": "advisory",
+          "higher_is_better": true,
+          "panel_id": "ce51490b34f2",
+          "subject": "alpha_0.3",
+          "n": 8000,
+          "seed": 0,
+          "detail": {},
+          "note": "advisory only — maximised by phrasing-tight clusters (Principle 3)"
+        },
+        "stability_ari": {
+          "name": "stability_ari",
+          "value": 0.9732,
+          "authority": "decisive",
+          "higher_is_better": true,
+          "panel_id": "ce51490b34f2",
+          "subject": "alpha_0.3",
+          "n": 8000,
+          "seed": null,
+          "detail": {
+            "method": "half-sample centroid replay on this partition",
+            "sd": 0.0005,
+            "n_splits": 3,
+            "values": [
+              0.9727,
+              0.9732,
+              0.9737
+            ]
+          },
+          "note": ""
+        },
+        "kmeans_refit_stability": {
+          "name": "kmeans_refit_stability",
+          "value": 0.7694,
+          "authority": "advisory",
+          "higher_is_better": true,
+          "panel_id": "ce51490b34f2",
+          "subject": "alpha_0.3",
+          "n": 8000,
+          "seed": null,
+          "detail": {
+            "seeds": [
+              0,
+              1
+            ],
+            "note": "re-runs KMeans at this k; does not depend on the candidate"
+          },
+          "note": ""
+        },
+        "template_fragmentation": {
+          "name": "template_fragmentation",
+          "value": 3.9599,
+          "authority": "decisive",
+          "higher_is_better": false,
+          "panel_id": "ce51490b34f2",
+          "subject": "alpha_0.3",
+          "n": 22934,
+          "seed": null,
+          "detail": {
+            "per_group": {
+              "news_latest": 6.4278,
+              "quote_lookup": 3.2744,
+              "term_definition": 4.2912,
+              "rate_lookup": 1.8462
+            },
+            "n_groups_scored": 4,
+            "n_clusters": 25
+          },
+          "note": "compare only against partitions of similar size (this one has 25 clusters; fewer clusters fragment less by construction)"
+        }
+      }
+    },
+    "alpha_0.5": {
+      "subject": "alpha_0.5",
+      "panel_id": "ce51490b34f2",
+      "metrics": {
+        "n_clusters": {
+          "name": "n_clusters",
+          "value": 25.0,
+          "authority": "diagnostic",
+          "higher_is_better": true,
+          "panel_id": "ce51490b34f2",
+          "subject": "alpha_0.5",
+          "n": 22934,
+          "seed": 0,
+          "detail": {},
+          "note": ""
+        },
+        "silhouette": {
+          "name": "silhouette",
+          "value": 0.1077,
+          "authority": "advisory",
+          "higher_is_better": true,
+          "panel_id": "ce51490b34f2",
+          "subject": "alpha_0.5",
+          "n": 8000,
+          "seed": 0,
+          "detail": {},
+          "note": "advisory only — maximised by phrasing-tight clusters (Principle 3)"
+        },
+        "stability_ari": {
+          "name": "stability_ari",
+          "value": 0.9745,
+          "authority": "decisive",
+          "higher_is_better": true,
+          "panel_id": "ce51490b34f2",
+          "subject": "alpha_0.5",
+          "n": 8000,
+          "seed": null,
+          "detail": {
+            "method": "half-sample centroid replay on this partition",
+            "sd": 0.0049,
+            "n_splits": 3,
+            "values": [
+              0.9698,
+              0.9741,
+              0.9797
+            ]
+          },
+          "note": ""
+        },
+        "kmeans_refit_stability": {
+          "name": "kmeans_refit_stability",
+          "value": 0.7149,
+          "authority": "advisory",
+          "higher_is_better": true,
+          "panel_id": "ce51490b34f2",
+          "subject": "alpha_0.5",
+          "n": 8000,
+          "seed": null,
+          "detail": {
+            "seeds": [
+              0,
+              1
+            ],
+            "note": "re-runs KMeans at this k; does not depend on the candidate"
+          },
+          "note": ""
+        },
+        "template_fragmentation": {
+          "name": "template_fragmentation",
+          "value": 3.7937,
+          "authority": "decisive",
+          "higher_is_better": false,
+          "panel_id": "ce51490b34f2",
+          "subject": "alpha_0.5",
+          "n": 22934,
+          "seed": null,
+          "detail": {
+            "per_group": {
+              "news_latest": 6.3668,
+              "quote_lookup": 2.2337,
+              "term_definition": 4.7408,
+              "rate_lookup": 1.8335
+            },
+            "n_groups_scored": 4,
+            "n_clusters": 25
+          },
+          "note": "compare only against partitions of similar size (this one has 25 clusters; fewer clusters fragment less by construction)"
+        }
+      }
+    },
+    "topdown_l1": {
+      "subject": "topdown_l1",
+      "panel_id": "ce51490b34f2",
+      "metrics": {
+        "n_clusters": {
+          "name": "n_clusters",
+          "value": 18.0,
+          "authority": "diagnostic",
+          "higher_is_better": true,
+          "panel_id": "ce51490b34f2",
+          "subject": "topdown_l1",
+          "n": 22934,
+          "seed": 0,
+          "detail": {},
+          "note": ""
+        },
+        "silhouette": {
+          "name": "silhouette",
+          "value": 0.0061,
+          "authority": "advisory",
+          "higher_is_better": true,
+          "panel_id": "ce51490b34f2",
+          "subject": "topdown_l1",
+          "n": 8000,
+          "seed": 0,
+          "detail": {},
+          "note": "advisory only — maximised by phrasing-tight clusters (Principle 3)"
+        },
+        "template_fragmentation": {
+          "name": "template_fragmentation",
+          "value": 2.2239,
+          "authority": "decisive",
+          "higher_is_better": false,
+          "panel_id": "ce51490b34f2",
+          "subject": "topdown_l1",
+          "n": 22934,
+          "seed": null,
+          "detail": {
+            "per_group": {
+              "news_latest": 3.5529,
+              "quote_lookup": 1.9641,
+              "term_definition": 1.4274,
+              "rate_lookup": 1.9514
+            },
+            "n_groups_scored": 4,
+            "n_clusters": 18
+          },
+          "note": "compare only against partitions of similar size (this one has 18 clusters; fewer clusters fragment less by construction)"
+        }
+      }
+    },
+    "topdown_l2": {
+      "subject": "topdown_l2",
+      "panel_id": "ce51490b34f2",
+      "metrics": {
+        "n_clusters": {
+          "name": "n_clusters",
+          "value": 41.0,
+          "authority": "diagnostic",
+          "higher_is_better": true,
+          "panel_id": "ce51490b34f2",
+          "subject": "topdown_l2",
+          "n": 22934,
+          "seed": 0,
+          "detail": {},
+          "note": ""
+        },
+        "silhouette": {
+          "name": "silhouette",
+          "value": 0.0204,
+          "authority": "advisory",
+          "higher_is_better": true,
+          "panel_id": "ce51490b34f2",
+          "subject": "topdown_l2",
+          "n": 8000,
+          "seed": 0,
+          "detail": {},
+          "note": "advisory only — maximised by phrasing-tight clusters (Principle 3)"
+        },
+        "template_fragmentation": {
+          "name": "template_fragmentation",
+          "value": 3.5514,
+          "authority": "decisive",
+          "higher_is_better": false,
+          "panel_id": "ce51490b34f2",
+          "subject": "topdown_l2",
+          "n": 22934,
+          "seed": null,
+          "detail": {
+            "per_group": {
+              "news_latest": 4.8557,
+              "quote_lookup": 2.0949,
+              "term_definition": 5.2036,
+              "rate_lookup": 2.0516
+            },
+            "n_groups_scored": 4,
+            "n_clusters": 41
+          },
+          "note": "compare only against partitions of similar size (this one has 41 clusters; fewer clusters fragment less by construction)"
+        }
+      }
+    }
+  }
+}

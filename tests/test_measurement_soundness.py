@@ -162,7 +162,7 @@ def test_k_is_reported_under_every_available_reference():
         {"k": 12, "intent_alignment_ami": 0.7432, "ami_vs_ref_legacy_l1": 0.3036},
         {"k": 18, "intent_alignment_ami": 0.7071, "ami_vs_ref_legacy_l1": 0.3300},
     ]
-    out = reference_sensitivity(sweep, chosen_k=7)
+    out = reference_sensitivity(sweep, chosen_k=7, locator_column="intent_alignment_ami")
     assert out["located_k_values"] == {"phrasing_groups": 7, "ref_legacy_l1": 18}
     assert out["references_agree"] is False
     assert out["by_reference"]["phrasing_groups"]["decides"] is True
@@ -171,7 +171,8 @@ def test_k_is_reported_under_every_available_reference():
 
     # And a run with a single anchor must say so rather than imply triangulation.
     solo = reference_sensitivity(
-        [{"k": 7, "intent_alignment_ami": 0.75}, {"k": 12, "intent_alignment_ami": 0.74}], 7)
+        [{"k": 7, "intent_alignment_ami": 0.75}, {"k": 12, "intent_alignment_ami": 0.74}], 7,
+        locator_column="intent_alignment_ami")
     # `True` here IMPLIED triangulation, which is what the line above says must
     # not happen — the assertion contradicted its own stated intent. med01 shipped
     # exactly this: one reference, `references_agree: true`, a delivered summary
@@ -469,6 +470,195 @@ def test_the_recorded_locator_profile_cannot_contradict_the_deciding_reference()
     assert "deciding_reference_profile" in src, (
         "when another reference decides, its own reach/discrimination must be "
         "recorded — otherwise the artifact describes the wrong partition")
+
+
+def _deciders(tri: dict) -> list[str]:
+    return [n for n, v in tri["reference_sensitivity"]["by_reference"].items() if v["decides"]]
+
+
+def test_the_reference_marked_as_deciding_is_the_one_that_located_k():
+    """`reference_sensitivity` must credit the column that LOCATED K — in every branch.
+
+    `decides` was `key == "intent_alignment_ami"` for every reference: right while
+    the phrasing groups were the only locator, silently wrong once a declared
+    column could win. health-pool2 (2026-09-15) shipped, in one granularity.json:
+
+        triangulation.locator                         : ami_vs_legacy_l2
+        triangulation.deciding_reference              : legacy_l2
+        reference_sensitivity.by_reference
+            .phrasing_groups.decides                  : true
+        reference_sensitivity.note                    : "... 决定权在 `phrasing_groups`。"
+
+    10 of the 34 stored generations that carry `reference_sensitivity` have it
+    (health-pool2, live41 gen01+gen03, live42, live44 and the three offline k12_zh
+    runs by `ami_vs_legacy_*`; ai04 and aiwire01 by `ami_vs_l2` / `ami_vs_l1`); the
+    other 24 were located by the phrasing groups and recompute byte-identically.
+    A corpus with declared columns and NO phrasing groups was wrong
+    the other way: every `decides` false, so its only reference "decided nothing".
+    Same defect class as the decision record's `decisive_metrics` and the locator
+    profile — see the two tests above.
+    """
+    from qmine.ops.cluster import triangulate_k
+
+    sweep = [
+        {"k": 7, "stability_ari": 0.99, "silhouette": 0.07,
+         "intent_alignment_ami": 0.7500, "ami_vs_ref_legacy_l1": 0.2978},
+        {"k": 12, "stability_ari": 0.83, "silhouette": 0.065,
+         "intent_alignment_ami": 0.7432, "ami_vs_ref_legacy_l1": 0.3036},
+        {"k": 18, "stability_ari": 0.76, "silhouette": 0.059,
+         "intent_alignment_ami": 0.7071, "ami_vs_ref_legacy_l1": 0.3300},
+        {"k": 25, "stability_ari": 0.81, "silhouette": 0.056,
+         "intent_alignment_ami": 0.6714, "ami_vs_ref_legacy_l1": 0.3284},
+    ]
+    da = {"k_estimate": 28}
+
+    # Phrasing groups locate: unchanged behaviour.
+    by_phrasing = triangulate_k(sweep, da, (15, 25), locator_key="intent_alignment_ami")
+    assert _deciders(by_phrasing) == ["phrasing_groups"]
+    assert "决定权在 `phrasing_groups`" in by_phrasing["reference_sensitivity"]["note"]
+
+    # A declared column locates: IT decides, and the note names it — not phrasing.
+    by_legacy = triangulate_k(sweep, da, (15, 25), locator_key="ami_vs_ref_legacy_l1")
+    assert by_legacy["locator"] == "ami_vs_ref_legacy_l1"
+    assert _deciders(by_legacy) == ["ref_legacy_l1"], _deciders(by_legacy)
+    note = by_legacy["reference_sensitivity"]["note"]
+    assert "决定权在 `ref_legacy_l1`" in note and "决定权在 `phrasing_groups`" not in note, note
+
+    # Declared columns only, no phrasing groups: the single reference decides.
+    only_legacy = [{k: v for k, v in r.items() if k != "intent_alignment_ami"} for r in sweep]
+    solo = triangulate_k(only_legacy, da, (15, 25), locator_key="ami_vs_ref_legacy_l1")
+    assert _deciders(solo) == ["ref_legacy_l1"], "its only reference must not 'decide nothing'"
+
+    # Two declared columns that disagree: the one that located decides.
+    two = [{**r, "ami_vs_ref_b": v} for r, v in zip(only_legacy, (0.40, 0.38, 0.30, 0.25))]
+    by_b = triangulate_k(two, da, (15, 25), locator_key="ami_vs_ref_b")
+    assert _deciders(by_b) == ["ref_b"], _deciders(by_b)
+    assert "决定权在 `ref_b`" in by_b["reference_sensitivity"]["note"]
+
+    # Stability fallback: the requested column has no values, so NOTHING located K —
+    # no reference may be credited, even though the others still disagree.
+    fallback = triangulate_k(sweep, da, (15, 25), locator_key="ami_vs_not_scored")
+    assert fallback["locator"].startswith("stability_ari"), fallback["locator"]
+    assert _deciders(fallback) == []
+    assert "决定权在" not in (fallback["reference_sensitivity"].get("note") or "")
+
+    # ...and when the requested column WAS scored, but only at a K stability rejected.
+    # It has values, so it appears in by_reference — yet it located nothing and must
+    # not be credited. This is the case that tells "pass the locator only if it
+    # located" apart from "pass whatever locator was requested".
+    unstable = sweep + [{"k": 40, "stability_ari": 0.40, "silhouette": 0.05,
+                         "intent_alignment_ami": 0.60, "ami_vs_ref_legacy_l1": 0.31,
+                         "ami_vs_ref_unstable": 0.90}]
+    rejected = triangulate_k(unstable, da, (15, 25), locator_key="ami_vs_ref_unstable")
+    assert rejected["locator"].startswith("stability_ari"), rejected["locator"]
+    assert "ref_unstable" in rejected["reference_sensitivity"]["by_reference"]
+    assert _deciders(rejected) == [], _deciders(rejected)
+
+
+def _four_by_three_blobs():
+    """4 coarse x 3 fine blobs, 60 rows each, fixed seed — a corpus whose fine and coarse
+    labels locate different K through the real p5 node."""
+    import numpy as np
+    from sklearn.preprocessing import normalize
+
+    rng = np.random.RandomState(0)
+    D, n_per = 24, 60
+    coarse_c = normalize(rng.randn(4, D)) * 3.0
+    rows, fine, coarse = [], [], []
+    for c in range(4):
+        for s in range(3):
+            sub = coarse_c[c] + normalize(rng.randn(1, D))[0]
+            rows.append(sub + 0.08 * rng.randn(n_per, D))
+            fine += [c * 3 + s] * n_per
+            coarse += [c] * n_per
+    return normalize(np.vstack(rows)).astype(np.float32), fine, np.array(coarse)
+
+
+def test_the_disagreement_gate_names_the_reference_that_actually_located_k(deps):
+    """The `p5_k_references_agree` gate recorded `deciding_reference="phrasing_groups"`
+    as a literal. The bottom-up reports print that gate row, so every run where a
+    declared column located K and the references disagreed (health-pool2, live42,
+    live44 among them) printed the wrong reference beside the right one in
+    `granularity.json`.
+
+    Built so the live42 shape is produced by the real node, not assumed: 4 coarse x 3
+    fine blobs, a declared column `ref_fine` holding the 12 fine labels (reach 1.0 at
+    the probe k), phrasing masks covering only two coarse blobs (reach 0.5). The reach
+    rule then hands the locator to `ref_fine`, the two references peak at different K,
+    and the gate fires. Every precondition is asserted, so if the construction ever
+    stops producing that shape the test fails loudly instead of passing vacuously.
+    """
+    import pandas as pd
+
+    from qmine.graph.nodes.bottomup import p5_granularity
+
+    H, fine, coarse = _four_by_three_blobs()
+    deps.cfg.clustering.k_sweep = [4, 8, 12, 16]
+    deps.cfg.data.reference_label_columns = ["ref_fine"]
+    deps.cache_put("corpus", pd.DataFrame({"query": [f"q{i}" for i in range(len(H))],
+                                           "ref_fine": [f"F{v}" for v in fine]}))
+    deps.cache_put("emb_hybrid", H)
+    deps.cache_put("template_masks", {"g_a": coarse == 0, "g_b": coarse == 1})
+
+    out = p5_granularity({}, deps)
+    tri = deps.load("granularity")["triangulation"]
+    sens = tri["reference_sensitivity"]
+
+    # Preconditions: a declared column located K and the references disagree.
+    assert tri["locator"] == "ami_vs_ref_fine", tri["locator"]
+    assert tri["deciding_reference"] == "ref_fine", tri["deciding_reference"]
+    assert len(set(sens["located_k_values"].values())) > 1, sens["located_k_values"]
+    assert "p5_k_references_agree" in out["gates"], sorted(out["gates"])
+
+    # The artifact credits the reference that located K...
+    assert [n for n, v in sens["by_reference"].items() if v["decides"]] == ["ref_fine"]
+    assert "决定权在 `ref_fine`" in sens["note"], sens["note"]
+    # ...and so does the gate a delivered document prints.
+    observed = out["gates"]["p5_k_references_agree"].observed
+    assert observed["deciding_reference"] == tri["deciding_reference"] == "ref_fine", observed
+
+
+def test_the_disagreement_gate_names_no_reference_when_stability_decided(deps):
+    """When no reference located K, the gate must not name one.
+
+    The gate reads `deciding_reference` from the triangulation, and the triangulation
+    records `choose_locator`'s pick even when `triangulate_k` could not use it and fell
+    back to ranking K by stability. Taken unguarded, the gate row would credit a
+    reference that located nothing — here `phrasing_groups`, which this corpus does not
+    even have. No stored run has reached this branch (0 of 34); it is pinned because a
+    mutant dropping the guard passed every other test.
+
+    Built through the real node: no phrasing masks, two declared columns that locate
+    different K, `k_locator: phrasing`. `triangulation.deciding_reference` is itself
+    still wrong in this branch — a recorded open item, deliberately not asserted here.
+    """
+    import pandas as pd
+
+    from qmine.graph.nodes.bottomup import p5_granularity
+
+    H, fine, coarse = _four_by_three_blobs()
+    deps.cfg.clustering.k_sweep = [4, 8, 12, 16]
+    deps.cfg.clustering.k_locator = "phrasing"
+    deps.cfg.data.reference_label_columns = ["ref_fine", "ref_coarse"]
+    deps.cache_put("corpus", pd.DataFrame({"query": [f"q{i}" for i in range(len(H))],
+                                           "ref_fine": [f"F{v}" for v in fine],
+                                           "ref_coarse": [f"C{v}" for v in coarse]}))
+    deps.cache_put("emb_hybrid", H)
+    deps.cache_put("template_masks", {})
+
+    out = p5_granularity({}, deps)
+    tri = deps.load("granularity")["triangulation"]
+    sens = tri["reference_sensitivity"]
+
+    # Preconditions: stability decided, and the references still disagree.
+    assert tri["locator"].startswith("stability_ari"), tri["locator"]
+    assert len(set(sens["located_k_values"].values())) > 1, sens["located_k_values"]
+    assert "p5_k_references_agree" in out["gates"], sorted(out["gates"])
+
+    assert [n for n, v in sens["by_reference"].items() if v["decides"]] == []
+    assert "决定权在" not in (sens.get("note") or ""), sens.get("note")
+    observed = out["gates"]["p5_k_references_agree"].observed
+    assert observed["deciding_reference"] is None, observed
 
 
 def test_a_flagged_row_shows_its_NEAREST_neighbours_and_the_whole_set():

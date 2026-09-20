@@ -1,0 +1,5 @@
+domain,source,pairs,same_intent,median_added
+书籍文档,assistant_random,59,0.4745762711864407,10.0
+书籍文档,assistant_top,94,0.776595744680851,4.0
+软件,assistant_random,230,0.22608695652173913,9.0
+软件,assistant_top,244,0.5409836065573771,4.0

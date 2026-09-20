@@ -315,6 +315,36 @@ def test_a_render_reports_the_skips_the_RUN_made_not_todays(tmp_path):
     assert out.fast_skipped == ["dual_annotation", "a_check_that_no_longer_exists"]
 
 
+def test_the_skip_list_survives_revalidation(tmp_path):
+    """A resumed fast run must disclose the SAME ten skips a fresh one does.
+
+    Each append used to be conditional on the switch still being on, so validating
+    an already-fast config — which is every `--resume`, because it loads the source
+    generation's resolved config where `observe_phases` and friends are already
+    False — rebuilt a four-entry list. `ppl-pool8` gen03 shipped a banner naming 4
+    of 10: dual annotation, the phase observers, the adversarial validation, the
+    agent-written report, the pre-delivery audit and the result interpretation all
+    read as HAVING RUN. The banner is generated from this list, so a truncated list
+    is a false statement in a delivered document.
+    """
+    fresh = QMineConfig(mode="fast", offline=True)
+    again = QMineConfig.model_validate(fresh.model_dump())
+    assert again.fast_skipped == fresh.fast_skipped, \
+        "re-validating a fast config must not shrink what the banner discloses"
+    for name in ("dual_annotation", "phase_observers", "adversarial_validation",
+                 "narrative_report", "delivery_audit", "result_interpretation"):
+        assert name in again.fast_skipped, f"{name} silently dropped on re-validation"
+    # and the switches really are off, both times — the list must not outrun the config
+    assert not (again.observe_phases or again.final_report or again.delivery_audit
+                or again.interpret_results or again.validate_adversarial)
+    assert again.taxonomy.annotators == 1
+
+    # round-tripping through the on-disk config a resume reads must be stable too
+    path = tmp_path / "config.resolved.yaml"
+    fresh.dump(path)
+    assert QMineConfig.load(path).fast_skipped == fresh.fast_skipped
+
+
 def test_a_render_keeps_the_corpus_it_was_run_on(tmp_path):
     """The re-render must say the domain the RUN used, not `generic`.
 

@@ -1,0 +1,87 @@
+{
+ "INVEST_ADVICE": {
+  "n_sample": 682,
+  "codes": [
+   "DECIDE",
+   "FORECAST",
+   "APPRAISE",
+   "SELECT",
+   "RISK",
+   "SCREEN",
+   "RULE",
+   "INFO",
+   "UNSURE"
+  ],
+  "fleiss_kappa": 0.988,
+  "n_kappa": 681,
+  "declared_missing_votes": 1,
+  "repairs": [
+   {
+    "lens": "answer",
+    "range": "200",
+    "written_sid": "INV0660",
+    "position": 6,
+    "dropped_code": "DECIDE",
+    "declared_missing_vote_for": "INV0659",
+    "kept_position": 144
+   }
+  ],
+  "unanimous_%": 98.5,
+  "no_majority_rows": 0,
+  "pairwise_agreement": {
+   "answer~form": 0.991,
+   "answer~goal": 0.993,
+   "form~goal": 0.987
+  }
+ },
+ "NEWS_EVENT": {
+  "n_sample": 542,
+  "codes": [
+   "LATEST_NEWS",
+   "STATUS_TIMING",
+   "FACT_DETAIL",
+   "RULE_CONCEPT",
+   "EXPLAIN_CAUSE",
+   "ASSESS_JUDGE",
+   "FORECAST",
+   "SERVICE_HELP",
+   "UNSURE"
+  ],
+  "fleiss_kappa": 0.994,
+  "n_kappa": 542,
+  "declared_missing_votes": 0,
+  "repairs": [],
+  "unanimous_%": 99.3,
+  "no_majority_rows": 0,
+  "pairwise_agreement": {
+   "answer~form": 0.994,
+   "answer~goal": 0.996,
+   "form~goal": 0.994
+  }
+ },
+ "VERDICT_QUESTION": {
+  "n_sample": 582,
+  "codes": [
+   "DECISION_ADVICE",
+   "MERIT_SAFETY",
+   "REMEDY_UNDO",
+   "ELIGIBILITY_COVER",
+   "IMPACT_EXPOSURE",
+   "CATEGORY_CHECK",
+   "WORLD_STATE",
+   "SERVICE_RULE",
+   "UNSURE_FUNCTION"
+  ],
+  "fleiss_kappa": 0.98,
+  "n_kappa": 582,
+  "declared_missing_votes": 0,
+  "repairs": [],
+  "unanimous_%": 97.6,
+  "no_majority_rows": 0,
+  "pairwise_agreement": {
+   "answer~form": 0.985,
+   "answer~goal": 0.983,
+   "form~goal": 0.985
+  }
+ }
+}

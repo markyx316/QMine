@@ -1,0 +1,23 @@
+loaded 5 key(s) from /Users/mayouxuan/Documents/Claude/Search Query Mining Agent
+Team/QMine/.env
+no --config given; using configs/live.yaml — real models, pinned roles. 
+--offline for the stand-in.
+re-rendering ppl-pool8 gen03 (no model calls)
+/Users/mayouxuan/Documents/Claude/Search Query Mining Agent Team/QMine/.venv/lib/python3.12/site-packages/umap/umap_.py:1952: UserWarning: n_jobs value 1 overridden to 1 by setting random_state. Use no seed for parallelism.
+  warn(
+    ⚠ 这些状态通道没能恢复, 相关章节会相应变短: observations
+  重新生成交付物: ppl-pool8 gen03 → gen04 (纯脚本, 不调用模型)
+  P11 reporting — assembling deliverables
+    fast 模式交付: 核心参考文档 (完整中间产物保留)
+    工作簿: people_zh_v2_query_挖掘结果.xlsx (43,802 行 × 21 列, 10 个 sheet)
+┏━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━┓
+┃ field               ┃ value        ┃
+┡━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━┩
+│ source generation   │ gen03        │
+│ written to          │ gen04        │
+│ documents           │ 3            │
+│ state not recovered │ observations │
+└─────────────────────┴──────────────┘
+  people_zh_v2_自上而下_意图体系完整定义.md
+  people_zh_v2_自下而上_聚类树完整定义.md
+  快照对比_漂移分析.md

@@ -1,0 +1,11 @@
+source,tier,rows
+2025search,S5_headline,12
+2026search,S5_headline,5
+assistant_random,C2_feed_control,1
+assistant_random,S3_card_passage,1
+assistant_random,S4_suggested_chip,45
+assistant_top,C1_content_free,10
+assistant_top,S1_system_repeated,20
+assistant_top,S2_system_template,54
+assistant_top,S4_suggested_chip,62
+assistant_top,S5_headline,4

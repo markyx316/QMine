@@ -1,0 +1,66 @@
+{
+ "rows": 43934,
+ "leaves": 62,
+ "families": 46,
+ "families_with_more_than_one_leaf": 7,
+ "rows_in_multi_leaf_families_%": 42.1,
+ "multi_leaf_families": [
+  [
+   "查询300开头股票代码与行情",
+   "查询电话号码归属",
+   "股票代码查询",
+   "证券代码信息查询",
+   "证券代码信息查询",
+   "金融代码查询"
+  ],
+  [
+   "保险公司电话查询",
+   "查询交强险保费、赔偿与投保规定",
+   "查询保险公司信息"
+  ],
+  [
+   "查询市场行情",
+   "蚂蚁庄园今日答案查询",
+   "证券股票信息查询"
+  ],
+  [
+   "查询人民币兑外币汇率",
+   "货币兑换查询",
+   "货币兑换金额换算查询"
+  ],
+  [
+   "中国银行服务信息查询",
+   "银行信息查询",
+   "银行客服电话查询"
+  ],
+  [
+   "利率查询与计算",
+   "查询定期存款利率",
+   "计算存贷款利息"
+  ],
+  [
+   "查询个股股票行情与股吧讨论",
+   "查询股票信息"
+  ]
+ ],
+ "叶": {
+  "groups": 62,
+  "rows_per_group_median": 507,
+  "rows_per_group_p10": 258,
+  "within_group_mean_cosine_to_centre_row_weighted": 0.66,
+  "cells_n>=30": 95,
+  "effective_groups_median": 12.4,
+  "groups_for_80%_median": 9.0,
+  "top_group_share_median_%": 28.1
+ },
+ "家族": {
+  "groups": 46,
+  "rows_per_group_median": 572,
+  "rows_per_group_p10": 306,
+  "within_group_mean_cosine_to_centre_row_weighted": 0.634,
+  "cells_n>=30": 95,
+  "effective_groups_median": 10.8,
+  "groups_for_80%_median": 8.0,
+  "top_group_share_median_%": 30.2
+ }
+}

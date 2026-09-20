@@ -1,0 +1,3903 @@
+{
+  "snapshots": [
+    "AI助手",
+    "搜索"
+  ],
+  "inventory": [
+    {
+      "snapshot": "AI助手",
+      "rows": 1839,
+      "distinct_queries": 1804,
+      "weight_total": 20000.0
+    },
+    {
+      "snapshot": "搜索",
+      "rows": 19965,
+      "distinct_queries": 15472,
+      "weight_total": 20000.0
+    }
+  ],
+  "query_churn": {
+    "comparable": true,
+    "snapshot_a": "AI助手",
+    "snapshot_b": "搜索",
+    "distinct_a": 1804,
+    "distinct_b": 15472,
+    "shared": 423,
+    "jaccard": 0.0251,
+    "shared_weight_share_a": 0.3288,
+    "shared_weight_share_b": 0.1927
+  },
+  "by_label": {
+    "td_l1": {
+      "comparable": true,
+      "snapshot_a": "AI助手",
+      "snapshot_b": "搜索",
+      "rows_a": 1839,
+      "rows_b": 19965,
+      "n_classes": 19,
+      "cramers_v": 0.3846,
+      "total_variation_weight": 0.4106,
+      "total_variation_rows": 0.4472,
+      "n_comparisons": 12,
+      "stable": [
+        {
+          "label": "OUT_OF_DOMAIN_NON_PERSON",
+          "rows_a": 264,
+          "rows_b": 911,
+          "row_share_a": 0.14356,
+          "row_share_b": 0.04563,
+          "row_share_delta_pp": -9.793,
+          "weight_share_a": 0.13092,
+          "weight_share_b": 0.02769,
+          "weight_share_delta_pp": -10.323,
+          "z_row_share": -17.8,
+          "delta_concentration": {
+            "n_distinct_queries": 973,
+            "top1_share_of_delta": 0.0307,
+            "top5_share_of_delta": 0.1041,
+            "hhi_of_delta": 0.0051,
+            "top_queries": [
+              {
+                "query": "这是谁？",
+                "delta": -94.88
+              },
+              {
+                "query": "请问图中是哪位名人？",
+                "delta": -83.48
+              },
+              {
+                "query": "高岗与饶漱石",
+                "delta": -58.24
+              },
+              {
+                "query": "这个人是谁？",
+                "delta": -43.28
+              },
+              {
+                "query": "小兄弟",
+                "delta": -41.6
+              }
+            ]
+          }
+        },
+        {
+          "label": "PERSON_RECENT_EVENT_LOOKUP",
+          "rows_a": 164,
+          "rows_b": 187,
+          "row_share_a": 0.08918,
+          "row_share_b": 0.00937,
+          "row_share_delta_pp": -7.981,
+          "weight_share_a": 0.07989,
+          "weight_share_b": 0.00805,
+          "weight_share_delta_pp": -7.183,
+          "z_row_share": -26.02,
+          "delta_concentration": {
+            "n_distinct_queries": 346,
+            "top1_share_of_delta": 0.0426,
+            "top5_share_of_delta": 0.121,
+            "hhi_of_delta": 0.0082,
+            "top_queries": [
+              {
+                "query": "陈武同志的逝世对政协有何影响",
+                "delta": -74.88
+              },
+              {
+                "query": "王伟，中国羽毛球队男双主教练，曾任中国羽毛球协会副主席兼秘书长。2026年8月，王伟涉嫌严重违法，接受中央纪委国家监委驻国家体育总局纪检监察组和江苏省南通市监委监察调查。 王伟的涉案金额和具体罪名是什么",
+                "delta": -49.92
+              },
+              {
+                "query": "王皓祯现在脚部恢复得如何",
+                "delta": -32.71
+              },
+              {
+                "query": "于和伟王宝强颁奖",
+                "delta": -31.38
+              },
+              {
+                "query": "李维康去世的具体原因是什么",
+                "delta": -23.88
+              }
+            ]
+          }
+        },
+        {
+          "label": "CLAIM_VERIFICATION",
+          "rows_a": 122,
+          "rows_b": 43,
+          "row_share_a": 0.06634,
+          "row_share_b": 0.00215,
+          "row_share_delta_pp": -6.419,
+          "weight_share_a": 0.05278,
+          "weight_share_b": 0.00212,
+          "weight_share_delta_pp": -5.066,
+          "z_row_share": -30.39,
+          "delta_concentration": {
+            "n_distinct_queries": 165,
+            "top1_share_of_delta": 0.0303,
+            "top5_share_of_delta": 0.0948,
+            "hhi_of_delta": 0.0087,
+            "top_queries": [
+              {
+                "query": "曾晟的违纪违法细节有哪些",
+                "delta": -33.28
+              },
+              {
+                "query": "曾仁海是否被调查",
+                "delta": -24.96
+              },
+              {
+                "query": "孙宇晨说过的大话多少成真了",
+                "delta": -17.45
+              },
+              {
+                "query": "韦东奕晋升北大长聘副教授?校方回应",
+                "delta": 16.24
+              },
+              {
+                "query": "包文婧曾说再信包贝尔一次",
+                "delta": -12.15
+              }
+            ]
+          }
+        },
+        {
+          "label": "RELATIONSHIP_AND_FAMILY_STATUS",
+          "rows_a": 116,
+          "rows_b": 265,
+          "row_share_a": 0.06308,
+          "row_share_b": 0.01327,
+          "row_share_delta_pp": -4.98,
+          "weight_share_a": 0.05227,
+          "weight_share_b": 0.00695,
+          "weight_share_delta_pp": -4.532,
+          "z_row_share": -15.6,
+          "delta_concentration": {
+            "n_distinct_queries": 357,
+            "top1_share_of_delta": 0.0261,
+            "top5_share_of_delta": 0.1033,
+            "hhi_of_delta": 0.0085,
+            "top_queries": [
+              {
+                "query": "张锦程下跪求婚张延",
+                "delta": -30.92
+              },
+              {
+                "query": "孙宇晨的家族背景如何",
+                "delta": -29.02
+              },
+              {
+                "query": "贺子珍原配丈夫详情",
+                "delta": -22.05
+              },
+              {
+                "query": "路征的家族背景如何",
+                "delta": -21.8
+              },
+              {
+                "query": "孙宇晨和景甜的关系如何",
+                "delta": -18.53
+              }
+            ]
+          }
+        },
+        {
+          "label": "PERSON_ATTRIBUTE_LOOKUP",
+          "rows_a": 107,
+          "rows_b": 349,
+          "row_share_a": 0.05818,
+          "row_share_b": 0.01748,
+          "row_share_delta_pp": -4.07,
+          "weight_share_a": 0.05073,
+          "weight_share_b": 0.01025,
+          "weight_share_delta_pp": -4.048,
+          "z_row_share": -11.67,
+          "delta_concentration": {
+            "n_distinct_queries": 402,
+            "top1_share_of_delta": 0.0478,
+            "top5_share_of_delta": 0.1524,
+            "hhi_of_delta": 0.0109,
+            "top_queries": [
+              {
+                "query": "景甜的真实身价是多少",
+                "delta": -58.24
+              },
+              {
+                "query": "孙宇晨的财富来源是什么",
+                "delta": -53.51
+              },
+              {
+                "query": "年龄",
+                "delta": -30.51
+              },
+              {
+                "query": "哪里人",
+                "delta": -22.51
+              },
+              {
+                "query": "梓渝的粉丝群体规模有多大",
+                "delta": -21.06
+              }
+            ]
+          }
+        },
+        {
+          "label": "GROUP_ROSTER_ENUMERATION",
+          "rows_a": 129,
+          "rows_b": 463,
+          "row_share_a": 0.07015,
+          "row_share_b": 0.02319,
+          "row_share_delta_pp": -4.696,
+          "weight_share_a": 0.05961,
+          "weight_share_b": 0.02614,
+          "weight_share_delta_pp": -3.346,
+          "z_row_share": -11.86,
+          "delta_concentration": {
+            "n_distinct_queries": 525,
+            "top1_share_of_delta": 0.0719,
+            "top5_share_of_delta": 0.1362,
+            "hhi_of_delta": 0.0104,
+            "top_queries": [
+              {
+                "query": "七一勋章获得者",
+                "delta": 122.22
+              },
+              {
+                "query": "七一勋章获得者名单",
+                "delta": 31.99
+              },
+              {
+                "query": "杨幂孙俪获年度女演员",
+                "delta": -29.18
+              },
+              {
+                "query": "国务院副总理名单",
+                "delta": -24.96
+              },
+              {
+                "query": "鲁迅长孙周令飞出席文学周",
+                "delta": -22.96
+              }
+            ]
+          }
+        },
+        {
+          "label": "PERSONNEL_EVENT_LOOKUP",
+          "rows_a": 67,
+          "rows_b": 153,
+          "row_share_a": 0.03643,
+          "row_share_b": 0.00766,
+          "row_share_delta_pp": -2.877,
+          "weight_share_a": 0.03343,
+          "weight_share_b": 0.00774,
+          "weight_share_delta_pp": -2.569,
+          "z_row_share": -11.81,
+          "delta_concentration": {
+            "n_distinct_queries": 218,
+            "top1_share_of_delta": 0.0579,
+            "top5_share_of_delta": 0.1741,
+            "hhi_of_delta": 0.0151,
+            "top_queries": [
+              {
+                "query": "孙宇晨 我的女友景甜",
+                "delta": -47.67
+              },
+              {
+                "query": "包文婧 包贝尔",
+                "delta": -33.28
+              },
+              {
+                "query": "马兴瑞另有任用",
+                "delta": 29.12
+              },
+              {
+                "query": "李红军是否有新的职务调整",
+                "delta": -16.64
+              },
+              {
+                "query": "罗春生 漳州",
+                "delta": -16.64
+              }
+            ]
+          }
+        },
+        {
+          "label": "REVERSE_PERSON_RESOLUTION",
+          "rows_a": 45,
+          "rows_b": 92,
+          "row_share_a": 0.02447,
+          "row_share_b": 0.00461,
+          "row_share_delta_pp": -1.986,
+          "weight_share_a": 0.02064,
+          "weight_share_b": 0.00227,
+          "weight_share_delta_pp": -1.837,
+          "z_row_share": -10.31,
+          "delta_concentration": {
+            "n_distinct_queries": 119,
+            "top1_share_of_delta": 0.0477,
+            "top5_share_of_delta": 0.1862,
+            "hhi_of_delta": 0.0205,
+            "top_queries": [
+              {
+                "query": "这个女的是谁",
+                "delta": -21.85
+              },
+              {
+                "query": "作者是谁",
+                "delta": -19.44
+              },
+              {
+                "query": "关洁老师有哪些代表作品",
+                "delta": -16.64
+              },
+              {
+                "query": "刘宇宁的演唱风格有什么特点",
+                "delta": -14.76
+              },
+              {
+                "query": "图中人物是谁",
+                "delta": -12.6
+              }
+            ]
+          }
+        },
+        {
+          "label": "PERSON_IMAGE_REQUEST",
+          "rows_a": 23,
+          "rows_b": 292,
+          "row_share_a": 0.01251,
+          "row_share_b": 0.01463,
+          "row_share_delta_pp": 0.212,
+          "weight_share_a": 0.01442,
+          "weight_share_b": 0.00919,
+          "weight_share_delta_pp": -0.523,
+          "z_row_share": 0.73,
+          "delta_concentration": {
+            "n_distinct_queries": 296,
+            "top1_share_of_delta": 0.2167,
+            "top5_share_of_delta": 0.3629,
+            "hhi_of_delta": 0.0618,
+            "top_queries": [
+              {
+                "query": "照片",
+                "delta": -101.6
+              },
+              {
+                "query": "田栩宁的代表作品有哪些",
+                "delta": -43.61
+              },
+              {
+                "query": "看看她们的照片",
+                "delta": -8.32
+              },
+              {
+                "query": "张惠妹的图片",
+                "delta": -8.32
+              },
+              {
+                "query": "张维图片",
+                "delta": -8.32
+              }
+            ]
+          }
+        },
+        {
+          "label": "SEXUALIZED_BROWSE_NON_PERSON",
+          "rows_a": 23,
+          "rows_b": 199,
+          "row_share_a": 0.01251,
+          "row_share_b": 0.00997,
+          "row_share_delta_pp": -0.254,
+          "weight_share_a": 0.01399,
+          "weight_share_b": 0.01136,
+          "weight_share_delta_pp": -0.263,
+          "z_row_share": -1.04,
+          "delta_concentration": {
+            "n_distinct_queries": 148,
+            "top1_share_of_delta": 0.0693,
+            "top5_share_of_delta": 0.2567,
+            "hhi_of_delta": 0.0253,
+            "top_queries": [
+              {
+                "query": "女生",
+                "delta": -18.56
+              },
+              {
+                "query": "这女的是谁",
+                "delta": -17.62
+              },
+              {
+                "query": "十岁苗条小女孩",
+                "delta": -12.39
+              },
+              {
+                "query": "美女",
+                "delta": -11.87
+              },
+              {
+                "query": "好像是个模特",
+                "delta": -8.32
+              }
+            ]
+          }
+        },
+        {
+          "label": "OFFICE_HOLDER_LOOKUP",
+          "rows_a": 46,
+          "rows_b": 495,
+          "row_share_a": 0.02501,
+          "row_share_b": 0.02479,
+          "row_share_delta_pp": -0.022,
+          "weight_share_a": 0.01935,
+          "weight_share_b": 0.01848,
+          "weight_share_delta_pp": -0.088,
+          "z_row_share": -0.06,
+          "delta_concentration": {
+            "n_distinct_queries": 451,
+            "top1_share_of_delta": 0.0225,
+            "top5_share_of_delta": 0.1029,
+            "hhi_of_delta": 0.0082,
+            "top_queries": [
+              {
+                "query": "叶群锋现在担任什么职务",
+                "delta": -16.64
+              },
+              {
+                "query": "天津理工大学化学化工学院辅导员联系方式",
+                "delta": -16.64
+              },
+              {
+                "query": "毛东东现任什么职务",
+                "delta": -16.17
+              },
+              {
+                "query": "朱忠明任上海市政府党组书记",
+                "delta": -14.55
+              },
+              {
+                "query": "新疆自治区党委书记",
+                "delta": 12.23
+              }
+            ]
+          }
+        },
+        {
+          "label": "WORK_CONTENT_RETRIEVAL",
+          "rows_a": 3,
+          "rows_b": 39,
+          "row_share_a": 0.00163,
+          "row_share_b": 0.00195,
+          "row_share_delta_pp": 0.032,
+          "weight_share_a": 0.00128,
+          "weight_share_b": 0.00167,
+          "weight_share_delta_pp": 0.039,
+          "z_row_share": 0.3,
+          "delta_concentration": {
+            "n_distinct_queries": 39,
+            "top1_share_of_delta": 0.1506,
+            "top5_share_of_delta": 0.6256,
+            "hhi_of_delta": 0.0915,
+            "top_queries": [
+              {
+                "query": "邵雨薇为艺术做出贡献的片段",
+                "delta": -8.87
+              },
+              {
+                "query": "李娜专题片",
+                "delta": -8.32
+              },
+              {
+                "query": "虚无少女。是不是之后死了？",
+                "delta": -8.32
+              },
+              {
+                "query": "习近平七一讲话",
+                "delta": 7.61
+              },
+              {
+                "query": "李一桐刘宇宁《书卷一梦》",
+                "delta": 3.74
+              }
+            ]
+          }
+        }
+      ],
+      "emergent": [
+        {
+          "label": "BARE_NAME_IDENTITY_LOOKUP",
+          "rows_a": 593,
+          "rows_b": 11865,
+          "row_share_a": 0.32246,
+          "row_share_b": 0.59429,
+          "row_share_delta_pp": 27.183,
+          "weight_share_a": 0.40031,
+          "weight_share_b": 0.69632,
+          "weight_share_delta_pp": 29.602,
+          "z_row_share": 22.54,
+          "delta_concentration": {
+            "n_distinct_queries": 8560,
+            "top1_share_of_delta": 0.0544,
+            "top5_share_of_delta": 0.1626,
+            "hhi_of_delta": 0.0074,
+            "top_queries": [
+              {
+                "query": "陈小江",
+                "delta": 966.75
+              },
+              {
+                "query": "谭凯",
+                "delta": -598.03
+              },
+              {
+                "query": "马兴瑞",
+                "delta": 509.46
+              },
+              {
+                "query": "孙宇晨",
+                "delta": -417.43
+              },
+              {
+                "query": "王奎荣",
+                "delta": -398.67
+              }
+            ]
+          }
+        },
+        {
+          "label": "BIO_PROFILE_LOOKUP",
+          "rows_a": 99,
+          "rows_b": 4057,
+          "row_share_a": 0.05383,
+          "row_share_b": 0.20321,
+          "row_share_delta_pp": 14.937,
+          "weight_share_a": 0.055,
+          "weight_share_b": 0.15009,
+          "weight_share_delta_pp": 9.509,
+          "z_row_share": 15.61,
+          "delta_concentration": {
+            "n_distinct_queries": 3682,
+            "top1_share_of_delta": 0.0219,
+            "top5_share_of_delta": 0.0747,
+            "hhi_of_delta": 0.0024,
+            "top_queries": [
+              {
+                "query": "习近平简历",
+                "delta": 88.42
+              },
+              {
+                "query": "景甜个人简介",
+                "delta": -84.2
+              },
+              {
+                "query": "叶建春的背景和经历",
+                "delta": -49.92
+              },
+              {
+                "query": "孙宇晨的简介",
+                "delta": -40.83
+              },
+              {
+                "query": "孙宇晨的个人生活如何",
+                "delta": -37.97
+              }
+            ]
+          }
+        },
+        {
+          "label": "ENTERTAINER_POPULARITY_METRIC_LOOKUP",
+          "rows_a": 2,
+          "rows_b": 247,
+          "row_share_a": 0.00109,
+          "row_share_b": 0.01237,
+          "row_share_delta_pp": 1.128,
+          "weight_share_a": 0.00065,
+          "weight_share_b": 0.00966,
+          "weight_share_delta_pp": 0.901,
+          "z_row_share": 4.36,
+          "delta_concentration": {
+            "n_distinct_queries": 248,
+            "top1_share_of_delta": 0.0411,
+            "top5_share_of_delta": 0.0964,
+            "hhi_of_delta": 0.0085,
+            "top_queries": [
+              {
+                "query": "这些外籍明星里谁最有影响力",
+                "delta": -8.32
+              },
+              {
+                "query": "田栩宁百度送花影响力",
+                "delta": 3.06
+              },
+              {
+                "query": "梓渝的百度送花影响力",
+                "delta": -2.72
+              },
+              {
+                "query": "于朦胧送花明星影响力",
+                "delta": 2.71
+              },
+              {
+                "query": "于朦胧 明星影响力",
+                "delta": 2.7
+              }
+            ]
+          }
+        },
+        {
+          "label": "FAN_ENGAGEMENT_ACTION",
+          "rows_a": 1,
+          "rows_b": 146,
+          "row_share_a": 0.00054,
+          "row_share_b": 0.00731,
+          "row_share_delta_pp": 0.677,
+          "weight_share_a": 0.00083,
+          "weight_share_b": 0.00651,
+          "weight_share_delta_pp": 0.568,
+          "z_row_share": 3.39,
+          "delta_concentration": {
+            "n_distinct_queries": 137,
+            "top1_share_of_delta": 0.1154,
+            "top5_share_of_delta": 0.3209,
+            "hhi_of_delta": 0.0355,
+            "top_queries": [
+              {
+                "query": "肖战百度送花入口",
+                "delta": 16.93
+              },
+              {
+                "query": "于朦胧送花",
+                "delta": -16.62
+              },
+              {
+                "query": "于朦胧百度送花",
+                "delta": 5.47
+              },
+              {
+                "query": "肖战送花",
+                "delta": 4.55
+              },
+              {
+                "query": "肖战百度百科送花入口",
+                "delta": 3.51
+              }
+            ]
+          }
+        },
+        {
+          "label": "NAVIGATE_TO_PERSON_PAGE",
+          "rows_a": 1,
+          "rows_b": 120,
+          "row_share_a": 0.00054,
+          "row_share_b": 0.00601,
+          "row_share_delta_pp": 0.547,
+          "weight_share_a": 0.00026,
+          "weight_share_b": 0.00464,
+          "weight_share_delta_pp": 0.437,
+          "z_row_share": 3.02,
+          "delta_concentration": {
+            "n_distinct_queries": 115,
+            "top1_share_of_delta": 0.0883,
+            "top5_share_of_delta": 0.2951,
+            "hhi_of_delta": 0.0277,
+            "top_queries": [
+              {
+                "query": "徐小明新浪博客",
+                "delta": 8.65
+              },
+              {
+                "query": "肖战百度百科",
+                "delta": 5.96
+              },
+              {
+                "query": "肖战 百度百科",
+                "delta": 5.58
+              },
+              {
+                "query": "陈冠希雁门旧照高清百度网盘",
+                "delta": -5.26
+              },
+              {
+                "query": "于朦胧百度百科",
+                "delta": 3.46
+              }
+            ]
+          }
+        }
+      ],
+      "receded": [],
+      "too_thin_to_compare": [
+        {
+          "label": "MEME_OR_PHRASE_EXPLAINER",
+          "rows_a": 19,
+          "rows_b": 29,
+          "row_share_a": 0.01033,
+          "row_share_b": 0.00145,
+          "row_share_delta_pp": -0.888,
+          "weight_share_a": 0.00772,
+          "weight_share_b": 0.00055,
+          "weight_share_delta_pp": -0.718,
+          "z_row_share": -7.77,
+          "delta_concentration": {
+            "n_distinct_queries": 45,
+            "top1_share_of_delta": 0.1399,
+            "top5_share_of_delta": 0.3598,
+            "hhi_of_delta": 0.0567,
+            "top_queries": [
+              {
+                "query": "于龙的个人生活怎么样",
+                "delta": -23.13
+              },
+              {
+                "query": "景甜早期颜值好美",
+                "delta": -11.36
+              },
+              {
+                "query": "朱之文想回家种地",
+                "delta": -8.37
+              },
+              {
+                "query": "怎么形容嫪毐",
+                "delta": -8.32
+              },
+              {
+                "query": "方方萌可长什么样",
+                "delta": -8.32
+              }
+            ]
+          }
+        },
+        {
+          "label": "DEFAMATION_AND_SCANDAL",
+          "rows_a": 15,
+          "rows_b": 13,
+          "row_share_a": 0.00816,
+          "row_share_b": 0.00065,
+          "row_share_delta_pp": -0.751,
+          "weight_share_a": 0.00592,
+          "weight_share_b": 0.00032,
+          "weight_share_delta_pp": -0.56,
+          "z_row_share": -8.6,
+          "delta_concentration": {
+            "n_distinct_queries": 27,
+            "top1_share_of_delta": 0.1248,
+            "top5_share_of_delta": 0.4059,
+            "hhi_of_delta": 0.0667,
+            "top_queries": [
+              {
+                "query": "自认景甜富豪男友的孙宇晨有多豪",
+                "delta": -15.59
+              },
+              {
+                "query": "孙宇晨小作文太炸裂了",
+                "delta": -10.03
+              },
+              {
+                "query": "孙宇晨前女友洗内裤文学",
+                "delta": -8.37
+              },
+              {
+                "query": "孙宇晨的争议事件有哪些",
+                "delta": -8.37
+              },
+              {
+                "query": "周庆庭是否与原山推股份铸钢厂有关联",
+                "delta": -8.32
+              }
+            ]
+          }
+        }
+      ]
+    },
+    "bu_leaf_name": {
+      "comparable": true,
+      "snapshot_a": "AI助手",
+      "snapshot_b": "搜索",
+      "rows_a": 1839,
+      "rows_b": 19965,
+      "n_classes": 36,
+      "cramers_v": 0.5116,
+      "total_variation_weight": 0.4842,
+      "total_variation_rows": 0.5145,
+      "n_comparisons": 19,
+      "stable": [
+        {
+          "label": "查询人物背景与个人生活",
+          "rows_a": 333,
+          "rows_b": 214,
+          "row_share_a": 0.18108,
+          "row_share_b": 0.01072,
+          "row_share_delta_pp": -17.036,
+          "weight_share_a": 0.15921,
+          "weight_share_b": 0.00671,
+          "weight_share_delta_pp": -15.249,
+          "z_row_share": -44.7,
+          "delta_concentration": {
+            "n_distinct_queries": 530,
+            "top1_share_of_delta": 0.0226,
+            "top5_share_of_delta": 0.0841,
+            "hhi_of_delta": 0.0042,
+            "top_queries": [
+              {
+                "query": "陈武同志的逝世对政协有何影响",
+                "delta": -74.88
+              },
+              {
+                "query": "主持人名字",
+                "delta": -66.56
+              },
+              {
+                "query": "叶建春的背景和经历",
+                "delta": -49.92
+              },
+              {
+                "query": "王伟，中国羽毛球队男双主教练，曾任中国羽毛球协会副主席兼秘书长。2026年8月，王伟涉嫌严重违法，接受中央纪委国家监委驻国家体育总局纪检监察组和江苏省南通市监委监察调查。 王伟的涉案金额和具体罪名是什么",
+                "delta": -49.92
+              },
+              {
+                "query": "孙宇晨的个人生活如何",
+                "delta": -37.97
+              }
+            ]
+          }
+        },
+        {
+          "label": "查询明星娱乐八卦动态",
+          "rows_a": 137,
+          "rows_b": 214,
+          "row_share_a": 0.0745,
+          "row_share_b": 0.01072,
+          "row_share_delta_pp": -6.378,
+          "weight_share_a": 0.08352,
+          "weight_share_b": 0.00651,
+          "weight_share_delta_pp": -7.701,
+          "z_row_share": -20.8,
+          "delta_concentration": {
+            "n_distinct_queries": 326,
+            "top1_share_of_delta": 0.2169,
+            "top5_share_of_delta": 0.2988,
+            "hhi_of_delta": 0.0524,
+            "top_queries": [
+              {
+                "query": "景甜",
+                "delta": -388.65
+              },
+              {
+                "query": "孙宇晨 我的女友景甜",
+                "delta": -47.67
+              },
+              {
+                "query": "我的女友景甜",
+                "delta": -39.09
+              },
+              {
+                "query": "张锦程下跪求婚张延",
+                "delta": -30.92
+              },
+              {
+                "query": "杨幂孙俪获年度女演员",
+                "delta": -29.18
+              }
+            ]
+          }
+        },
+        {
+          "label": "列举特定对象的重要成果与相关条目",
+          "rows_a": 127,
+          "rows_b": 26,
+          "row_share_a": 0.06906,
+          "row_share_b": 0.0013,
+          "row_share_delta_pp": -6.776,
+          "weight_share_a": 0.05693,
+          "weight_share_b": 0.00063,
+          "weight_share_delta_pp": -5.631,
+          "z_row_share": -33.31,
+          "delta_concentration": {
+            "n_distinct_queries": 150,
+            "top1_share_of_delta": 0.0289,
+            "top5_share_of_delta": 0.0867,
+            "hhi_of_delta": 0.0086,
+            "top_queries": [
+              {
+                "query": "曾晟的违纪违法细节有哪些",
+                "delta": -33.28
+              },
+              {
+                "query": "关洁老师有哪些代表作品",
+                "delta": -16.64
+              },
+              {
+                "query": "夏凤俭家族财富来源有哪些传闻",
+                "delta": -16.64
+              },
+              {
+                "query": "杨馥源老师2024年参与了哪些重要工作",
+                "delta": -16.64
+              },
+              {
+                "query": "常红卫涉嫌哪些违纪违法问题",
+                "delta": -16.64
+              }
+            ]
+          }
+        },
+        {
+          "label": "人物及机构基本信息查询",
+          "rows_a": 125,
+          "rows_b": 124,
+          "row_share_a": 0.06797,
+          "row_share_b": 0.00621,
+          "row_share_delta_pp": -6.176,
+          "weight_share_a": 0.05943,
+          "weight_share_b": 0.00315,
+          "weight_share_delta_pp": -5.628,
+          "z_row_share": -23.85,
+          "delta_concentration": {
+            "n_distinct_queries": 237,
+            "top1_share_of_delta": 0.0428,
+            "top5_share_of_delta": 0.1217,
+            "hhi_of_delta": 0.0097,
+            "top_queries": [
+              {
+                "query": "孙宇晨的财富来源是什么",
+                "delta": -53.51
+              },
+              {
+                "query": "孙宇晨的个人背景是什么",
+                "delta": -28.77
+              },
+              {
+                "query": "郑有美属什么生肖？",
+                "delta": -24.96
+              },
+              {
+                "query": "李维康去世的具体原因是什么",
+                "delta": -23.88
+              },
+              {
+                "query": "陈武同志的逝世原因是什么",
+                "delta": -21.22
+              }
+            ]
+          }
+        },
+        {
+          "label": "查询对象身份",
+          "rows_a": 84,
+          "rows_b": 151,
+          "row_share_a": 0.04568,
+          "row_share_b": 0.00756,
+          "row_share_delta_pp": -3.811,
+          "weight_share_a": 0.0468,
+          "weight_share_b": 0.00488,
+          "weight_share_delta_pp": -4.192,
+          "z_row_share": -15.15,
+          "delta_concentration": {
+            "n_distinct_queries": 213,
+            "top1_share_of_delta": 0.0918,
+            "top5_share_of_delta": 0.2486,
+            "hhi_of_delta": 0.0214,
+            "top_queries": [
+              {
+                "query": "这是谁？",
+                "delta": -94.88
+              },
+              {
+                "query": "这个是谁",
+                "delta": -45.8
+              },
+              {
+                "query": "这个人是谁？",
+                "delta": -43.28
+              },
+              {
+                "query": "这人是谁",
+                "delta": -39.67
+              },
+              {
+                "query": "明珍珍是谁",
+                "delta": -33.28
+              }
+            ]
+          }
+        },
+        {
+          "label": "查询个人背景与任职信息",
+          "rows_a": 98,
+          "rows_b": 46,
+          "row_share_a": 0.05329,
+          "row_share_b": 0.0023,
+          "row_share_delta_pp": -5.099,
+          "weight_share_a": 0.04246,
+          "weight_share_b": 0.00128,
+          "weight_share_delta_pp": -4.118,
+          "z_row_share": -25.83,
+          "delta_concentration": {
+            "n_distinct_queries": 138,
+            "top1_share_of_delta": 0.0285,
+            "top5_share_of_delta": 0.087,
+            "hhi_of_delta": 0.0102,
+            "top_queries": [
+              {
+                "query": "曾仁海是否被调查",
+                "delta": -24.96
+              },
+              {
+                "query": "李红军是否有新的职务调整",
+                "delta": -16.64
+              },
+              {
+                "query": "吕佳容是否真的退圈了",
+                "delta": -16.64
+              },
+              {
+                "query": "郭德纲是否会被封杀",
+                "delta": -9.12
+              },
+              {
+                "query": "张又浃是否已被判刑",
+                "delta": -8.79
+              }
+            ]
+          }
+        },
+        {
+          "label": "查询人物身份与归属信息",
+          "rows_a": 51,
+          "rows_b": 83,
+          "row_share_a": 0.02773,
+          "row_share_b": 0.00416,
+          "row_share_delta_pp": -2.358,
+          "weight_share_a": 0.02662,
+          "weight_share_b": 0.00275,
+          "weight_share_delta_pp": -2.387,
+          "z_row_share": -12.38,
+          "delta_concentration": {
+            "n_distinct_queries": 123,
+            "top1_share_of_delta": 0.1421,
+            "top5_share_of_delta": 0.2759,
+            "hhi_of_delta": 0.0344,
+            "top_queries": [
+              {
+                "query": "请问图中是哪位名人？",
+                "delta": -83.48
+              },
+              {
+                "query": "哪里人",
+                "delta": -22.51
+              },
+              {
+                "query": "他是哪里人",
+                "delta": -20.73
+              },
+              {
+                "query": "像哪个明星",
+                "delta": -18.69
+              },
+              {
+                "query": "田齐和姜齐哪个更强大",
+                "delta": -16.64
+              }
+            ]
+          }
+        },
+        {
+          "label": "人物年龄及属性查询",
+          "rows_a": 29,
+          "rows_b": 69,
+          "row_share_a": 0.01577,
+          "row_share_b": 0.00346,
+          "row_share_delta_pp": -1.231,
+          "weight_share_a": 0.01423,
+          "weight_share_b": 0.0014,
+          "weight_share_delta_pp": -1.283,
+          "z_row_share": -7.55,
+          "delta_concentration": {
+            "n_distinct_queries": 91,
+            "top1_share_of_delta": 0.1863,
+            "top5_share_of_delta": 0.2928,
+            "hhi_of_delta": 0.0539,
+            "top_queries": [
+              {
+                "query": "景甜的真实身价是多少",
+                "delta": -58.24
+              },
+              {
+                "query": "此人系哪里人？现年多少岁",
+                "delta": -8.32
+              },
+              {
+                "query": "郭干县金川镇瓦桥村委会五小组现在有多少人",
+                "delta": -8.32
+              },
+              {
+                "query": "朱德和康克清差多大岁数",
+                "delta": -8.32
+              },
+              {
+                "query": "猪八戒在西游记中的排名是多少",
+                "delta": -8.32
+              }
+            ]
+          }
+        },
+        {
+          "label": "查询中国中央党政军领导成员名单与职务",
+          "rows_a": 26,
+          "rows_b": 346,
+          "row_share_a": 0.01414,
+          "row_share_b": 0.01733,
+          "row_share_delta_pp": 0.319,
+          "weight_share_a": 0.01516,
+          "weight_share_b": 0.02787,
+          "weight_share_delta_pp": 1.272,
+          "z_row_share": 1.01,
+          "delta_concentration": {
+            "n_distinct_queries": 272,
+            "top1_share_of_delta": 0.103,
+            "top5_share_of_delta": 0.2917,
+            "hhi_of_delta": 0.0302,
+            "top_queries": [
+              {
+                "query": "胡锦涛",
+                "delta": 59.63
+              },
+              {
+                "query": "江泽民",
+                "delta": 58.08
+              },
+              {
+                "query": "邓小平",
+                "delta": 17.86
+              },
+              {
+                "query": "教育部环境工程教学指导委员会委员名单",
+                "delta": -16.64
+              },
+              {
+                "query": "历届院长",
+                "delta": -16.64
+              }
+            ]
+          }
+        },
+        {
+          "label": "查询人物图片",
+          "rows_a": 30,
+          "rows_b": 154,
+          "row_share_a": 0.01631,
+          "row_share_b": 0.00771,
+          "row_share_delta_pp": -0.86,
+          "weight_share_a": 0.01694,
+          "weight_share_b": 0.00484,
+          "weight_share_delta_pp": -1.21,
+          "z_row_share": -3.86,
+          "delta_concentration": {
+            "n_distinct_queries": 144,
+            "top1_share_of_delta": 0.2414,
+            "top5_share_of_delta": 0.4386,
+            "hhi_of_delta": 0.0778,
+            "top_queries": [
+              {
+                "query": "照片",
+                "delta": -101.6
+              },
+              {
+                "query": "有照片吗",
+                "delta": -38.14
+              },
+              {
+                "query": "男生",
+                "delta": -17.82
+              },
+              {
+                "query": "光头强",
+                "delta": -16.94
+              },
+              {
+                "query": "我的哪吒与变形金刚张抗哪吒",
+                "delta": -10.07
+              }
+            ]
+          }
+        },
+        {
+          "label": "查询女性人物及角色信息",
+          "rows_a": 23,
+          "rows_b": 119,
+          "row_share_a": 0.01251,
+          "row_share_b": 0.00596,
+          "row_share_delta_pp": -0.655,
+          "weight_share_a": 0.00994,
+          "weight_share_b": 0.00611,
+          "weight_share_delta_pp": -0.383,
+          "z_row_share": -3.34,
+          "delta_concentration": {
+            "n_distinct_queries": 111,
+            "top1_share_of_delta": 0.1085,
+            "top5_share_of_delta": 0.2885,
+            "hhi_of_delta": 0.0346,
+            "top_queries": [
+              {
+                "query": "法国空姐",
+                "delta": 29.19
+              },
+              {
+                "query": "女生",
+                "delta": -18.56
+              },
+              {
+                "query": "这个女演员是谁",
+                "delta": -11.32
+              },
+              {
+                "query": "这个女的叫什么名字",
+                "delta": -9.66
+              },
+              {
+                "query": "邵雨薇为艺术做出贡献的片段",
+                "delta": -8.87
+              }
+            ]
+          }
+        },
+        {
+          "label": "人名信息查询",
+          "rows_a": 43,
+          "rows_b": 377,
+          "row_share_a": 0.02338,
+          "row_share_b": 0.01888,
+          "row_share_delta_pp": -0.45,
+          "weight_share_a": 0.02168,
+          "weight_share_b": 0.02521,
+          "weight_share_delta_pp": 0.353,
+          "z_row_share": -1.34,
+          "delta_concentration": {
+            "n_distinct_queries": 240,
+            "top1_share_of_delta": 0.0526,
+            "top5_share_of_delta": 0.151,
+            "hhi_of_delta": 0.0119,
+            "top_queries": [
+              {
+                "query": "玛丽亚凯莉",
+                "delta": -24.96
+              },
+              {
+                "query": "古力娜扎",
+                "delta": -13.91
+              },
+              {
+                "query": "王菲",
+                "delta": -11.65
+              },
+              {
+                "query": "彭丽媛",
+                "delta": 11.03
+              },
+              {
+                "query": "徐熙媛",
+                "delta": -10.04
+              }
+            ]
+          }
+        },
+        {
+          "label": "人物简历查询",
+          "rows_a": 11,
+          "rows_b": 169,
+          "row_share_a": 0.00598,
+          "row_share_b": 0.00846,
+          "row_share_delta_pp": 0.248,
+          "weight_share_a": 0.00536,
+          "weight_share_b": 0.00783,
+          "weight_share_delta_pp": 0.247,
+          "z_row_share": 1.13,
+          "delta_concentration": {
+            "n_distinct_queries": 167,
+            "top1_share_of_delta": 0.0858,
+            "top5_share_of_delta": 0.3027,
+            "hhi_of_delta": 0.0312,
+            "top_queries": [
+              {
+                "query": "王於昌简历",
+                "delta": 22.64
+              },
+              {
+                "query": "简历",
+                "delta": -16.71
+              },
+              {
+                "query": "陈武简历",
+                "delta": -16.58
+              },
+              {
+                "query": "陈小江简历",
+                "delta": 15.23
+              },
+              {
+                "query": "叶建春简历",
+                "delta": -8.7
+              }
+            ]
+          }
+        },
+        {
+          "label": "领导班子成员名单查询",
+          "rows_a": 13,
+          "rows_b": 87,
+          "row_share_a": 0.00707,
+          "row_share_b": 0.00436,
+          "row_share_delta_pp": -0.271,
+          "weight_share_a": 0.00524,
+          "weight_share_b": 0.00279,
+          "weight_share_delta_pp": -0.245,
+          "z_row_share": -1.65,
+          "delta_concentration": {
+            "n_distinct_queries": 91,
+            "top1_share_of_delta": 0.0674,
+            "top5_share_of_delta": 0.2745,
+            "hhi_of_delta": 0.0396,
+            "top_queries": [
+              {
+                "query": "民政部领导班子",
+                "delta": 10.83
+              },
+              {
+                "query": "黄遥拟任的县（区）领导班子副职是哪个",
+                "delta": -8.32
+              },
+              {
+                "query": "剅河镇历届领导班子",
+                "delta": -8.32
+              },
+              {
+                "query": "陕西铁塔领导班子是否有新成员加入",
+                "delta": -8.32
+              },
+              {
+                "query": "陕西省委领导中谁最有权势",
+                "delta": -8.32
+              }
+            ]
+          }
+        },
+        {
+          "label": "查询女性人物资料",
+          "rows_a": 5,
+          "rows_b": 82,
+          "row_share_a": 0.00272,
+          "row_share_b": 0.00411,
+          "row_share_delta_pp": 0.139,
+          "weight_share_a": 0.0044,
+          "weight_share_b": 0.00228,
+          "weight_share_delta_pp": -0.211,
+          "z_row_share": 0.9,
+          "delta_concentration": {
+            "n_distinct_queries": 61,
+            "top1_share_of_delta": 0.4686,
+            "top5_share_of_delta": 0.6995,
+            "hhi_of_delta": 0.2373,
+            "top_queries": [
+              {
+                "query": "马皇后",
+                "delta": -57.27
+              },
+              {
+                "query": "九尾狐族的公主",
+                "delta": -8.32
+              },
+              {
+                "query": "蒋介石 慈禧太后哪个更负面？",
+                "delta": -8.32
+              },
+              {
+                "query": "孝惠章皇后为何没有子嗣",
+                "delta": -8.32
+              },
+              {
+                "query": "杨贵妃",
+                "delta": 3.25
+              }
+            ]
+          }
+        },
+        {
+          "label": "党委书记及常委任职查询",
+          "rows_a": 12,
+          "rows_b": 219,
+          "row_share_a": 0.00653,
+          "row_share_b": 0.01097,
+          "row_share_delta_pp": 0.444,
+          "weight_share_a": 0.00518,
+          "weight_share_b": 0.00705,
+          "weight_share_delta_pp": 0.187,
+          "z_row_share": 1.78,
+          "delta_concentration": {
+            "n_distinct_queries": 193,
+            "top1_share_of_delta": 0.0599,
+            "top5_share_of_delta": 0.2044,
+            "hhi_of_delta": 0.0212,
+            "top_queries": [
+              {
+                "query": "朱忠明任上海市政府党组书记",
+                "delta": -14.55
+              },
+              {
+                "query": "荣昌区委书记",
+                "delta": 10.13
+              },
+              {
+                "query": "上海历任市长和市委书记中谁最著名",
+                "delta": -8.32
+              },
+              {
+                "query": "库尔勒市住建局局长书记",
+                "delta": -8.32
+              },
+              {
+                "query": "余姓县委副书记中谁即将晋升",
+                "delta": -8.32
+              }
+            ]
+          }
+        },
+        {
+          "label": "美女图片查询",
+          "rows_a": 13,
+          "rows_b": 107,
+          "row_share_a": 0.00707,
+          "row_share_b": 0.00536,
+          "row_share_delta_pp": -0.171,
+          "weight_share_a": 0.00926,
+          "weight_share_b": 0.0087,
+          "weight_share_delta_pp": -0.056,
+          "z_row_share": -0.95,
+          "delta_concentration": {
+            "n_distinct_queries": 74,
+            "top1_share_of_delta": 0.0858,
+            "top5_share_of_delta": 0.3415,
+            "hhi_of_delta": 0.0399,
+            "top_queries": [
+              {
+                "query": "美女",
+                "delta": -11.87
+              },
+              {
+                "query": "欧美dj",
+                "delta": -10.4
+              },
+              {
+                "query": "美女男",
+                "delta": -8.32
+              },
+              {
+                "query": "完整号叫做Gi豆（不爱看美女）",
+                "delta": -8.32
+              },
+              {
+                "query": "美女面带笑容",
+                "delta": -8.32
+              }
+            ]
+          }
+        },
+        {
+          "label": "查询人物配偶及亲属关系",
+          "rows_a": 8,
+          "rows_b": 105,
+          "row_share_a": 0.00435,
+          "row_share_b": 0.00526,
+          "row_share_delta_pp": 0.091,
+          "weight_share_a": 0.00264,
+          "weight_share_b": 0.00228,
+          "weight_share_delta_pp": -0.037,
+          "z_row_share": 0.52,
+          "delta_concentration": {
+            "n_distinct_queries": 105,
+            "top1_share_of_delta": 0.0846,
+            "top5_share_of_delta": 0.3843,
+            "hhi_of_delta": 0.042,
+            "top_queries": [
+              {
+                "query": "洪金宝在大陆的媳妇",
+                "delta": -8.32
+              },
+              {
+                "query": "黎明女儿长大后像谁",
+                "delta": -8.32
+              },
+              {
+                "query": "叶弘老婆",
+                "delta": -8.32
+              },
+              {
+                "query": "李小龙妻子现在状况",
+                "delta": -7.46
+              },
+              {
+                "query": "女婿",
+                "delta": -5.39
+              }
+            ]
+          }
+        },
+        {
+          "label": "官员职务及履历查询",
+          "rows_a": 15,
+          "rows_b": 128,
+          "row_share_a": 0.00816,
+          "row_share_b": 0.00641,
+          "row_share_delta_pp": -0.175,
+          "weight_share_a": 0.00664,
+          "weight_share_b": 0.00684,
+          "weight_share_delta_pp": 0.02,
+          "z_row_share": -0.89,
+          "delta_concentration": {
+            "n_distinct_queries": 112,
+            "top1_share_of_delta": 0.1184,
+            "top5_share_of_delta": 0.3654,
+            "hhi_of_delta": 0.0449,
+            "top_queries": [
+              {
+                "query": "李克强",
+                "delta": 26.71
+              },
+              {
+                "query": "国务院副总理名单",
+                "delta": -24.96
+              },
+              {
+                "query": "覃伟中辞去深圳市市长职务",
+                "delta": -13.43
+              },
+              {
+                "query": "李运任深圳市代市长",
+                "delta": -8.79
+              },
+              {
+                "query": "特朗普",
+                "delta": 8.53
+              }
+            ]
+          }
+        }
+      ],
+      "emergent": [
+        {
+          "label": "人物资料查询",
+          "rows_a": 496,
+          "rows_b": 12174,
+          "row_share_a": 0.26971,
+          "row_share_b": 0.60977,
+          "row_share_delta_pp": 34.006,
+          "weight_share_a": 0.32289,
+          "weight_share_b": 0.63359,
+          "weight_share_delta_pp": 31.07,
+          "z_row_share": 28.28,
+          "delta_concentration": {
+            "n_distinct_queries": 9392,
+            "top1_share_of_delta": 0.0596,
+            "top5_share_of_delta": 0.1608,
+            "hhi_of_delta": 0.0071,
+            "top_queries": [
+              {
+                "query": "陈小江",
+                "delta": 966.75
+              },
+              {
+                "query": "谭凯",
+                "delta": -598.03
+              },
+              {
+                "query": "孙宇晨",
+                "delta": -417.43
+              },
+              {
+                "query": "王奎荣",
+                "delta": -398.67
+              },
+              {
+                "query": "蔡奇",
+                "delta": 227.31
+              }
+            ]
+          }
+        },
+        {
+          "label": "查询含“马”字人物信息",
+          "rows_a": 5,
+          "rows_b": 154,
+          "row_share_a": 0.00272,
+          "row_share_b": 0.00771,
+          "row_share_delta_pp": 0.499,
+          "weight_share_a": 0.00164,
+          "weight_share_b": 0.03489,
+          "weight_share_delta_pp": 3.325,
+          "z_row_share": 2.41,
+          "delta_concentration": {
+            "n_distinct_queries": 120,
+            "top1_share_of_delta": 0.7107,
+            "top5_share_of_delta": 0.8314,
+            "hhi_of_delta": 0.5109,
+            "top_queries": [
+              {
+                "query": "马兴瑞",
+                "delta": 509.46
+              },
+              {
+                "query": "马善祥",
+                "delta": 40.17
+              },
+              {
+                "query": "马兴瑞另有任用",
+                "delta": 29.12
+              },
+              {
+                "query": "马苏",
+                "delta": 8.88
+              },
+              {
+                "query": "核能马斌",
+                "delta": -8.32
+              }
+            ]
+          }
+        },
+        {
+          "label": "专名信息查询",
+          "rows_a": 70,
+          "rows_b": 1954,
+          "row_share_a": 0.03806,
+          "row_share_b": 0.09787,
+          "row_share_delta_pp": 5.981,
+          "weight_share_a": 0.03624,
+          "weight_share_b": 0.06245,
+          "weight_share_delta_pp": 2.62,
+          "z_row_share": 8.46,
+          "delta_concentration": {
+            "n_distinct_queries": 1557,
+            "top1_share_of_delta": 0.0315,
+            "top5_share_of_delta": 0.0961,
+            "hhi_of_delta": 0.0045,
+            "top_queries": [
+              {
+                "query": "高岗与饶漱石",
+                "delta": -58.24
+              },
+              {
+                "query": "小兄弟",
+                "delta": -41.6
+              },
+              {
+                "query": "年龄",
+                "delta": -30.51
+              },
+              {
+                "query": "佩通坦",
+                "delta": 25.5
+              },
+              {
+                "query": "石泰峰",
+                "delta": 21.74
+              }
+            ]
+          }
+        },
+        {
+          "label": "查询习近平个人资料与讲话",
+          "rows_a": 3,
+          "rows_b": 132,
+          "row_share_a": 0.00163,
+          "row_share_b": 0.00661,
+          "row_share_delta_pp": 0.498,
+          "weight_share_a": 0.00316,
+          "weight_share_b": 0.02284,
+          "weight_share_delta_pp": 1.967,
+          "z_row_share": 2.61,
+          "delta_concentration": {
+            "n_distinct_queries": 89,
+            "top1_share_of_delta": 0.4873,
+            "top5_share_of_delta": 0.7842,
+            "hhi_of_delta": 0.2878,
+            "top_queries": [
+              {
+                "query": "习近平",
+                "delta": 199.85
+              },
+              {
+                "query": "习近平简历",
+                "delta": 88.42
+              },
+              {
+                "query": "习近平身高",
+                "delta": 17.18
+              },
+              {
+                "query": "马云和习近平。谁的钱多？",
+                "delta": -8.32
+              },
+              {
+                "query": "习近平年龄",
+                "delta": 7.82
+              }
+            ]
+          }
+        },
+        {
+          "label": "七一勋章获得者信息查询",
+          "rows_a": 1,
+          "rows_b": 89,
+          "row_share_a": 0.00054,
+          "row_share_b": 0.00446,
+          "row_share_delta_pp": 0.391,
+          "weight_share_a": 0.00042,
+          "weight_share_b": 0.01205,
+          "weight_share_delta_pp": 1.164,
+          "z_row_share": 2.51,
+          "delta_concentration": {
+            "n_distinct_queries": 89,
+            "top1_share_of_delta": 0.49,
+            "top5_share_of_delta": 0.7139,
+            "hhi_of_delta": 0.2618,
+            "top_queries": [
+              {
+                "query": "七一勋章获得者",
+                "delta": 122.22
+              },
+              {
+                "query": "七一勋章获得者名单",
+                "delta": 31.99
+              },
+              {
+                "query": "2026年七一勋章获得者是谁",
+                "delta": 8.92
+              },
+              {
+                "query": "罗月获得了个人奖？",
+                "delta": -8.32
+              },
+              {
+                "query": "七一勋章获得者名单及事迹",
+                "delta": 6.61
+              }
+            ]
+          }
+        },
+        {
+          "label": "百度送花明星影响力查询",
+          "rows_a": 2,
+          "rows_b": 218,
+          "row_share_a": 0.00109,
+          "row_share_b": 0.01092,
+          "row_share_delta_pp": 0.983,
+          "weight_share_a": 0.00062,
+          "weight_share_b": 0.01003,
+          "weight_share_delta_pp": 0.942,
+          "z_row_share": 4.04,
+          "delta_concentration": {
+            "n_distinct_queries": 209,
+            "top1_share_of_delta": 0.081,
+            "top5_share_of_delta": 0.1944,
+            "hhi_of_delta": 0.0158,
+            "top_queries": [
+              {
+                "query": "肖战百度送花入口",
+                "delta": 16.93
+              },
+              {
+                "query": "《深入治疗》BY雨山前百度",
+                "delta": -7.59
+              },
+              {
+                "query": "金银花露",
+                "delta": 6.09
+              },
+              {
+                "query": "于朦胧百度送花",
+                "delta": 5.47
+              },
+              {
+                "query": "肖战送花",
+                "delta": 4.55
+              }
+            ]
+          }
+        },
+        {
+          "label": "名称含义查询",
+          "rows_a": 36,
+          "rows_b": 785,
+          "row_share_a": 0.01958,
+          "row_share_b": 0.03932,
+          "row_share_delta_pp": 1.974,
+          "weight_share_a": 0.0168,
+          "weight_share_b": 0.0262,
+          "weight_share_delta_pp": 0.94,
+          "z_row_share": 4.26,
+          "delta_concentration": {
+            "n_distinct_queries": 601,
+            "top1_share_of_delta": 0.0349,
+            "top5_share_of_delta": 0.14,
+            "hhi_of_delta": 0.0085,
+            "top_queries": [
+              {
+                "query": "白鹿",
+                "delta": 25.27
+              },
+              {
+                "query": "菩珠 蓬莱客",
+                "delta": -24.96
+              },
+              {
+                "query": "奥特曼",
+                "delta": -24.58
+              },
+              {
+                "query": "勒布朗·詹姆斯",
+                "delta": -13.93
+              },
+              {
+                "query": "奇遇原始人",
+                "delta": -12.6
+              }
+            ]
+          }
+        },
+        {
+          "label": "人物角色资料查询",
+          "rows_a": 22,
+          "rows_b": 563,
+          "row_share_a": 0.01196,
+          "row_share_b": 0.0282,
+          "row_share_delta_pp": 1.624,
+          "weight_share_a": 0.00967,
+          "weight_share_b": 0.01785,
+          "weight_share_delta_pp": 0.818,
+          "z_row_share": 4.12,
+          "delta_concentration": {
+            "n_distinct_queries": 417,
+            "top1_share_of_delta": 0.0639,
+            "top5_share_of_delta": 0.1577,
+            "hhi_of_delta": 0.0121,
+            "top_queries": [
+              {
+                "query": "自拟一位身为渡羽门的二师姐黄发少女详细介绍",
+                "delta": -33.28
+              },
+              {
+                "query": "波多野结衣",
+                "delta": 16.05
+              },
+              {
+                "query": "十岁苗条小女孩",
+                "delta": -12.39
+              },
+              {
+                "query": "草间弥生",
+                "delta": -10.24
+              },
+              {
+                "query": "佐藤瞳",
+                "delta": 10.12
+              }
+            ]
+          }
+        },
+        {
+          "label": "查询鹿晗关晓彤近况与感情动态",
+          "rows_a": 1,
+          "rows_b": 62,
+          "row_share_a": 0.00054,
+          "row_share_b": 0.00311,
+          "row_share_delta_pp": 0.256,
+          "weight_share_a": 0.00023,
+          "weight_share_b": 0.00678,
+          "weight_share_delta_pp": 0.654,
+          "z_row_share": 1.96,
+          "delta_concentration": {
+            "n_distinct_queries": 60,
+            "top1_share_of_delta": 0.3852,
+            "top5_share_of_delta": 0.6879,
+            "hhi_of_delta": 0.181,
+            "top_queries": [
+              {
+                "query": "鹿晗",
+                "delta": 50.41
+              },
+              {
+                "query": "鹿晗关晓彤宣布最新消息",
+                "delta": 18.37
+              },
+              {
+                "query": "鹿晗个人资料",
+                "delta": 8.94
+              },
+              {
+                "query": "关晓彤和鹿晗最新消息",
+                "delta": 6.73
+              },
+              {
+                "query": "鹿晗关晓彤最新消息",
+                "delta": 5.58
+              }
+            ]
+          }
+        },
+        {
+          "label": "查询人物个人资料简历",
+          "rows_a": 1,
+          "rows_b": 206,
+          "row_share_a": 0.00054,
+          "row_share_b": 0.01032,
+          "row_share_delta_pp": 0.977,
+          "weight_share_a": 0.0003,
+          "weight_share_b": 0.0064,
+          "weight_share_delta_pp": 0.61,
+          "z_row_share": 4.14,
+          "delta_concentration": {
+            "n_distinct_queries": 177,
+            "top1_share_of_delta": 0.0626,
+            "top5_share_of_delta": 0.2241,
+            "hhi_of_delta": 0.0171,
+            "top_queries": [
+              {
+                "query": "檀健次个人资料简介简历",
+                "delta": 8.38
+              },
+              {
+                "query": "庞众望简历及个人资料",
+                "delta": 7.06
+              },
+              {
+                "query": "路征个人资料简介及家世",
+                "delta": -5.93
+              },
+              {
+                "query": "杨紫个人资料简介简历",
+                "delta": 4.87
+              },
+              {
+                "query": "刘满仓简历个人资料简介",
+                "delta": 3.74
+              }
+            ]
+          }
+        },
+        {
+          "label": "肖战个人资料简介查询",
+          "rows_a": 1,
+          "rows_b": 145,
+          "row_share_a": 0.00054,
+          "row_share_b": 0.00726,
+          "row_share_delta_pp": 0.672,
+          "weight_share_a": 0.00288,
+          "weight_share_b": 0.00891,
+          "weight_share_delta_pp": 0.603,
+          "z_row_share": 3.38,
+          "delta_concentration": {
+            "n_distinct_queries": 137,
+            "top1_share_of_delta": 0.3098,
+            "top5_share_of_delta": 0.4779,
+            "hhi_of_delta": 0.1061,
+            "top_queries": [
+              {
+                "query": "肖战",
+                "delta": 37.35
+              },
+              {
+                "query": "肖战个人简介",
+                "delta": 6.39
+              },
+              {
+                "query": "肖战百度百科",
+                "delta": 5.96
+              },
+              {
+                "query": "肖战 百度百科",
+                "delta": 5.58
+              },
+              {
+                "query": "肖战个人简历",
+                "delta": 2.34
+              }
+            ]
+          }
+        },
+        {
+          "label": "省级党委书记任免查询",
+          "rows_a": 1,
+          "rows_b": 95,
+          "row_share_a": 0.00054,
+          "row_share_b": 0.00476,
+          "row_share_delta_pp": 0.421,
+          "weight_share_a": 0.00042,
+          "weight_share_b": 0.0061,
+          "weight_share_delta_pp": 0.569,
+          "z_row_share": 2.61,
+          "delta_concentration": {
+            "n_distinct_queries": 95,
+            "top1_share_of_delta": 0.1482,
+            "top5_share_of_delta": 0.4361,
+            "hhi_of_delta": 0.0514,
+            "top_queries": [
+              {
+                "query": "新疆陈小江",
+                "delta": 19.32
+              },
+              {
+                "query": "新疆自治区党委书记",
+                "delta": 12.23
+              },
+              {
+                "query": "陈小江任新疆党委书记 马兴瑞另有任用",
+                "delta": 9.84
+              },
+              {
+                "query": "两人都在新疆有过关联",
+                "delta": -8.32
+              },
+              {
+                "query": "新疆书记",
+                "delta": 7.14
+              }
+            ]
+          }
+        },
+        {
+          "label": "鞠婧祎资料与送花影响力查询",
+          "rows_a": 1,
+          "rows_b": 115,
+          "row_share_a": 0.00054,
+          "row_share_b": 0.00576,
+          "row_share_delta_pp": 0.522,
+          "weight_share_a": 0.0009,
+          "weight_share_b": 0.00537,
+          "weight_share_delta_pp": 0.447,
+          "z_row_share": 2.94,
+          "delta_concentration": {
+            "n_distinct_queries": 112,
+            "top1_share_of_delta": 0.1876,
+            "top5_share_of_delta": 0.2439,
+            "hhi_of_delta": 0.0415,
+            "top_queries": [
+              {
+                "query": "鞠婧祎",
+                "delta": 16.79
+              },
+              {
+                "query": "鞠婧祎简介",
+                "delta": 1.33
+              },
+              {
+                "query": "鞠婧祎百科个人资料简介图片",
+                "delta": 1.26
+              },
+              {
+                "query": "鞠婧祎的照片",
+                "delta": 1.26
+              },
+              {
+                "query": "鞠婧祎怎么读",
+                "delta": 1.19
+              }
+            ]
+          }
+        },
+        {
+          "label": "明星百度影响力查询",
+          "rows_a": 5,
+          "rows_b": 144,
+          "row_share_a": 0.00272,
+          "row_share_b": 0.00721,
+          "row_share_delta_pp": 0.449,
+          "weight_share_a": 0.00208,
+          "weight_share_b": 0.00544,
+          "weight_share_delta_pp": 0.336,
+          "z_row_share": 2.24,
+          "delta_concentration": {
+            "n_distinct_queries": 149,
+            "top1_share_of_delta": 0.0553,
+            "top5_share_of_delta": 0.2766,
+            "hhi_of_delta": 0.022,
+            "top_queries": [
+              {
+                "query": "曾国藩的三甲进士身份有何影响",
+                "delta": -8.32
+              },
+              {
+                "query": "傅谨案例对影视学术评价有何影响",
+                "delta": -8.32
+              },
+              {
+                "query": "日本男星中谁最具有国际影响力",
+                "delta": -8.32
+              },
+              {
+                "query": "陈楚生夺冠对内地乐坛有何影响",
+                "delta": -8.32
+              },
+              {
+                "query": "这些外籍明星里谁最有影响力",
+                "delta": -8.32
+              }
+            ]
+          }
+        },
+        {
+          "label": "查询部长级官员任职信息",
+          "rows_a": 3,
+          "rows_b": 74,
+          "row_share_a": 0.00163,
+          "row_share_b": 0.00371,
+          "row_share_delta_pp": 0.208,
+          "weight_share_a": 0.00135,
+          "weight_share_b": 0.00337,
+          "weight_share_delta_pp": 0.202,
+          "z_row_share": 1.44,
+          "delta_concentration": {
+            "n_distinct_queries": 65,
+            "top1_share_of_delta": 0.1105,
+            "top5_share_of_delta": 0.4082,
+            "hhi_of_delta": 0.0482,
+            "top_queries": [
+              {
+                "query": "大哥小助理",
+                "delta": -10.45
+              },
+              {
+                "query": "商丘市社会工作部副部长是谁",
+                "delta": -8.32
+              },
+              {
+                "query": "现任常务副部长具体是谁",
+                "delta": -8.32
+              },
+              {
+                "query": "民政部部长",
+                "delta": 7.08
+              },
+              {
+                "query": "统战部",
+                "delta": 4.42
+              }
+            ]
+          }
+        },
+        {
+          "label": "人物个人简介查询",
+          "rows_a": 8,
+          "rows_b": 218,
+          "row_share_a": 0.00435,
+          "row_share_b": 0.01092,
+          "row_share_delta_pp": 0.657,
+          "weight_share_a": 0.00876,
+          "weight_share_b": 0.00786,
+          "weight_share_delta_pp": -0.09,
+          "z_row_share": 2.66,
+          "delta_concentration": {
+            "n_distinct_queries": 191,
+            "top1_share_of_delta": 0.2543,
+            "top5_share_of_delta": 0.4827,
+            "hhi_of_delta": 0.0834,
+            "top_queries": [
+              {
+                "query": "景甜个人简介",
+                "delta": -84.2
+              },
+              {
+                "query": "主持人邹韵的个人简介",
+                "delta": -24.96
+              },
+              {
+                "query": "井柏然个人简介",
+                "delta": -20.43
+              },
+              {
+                "query": "主持人王芳个人简介",
+                "delta": -16.64
+              },
+              {
+                "query": "钟掘个人简介",
+                "delta": 13.6
+              }
+            ]
+          }
+        }
+      ],
+      "receded": [],
+      "too_thin_to_compare": [
+        {
+          "label": "查询习近平总书记个人信息与讲话",
+          "rows_a": 0,
+          "rows_b": 17,
+          "row_share_a": 0.0,
+          "row_share_b": 0.00085,
+          "row_share_delta_pp": 0.085,
+          "weight_share_a": 0.0,
+          "weight_share_b": 0.00076,
+          "weight_share_delta_pp": 0.076,
+          "z_row_share": 1.25,
+          "delta_concentration": {
+            "n_distinct_queries": 15,
+            "top1_share_of_delta": 0.3995,
+            "top5_share_of_delta": 0.7147,
+            "hhi_of_delta": 0.1943,
+            "top_queries": [
+              {
+                "query": "习近平总书记",
+                "delta": 6.08
+              },
+              {
+                "query": "习近平总书记七一讲话",
+                "delta": 1.41
+              },
+              {
+                "query": "习近平总书记身高",
+                "delta": 1.29
+              },
+              {
+                "query": "习总书记七一讲话",
+                "delta": 1.05
+              },
+              {
+                "query": "习总书记",
+                "delta": 1.05
+              }
+            ]
+          }
+        }
+      ]
+    },
+    "bu_family_final": {
+      "comparable": true,
+      "snapshot_a": "AI助手",
+      "snapshot_b": "搜索",
+      "rows_a": 1839,
+      "rows_b": 19965,
+      "n_classes": 35,
+      "cramers_v": 0.5116,
+      "total_variation_weight": 0.4842,
+      "total_variation_rows": 0.5145,
+      "n_comparisons": 19,
+      "stable": [
+        {
+          "label": "#40 查询人物背景与个人生活",
+          "rows_a": 333,
+          "rows_b": 214,
+          "row_share_a": 0.18108,
+          "row_share_b": 0.01072,
+          "row_share_delta_pp": -17.036,
+          "weight_share_a": 0.15921,
+          "weight_share_b": 0.00671,
+          "weight_share_delta_pp": -15.249,
+          "z_row_share": -44.7,
+          "delta_concentration": {
+            "n_distinct_queries": 530,
+            "top1_share_of_delta": 0.0226,
+            "top5_share_of_delta": 0.0841,
+            "hhi_of_delta": 0.0042,
+            "top_queries": [
+              {
+                "query": "陈武同志的逝世对政协有何影响",
+                "delta": -74.88
+              },
+              {
+                "query": "主持人名字",
+                "delta": -66.56
+              },
+              {
+                "query": "叶建春的背景和经历",
+                "delta": -49.92
+              },
+              {
+                "query": "王伟，中国羽毛球队男双主教练，曾任中国羽毛球协会副主席兼秘书长。2026年8月，王伟涉嫌严重违法，接受中央纪委国家监委驻国家体育总局纪检监察组和江苏省南通市监委监察调查。 王伟的涉案金额和具体罪名是什么",
+                "delta": -49.92
+              },
+              {
+                "query": "孙宇晨的个人生活如何",
+                "delta": -37.97
+              }
+            ]
+          }
+        },
+        {
+          "label": "#56 查询明星娱乐八卦动态",
+          "rows_a": 137,
+          "rows_b": 214,
+          "row_share_a": 0.0745,
+          "row_share_b": 0.01072,
+          "row_share_delta_pp": -6.378,
+          "weight_share_a": 0.08352,
+          "weight_share_b": 0.00651,
+          "weight_share_delta_pp": -7.701,
+          "z_row_share": -20.8,
+          "delta_concentration": {
+            "n_distinct_queries": 326,
+            "top1_share_of_delta": 0.2169,
+            "top5_share_of_delta": 0.2988,
+            "hhi_of_delta": 0.0524,
+            "top_queries": [
+              {
+                "query": "景甜",
+                "delta": -388.65
+              },
+              {
+                "query": "孙宇晨 我的女友景甜",
+                "delta": -47.67
+              },
+              {
+                "query": "我的女友景甜",
+                "delta": -39.09
+              },
+              {
+                "query": "张锦程下跪求婚张延",
+                "delta": -30.92
+              },
+              {
+                "query": "杨幂孙俪获年度女演员",
+                "delta": -29.18
+              }
+            ]
+          }
+        },
+        {
+          "label": "#57 特定对象重要成果与相关条目列举查询",
+          "rows_a": 127,
+          "rows_b": 26,
+          "row_share_a": 0.06906,
+          "row_share_b": 0.0013,
+          "row_share_delta_pp": -6.776,
+          "weight_share_a": 0.05693,
+          "weight_share_b": 0.00063,
+          "weight_share_delta_pp": -5.631,
+          "z_row_share": -33.31,
+          "delta_concentration": {
+            "n_distinct_queries": 150,
+            "top1_share_of_delta": 0.0289,
+            "top5_share_of_delta": 0.0867,
+            "hhi_of_delta": 0.0086,
+            "top_queries": [
+              {
+                "query": "曾晟的违纪违法细节有哪些",
+                "delta": -33.28
+              },
+              {
+                "query": "关洁老师有哪些代表作品",
+                "delta": -16.64
+              },
+              {
+                "query": "夏凤俭家族财富来源有哪些传闻",
+                "delta": -16.64
+              },
+              {
+                "query": "杨馥源老师2024年参与了哪些重要工作",
+                "delta": -16.64
+              },
+              {
+                "query": "常红卫涉嫌哪些违纪违法问题",
+                "delta": -16.64
+              }
+            ]
+          }
+        },
+        {
+          "label": "#54 人物及机构基本信息查询",
+          "rows_a": 125,
+          "rows_b": 124,
+          "row_share_a": 0.06797,
+          "row_share_b": 0.00621,
+          "row_share_delta_pp": -6.176,
+          "weight_share_a": 0.05943,
+          "weight_share_b": 0.00315,
+          "weight_share_delta_pp": -5.628,
+          "z_row_share": -23.85,
+          "delta_concentration": {
+            "n_distinct_queries": 237,
+            "top1_share_of_delta": 0.0428,
+            "top5_share_of_delta": 0.1217,
+            "hhi_of_delta": 0.0097,
+            "top_queries": [
+              {
+                "query": "孙宇晨的财富来源是什么",
+                "delta": -53.51
+              },
+              {
+                "query": "孙宇晨的个人背景是什么",
+                "delta": -28.77
+              },
+              {
+                "query": "郑有美属什么生肖？",
+                "delta": -24.96
+              },
+              {
+                "query": "李维康去世的具体原因是什么",
+                "delta": -23.88
+              },
+              {
+                "query": "陈武同志的逝世原因是什么",
+                "delta": -21.22
+              }
+            ]
+          }
+        },
+        {
+          "label": "#43 查询对象身份",
+          "rows_a": 84,
+          "rows_b": 151,
+          "row_share_a": 0.04568,
+          "row_share_b": 0.00756,
+          "row_share_delta_pp": -3.811,
+          "weight_share_a": 0.0468,
+          "weight_share_b": 0.00488,
+          "weight_share_delta_pp": -4.192,
+          "z_row_share": -15.15,
+          "delta_concentration": {
+            "n_distinct_queries": 213,
+            "top1_share_of_delta": 0.0918,
+            "top5_share_of_delta": 0.2486,
+            "hhi_of_delta": 0.0214,
+            "top_queries": [
+              {
+                "query": "这是谁？",
+                "delta": -94.88
+              },
+              {
+                "query": "这个是谁",
+                "delta": -45.8
+              },
+              {
+                "query": "这个人是谁？",
+                "delta": -43.28
+              },
+              {
+                "query": "这人是谁",
+                "delta": -39.67
+              },
+              {
+                "query": "明珍珍是谁",
+                "delta": -33.28
+              }
+            ]
+          }
+        },
+        {
+          "label": "#59 查询个人背景与任职信息",
+          "rows_a": 98,
+          "rows_b": 46,
+          "row_share_a": 0.05329,
+          "row_share_b": 0.0023,
+          "row_share_delta_pp": -5.099,
+          "weight_share_a": 0.04246,
+          "weight_share_b": 0.00128,
+          "weight_share_delta_pp": -4.118,
+          "z_row_share": -25.83,
+          "delta_concentration": {
+            "n_distinct_queries": 138,
+            "top1_share_of_delta": 0.0285,
+            "top5_share_of_delta": 0.087,
+            "hhi_of_delta": 0.0102,
+            "top_queries": [
+              {
+                "query": "曾仁海是否被调查",
+                "delta": -24.96
+              },
+              {
+                "query": "李红军是否有新的职务调整",
+                "delta": -16.64
+              },
+              {
+                "query": "吕佳容是否真的退圈了",
+                "delta": -16.64
+              },
+              {
+                "query": "郭德纲是否会被封杀",
+                "delta": -9.12
+              },
+              {
+                "query": "张又浃是否已被判刑",
+                "delta": -8.79
+              }
+            ]
+          }
+        },
+        {
+          "label": "#58 查询人物身份与归属信息",
+          "rows_a": 51,
+          "rows_b": 83,
+          "row_share_a": 0.02773,
+          "row_share_b": 0.00416,
+          "row_share_delta_pp": -2.358,
+          "weight_share_a": 0.02662,
+          "weight_share_b": 0.00275,
+          "weight_share_delta_pp": -2.387,
+          "z_row_share": -12.38,
+          "delta_concentration": {
+            "n_distinct_queries": 123,
+            "top1_share_of_delta": 0.1421,
+            "top5_share_of_delta": 0.2759,
+            "hhi_of_delta": 0.0344,
+            "top_queries": [
+              {
+                "query": "请问图中是哪位名人？",
+                "delta": -83.48
+              },
+              {
+                "query": "哪里人",
+                "delta": -22.51
+              },
+              {
+                "query": "他是哪里人",
+                "delta": -20.73
+              },
+              {
+                "query": "像哪个明星",
+                "delta": -18.69
+              },
+              {
+                "query": "田齐和姜齐哪个更强大",
+                "delta": -16.64
+              }
+            ]
+          }
+        },
+        {
+          "label": "#61 人物年龄及属性查询",
+          "rows_a": 29,
+          "rows_b": 69,
+          "row_share_a": 0.01577,
+          "row_share_b": 0.00346,
+          "row_share_delta_pp": -1.231,
+          "weight_share_a": 0.01423,
+          "weight_share_b": 0.0014,
+          "weight_share_delta_pp": -1.283,
+          "z_row_share": -7.55,
+          "delta_concentration": {
+            "n_distinct_queries": 91,
+            "top1_share_of_delta": 0.1863,
+            "top5_share_of_delta": 0.2928,
+            "hhi_of_delta": 0.0539,
+            "top_queries": [
+              {
+                "query": "景甜的真实身价是多少",
+                "delta": -58.24
+              },
+              {
+                "query": "此人系哪里人？现年多少岁",
+                "delta": -8.32
+              },
+              {
+                "query": "郭干县金川镇瓦桥村委会五小组现在有多少人",
+                "delta": -8.32
+              },
+              {
+                "query": "朱德和康克清差多大岁数",
+                "delta": -8.32
+              },
+              {
+                "query": "猪八戒在西游记中的排名是多少",
+                "delta": -8.32
+              }
+            ]
+          }
+        },
+        {
+          "label": "#48 查询中国中央党政军领导成员名单与职务",
+          "rows_a": 26,
+          "rows_b": 346,
+          "row_share_a": 0.01414,
+          "row_share_b": 0.01733,
+          "row_share_delta_pp": 0.319,
+          "weight_share_a": 0.01516,
+          "weight_share_b": 0.02787,
+          "weight_share_delta_pp": 1.272,
+          "z_row_share": 1.01,
+          "delta_concentration": {
+            "n_distinct_queries": 272,
+            "top1_share_of_delta": 0.103,
+            "top5_share_of_delta": 0.2917,
+            "hhi_of_delta": 0.0302,
+            "top_queries": [
+              {
+                "query": "胡锦涛",
+                "delta": 59.63
+              },
+              {
+                "query": "江泽民",
+                "delta": 58.08
+              },
+              {
+                "query": "邓小平",
+                "delta": 17.86
+              },
+              {
+                "query": "教育部环境工程教学指导委员会委员名单",
+                "delta": -16.64
+              },
+              {
+                "query": "历届院长",
+                "delta": -16.64
+              }
+            ]
+          }
+        },
+        {
+          "label": "#31 查询人物图片",
+          "rows_a": 30,
+          "rows_b": 154,
+          "row_share_a": 0.01631,
+          "row_share_b": 0.00771,
+          "row_share_delta_pp": -0.86,
+          "weight_share_a": 0.01694,
+          "weight_share_b": 0.00484,
+          "weight_share_delta_pp": -1.21,
+          "z_row_share": -3.86,
+          "delta_concentration": {
+            "n_distinct_queries": 144,
+            "top1_share_of_delta": 0.2414,
+            "top5_share_of_delta": 0.4386,
+            "hhi_of_delta": 0.0778,
+            "top_queries": [
+              {
+                "query": "照片",
+                "delta": -101.6
+              },
+              {
+                "query": "有照片吗",
+                "delta": -38.14
+              },
+              {
+                "query": "男生",
+                "delta": -17.82
+              },
+              {
+                "query": "光头强",
+                "delta": -16.94
+              },
+              {
+                "query": "我的哪吒与变形金刚张抗哪吒",
+                "delta": -10.07
+              }
+            ]
+          }
+        },
+        {
+          "label": "#38 查询女性人物及角色信息",
+          "rows_a": 23,
+          "rows_b": 119,
+          "row_share_a": 0.01251,
+          "row_share_b": 0.00596,
+          "row_share_delta_pp": -0.655,
+          "weight_share_a": 0.00994,
+          "weight_share_b": 0.00611,
+          "weight_share_delta_pp": -0.383,
+          "z_row_share": -3.34,
+          "delta_concentration": {
+            "n_distinct_queries": 111,
+            "top1_share_of_delta": 0.1085,
+            "top5_share_of_delta": 0.2885,
+            "hhi_of_delta": 0.0346,
+            "top_queries": [
+              {
+                "query": "法国空姐",
+                "delta": 29.19
+              },
+              {
+                "query": "女生",
+                "delta": -18.56
+              },
+              {
+                "query": "这个女演员是谁",
+                "delta": -11.32
+              },
+              {
+                "query": "这个女的叫什么名字",
+                "delta": -9.66
+              },
+              {
+                "query": "邵雨薇为艺术做出贡献的片段",
+                "delta": -8.87
+              }
+            ]
+          }
+        },
+        {
+          "label": "#39 人名信息查询",
+          "rows_a": 43,
+          "rows_b": 377,
+          "row_share_a": 0.02338,
+          "row_share_b": 0.01888,
+          "row_share_delta_pp": -0.45,
+          "weight_share_a": 0.02168,
+          "weight_share_b": 0.02521,
+          "weight_share_delta_pp": 0.353,
+          "z_row_share": -1.34,
+          "delta_concentration": {
+            "n_distinct_queries": 240,
+            "top1_share_of_delta": 0.0526,
+            "top5_share_of_delta": 0.151,
+            "hhi_of_delta": 0.0119,
+            "top_queries": [
+              {
+                "query": "玛丽亚凯莉",
+                "delta": -24.96
+              },
+              {
+                "query": "古力娜扎",
+                "delta": -13.91
+              },
+              {
+                "query": "王菲",
+                "delta": -11.65
+              },
+              {
+                "query": "彭丽媛",
+                "delta": 11.03
+              },
+              {
+                "query": "徐熙媛",
+                "delta": -10.04
+              }
+            ]
+          }
+        },
+        {
+          "label": "#50 人物简历查询",
+          "rows_a": 11,
+          "rows_b": 169,
+          "row_share_a": 0.00598,
+          "row_share_b": 0.00846,
+          "row_share_delta_pp": 0.248,
+          "weight_share_a": 0.00536,
+          "weight_share_b": 0.00783,
+          "weight_share_delta_pp": 0.247,
+          "z_row_share": 1.13,
+          "delta_concentration": {
+            "n_distinct_queries": 167,
+            "top1_share_of_delta": 0.0858,
+            "top5_share_of_delta": 0.3027,
+            "hhi_of_delta": 0.0312,
+            "top_queries": [
+              {
+                "query": "王於昌简历",
+                "delta": 22.64
+              },
+              {
+                "query": "简历",
+                "delta": -16.71
+              },
+              {
+                "query": "陈武简历",
+                "delta": -16.58
+              },
+              {
+                "query": "陈小江简历",
+                "delta": 15.23
+              },
+              {
+                "query": "叶建春简历",
+                "delta": -8.7
+              }
+            ]
+          }
+        },
+        {
+          "label": "#49 领导班子成员名单查询",
+          "rows_a": 13,
+          "rows_b": 87,
+          "row_share_a": 0.00707,
+          "row_share_b": 0.00436,
+          "row_share_delta_pp": -0.271,
+          "weight_share_a": 0.00524,
+          "weight_share_b": 0.00279,
+          "weight_share_delta_pp": -0.245,
+          "z_row_share": -1.65,
+          "delta_concentration": {
+            "n_distinct_queries": 91,
+            "top1_share_of_delta": 0.0674,
+            "top5_share_of_delta": 0.2745,
+            "hhi_of_delta": 0.0396,
+            "top_queries": [
+              {
+                "query": "民政部领导班子",
+                "delta": 10.83
+              },
+              {
+                "query": "黄遥拟任的县（区）领导班子副职是哪个",
+                "delta": -8.32
+              },
+              {
+                "query": "剅河镇历届领导班子",
+                "delta": -8.32
+              },
+              {
+                "query": "陕西铁塔领导班子是否有新成员加入",
+                "delta": -8.32
+              },
+              {
+                "query": "陕西省委领导中谁最有权势",
+                "delta": -8.32
+              }
+            ]
+          }
+        },
+        {
+          "label": "#35 查询女性人物资料",
+          "rows_a": 5,
+          "rows_b": 82,
+          "row_share_a": 0.00272,
+          "row_share_b": 0.00411,
+          "row_share_delta_pp": 0.139,
+          "weight_share_a": 0.0044,
+          "weight_share_b": 0.00228,
+          "weight_share_delta_pp": -0.211,
+          "z_row_share": 0.9,
+          "delta_concentration": {
+            "n_distinct_queries": 61,
+            "top1_share_of_delta": 0.4686,
+            "top5_share_of_delta": 0.6995,
+            "hhi_of_delta": 0.2373,
+            "top_queries": [
+              {
+                "query": "马皇后",
+                "delta": -57.27
+              },
+              {
+                "query": "九尾狐族的公主",
+                "delta": -8.32
+              },
+              {
+                "query": "蒋介石 慈禧太后哪个更负面？",
+                "delta": -8.32
+              },
+              {
+                "query": "孝惠章皇后为何没有子嗣",
+                "delta": -8.32
+              },
+              {
+                "query": "杨贵妃",
+                "delta": 3.25
+              }
+            ]
+          }
+        },
+        {
+          "label": "#45 党委书记及常委任职查询",
+          "rows_a": 12,
+          "rows_b": 219,
+          "row_share_a": 0.00653,
+          "row_share_b": 0.01097,
+          "row_share_delta_pp": 0.444,
+          "weight_share_a": 0.00518,
+          "weight_share_b": 0.00705,
+          "weight_share_delta_pp": 0.187,
+          "z_row_share": 1.78,
+          "delta_concentration": {
+            "n_distinct_queries": 193,
+            "top1_share_of_delta": 0.0599,
+            "top5_share_of_delta": 0.2044,
+            "hhi_of_delta": 0.0212,
+            "top_queries": [
+              {
+                "query": "朱忠明任上海市政府党组书记",
+                "delta": -14.55
+              },
+              {
+                "query": "荣昌区委书记",
+                "delta": 10.13
+              },
+              {
+                "query": "上海历任市长和市委书记中谁最著名",
+                "delta": -8.32
+              },
+              {
+                "query": "库尔勒市住建局局长书记",
+                "delta": -8.32
+              },
+              {
+                "query": "余姓县委副书记中谁即将晋升",
+                "delta": -8.32
+              }
+            ]
+          }
+        },
+        {
+          "label": "#30 美女图片查询",
+          "rows_a": 13,
+          "rows_b": 107,
+          "row_share_a": 0.00707,
+          "row_share_b": 0.00536,
+          "row_share_delta_pp": -0.171,
+          "weight_share_a": 0.00926,
+          "weight_share_b": 0.0087,
+          "weight_share_delta_pp": -0.056,
+          "z_row_share": -0.95,
+          "delta_concentration": {
+            "n_distinct_queries": 74,
+            "top1_share_of_delta": 0.0858,
+            "top5_share_of_delta": 0.3415,
+            "hhi_of_delta": 0.0399,
+            "top_queries": [
+              {
+                "query": "美女",
+                "delta": -11.87
+              },
+              {
+                "query": "欧美dj",
+                "delta": -10.4
+              },
+              {
+                "query": "美女男",
+                "delta": -8.32
+              },
+              {
+                "query": "完整号叫做Gi豆（不爱看美女）",
+                "delta": -8.32
+              },
+              {
+                "query": "美女面带笑容",
+                "delta": -8.32
+              }
+            ]
+          }
+        },
+        {
+          "label": "#37 人物配偶及亲属关系查询",
+          "rows_a": 8,
+          "rows_b": 105,
+          "row_share_a": 0.00435,
+          "row_share_b": 0.00526,
+          "row_share_delta_pp": 0.091,
+          "weight_share_a": 0.00264,
+          "weight_share_b": 0.00228,
+          "weight_share_delta_pp": -0.037,
+          "z_row_share": 0.52,
+          "delta_concentration": {
+            "n_distinct_queries": 105,
+            "top1_share_of_delta": 0.0846,
+            "top5_share_of_delta": 0.3843,
+            "hhi_of_delta": 0.042,
+            "top_queries": [
+              {
+                "query": "洪金宝在大陆的媳妇",
+                "delta": -8.32
+              },
+              {
+                "query": "黎明女儿长大后像谁",
+                "delta": -8.32
+              },
+              {
+                "query": "叶弘老婆",
+                "delta": -8.32
+              },
+              {
+                "query": "李小龙妻子现在状况",
+                "delta": -7.46
+              },
+              {
+                "query": "女婿",
+                "delta": -5.39
+              }
+            ]
+          }
+        },
+        {
+          "label": "#47 官员职务及履历查询",
+          "rows_a": 15,
+          "rows_b": 128,
+          "row_share_a": 0.00816,
+          "row_share_b": 0.00641,
+          "row_share_delta_pp": -0.175,
+          "weight_share_a": 0.00664,
+          "weight_share_b": 0.00684,
+          "weight_share_delta_pp": 0.02,
+          "z_row_share": -0.89,
+          "delta_concentration": {
+            "n_distinct_queries": 112,
+            "top1_share_of_delta": 0.1184,
+            "top5_share_of_delta": 0.3654,
+            "hhi_of_delta": 0.0449,
+            "top_queries": [
+              {
+                "query": "李克强",
+                "delta": 26.71
+              },
+              {
+                "query": "国务院副总理名单",
+                "delta": -24.96
+              },
+              {
+                "query": "覃伟中辞去深圳市市长职务",
+                "delta": -13.43
+              },
+              {
+                "query": "李运任深圳市代市长",
+                "delta": -8.79
+              },
+              {
+                "query": "特朗普",
+                "delta": 8.53
+              }
+            ]
+          }
+        }
+      ],
+      "emergent": [
+        {
+          "label": "#1 人物资料查询",
+          "rows_a": 496,
+          "rows_b": 12174,
+          "row_share_a": 0.26971,
+          "row_share_b": 0.60977,
+          "row_share_delta_pp": 34.006,
+          "weight_share_a": 0.32289,
+          "weight_share_b": 0.63359,
+          "weight_share_delta_pp": 31.07,
+          "z_row_share": 28.28,
+          "delta_concentration": {
+            "n_distinct_queries": 9392,
+            "top1_share_of_delta": 0.0596,
+            "top5_share_of_delta": 0.1608,
+            "hhi_of_delta": 0.0071,
+            "top_queries": [
+              {
+                "query": "陈小江",
+                "delta": 966.75
+              },
+              {
+                "query": "谭凯",
+                "delta": -598.03
+              },
+              {
+                "query": "孙宇晨",
+                "delta": -417.43
+              },
+              {
+                "query": "王奎荣",
+                "delta": -398.67
+              },
+              {
+                "query": "蔡奇",
+                "delta": 227.31
+              }
+            ]
+          }
+        },
+        {
+          "label": "#51 含“马”字人物信息查询",
+          "rows_a": 5,
+          "rows_b": 154,
+          "row_share_a": 0.00272,
+          "row_share_b": 0.00771,
+          "row_share_delta_pp": 0.499,
+          "weight_share_a": 0.00164,
+          "weight_share_b": 0.03489,
+          "weight_share_delta_pp": 3.325,
+          "z_row_share": 2.41,
+          "delta_concentration": {
+            "n_distinct_queries": 120,
+            "top1_share_of_delta": 0.7107,
+            "top5_share_of_delta": 0.8314,
+            "hhi_of_delta": 0.5109,
+            "top_queries": [
+              {
+                "query": "马兴瑞",
+                "delta": 509.46
+              },
+              {
+                "query": "马善祥",
+                "delta": 40.17
+              },
+              {
+                "query": "马兴瑞另有任用",
+                "delta": 29.12
+              },
+              {
+                "query": "马苏",
+                "delta": 8.88
+              },
+              {
+                "query": "核能马斌",
+                "delta": -8.32
+              }
+            ]
+          }
+        },
+        {
+          "label": "#33 专名信息查询",
+          "rows_a": 70,
+          "rows_b": 1954,
+          "row_share_a": 0.03806,
+          "row_share_b": 0.09787,
+          "row_share_delta_pp": 5.981,
+          "weight_share_a": 0.03624,
+          "weight_share_b": 0.06245,
+          "weight_share_delta_pp": 2.62,
+          "z_row_share": 8.46,
+          "delta_concentration": {
+            "n_distinct_queries": 1557,
+            "top1_share_of_delta": 0.0315,
+            "top5_share_of_delta": 0.0961,
+            "hhi_of_delta": 0.0045,
+            "top_queries": [
+              {
+                "query": "高岗与饶漱石",
+                "delta": -58.24
+              },
+              {
+                "query": "小兄弟",
+                "delta": -41.6
+              },
+              {
+                "query": "年龄",
+                "delta": -30.51
+              },
+              {
+                "query": "佩通坦",
+                "delta": 25.5
+              },
+              {
+                "query": "石泰峰",
+                "delta": 21.74
+              }
+            ]
+          }
+        },
+        {
+          "label": "#44 习近平个人资料与讲话查询",
+          "rows_a": 3,
+          "rows_b": 132,
+          "row_share_a": 0.00163,
+          "row_share_b": 0.00661,
+          "row_share_delta_pp": 0.498,
+          "weight_share_a": 0.00316,
+          "weight_share_b": 0.02284,
+          "weight_share_delta_pp": 1.967,
+          "z_row_share": 2.61,
+          "delta_concentration": {
+            "n_distinct_queries": 89,
+            "top1_share_of_delta": 0.4873,
+            "top5_share_of_delta": 0.7842,
+            "hhi_of_delta": 0.2878,
+            "top_queries": [
+              {
+                "query": "习近平",
+                "delta": 199.85
+              },
+              {
+                "query": "习近平简历",
+                "delta": 88.42
+              },
+              {
+                "query": "习近平身高",
+                "delta": 17.18
+              },
+              {
+                "query": "马云和习近平。谁的钱多？",
+                "delta": -8.32
+              },
+              {
+                "query": "习近平年龄",
+                "delta": 7.82
+              }
+            ]
+          }
+        },
+        {
+          "label": "#2 百度明星影响力查询",
+          "rows_a": 7,
+          "rows_b": 362,
+          "row_share_a": 0.00381,
+          "row_share_b": 0.01813,
+          "row_share_delta_pp": 1.433,
+          "weight_share_a": 0.0027,
+          "weight_share_b": 0.01547,
+          "weight_share_delta_pp": 1.278,
+          "z_row_share": 4.56,
+          "delta_concentration": {
+            "n_distinct_queries": 358,
+            "top1_share_of_delta": 0.0471,
+            "top5_share_of_delta": 0.1397,
+            "hhi_of_delta": 0.0092,
+            "top_queries": [
+              {
+                "query": "肖战百度送花入口",
+                "delta": 16.93
+              },
+              {
+                "query": "日本男星中谁最具有国际影响力",
+                "delta": -8.32
+              },
+              {
+                "query": "这些外籍明星里谁最有影响力",
+                "delta": -8.32
+              },
+              {
+                "query": "陈楚生夺冠对内地乐坛有何影响",
+                "delta": -8.32
+              },
+              {
+                "query": "曾国藩的三甲进士身份有何影响",
+                "delta": -8.32
+              }
+            ]
+          }
+        },
+        {
+          "label": "#52 七一勋章获得者信息查询",
+          "rows_a": 1,
+          "rows_b": 89,
+          "row_share_a": 0.00054,
+          "row_share_b": 0.00446,
+          "row_share_delta_pp": 0.391,
+          "weight_share_a": 0.00042,
+          "weight_share_b": 0.01205,
+          "weight_share_delta_pp": 1.164,
+          "z_row_share": 2.51,
+          "delta_concentration": {
+            "n_distinct_queries": 89,
+            "top1_share_of_delta": 0.49,
+            "top5_share_of_delta": 0.7139,
+            "hhi_of_delta": 0.2618,
+            "top_queries": [
+              {
+                "query": "七一勋章获得者",
+                "delta": 122.22
+              },
+              {
+                "query": "七一勋章获得者名单",
+                "delta": 31.99
+              },
+              {
+                "query": "2026年七一勋章获得者是谁",
+                "delta": 8.92
+              },
+              {
+                "query": "罗月获得了个人奖？",
+                "delta": -8.32
+              },
+              {
+                "query": "七一勋章获得者名单及事迹",
+                "delta": 6.61
+              }
+            ]
+          }
+        },
+        {
+          "label": "#34 名称含义查询",
+          "rows_a": 36,
+          "rows_b": 785,
+          "row_share_a": 0.01958,
+          "row_share_b": 0.03932,
+          "row_share_delta_pp": 1.974,
+          "weight_share_a": 0.0168,
+          "weight_share_b": 0.0262,
+          "weight_share_delta_pp": 0.94,
+          "z_row_share": 4.26,
+          "delta_concentration": {
+            "n_distinct_queries": 601,
+            "top1_share_of_delta": 0.0349,
+            "top5_share_of_delta": 0.14,
+            "hhi_of_delta": 0.0085,
+            "top_queries": [
+              {
+                "query": "白鹿",
+                "delta": 25.27
+              },
+              {
+                "query": "菩珠 蓬莱客",
+                "delta": -24.96
+              },
+              {
+                "query": "奥特曼",
+                "delta": -24.58
+              },
+              {
+                "query": "勒布朗·詹姆斯",
+                "delta": -13.93
+              },
+              {
+                "query": "奇遇原始人",
+                "delta": -12.6
+              }
+            ]
+          }
+        },
+        {
+          "label": "#36 人物角色资料查询",
+          "rows_a": 22,
+          "rows_b": 563,
+          "row_share_a": 0.01196,
+          "row_share_b": 0.0282,
+          "row_share_delta_pp": 1.624,
+          "weight_share_a": 0.00967,
+          "weight_share_b": 0.01785,
+          "weight_share_delta_pp": 0.818,
+          "z_row_share": 4.12,
+          "delta_concentration": {
+            "n_distinct_queries": 417,
+            "top1_share_of_delta": 0.0639,
+            "top5_share_of_delta": 0.1577,
+            "hhi_of_delta": 0.0121,
+            "top_queries": [
+              {
+                "query": "自拟一位身为渡羽门的二师姐黄发少女详细介绍",
+                "delta": -33.28
+              },
+              {
+                "query": "波多野结衣",
+                "delta": 16.05
+              },
+              {
+                "query": "十岁苗条小女孩",
+                "delta": -12.39
+              },
+              {
+                "query": "草间弥生",
+                "delta": -10.24
+              },
+              {
+                "query": "佐藤瞳",
+                "delta": 10.12
+              }
+            ]
+          }
+        },
+        {
+          "label": "#53 查询鹿晗关晓彤近况与感情动态",
+          "rows_a": 1,
+          "rows_b": 62,
+          "row_share_a": 0.00054,
+          "row_share_b": 0.00311,
+          "row_share_delta_pp": 0.256,
+          "weight_share_a": 0.00023,
+          "weight_share_b": 0.00678,
+          "weight_share_delta_pp": 0.654,
+          "z_row_share": 1.96,
+          "delta_concentration": {
+            "n_distinct_queries": 60,
+            "top1_share_of_delta": 0.3852,
+            "top5_share_of_delta": 0.6879,
+            "hhi_of_delta": 0.181,
+            "top_queries": [
+              {
+                "query": "鹿晗",
+                "delta": 50.41
+              },
+              {
+                "query": "鹿晗关晓彤宣布最新消息",
+                "delta": 18.37
+              },
+              {
+                "query": "鹿晗个人资料",
+                "delta": 8.94
+              },
+              {
+                "query": "关晓彤和鹿晗最新消息",
+                "delta": 6.73
+              },
+              {
+                "query": "鹿晗关晓彤最新消息",
+                "delta": 5.58
+              }
+            ]
+          }
+        },
+        {
+          "label": "#41 查询人物个人资料简历",
+          "rows_a": 1,
+          "rows_b": 206,
+          "row_share_a": 0.00054,
+          "row_share_b": 0.01032,
+          "row_share_delta_pp": 0.977,
+          "weight_share_a": 0.0003,
+          "weight_share_b": 0.0064,
+          "weight_share_delta_pp": 0.61,
+          "z_row_share": 4.14,
+          "delta_concentration": {
+            "n_distinct_queries": 177,
+            "top1_share_of_delta": 0.0626,
+            "top5_share_of_delta": 0.2241,
+            "hhi_of_delta": 0.0171,
+            "top_queries": [
+              {
+                "query": "檀健次个人资料简介简历",
+                "delta": 8.38
+              },
+              {
+                "query": "庞众望简历及个人资料",
+                "delta": 7.06
+              },
+              {
+                "query": "路征个人资料简介及家世",
+                "delta": -5.93
+              },
+              {
+                "query": "杨紫个人资料简介简历",
+                "delta": 4.87
+              },
+              {
+                "query": "刘满仓简历个人资料简介",
+                "delta": 3.74
+              }
+            ]
+          }
+        },
+        {
+          "label": "#55 肖战个人资料简介查询",
+          "rows_a": 1,
+          "rows_b": 145,
+          "row_share_a": 0.00054,
+          "row_share_b": 0.00726,
+          "row_share_delta_pp": 0.672,
+          "weight_share_a": 0.00288,
+          "weight_share_b": 0.00891,
+          "weight_share_delta_pp": 0.603,
+          "z_row_share": 3.38,
+          "delta_concentration": {
+            "n_distinct_queries": 137,
+            "top1_share_of_delta": 0.3098,
+            "top5_share_of_delta": 0.4779,
+            "hhi_of_delta": 0.1061,
+            "top_queries": [
+              {
+                "query": "肖战",
+                "delta": 37.35
+              },
+              {
+                "query": "肖战个人简介",
+                "delta": 6.39
+              },
+              {
+                "query": "肖战百度百科",
+                "delta": 5.96
+              },
+              {
+                "query": "肖战 百度百科",
+                "delta": 5.58
+              },
+              {
+                "query": "肖战个人简历",
+                "delta": 2.34
+              }
+            ]
+          }
+        },
+        {
+          "label": "#46 省级党委书记任免查询",
+          "rows_a": 1,
+          "rows_b": 95,
+          "row_share_a": 0.00054,
+          "row_share_b": 0.00476,
+          "row_share_delta_pp": 0.421,
+          "weight_share_a": 0.00042,
+          "weight_share_b": 0.0061,
+          "weight_share_delta_pp": 0.569,
+          "z_row_share": 2.61,
+          "delta_concentration": {
+            "n_distinct_queries": 95,
+            "top1_share_of_delta": 0.1482,
+            "top5_share_of_delta": 0.4361,
+            "hhi_of_delta": 0.0514,
+            "top_queries": [
+              {
+                "query": "新疆陈小江",
+                "delta": 19.32
+              },
+              {
+                "query": "新疆自治区党委书记",
+                "delta": 12.23
+              },
+              {
+                "query": "陈小江任新疆党委书记 马兴瑞另有任用",
+                "delta": 9.84
+              },
+              {
+                "query": "两人都在新疆有过关联",
+                "delta": -8.32
+              },
+              {
+                "query": "新疆书记",
+                "delta": 7.14
+              }
+            ]
+          }
+        },
+        {
+          "label": "#16 鞠婧祎资料与送花影响力查询",
+          "rows_a": 1,
+          "rows_b": 115,
+          "row_share_a": 0.00054,
+          "row_share_b": 0.00576,
+          "row_share_delta_pp": 0.522,
+          "weight_share_a": 0.0009,
+          "weight_share_b": 0.00537,
+          "weight_share_delta_pp": 0.447,
+          "z_row_share": 2.94,
+          "delta_concentration": {
+            "n_distinct_queries": 112,
+            "top1_share_of_delta": 0.1876,
+            "top5_share_of_delta": 0.2439,
+            "hhi_of_delta": 0.0415,
+            "top_queries": [
+              {
+                "query": "鞠婧祎",
+                "delta": 16.79
+              },
+              {
+                "query": "鞠婧祎简介",
+                "delta": 1.33
+              },
+              {
+                "query": "鞠婧祎百科个人资料简介图片",
+                "delta": 1.26
+              },
+              {
+                "query": "鞠婧祎的照片",
+                "delta": 1.26
+              },
+              {
+                "query": "鞠婧祎怎么读",
+                "delta": 1.19
+              }
+            ]
+          }
+        },
+        {
+          "label": "#42 查询部长级官员任职信息",
+          "rows_a": 3,
+          "rows_b": 74,
+          "row_share_a": 0.00163,
+          "row_share_b": 0.00371,
+          "row_share_delta_pp": 0.208,
+          "weight_share_a": 0.00135,
+          "weight_share_b": 0.00337,
+          "weight_share_delta_pp": 0.202,
+          "z_row_share": 1.44,
+          "delta_concentration": {
+            "n_distinct_queries": 65,
+            "top1_share_of_delta": 0.1105,
+            "top5_share_of_delta": 0.4082,
+            "hhi_of_delta": 0.0482,
+            "top_queries": [
+              {
+                "query": "大哥小助理",
+                "delta": -10.45
+              },
+              {
+                "query": "商丘市社会工作部副部长是谁",
+                "delta": -8.32
+              },
+              {
+                "query": "现任常务副部长具体是谁",
+                "delta": -8.32
+              },
+              {
+                "query": "民政部部长",
+                "delta": 7.08
+              },
+              {
+                "query": "统战部",
+                "delta": 4.42
+              }
+            ]
+          }
+        },
+        {
+          "label": "#60 人物个人简介查询",
+          "rows_a": 8,
+          "rows_b": 218,
+          "row_share_a": 0.00435,
+          "row_share_b": 0.01092,
+          "row_share_delta_pp": 0.657,
+          "weight_share_a": 0.00876,
+          "weight_share_b": 0.00786,
+          "weight_share_delta_pp": -0.09,
+          "z_row_share": 2.66,
+          "delta_concentration": {
+            "n_distinct_queries": 191,
+            "top1_share_of_delta": 0.2543,
+            "top5_share_of_delta": 0.4827,
+            "hhi_of_delta": 0.0834,
+            "top_queries": [
+              {
+                "query": "景甜个人简介",
+                "delta": -84.2
+              },
+              {
+                "query": "主持人邹韵的个人简介",
+                "delta": -24.96
+              },
+              {
+                "query": "井柏然个人简介",
+                "delta": -20.43
+              },
+              {
+                "query": "主持人王芳个人简介",
+                "delta": -16.64
+              },
+              {
+                "query": "钟掘个人简介",
+                "delta": 13.6
+              }
+            ]
+          }
+        }
+      ],
+      "receded": [],
+      "too_thin_to_compare": [
+        {
+          "label": "#12 习近平总书记个人信息与讲话查询",
+          "rows_a": 0,
+          "rows_b": 17,
+          "row_share_a": 0.0,
+          "row_share_b": 0.00085,
+          "row_share_delta_pp": 0.085,
+          "weight_share_a": 0.0,
+          "weight_share_b": 0.00076,
+          "weight_share_delta_pp": 0.076,
+          "z_row_share": 1.25,
+          "delta_concentration": {
+            "n_distinct_queries": 15,
+            "top1_share_of_delta": 0.3995,
+            "top5_share_of_delta": 0.7147,
+            "hhi_of_delta": 0.1943,
+            "top_queries": [
+              {
+                "query": "习近平总书记",
+                "delta": 6.08
+              },
+              {
+                "query": "习近平总书记七一讲话",
+                "delta": 1.41
+              },
+              {
+                "query": "习近平总书记身高",
+                "delta": 1.29
+              },
+              {
+                "query": "习总书记七一讲话",
+                "delta": 1.05
+              },
+              {
+                "query": "习总书记",
+                "delta": 1.05
+              }
+            ]
+          }
+        }
+      ]
+    }
+  },
+  "purity": {
+    "td_l1": {
+      "checked": true,
+      "n_groups": 19,
+      "n_single_snapshot": 5,
+      "single_snapshot": [
+        {
+          "label": "BARE_NAME_IDENTITY_LOOKUP",
+          "share_of_AI助手": 0.048,
+          "rows": 12458
+        },
+        {
+          "label": "BIO_PROFILE_LOOKUP",
+          "share_of_AI助手": 0.024,
+          "rows": 4156
+        },
+        {
+          "label": "ENTERTAINER_POPULARITY_METRIC_LOOKUP",
+          "share_of_AI助手": 0.008,
+          "rows": 249
+        },
+        {
+          "label": "FAN_ENGAGEMENT_ACTION",
+          "share_of_AI助手": 0.007,
+          "rows": 147
+        },
+        {
+          "label": "NAVIGATE_TO_PERSON_PAGE",
+          "share_of_AI助手": 0.008,
+          "rows": 121
+        }
+      ],
+      "share_min": 0.007,
+      "share_median": 0.218,
+      "share_max": 0.739
+    },
+    "bu_leaf_name": {
+      "checked": true,
+      "n_groups": 36,
+      "n_single_snapshot": 16,
+      "single_snapshot": [
+        {
+          "label": "七一勋章获得者信息查询",
+          "share_of_AI助手": 0.011,
+          "rows": 90
+        },
+        {
+          "label": "专名信息查询",
+          "share_of_AI助手": 0.035,
+          "rows": 2024
+        },
+        {
+          "label": "人物个人简介查询",
+          "share_of_AI助手": 0.035,
+          "rows": 226
+        },
+        {
+          "label": "人物角色资料查询",
+          "share_of_AI助手": 0.038,
+          "rows": 585
+        },
+        {
+          "label": "人物资料查询",
+          "share_of_AI助手": 0.039,
+          "rows": 12670
+        },
+        {
+          "label": "名称含义查询",
+          "share_of_AI助手": 0.044,
+          "rows": 821
+        },
+        {
+          "label": "明星百度影响力查询",
+          "share_of_AI助手": 0.034,
+          "rows": 149
+        },
+        {
+          "label": "查询习近平个人资料与讲话",
+          "share_of_AI助手": 0.022,
+          "rows": 135
+        },
+        {
+          "label": "查询人物个人资料简历",
+          "share_of_AI助手": 0.005,
+          "rows": 207
+        },
+        {
+          "label": "查询含“马”字人物信息",
+          "share_of_AI助手": 0.031,
+          "rows": 159
+        },
+        {
+          "label": "查询部长级官员任职信息",
+          "share_of_AI助手": 0.039,
+          "rows": 77
+        },
+        {
+          "label": "查询鹿晗关晓彤近况与感情动态",
+          "share_of_AI助手": 0.016,
+          "rows": 63
+        },
+        {
+          "label": "百度送花明星影响力查询",
+          "share_of_AI助手": 0.009,
+          "rows": 220
+        },
+        {
+          "label": "省级党委书记任免查询",
+          "share_of_AI助手": 0.01,
+          "rows": 96
+        },
+        {
+          "label": "肖战个人资料简介查询",
+          "share_of_AI助手": 0.007,
+          "rows": 146
+        },
+        {
+          "label": "鞠婧祎资料与送花影响力查询",
+          "share_of_AI助手": 0.009,
+          "rows": 116
+        }
+      ],
+      "share_min": 0.0,
+      "share_median": 0.055,
+      "share_max": 0.83
+    },
+    "bu_family_final": {
+      "checked": true,
+      "n_groups": 35,
+      "n_single_snapshot": 15,
+      "single_snapshot": [
+        {
+          "label": "#1 人物资料查询",
+          "share_of_AI助手": 0.039,
+          "rows": 12670
+        },
+        {
+          "label": "#16 鞠婧祎资料与送花影响力查询",
+          "share_of_AI助手": 0.009,
+          "rows": 116
+        },
+        {
+          "label": "#2 百度明星影响力查询",
+          "share_of_AI助手": 0.019,
+          "rows": 369
+        },
+        {
+          "label": "#33 专名信息查询",
+          "share_of_AI助手": 0.035,
+          "rows": 2024
+        },
+        {
+          "label": "#34 名称含义查询",
+          "share_of_AI助手": 0.044,
+          "rows": 821
+        },
+        {
+          "label": "#36 人物角色资料查询",
+          "share_of_AI助手": 0.038,
+          "rows": 585
+        },
+        {
+          "label": "#41 查询人物个人资料简历",
+          "share_of_AI助手": 0.005,
+          "rows": 207
+        },
+        {
+          "label": "#42 查询部长级官员任职信息",
+          "share_of_AI助手": 0.039,
+          "rows": 77
+        },
+        {
+          "label": "#44 习近平个人资料与讲话查询",
+          "share_of_AI助手": 0.022,
+          "rows": 135
+        },
+        {
+          "label": "#46 省级党委书记任免查询",
+          "share_of_AI助手": 0.01,
+          "rows": 96
+        },
+        {
+          "label": "#51 含“马”字人物信息查询",
+          "share_of_AI助手": 0.031,
+          "rows": 159
+        },
+        {
+          "label": "#52 七一勋章获得者信息查询",
+          "share_of_AI助手": 0.011,
+          "rows": 90
+        },
+        {
+          "label": "#53 查询鹿晗关晓彤近况与感情动态",
+          "share_of_AI助手": 0.016,
+          "rows": 63
+        },
+        {
+          "label": "#55 肖战个人资料简介查询",
+          "share_of_AI助手": 0.007,
+          "rows": 146
+        },
+        {
+          "label": "#60 人物个人简介查询",
+          "share_of_AI助手": 0.035,
+          "rows": 226
+        }
+      ],
+      "share_min": 0.0,
+      "share_median": 0.057,
+      "share_max": 0.83
+    }
+  },
+  "note": "Shares are WITHIN-SNAPSHOT. The snapshots differ in total weight, so raw counts would report every class as declining. Both periods were labelled by ONE taxonomy and ONE tree in this run, which is what excludes 'the taxonomy changed' as an explanation."
+}

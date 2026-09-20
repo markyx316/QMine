@@ -1,0 +1,33 @@
+{
+ "domain": "金融8",
+ "rows": 43934,
+ "quotable_rows": 43497,
+ "cells_l1_x_snapshot_n>=10": 120,
+ "old_order_arbitrary_cells": 27,
+ "median_represented_mass%": {
+  "旧": 32.85,
+  "H3": 56.45,
+  "显式": 80.5
+ },
+ "mean_typicality_pct": {
+  "旧": 0.48435,
+  "H3": 0.7472333333333334,
+  "显式": 0.5923166666666667
+ },
+ "mean_length_pct": {
+  "旧": 0.41738333333333333,
+  "H3": 0.4327416666666667,
+  "显式": 0.43147500000000005
+ },
+ "mean_boot_jaccard": {
+  "旧": 0.44279999999999997,
+  "H3": 0.819775,
+  "显式": 0.7561583333333334
+ },
+ "explicit_mean_examples": 6.333333333333333,
+ "facet_samples": {
+  "VERDICT_QUESTION": 582,
+  "NEWS_EVENT": 542,
+  "INVEST_ADVICE": 682
+ }
+}

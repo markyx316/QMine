@@ -1,0 +1,9 @@
+source,tier,rows
+2025search,S5_headline,2
+2026search,S5_headline,2
+assistant_random,S4_suggested_chip,2
+assistant_top,C1_content_free,1
+assistant_top,S1_system_repeated,25
+assistant_top,S2_system_template,14
+assistant_top,S4_suggested_chip,1
+assistant_top,S5_headline,1

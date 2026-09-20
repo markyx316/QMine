@@ -1,0 +1,131 @@
+{
+ "codes": [
+  {
+   "code": "DECISION_ADVICE",
+   "name_zh": "决策建议（该不该做）",
+   "definition": "The user wants a recommendation about their own next move. The answer they need is 'yes, do it', 'no, don't' or 'it depends on you', not a fact. A row can be phrased as 'X能…吗' and still belong here.",
+   "include_rules": "Include (a) any row with an advice word: 值得 / 有必要 / 适合 / 该不该 / 要不要 / 建议 / 划算 / 入手 / 持有 / 长期拿. (b) 买入 / 可以买 / 能买 / 可不可以买 when the object is a specific named security, fund, coin or insurance product, or when no object is named at all (买入 is trading talk). (c) A first-person plan ending in an approval tag (可不可以 / 行不行 / 好不好). (d) '能…吗' about a life or money choice where no institution grants or refuses anything, e.g. whether to quit a job, given the user's own income, debt or age. (e) 'Why is X not recommended' questions (为什么不建议…).",
+   "exclude_rules": "If a stated rule decides whether the purchase is possible (account type, board, amount threshold, a membership or age condition), code the rule instead: SERVICE_RULE, or ELIGIBILITY_COVER when a person's status is the deciding factor. If the row only asks whether something is good, safe or cheap and never asks whether to act, use MERIT_SAFETY. '可以买吗' about a whole market or asset class with no advice word and no time word could be a rule question or an advice question, so use UNSURE_FUNCTION. When a row has both an evaluation and an action ask (可靠吗…能买吗), DECISION_ADVICE wins.",
+   "examples": [
+    "同宇新材值得申购吗?",
+    "车损险有必要买吗",
+    "网宿科技适合长线持有吗",
+    "众安保险可靠吗能买吗?",
+    "23岁适合买轻疾 中疾病 重疾 终身的吗"
+   ]
+  },
+  {
+   "code": "MERIT_SAFETY",
+   "name_zh": "安全/质量评估",
+   "definition": "The user wants a judgement of how safe, trustworthy, legitimate, risky or good an entity, product, channel or action is. The answer they need is a rating, not a rule.",
+   "include_rules": "Include rows where the thing asked about is described by 安全 / 可靠 / 靠谱 / 有保障 / 风险(大) / 危险 / 正规 / 合法, said of an institution or platform / 诈骗 / 骗局 / 真的吗, said of a platform or offer / 会倒闭 / 缺点 / 好吗 / 好不好 / 稳固 / 准吗 / 有用吗 / 便宜吗 / 快吗 / 更便捷 / 利好 / 好事还是坏事. Also include merit or ranking labels (龙头, 低估, 纯概念无业务). Also include exposure to theft, fraud, data leaks or misuse by someone without authority (会被诈骗吗, 会被别人用掉吗, 别人用我手机号…有影响吗). Also include whether a phone number, text message, app or caller is really who it claims to be.",
+   "exclude_rules": "If the row also asks whether to act, use DECISION_ADVICE. If the 'risk' is a consequence the rules impose on the user's own timing or action (being counted as late, penalties, a credit mark), use IMPACT_EXPOSURE. How easy it is to get approved (好下 / 容易贷 / 能下款) goes to ELIGIBILITY_COVER. A neutral type label with no praise or judgement (是国企吗, 是科技股吗) goes to CATEGORY_CHECK. MERIT_SAFETY beats every code except DECISION_ADVICE.",
+   "examples": [
+    "余额宝存钱安全可靠吗",
+    "邮政手机app定期存款安全吗",
+    "中信银行信用卡好吗",
+    "支付宝里面的高德打车经济型这个接单快吗",
+    "友邦优享长伴终身护理保险有哪些缺点"
+   ]
+  },
+  {
+   "code": "REMEDY_UNDO",
+   "name_zh": "事后补救/撤销",
+   "definition": "Something the user holds or has already done went wrong or is regretted: a card, account, passbook, deposit slip, policy, payment, order, booking or phone. The user asks whether it can be undone, cancelled, refunded, recovered or replaced, or whether it (or what it made possible) still works.",
+   "include_rules": "Include only when BOTH (a) and (b) hold. (a) The text marks an existing object or completed act: 丢了 / 过期 / 到期了 / 注销了 / 封了 / 冻结 / 停机 / 暂停 / 降额 / 删了 / 没激活 / 长期未用 / 误点 / 被扣 / 被别人绑定 / 错过了 / 停交 / 不满意, or a sign of holding it such as 显示… / 我的… / 交了 / 买了 / 开通了 / 延迟到账. (b) The question asks about 还能(用/取/转/查) / 取消 / 退(款/保) / 撤回 / 追回 / 找回 / 补办 / 恢复 / 影响…正常使用. Some verbs count on their own because they only make sense after harm: 追回 / 索赔 / 补办 / 补卡 / 挂失 / 撤回资金, and refunds of a fee or charge already paid (服务费能退吗).",
+   "exclude_rules": "Conditionals and general questions with no marker (一旦开通了…能取消吗, 定期存款可以提前取吗) go to SERVICE_RULE. A marker with a question that is not about undoing, recovery or continued use (卡注销后银行卡会收回吗, 过户了保险可以改为自己买吗) goes to SERVICE_RULE. 还能 / 还可以 alone does NOT trigger this code. Whether insurance pays for an accident goes to ELIGIBILITY_COVER. Harm to creditworthiness (being flagged by a lender's risk controls, a messy credit record) followed by a new loan or card request goes to ELIGIBILITY_COVER. Effects on the credit record or legal liability go to IMPACT_EXPOSURE. Fear of theft or misuse goes to MERIT_SAFETY.",
+   "examples": [
+    "银行卡丢了可以补办原卡号吗",
+    "存单丢了还能取出存款吗",
+    "银行卡过期后还能继续使用吗",
+    "支付宝显示停车缴费可以取消吗",
+    "转账记录删了还能查出来吗"
+   ]
+  },
+  {
+   "code": "ELIGIBILITY_COVER",
+   "name_zh": "资格准入/承保范围",
+   "definition": "The answer depends on WHO is asking or WHAT CASE is involved, and an institution or rule grants or refuses it. Three kinds: can this person or organisation get access; may someone with this status act; does this insurance pay for this case.",
+   "include_rules": "(a) ACCESS: getting or applying for something (办卡, 开户, 贷款, 借, 买保险, 投保, 入学, 上市, 兑换) while the row states a circumstance of the applicant: age, minor, student, retiree, occupation, ID type, residency, credit or debt status, not having the required card or phone, membership, company structure. Apply the DELETION TEST: delete the circumstance, and if the question vanishes or becomes an obvious yes, the circumstance is the hinge and the row belongs here. Also include approval odds (能下款 / 好下 / 好批 / 容易贷), refusals (不让办 / 不给开 / 为什么不让办) and 'does X affect my loan, mortgage or card application' (…影响贷款 / 房贷 / 办卡吗). (b) STATUS PERMISSION: whether a person with a stated status (minor, child, civil servant, investment adviser, not the account holder, acting for someone else) may do something, again passing the deletion test. (c) COVERAGE: whether an insurance product covers or pays for a named incident, illness, treatment, item, vehicle or person (能赔 / 能报销 / 报吗 / 保…吗 / 管大病 / 能走交强险).",
+   "exclude_rules": "A condition on the operation itself rather than on the person (不绑卡, 没有预留手机号, 信用账户, an amount, a time, a place) goes to SERVICE_RULE. A person word that is only part of a product name (大学生助学贷款, 学平险) is not a stated circumstance. A circumstance that fails the deletion test (被授权人 in 共济账户当年能用吗) goes to SERVICE_RULE. Personal circumstances where no gatekeeper exists go to DECISION_ADVICE. Effects on the credit record itself, on premiums or on liability go to IMPACT_EXPOSURE. Recourse after a disputed claim (赔偿不满意可以找…吗) goes to REMEDY_UNDO. Classification questions (算出险吗) go to CATEGORY_CHECK.",
+   "examples": [
+    "满15周岁可以办银行卡吗",
+    "教师退休后可以贷款吗",
+    "存折不是本人能取钱吗",
+    "猫的眼睛有病保了宠物险能报销吗",
+    "开车追尾能走交强险"
+   ]
+  },
+  {
+   "code": "IMPACT_EXPOSURE",
+   "name_zh": "后果影响核实",
+   "definition": "The user asks whether a stated condition or action brings a consequence that lands on them without their choosing. Four kinds count: a mark on the credit record or score; a legal or contractual obligation; a premium rise or an automatic charge; their records being disclosed to or checked by a legitimate third party.",
+   "include_rules": "Include 上征信 / 影响征信 / 影响信用 / 保费受影响 / 保费会增加 / 会扣钱 / 每月扣钱 / 不用会收费 / 会抽贷 / 会执行 / 还要继续还吗 / 会二次偿还吗 / 会查征信 / 会查流水 / 能查到我的存款 / 跟…有关系吗 (a restriction spreading to linked accounts) / 被CRS…正常吗. Also include '有危险 / 有风险吗' when the danger is a rule-imposed consequence of the user's own timing or action (for example repaying at 10 pm).",
+   "exclude_rules": "An effect on whether an application gets approved (影响贷款 / 房贷 / 办卡) goes to ELIGIBILITY_COVER. Whether a held object still works after something went wrong (身份证过期影响银行卡使用吗) goes to REMEDY_UNDO. Fraud, theft or leaks by someone without authority go to MERIT_SAFETY. Ordinary product behaviour with no such burden (卡号会变吗, 额度会恢复吗, 会有短信吗, 会收回卡吗) and fees for an operation the user chooses (转账要钱吗) go to SERVICE_RULE. How a credit score updates when no trigger is stated goes to SERVICE_RULE.",
+   "examples": [
+    "美团月付上征信吗",
+    "车险无责出险一次第二年保费受影响吗",
+    "入职公司会查征信吗",
+    "银行工作人员拿身份证能查到名下存款吗",
+    "股票账户开通后不用会收费吗"
+   ]
+  },
+  {
+   "code": "CATEGORY_CHECK",
+   "name_zh": "类别/身份辨析",
+   "definition": "The user wants a classification or identity ruling. Is X a member of class Y, which of classes A or B is it, are two named things the same, is X included in or counted as Y? The thing asked about is a class or type label, not a judgement of quality.",
+   "include_rules": "Include 是A还是B where A and B are types (国企 / 私企 / 央企, 主板 / 科创板, 理财 / 基金, 对公 / 对私, 中介 / 直接放款). Include 是X吗 / 是不是X / 是否为X where X is a class or instrument noun (信用卡, 储蓄卡, 人民币, 股票, 港股通, 概念股, 国资, 个人财产). Include 属于 / 算(不算) / 就是…吗 / 一样吗 / 包括…吗 / 计入. Include naming equivalence (可以叫…吗, 是一个部门监管吗) and whether an act legally counts as 违法.",
+   "exclude_rules": "是不是 / 是否 used only as a question word in front of a verb phrase (是不是可以买入, 是不能超过12点吗, 是不是一调查就ST了) is not a category question, so code what the verb phrase asks. A/B choices that are rule settings (额度是一年还是终身) go to SERVICE_RULE. A/B choices that are market outcomes (高开还是低开) go to WORLD_STATE. Praise or trust labels (正规, 诈骗, 龙头, 利好, 好事) go to MERIT_SAFETY. Whether a phone number or caller is really a given company goes to MERIT_SAFETY.",
+   "examples": [
+    "民生银行是国企还是私企",
+    "一类卡是信用卡吗",
+    "结构性存款属于存款还是理财",
+    "保险单和保险合同一样吗",
+    "存折算银行卡吗"
+   ]
+  },
+  {
+   "code": "WORLD_STATE",
+   "name_zh": "事实状态/时事走势",
+   "definition": "The user wants to confirm a specific state of the world, not a standing product rule: whether something is so at a given time, has happened, exists, or will happen. Forecasts are included.",
+   "include_rules": "Include opening hours and trading days of a market or branch (休市 / 开盘 / 上班 / 放假 / 周末办理业务 / 中午能办业务, meaning business in general). Include news and events about a named entity (被罚款, 被列入高风险, 倒闭了, 加息了, 对接银行了, a branch closed). Include market data (主力资金流入, 加仓, 跌破发行价, 某日有交易). Include whether a policy is in force now or from a date (现在有没有贴息政策, 7月1日实行吗), and whether a service becomes available on a date. Include existence of an organisation, branch, ATM or kind of institution, and ownership or partnership facts (有自己的保险公司, 合作银行, 共同持股). Include general-knowledge claims. Include forecasts (会高开还是低开, 能上8元吗, 还会发行新版人民币吗, 有没有可能…).",
+   "exclude_rules": "Whether a provider offers a product, term or feature (有三年的存单吗, 有运费险吗, 有银条卖吗) and whether a specific operation works at a time (公对公转账晚上能转吗) go to SERVICE_RULE. Whether a stock is a good buy goes to DECISION_ADVICE. Whether an institution will fail, judged as a safety question, goes to MERIT_SAFETY. Board, sector or concept membership goes to CATEGORY_CHECK.",
+   "examples": [
+    "今天港股休市吗",
+    "今天潍城建设银行上班吗？",
+    "中国银行是不是被罚款了",
+    "连具塘村有ATM机吗",
+    "2026年还会发行新版人民币吗"
+   ]
+  },
+  {
+   "code": "SERVICE_RULE",
+   "name_zh": "业务规则/操作可行性",
+   "definition": "The DEFAULT verification code. The user wants to know how a product, service, institution, market or law works: whether an operation is possible or allowed, and on what terms. Terms include time, place, channel, documents required, fees, limits, quantity, duration and procedure, plus standard product behaviour.",
+   "include_rules": "Include 可以 / 能 / 可否 / 能不能 + an operation (取 / 存 / 转 / 还 / 提前还 / 退保 in general / 取消 in general / 解绑 / 登录 / 绑定 / 支付 / 查 / 交易 / 变更), with or without an operation condition (不绑卡, 跨行, 在香港, 晚上, 柜台, 信用账户, 20万). Include requirements (需要本人身份证吗, 还得去柜台吗, 要解绑吗, 必须…吗). Include fees and charges for operations the user chooses (转账要钱吗, 取钱收费吗, 办卡需要钱吗). Include limits and rule settings (有没有限额, 是一年还是终身, 能绑定几个). Include offers and features (有三年的吗, 有犹豫期吗, 叠加吗, 有运费险吗). Include product behaviour with no burden on the user (卡号会变吗, 额度会恢复吗, 会有短信吗, 会收回卡吗, 会过期吗). Include whether a general activity is allowed in the country (国内让用虚拟币吗). Include hearsay about a product rule (…这是真的吗, where the claim is a rule).",
+   "exclude_rules": "Use this code only when no higher code applies. Advice words go to DECISION_ADVICE. Safety, trust or quality goes to MERIT_SAFETY. A marked mishap plus an undo, recovery or still-works question goes to REMEDY_UNDO. A person's status that passes the deletion test, approval odds, or coverage goes to ELIGIBILITY_COVER. Credit, liability, automatic-charge or disclosure consequences go to IMPACT_EXPOSURE. A class or identity question goes to CATEGORY_CHECK. Dated or current events, market or branch hours, and forecasts go to WORLD_STATE.",
+   "examples": [
+    "定期存款可以提前取吗",
+    "公对公转账晚上能转吗",
+    "去银行查流水账单需要本人身份证吗",
+    "支付宝转账额度是一年还是终身",
+    "中国银行二类卡升级一类卡卡号会变吗"
+   ]
+  },
+  {
+   "code": "UNSURE_FUNCTION",
+   "name_zh": "功能无法判定",
+   "definition": "The text alone does not show what the user wants from an answer: there is no question to recover, or the question fits two codes equally and nothing in the text breaks the tie.",
+   "include_rules": "Include statements, opinions or headline-like strings with no question (…取消李渡支行). Include cut-off conditionals that never reach a question (如果办了…，但是…). Include text too garbled to read the question (…能遇吗). Include '可以买吗' about a whole market or asset class with no advice word and no time word, where a rule reading and an advice reading are equally likely. Include rows that point back to earlier context and have no question of their own.",
+   "exclude_rules": "Do NOT use this code merely because the object or topic is missing while the question type is still clear: 有风险吗 → MERIT_SAFETY, 算利好吗 → MERIT_SAFETY, 可以买入吗 → DECISION_ADVICE, 绑定支付宝能吗 → SERVICE_RULE. Wh-questions (什么 / 哪个 / 几个 / 为什么) are coded by what they ask as though they were yes/no questions (农村商业银行属于什么银行 → CATEGORY_CHECK, 一个身份证可以绑定几个支付宝 → SERVICE_RULE, 为什么不让办一类卡 → ELIGIBILITY_COVER). Non-finance rows that still have a clear question type get that code (银行早上开晨会去晚了算迟到吗 → CATEGORY_CHECK).",
+   "examples": [
+    "四川农商银行取消李渡支行",
+    "A股可以买吗",
+    "遇保险单位所交部分能遇吗"
+   ]
+  }
+ ],
+ "tie_break_order": "DECISION_ADVICE > MERIT_SAFETY > REMEDY_UNDO > ELIGIBILITY_COVER > IMPACT_EXPOSURE > CATEGORY_CHECK > WORLD_STATE > SERVICE_RULE > UNSURE_FUNCTION. The rule: the code closest to what the user ultimately wants wins. A recommendation beats a judgement. A judgement beats undoing a mishap. Undoing beats a question that depends on the user's own case. That beats a consequence, which beats a class, a world fact, and finally the default rule question. Apply the include/exclude rules first. The order settles only rows that still meet two definitions after them, for example 可靠吗…能买吗 → DECISION_ADVICE; 收款码可以发给别人吗安全吗 → MERIT_SAFETY; …有必要买吗?…能退回吗? → DECISION_ADVICE; a status question that also says 有影响吗 → ELIGIBILITY_COVER.",
+ "unsure_code": "UNSURE_FUNCTION",
+ "pilot_note": "Before drafting, I read all 582 rows and ran a keyword sizing check over every row. It showed a forecast group of only about 9 rows, so forecasts were merged into WORLD_STATE to stay within 8 codes. I then piloted draft v1 on 60 evenly spaced rows (row index floor(k*582/60)+4, for k=0..59). Labels are saved in /private/tmp/claude-501/-Users-mayouxuan-Documents-Claude-Search-Query-Mining-Agent-Team/3deba04e-73b1-4747-b7b7-4d1a40520650/scratchpad/fin8facet_pilot_VERDICT_QUESTION.csv, with the v1 label kept wherever it differed. Result: v1 gave 7 of 60 rows a label I judged wrong, and 8 more rows had no single clear v1 label; all 15 are fixed in this version. Changes: (1) v1 ELIGIBILITY_COVER took any stated personal attribute, so a 'can I quit my job given my income and debt' row (VER0191) was coded as eligibility. The fix: eligibility now requires a gatekeeper that grants or refuses; with no gatekeeper, personal circumstances go to DECISION_ADVICE. (2) v1 had nothing that separated a real hinge from an incidental mention, so VER0287 (被授权人) was mislabelled. The DELETION TEST was added: the circumstance counts only if removing it makes the question vanish or become an obvious yes; that row now fails the test and goes to SERVICE_RULE. Person words inside product names (大学生助学贷款) and conditions on accounts or operations (信用账户, 不绑卡) are explicitly not applicant circumstances. (3) v1 sent every 影响 to IMPACT_EXPOSURE. Two rows asking whether a car or a bill affects a loan (VER0170, VER0114) are really approval questions, so 'affects my loan / mortgage / card application' moved to ELIGIBILITY_COVER. IMPACT_EXPOSURE is now limited to credit record, liability, automatic charges or premiums, and disclosure. (4) VER0090 (small-business loans 容易吗) triggered MERIT_SAFETY via 容易. Approval odds (容易贷 / 好下 / 能下款) now belong to ELIGIBILITY_COVER. (5) VER0157 (为什么不让办一类卡) had no home in v1. Refusals of access now go to ELIGIBILITY_COVER, and a rule was added: wh-questions are coded by what they ask. (6) VER0505 asks whether repaying at 10 pm 有危险. v1 sent it to MERIT_SAFETY on the cue word, but the danger is a late-payment consequence. Rule-imposed consequences of the user's own timing now go to IMPACT_EXPOSURE; MERIT_SAFETY keeps fraud, theft, failure and quality. (7) REMEDY_UNDO was tightened to require BOTH a marked mishap or existing object AND an undo, recovery or still-works question. 还能 / 还可以 alone, or 注销 / 过户 without an undo question (VER0126, VER0570), now go to SERVICE_RULE. Signs of an existing transaction such as 显示… (VER0284) count as the marker. (8) Four more clarifications. 是不是 / 是否 used only as a question word does not make a row CATEGORY_CHECK. A/B choices that are rule settings go to SERVICE_RULE (VER0117). A credit score update with no stated trigger goes to SERVICE_RULE (VER0277). 买入 with no object is DECISION_ADVICE (VER0410), while 可以买吗 about a whole market with no advice word is UNSURE_FUNCTION. Final pilot distribution: SERVICE_RULE 20, ELIGIBILITY_COVER 12, WORLD_STATE 7, DECISION_ADVICE 6, CATEGORY_CHECK 5, MERIT_SAFETY 4, REMEDY_UNDO 3, IMPACT_EXPOSURE 3, UNSURE_FUNCTION 0. Caveats: this was a single coder with no second opinion, so these are not agreement figures. IMPACT_EXPOSURE and REMEDY_UNDO are small at n=60; keyword sizing over all 582 rows suggests roughly 25-35 rows each, so an agreement estimate for them needs a targeted sample. Every example was checked as a verbatim row in the file. No debt-collection, credit-repair or cash-out row is used as an example; such rows are cited only by sid."
+}

@@ -1,0 +1,79 @@
+deepseek/deepseek-v4-flash: 56,937 strings, 0 already done, 949 batches of 60 on 40 workers
+  25/949 batches
+  50/949 batches
+  75/949 batches
+  100/949 batches
+  125/949 batches
+Traceback (most recent call last):
+  File "/Users/mayouxuan/Documents/Claude/Search Query Mining Agent Team/QMine/analysis/pooled5/p5_department_label.py", line 202, in <module>
+    raise SystemExit(main())
+                     ^^^^^^
+  File "/Users/mayouxuan/Documents/Claude/Search Query Mining Agent Team/QMine/analysis/pooled5/p5_department_label.py", line 180, in main
+    list(ex.map(run, batches))
+  File "/opt/homebrew/Cellar/python@3.12/3.12.13_4/Frameworks/Python.framework/Versions/3.12/lib/python3.12/concurrent/futures/_base.py", line 619, in result_iterator
+    yield _result_or_cancel(fs.pop())
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/homebrew/Cellar/python@3.12/3.12.13_4/Frameworks/Python.framework/Versions/3.12/lib/python3.12/concurrent/futures/_base.py", line 317, in _result_or_cancel
+    return fut.result(timeout)
+           ^^^^^^^^^^^^^^^^^^^
+  File "/opt/homebrew/Cellar/python@3.12/3.12.13_4/Frameworks/Python.framework/Versions/3.12/lib/python3.12/concurrent/futures/_base.py", line 456, in result
+    return self.__get_result()
+           ^^^^^^^^^^^^^^^^^^^
+  File "/opt/homebrew/Cellar/python@3.12/3.12.13_4/Frameworks/Python.framework/Versions/3.12/lib/python3.12/concurrent/futures/_base.py", line 401, in __get_result
+    raise self._exception
+  File "/opt/homebrew/Cellar/python@3.12/3.12.13_4/Frameworks/Python.framework/Versions/3.12/lib/python3.12/concurrent/futures/thread.py", line 59, in run
+    result = self.fn(*self.args, **self.kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/mayouxuan/Documents/Claude/Search Query Mining Agent Team/QMine/analysis/pooled5/p5_department_label.py", line 169, in run
+    labs = label(codebook, b, key)
+           ^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/mayouxuan/Documents/Claude/Search Query Mining Agent Team/QMine/analysis/pooled5/p5_department_label.py", line 138, in label
+    raise RuntimeError(f"batch of {len(rows)} failed after {ATTEMPTS} attempts: {err}")
+RuntimeError: batch of 60 failed after 6 attempts: parse: Expecting value: line 1 column 1 (char 0)
+deepseek/deepseek-v4-flash: 56,937 strings, 7,500 already done, 824 batches of 60 on 40 workers
+  25/824 batches
+  50/824 batches
+  75/824 batches
+  100/824 batches
+  126/824 batches
+  150/824 batches
+  175/824 batches
+  200/824 batches
+  225/824 batches
+  250/824 batches
+  275/824 batches
+  300/824 batches
+  325/824 batches
+  350/824 batches
+  375/824 batches
+  400/824 batches
+  425/824 batches
+  450/824 batches
+  475/824 batches
+  500/824 batches
+  525/824 batches
+  550/824 batches
+  575/824 batches
+  600/824 batches
+  625/824 batches
+  650/824 batches
+  675/824 batches
+  700/824 batches
+  725/824 batches
+  750/824 batches
+  775/824 batches
+  800/824 batches
+→ /Users/mayouxuan/Documents/Claude/Search Query Mining Agent Team/QMine/analysis/pooled5/work/科室/deepseek/labels.csv  (56,937 strings, 0 unlabelled)
+code
+YS            7018
+ZY            4250
+YP_GENERIC    3877
+JY            3236
+NK_XH         3199
+FCK_FK        2943
+PF            2730
+NK_XX         2461
+WK_GK         2226
+EK            2188
+WFPD          2123
+NK_NF         1844

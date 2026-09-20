@@ -1,0 +1,4 @@
+﻿batch,sid,code,confidence,reason,query,sources,quotable_any,in_report
+0,Ma40c5f8b08b,ILLEGAL_REPRO,中,询问冻胚性别区分方法，可能涉及非医学需要的性别选择,冻胚胎怎么分男女,2025search_rand,True,False
+0,Mc70d4187596,NAMED_PERSON,高,出现两位医生全名并比较案例数量,段兴超和高峰哪个医生案例更多,assistant_random,True,False
+0,Mb6ccde277ec,NAMED_PRIVATE_FACILITY,中,点名具体县级医院院区，公私立性质不明,江西省九江市修水县南院有没有丙戊酸钠,2026search_rand,True,False

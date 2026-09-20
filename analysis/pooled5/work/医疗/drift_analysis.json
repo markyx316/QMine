@@ -1,0 +1,3201 @@
+{
+  "snapshots": [
+    "AI助手",
+    "搜索"
+  ],
+  "inventory": [
+    {
+      "snapshot": "AI助手",
+      "rows": 2956,
+      "distinct_queries": 2834,
+      "weight_total": 30000.0
+    },
+    {
+      "snapshot": "搜索",
+      "rows": 19996,
+      "distinct_queries": 13667,
+      "weight_total": 20000.0
+    }
+  ],
+  "query_churn": {
+    "comparable": true,
+    "snapshot_a": "AI助手",
+    "snapshot_b": "搜索",
+    "distinct_a": 2834,
+    "distinct_b": 13667,
+    "shared": 278,
+    "jaccard": 0.0171,
+    "shared_weight_share_a": 0.0833,
+    "shared_weight_share_b": 0.0624
+  },
+  "by_label": {
+    "td_l1": {
+      "comparable": true,
+      "snapshot_a": "AI助手",
+      "snapshot_b": "搜索",
+      "rows_a": 2956,
+      "rows_b": 19996,
+      "n_classes": 20,
+      "cramers_v": 0.3168,
+      "total_variation_weight": 0.3798,
+      "total_variation_rows": 0.3236,
+      "n_comparisons": 19,
+      "stable": [
+        {
+          "label": "FEASIBILITY_CLAIM_VERDICT",
+          "rows_a": 478,
+          "rows_b": 669,
+          "row_share_a": 0.16171,
+          "row_share_b": 0.03346,
+          "row_share_delta_pp": -12.825,
+          "weight_share_a": 0.16487,
+          "weight_share_b": 0.02359,
+          "weight_share_delta_pp": -14.128,
+          "z_row_share": -29.87,
+          "delta_concentration": {
+            "n_distinct_queries": 993,
+            "top1_share_of_delta": 0.0553,
+            "top5_share_of_delta": 0.0864,
+            "hhi_of_delta": 0.005,
+            "top_queries": [
+              {
+                "query": "需要吃消炎药吗",
+                "delta": -298.89
+              },
+              {
+                "query": "中药治疗肿瘤有效吗",
+                "delta": -80.59
+              },
+              {
+                "query": "茯苓对性功能有效吗",
+                "delta": -30.0
+              },
+              {
+                "query": "肾结石能吃豆腐吗",
+                "delta": -30.0
+              },
+              {
+                "query": "介入栓塞治疗肿瘤有效果吗",
+                "delta": -27.2
+              }
+            ]
+          }
+        },
+        {
+          "label": "HERB_FOOD_EFFICACY_LOOKUP",
+          "rows_a": 280,
+          "rows_b": 3355,
+          "row_share_a": 0.09472,
+          "row_share_b": 0.16778,
+          "row_share_delta_pp": 7.306,
+          "weight_share_a": 0.0829,
+          "weight_share_b": 0.21922,
+          "weight_share_delta_pp": 13.632,
+          "z_row_share": 10.16,
+          "delta_concentration": {
+            "n_distinct_queries": 2460,
+            "top1_share_of_delta": 0.009,
+            "top5_share_of_delta": 0.0359,
+            "hhi_of_delta": 0.0014,
+            "top_queries": [
+              {
+                "query": "黑枸杞的功效",
+                "delta": -60.0
+              },
+              {
+                "query": "柴胡白芍枳壳煮水功效",
+                "delta": -51.24
+              },
+              {
+                "query": "秋葵三种人不宜吃",
+                "delta": -48.62
+              },
+              {
+                "query": "西梅有什么功效",
+                "delta": -41.52
+              },
+              {
+                "query": "马齿苋的作用和功效",
+                "delta": 37.81
+              }
+            ]
+          }
+        },
+        {
+          "label": "OUT_OF_DOMAIN_OR_UNCLASSIFIABLE",
+          "rows_a": 512,
+          "rows_b": 893,
+          "row_share_a": 0.17321,
+          "row_share_b": 0.04466,
+          "row_share_delta_pp": -12.855,
+          "weight_share_a": 0.17431,
+          "weight_share_b": 0.03928,
+          "weight_share_delta_pp": -13.503,
+          "z_row_share": -27.21,
+          "delta_concentration": {
+            "n_distinct_queries": 1101,
+            "top1_share_of_delta": 0.0303,
+            "top5_share_of_delta": 0.0786,
+            "hhi_of_delta": 0.0035,
+            "top_queries": [
+              {
+                "query": "功效",
+                "delta": -180.0
+              },
+              {
+                "query": "胆结石禁吃一览表",
+                "delta": -91.06
+              },
+              {
+                "query": "女性的bmi大好还是小好",
+                "delta": -68.1
+              },
+              {
+                "query": "肠胃健康指南",
+                "delta": -67.61
+              },
+              {
+                "query": "用电动牙刷刷脚底十分钟痒痒",
+                "delta": -60.0
+              }
+            ]
+          }
+        },
+        {
+          "label": "DISEASE_SYMPTOM_LIST",
+          "rows_a": 90,
+          "rows_b": 1349,
+          "row_share_a": 0.03045,
+          "row_share_b": 0.06746,
+          "row_share_delta_pp": 3.702,
+          "weight_share_a": 0.02465,
+          "weight_share_b": 0.08425,
+          "weight_share_delta_pp": 5.96,
+          "z_row_share": 7.75,
+          "delta_concentration": {
+            "n_distinct_queries": 956,
+            "top1_share_of_delta": 0.022,
+            "top5_share_of_delta": 0.0603,
+            "hhi_of_delta": 0.0032,
+            "top_queries": [
+              {
+                "query": "肠胃炎的症状",
+                "delta": -49.38
+              },
+              {
+                "query": "糖尿病并发症分几个阶段",
+                "delta": -30.0
+              },
+              {
+                "query": "艾滋病初期有哪些症状",
+                "delta": 19.01
+              },
+              {
+                "query": "甲亢有哪些症状和表现",
+                "delta": 18.72
+              },
+              {
+                "query": "甲状腺的症状有哪些表现",
+                "delta": 18.21
+              }
+            ]
+          }
+        },
+        {
+          "label": "CARE_ROUTING_AND_NAVIGATION",
+          "rows_a": 146,
+          "rows_b": 328,
+          "row_share_a": 0.04939,
+          "row_share_b": 0.0164,
+          "row_share_delta_pp": -3.299,
+          "weight_share_a": 0.05762,
+          "weight_share_b": 0.00952,
+          "weight_share_delta_pp": -4.809,
+          "z_row_share": -11.77,
+          "delta_concentration": {
+            "n_distinct_queries": 360,
+            "top1_share_of_delta": 0.1015,
+            "top5_share_of_delta": 0.2224,
+            "hhi_of_delta": 0.0198,
+            "top_queries": [
+              {
+                "query": "看男科性功能哪家医院好",
+                "delta": -194.65
+              },
+              {
+                "query": "试管婴儿那个医院成功率高",
+                "delta": -128.15
+              },
+              {
+                "query": "苏州苏城医院",
+                "delta": -41.67
+              },
+              {
+                "query": "无痛人流预约留手机号",
+                "delta": -31.74
+              },
+              {
+                "query": "人流咨询留电话24小时在线",
+                "delta": -30.1
+              }
+            ]
+          }
+        },
+        {
+          "label": "DISEASE_DEFINITION_CAUSE",
+          "rows_a": 67,
+          "rows_b": 1116,
+          "row_share_a": 0.02267,
+          "row_share_b": 0.05581,
+          "row_share_delta_pp": 3.315,
+          "weight_share_a": 0.02172,
+          "weight_share_b": 0.05028,
+          "weight_share_delta_pp": 2.856,
+          "z_row_share": 7.61,
+          "delta_concentration": {
+            "n_distinct_queries": 816,
+            "top1_share_of_delta": 0.0278,
+            "top5_share_of_delta": 0.0718,
+            "hhi_of_delta": 0.0042,
+            "top_queries": [
+              {
+                "query": "肿瘤介入治疗是一种什么治疗",
+                "delta": -43.31
+              },
+              {
+                "query": "这是什么病",
+                "delta": -29.49
+              },
+              {
+                "query": "荨麻疹是什么原因引起的,怎么根治",
+                "delta": 14.97
+              },
+              {
+                "query": "这是什么病？",
+                "delta": -12.49
+              },
+              {
+                "query": "甘油三酯高是什么原因",
+                "delta": 11.67
+              }
+            ]
+          }
+        },
+        {
+          "label": "EPISODE_TRIAGE",
+          "rows_a": 65,
+          "rows_b": 81,
+          "row_share_a": 0.02199,
+          "row_share_b": 0.00405,
+          "row_share_delta_pp": -1.794,
+          "weight_share_a": 0.02,
+          "weight_share_b": 0.00287,
+          "weight_share_delta_pp": -1.713,
+          "z_row_share": -11.45,
+          "delta_concentration": {
+            "n_distinct_queries": 123,
+            "top1_share_of_delta": 0.039,
+            "top5_share_of_delta": 0.1074,
+            "hhi_of_delta": 0.0138,
+            "top_queries": [
+              {
+                "query": "睡觉手麻醒了一活动就恢复了",
+                "delta": -25.62
+              },
+              {
+                "query": "奶胀起来不要太胀",
+                "delta": -15.01
+              },
+              {
+                "query": "12岁小孩每次拉屎都没拉完难受",
+                "delta": -10.0
+              },
+              {
+                "query": "不见到手上起了1点小水泡怎么好得快",
+                "delta": -10.0
+              },
+              {
+                "query": "子宫内膜有创伤怎么办",
+                "delta": -10.0
+              }
+            ]
+          }
+        },
+        {
+          "label": "CARE_LOGISTICS_COST_DURATION",
+          "rows_a": 68,
+          "rows_b": 355,
+          "row_share_a": 0.023,
+          "row_share_b": 0.01775,
+          "row_share_delta_pp": -0.525,
+          "weight_share_a": 0.02354,
+          "weight_share_b": 0.01249,
+          "weight_share_delta_pp": -1.105,
+          "z_row_share": -1.98,
+          "delta_concentration": {
+            "n_distinct_queries": 317,
+            "top1_share_of_delta": 0.0573,
+            "top5_share_of_delta": 0.1676,
+            "hhi_of_delta": 0.0126,
+            "top_queries": [
+              {
+                "query": "腋臭手术一般多少钱正规医院",
+                "delta": -54.12
+              },
+              {
+                "query": "阴道镜检查前需要做哪些准备",
+                "delta": -34.16
+              },
+              {
+                "query": "试管婴儿费用大概多少",
+                "delta": -27.64
+              },
+              {
+                "query": "正规医院腋臭手术费多少钱",
+                "delta": -21.43
+              },
+              {
+                "query": "金沙洲肿瘤收费价目表",
+                "delta": -20.93
+              }
+            ]
+          }
+        },
+        {
+          "label": "NORMAL_RANGE_LOOKUP",
+          "rows_a": 24,
+          "rows_b": 263,
+          "row_share_a": 0.00812,
+          "row_share_b": 0.01315,
+          "row_share_delta_pp": 0.503,
+          "weight_share_a": 0.00768,
+          "weight_share_b": 0.0181,
+          "weight_share_delta_pp": 1.042,
+          "z_row_share": 2.3,
+          "delta_concentration": {
+            "n_distinct_queries": 192,
+            "top1_share_of_delta": 0.0599,
+            "top5_share_of_delta": 0.215,
+            "hhi_of_delta": 0.0188,
+            "top_queries": [
+              {
+                "query": "血糖正常值范围 最新标准2025",
+                "delta": 33.89
+              },
+              {
+                "query": "血压正常值是多少范围",
+                "delta": 30.11
+              },
+              {
+                "query": "血糖正常值",
+                "delta": -20.36
+              },
+              {
+                "query": "血压正常是多少标准",
+                "delta": 20.15
+              },
+              {
+                "query": "48岁男性正常血压",
+                "delta": -17.08
+              }
+            ]
+          }
+        },
+        {
+          "label": "SYMPTOM_CAUSE_EXPLANATION",
+          "rows_a": 247,
+          "rows_b": 1904,
+          "row_share_a": 0.08356,
+          "row_share_b": 0.09522,
+          "row_share_delta_pp": 1.166,
+          "weight_share_a": 0.07858,
+          "weight_share_b": 0.08777,
+          "weight_share_delta_pp": 0.919,
+          "z_row_share": 2.03,
+          "delta_concentration": {
+            "n_distinct_queries": 1558,
+            "top1_share_of_delta": 0.0107,
+            "top5_share_of_delta": 0.0415,
+            "hhi_of_delta": 0.002,
+            "top_queries": [
+              {
+                "query": "男性生殖有小疙瘩是怎么回事",
+                "delta": -42.96
+              },
+              {
+                "query": "血小板压低怎么回事",
+                "delta": -34.16
+              },
+              {
+                "query": "怎么知道有没有口臭",
+                "delta": -34.16
+              },
+              {
+                "query": "眼睛跳是怎么回事",
+                "delta": -30.0
+              },
+              {
+                "query": "老师，我的头部不疼不痒也不晕，但是就觉得不舒服，这是怎么回事？按摩哪儿能解决这个问题？",
+                "delta": -25.62
+              }
+            ]
+          }
+        },
+        {
+          "label": "OPTION_ADJUDICATION",
+          "rows_a": 61,
+          "rows_b": 302,
+          "row_share_a": 0.02064,
+          "row_share_b": 0.0151,
+          "row_share_delta_pp": -0.553,
+          "weight_share_a": 0.0199,
+          "weight_share_b": 0.01071,
+          "weight_share_delta_pp": -0.919,
+          "z_row_share": -2.25,
+          "delta_concentration": {
+            "n_distinct_queries": 280,
+            "top1_share_of_delta": 0.0421,
+            "top5_share_of_delta": 0.1322,
+            "hhi_of_delta": 0.0115,
+            "top_queries": [
+              {
+                "query": "碘伏和酒精哪个更安全",
+                "delta": -34.16
+              },
+              {
+                "query": "缓解植物神经紊乱用维生素b1好还是复合维生素好",
+                "delta": -20.0
+              },
+              {
+                "query": "鸭胸肉的营养价值跟鸡胸肉的营养价值哪个好",
+                "delta": -20.0
+              },
+              {
+                "query": "赤小豆补血好还是红豆补血好",
+                "delta": -20.0
+              },
+              {
+                "query": "饭前吃还是饭后吃",
+                "delta": -13.02
+              }
+            ]
+          }
+        },
+        {
+          "label": "PERSONAL_RESULT_INTERPRETATION",
+          "rows_a": 109,
+          "rows_b": 800,
+          "row_share_a": 0.03687,
+          "row_share_b": 0.04001,
+          "row_share_delta_pp": 0.313,
+          "weight_share_a": 0.03215,
+          "weight_share_b": 0.0409,
+          "weight_share_delta_pp": 0.874,
+          "z_row_share": 0.82,
+          "delta_concentration": {
+            "n_distinct_queries": 658,
+            "top1_share_of_delta": 0.0098,
+            "top5_share_of_delta": 0.0375,
+            "hhi_of_delta": 0.0037,
+            "top_queries": [
+              {
+                "query": "正常不？",
+                "delta": -17.08
+              },
+              {
+                "query": "尿酸高的原因",
+                "delta": -12.94
+              },
+              {
+                "query": "甘油三酯偏高说明什么",
+                "delta": 12.5
+              },
+              {
+                "query": "总胆红素偏高说明什么",
+                "delta": 12.36
+              },
+              {
+                "query": "低密度脂蛋白偏高是什么意思",
+                "delta": 10.26
+              }
+            ]
+          }
+        },
+        {
+          "label": "PROGNOSIS_SEVERITY",
+          "rows_a": 45,
+          "rows_b": 240,
+          "row_share_a": 0.01522,
+          "row_share_b": 0.012,
+          "row_share_delta_pp": -0.322,
+          "weight_share_a": 0.01485,
+          "weight_share_b": 0.00838,
+          "weight_share_delta_pp": -0.647,
+          "z_row_share": -1.48,
+          "delta_concentration": {
+            "n_distinct_queries": 210,
+            "top1_share_of_delta": 0.0326,
+            "top5_share_of_delta": 0.1463,
+            "hhi_of_delta": 0.0138,
+            "top_queries": [
+              {
+                "query": "阳光型抑郁症有多可怕",
+                "delta": -19.94
+              },
+              {
+                "query": "弱视眼睛能治好吗",
+                "delta": -18.41
+              },
+              {
+                "query": "脂肪肝逆转需要多久",
+                "delta": -17.08
+              },
+              {
+                "query": "子宫腺肌症合并腺肌瘤会自愈吗",
+                "delta": -17.08
+              },
+              {
+                "query": "带状疱疹后遗症神经痛多久会好",
+                "delta": -17.08
+              }
+            ]
+          }
+        },
+        {
+          "label": "TREATMENT_SEEKING",
+          "rows_a": 218,
+          "rows_b": 1571,
+          "row_share_a": 0.07375,
+          "row_share_b": 0.07857,
+          "row_share_delta_pp": 0.482,
+          "weight_share_a": 0.07817,
+          "weight_share_b": 0.07293,
+          "weight_share_delta_pp": -0.523,
+          "z_row_share": 0.91,
+          "delta_concentration": {
+            "n_distinct_queries": 1248,
+            "top1_share_of_delta": 0.0554,
+            "top5_share_of_delta": 0.1201,
+            "hhi_of_delta": 0.0062,
+            "top_queries": [
+              {
+                "query": "气虚出汗严重怎么调理",
+                "delta": -196.41
+              },
+              {
+                "query": "前列腺炎吃什么药",
+                "delta": -85.46
+              },
+              {
+                "query": "孩子总是生病免疫力差怎么办",
+                "delta": -51.95
+              },
+              {
+                "query": "高血压断根最好的土方法",
+                "delta": -50.61
+              },
+              {
+                "query": "男人时间太短吃什么药治疗好",
+                "delta": -41.25
+              }
+            ]
+          }
+        },
+        {
+          "label": "BARE_ENTITY_LOOKUP",
+          "rows_a": 336,
+          "rows_b": 2988,
+          "row_share_a": 0.11367,
+          "row_share_b": 0.14943,
+          "row_share_delta_pp": 3.576,
+          "weight_share_a": 0.12037,
+          "weight_share_b": 0.12422,
+          "weight_share_delta_pp": 0.385,
+          "z_row_share": 5.16,
+          "delta_concentration": {
+            "n_distinct_queries": 2188,
+            "top1_share_of_delta": 0.0452,
+            "top5_share_of_delta": 0.0943,
+            "hhi_of_delta": 0.0042,
+            "top_queries": [
+              {
+                "query": "成人bmi",
+                "delta": -235.1
+              },
+              {
+                "query": "男性阴虱图片",
+                "delta": -86.51
+              },
+              {
+                "query": "治阳痿",
+                "delta": -60.73
+              },
+              {
+                "query": "自然之声助听器",
+                "delta": -56.95
+              },
+              {
+                "query": "五珍百草培元颗粒",
+                "delta": -51.24
+              }
+            ]
+          }
+        },
+        {
+          "label": "FOOD_THERAPY_PREPARATION",
+          "rows_a": 22,
+          "rows_b": 141,
+          "row_share_a": 0.00744,
+          "row_share_b": 0.00705,
+          "row_share_delta_pp": -0.039,
+          "weight_share_a": 0.00905,
+          "weight_share_b": 0.00564,
+          "weight_share_delta_pp": -0.34,
+          "z_row_share": -0.24,
+          "delta_concentration": {
+            "n_distinct_queries": 113,
+            "top1_share_of_delta": 0.1217,
+            "top5_share_of_delta": 0.3387,
+            "hhi_of_delta": 0.0383,
+            "top_queries": [
+              {
+                "query": "吃什么立马排便",
+                "delta": -45.91
+              },
+              {
+                "query": "补肾吃什么东西效果最好",
+                "delta": -31.71
+              },
+              {
+                "query": "苹果配什么煮水减肥祛湿",
+                "delta": -20.0
+              },
+              {
+                "query": "减肥最好的运动是哪一项运动",
+                "delta": -17.08
+              },
+              {
+                "query": "冬虫夏草怎样吃",
+                "delta": -13.02
+              }
+            ]
+          }
+        },
+        {
+          "label": "DOSAGE_USAGE",
+          "rows_a": 39,
+          "rows_b": 254,
+          "row_share_a": 0.01319,
+          "row_share_b": 0.0127,
+          "row_share_delta_pp": -0.049,
+          "weight_share_a": 0.01205,
+          "weight_share_b": 0.00963,
+          "weight_share_delta_pp": -0.242,
+          "z_row_share": -0.22,
+          "delta_concentration": {
+            "n_distinct_queries": 214,
+            "top1_share_of_delta": 0.0308,
+            "top5_share_of_delta": 0.1245,
+            "hhi_of_delta": 0.0131,
+            "top_queries": [
+              {
+                "query": "木香顺气丸和逍遥丸一起服用多久见效",
+                "delta": -17.08
+              },
+              {
+                "query": "甲硝唑片吃完多久见效",
+                "delta": -17.08
+              },
+              {
+                "query": "一次吃几片",
+                "delta": -14.85
+              },
+              {
+                "query": "双歧杆菌三联活菌胶囊和感冒药间隔多久吃",
+                "delta": -10.0
+              },
+              {
+                "query": "感冒罗红霉素成人一次吃几粒治",
+                "delta": -10.0
+              }
+            ]
+          }
+        },
+        {
+          "label": "TCM_THEORY_AND_FORMULAS",
+          "rows_a": 22,
+          "rows_b": 359,
+          "row_share_a": 0.00744,
+          "row_share_b": 0.01795,
+          "row_share_delta_pp": 1.051,
+          "weight_share_a": 0.013,
+          "weight_share_b": 0.0136,
+          "weight_share_delta_pp": 0.06,
+          "z_row_share": 4.17,
+          "delta_concentration": {
+            "n_distinct_queries": 281,
+            "top1_share_of_delta": 0.2842,
+            "top5_share_of_delta": 0.3799,
+            "hhi_of_delta": 0.0873,
+            "top_queries": [
+              {
+                "query": "大片黄色的黄芪图片大全",
+                "delta": -186.7
+              },
+              {
+                "query": "当归四逆丸多少钱？",
+                "delta": -17.08
+              },
+              {
+                "query": "二陈汤合当归四逆汤加川芎丹参黄芪苍术薏苡仁剂量",
+                "delta": -17.08
+              },
+              {
+                "query": "人体五脏六腑图",
+                "delta": -16.35
+              },
+              {
+                "query": "足三里的准确位置图",
+                "delta": 12.32
+              }
+            ]
+          }
+        },
+        {
+          "label": "SYMPTOM_TO_PRODUCT",
+          "rows_a": 22,
+          "rows_b": 130,
+          "row_share_a": 0.00744,
+          "row_share_b": 0.0065,
+          "row_share_delta_pp": -0.094,
+          "weight_share_a": 0.00622,
+          "weight_share_b": 0.0057,
+          "weight_share_delta_pp": -0.052,
+          "z_row_share": -0.59,
+          "delta_concentration": {
+            "n_distinct_queries": 116,
+            "top1_share_of_delta": 0.0665,
+            "top5_share_of_delta": 0.2036,
+            "hhi_of_delta": 0.0234,
+            "top_queries": [
+              {
+                "query": "感冒淌鼻涕嗓子疼咳嗽干咳嗽吃什么药好",
+                "delta": -20.0
+              },
+              {
+                "query": "口腔溃疡用什么药好",
+                "delta": -11.19
+              },
+              {
+                "query": "牙缝宽有异味不敢咬硬东西吃什么药好",
+                "delta": -10.0
+              },
+              {
+                "query": "腰疼腿疼用什么药",
+                "delta": -10.0
+              },
+              {
+                "query": "脚底长了很厚的老茧应该用什么药",
+                "delta": -10.0
+              }
+            ]
+          }
+        }
+      ],
+      "emergent": [
+        {
+          "label": "DRUG_EFFICACY_LOOKUP",
+          "rows_a": 105,
+          "rows_b": 2898,
+          "row_share_a": 0.03552,
+          "row_share_b": 0.14493,
+          "row_share_delta_pp": 10.941,
+          "weight_share_a": 0.03837,
+          "weight_share_b": 0.16091,
+          "weight_share_delta_pp": 12.254,
+          "z_row_share": 16.46,
+          "delta_concentration": {
+            "n_distinct_queries": 2039,
+            "top1_share_of_delta": 0.026,
+            "top5_share_of_delta": 0.0611,
+            "hhi_of_delta": 0.0024,
+            "top_queries": [
+              {
+                "query": "普拉洛芬滴眼液作用",
+                "delta": -111.02
+              },
+              {
+                "query": "五维他口服液功效",
+                "delta": -51.24
+              },
+              {
+                "query": "暖胃舒乐片的功效",
+                "delta": -34.16
+              },
+              {
+                "query": "藿香正气丸的作用与功效",
+                "delta": -33.19
+              },
+              {
+                "query": "甲钴胺片的功效和作用",
+                "delta": 31.03
+              }
+            ]
+          }
+        }
+      ],
+      "receded": [],
+      "too_thin_to_compare": []
+    },
+    "bu_leaf_name": {
+      "comparable": true,
+      "snapshot_a": "AI助手",
+      "snapshot_b": "搜索",
+      "rows_a": 2956,
+      "rows_b": 19996,
+      "n_classes": 30,
+      "cramers_v": 0.2736,
+      "total_variation_weight": 0.4047,
+      "total_variation_rows": 0.325,
+      "n_comparisons": 30,
+      "stable": [
+        {
+          "label": "药品功效作用查询",
+          "rows_a": 403,
+          "rows_b": 6958,
+          "row_share_a": 0.13633,
+          "row_share_b": 0.34797,
+          "row_share_delta_pp": 21.164,
+          "weight_share_a": 0.12696,
+          "weight_share_b": 0.41116,
+          "weight_share_delta_pp": 28.421,
+          "z_row_share": 23.01,
+          "delta_concentration": {
+            "n_distinct_queries": 4894,
+            "top1_share_of_delta": 0.0157,
+            "top5_share_of_delta": 0.0348,
+            "hhi_of_delta": 0.001,
+            "top_queries": [
+              {
+                "query": "功效",
+                "delta": -180.0
+              },
+              {
+                "query": "黑枸杞的功效",
+                "delta": -60.0
+              },
+              {
+                "query": "自然之声助听器",
+                "delta": -56.95
+              },
+              {
+                "query": "柴胡白芍枳壳煮水功效",
+                "delta": -51.24
+              },
+              {
+                "query": "五珍百草培元颗粒",
+                "delta": -51.24
+              }
+            ]
+          }
+        },
+        {
+          "label": "查询疾病治疗与手术方案",
+          "rows_a": 268,
+          "rows_b": 385,
+          "row_share_a": 0.09066,
+          "row_share_b": 0.01925,
+          "row_share_delta_pp": -7.141,
+          "weight_share_a": 0.08869,
+          "weight_share_b": 0.01465,
+          "weight_share_delta_pp": -7.404,
+          "z_row_share": -21.8,
+          "delta_concentration": {
+            "n_distinct_queries": 539,
+            "top1_share_of_delta": 0.0275,
+            "top5_share_of_delta": 0.0791,
+            "hhi_of_delta": 0.0043,
+            "top_queries": [
+              {
+                "query": "中药治疗肿瘤有效吗",
+                "delta": -80.59
+              },
+              {
+                "query": "晚上爱磨牙，牙套+咬合垫组合能解决吗",
+                "delta": -46.1
+              },
+              {
+                "query": "肿瘤介入治疗是一种什么治疗",
+                "delta": -43.31
+              },
+              {
+                "query": "碘伏和酒精哪个更安全",
+                "delta": -34.16
+              },
+              {
+                "query": "拍胸片是否脱上衣",
+                "delta": -27.82
+              }
+            ]
+          }
+        },
+        {
+          "label": "查询功效副作用与禁忌",
+          "rows_a": 277,
+          "rows_b": 536,
+          "row_share_a": 0.09371,
+          "row_share_b": 0.02681,
+          "row_share_delta_pp": -6.69,
+          "weight_share_a": 0.08738,
+          "weight_share_b": 0.01914,
+          "weight_share_delta_pp": -6.824,
+          "z_row_share": -18.37,
+          "delta_concentration": {
+            "n_distinct_queries": 678,
+            "top1_share_of_delta": 0.0162,
+            "top5_share_of_delta": 0.0474,
+            "hhi_of_delta": 0.0033,
+            "top_queries": [
+              {
+                "query": "秋葵三种人不宜吃",
+                "delta": -48.62
+              },
+              {
+                "query": "肾结石能吃豆腐吗",
+                "delta": -30.0
+              },
+              {
+                "query": "有癫痫病的人不能吃哪些东西",
+                "delta": -23.72
+              },
+              {
+                "query": "吃垃圾是他的严重问题吗",
+                "delta": -20.0
+              },
+              {
+                "query": "孔府吃荔枝会死亡吗",
+                "delta": -20.0
+              }
+            ]
+          }
+        },
+        {
+          "label": "医院信息查询与挂号咨询",
+          "rows_a": 147,
+          "rows_b": 343,
+          "row_share_a": 0.04973,
+          "row_share_b": 0.01715,
+          "row_share_delta_pp": -3.258,
+          "weight_share_a": 0.06019,
+          "weight_share_b": 0.01059,
+          "weight_share_delta_pp": -4.96,
+          "z_row_share": -11.44,
+          "delta_concentration": {
+            "n_distinct_queries": 367,
+            "top1_share_of_delta": 0.0974,
+            "top5_share_of_delta": 0.2253,
+            "hhi_of_delta": 0.0191,
+            "top_queries": [
+              {
+                "query": "看男科性功能哪家医院好",
+                "delta": -194.65
+              },
+              {
+                "query": "试管婴儿那个医院成功率高",
+                "delta": -128.15
+              },
+              {
+                "query": "腋臭手术一般多少钱正规医院",
+                "delta": -54.12
+              },
+              {
+                "query": "苏州苏城医院",
+                "delta": -41.67
+              },
+              {
+                "query": "无痛人流预约留手机号",
+                "delta": -31.74
+              }
+            ]
+          }
+        },
+        {
+          "label": "疾病症状表现查询",
+          "rows_a": 63,
+          "rows_b": 1048,
+          "row_share_a": 0.02131,
+          "row_share_b": 0.05241,
+          "row_share_delta_pp": 3.11,
+          "weight_share_a": 0.01705,
+          "weight_share_b": 0.06336,
+          "weight_share_delta_pp": 4.631,
+          "z_row_share": 7.35,
+          "delta_concentration": {
+            "n_distinct_queries": 737,
+            "top1_share_of_delta": 0.0302,
+            "top5_share_of_delta": 0.0765,
+            "hhi_of_delta": 0.0045,
+            "top_queries": [
+              {
+                "query": "肠胃炎的症状",
+                "delta": -49.38
+              },
+              {
+                "query": "人体最累的器官是什么",
+                "delta": -20.0
+              },
+              {
+                "query": "艾滋病初期有哪些症状",
+                "delta": 19.01
+              },
+              {
+                "query": "甲亢有哪些症状和表现",
+                "delta": 18.72
+              },
+              {
+                "query": "甲状腺的症状有哪些表现",
+                "delta": 18.21
+              }
+            ]
+          }
+        },
+        {
+          "label": "药品用法用量查询",
+          "rows_a": 150,
+          "rows_b": 368,
+          "row_share_a": 0.05074,
+          "row_share_b": 0.0184,
+          "row_share_delta_pp": -3.234,
+          "weight_share_a": 0.04881,
+          "weight_share_b": 0.01332,
+          "weight_share_delta_pp": -3.549,
+          "z_row_share": -11.05,
+          "delta_concentration": {
+            "n_distinct_queries": 405,
+            "top1_share_of_delta": 0.0527,
+            "top5_share_of_delta": 0.0968,
+            "hhi_of_delta": 0.0075,
+            "top_queries": [
+              {
+                "query": "胆结石禁吃一览表",
+                "delta": -91.06
+              },
+              {
+                "query": "麦冬玉竹沙参熬水喝一次用量多少",
+                "delta": -20.0
+              },
+              {
+                "query": "甘油三酯2.7需要吃药吗",
+                "delta": -20.0
+              },
+              {
+                "query": "一天吃几个鸡蛋合适",
+                "delta": -19.21
+              },
+              {
+                "query": "木香顺气丸和逍遥丸一起服用多久见效",
+                "delta": -17.08
+              }
+            ]
+          }
+        },
+        {
+          "label": "查询病症用药推荐",
+          "rows_a": 134,
+          "rows_b": 659,
+          "row_share_a": 0.04533,
+          "row_share_b": 0.03296,
+          "row_share_delta_pp": -1.237,
+          "weight_share_a": 0.05617,
+          "weight_share_b": 0.02675,
+          "weight_share_delta_pp": -2.942,
+          "z_row_share": -3.44,
+          "delta_concentration": {
+            "n_distinct_queries": 586,
+            "top1_share_of_delta": 0.1377,
+            "top5_share_of_delta": 0.2381,
+            "hhi_of_delta": 0.025,
+            "top_queries": [
+              {
+                "query": "需要吃消炎药吗",
+                "delta": -298.89
+              },
+              {
+                "query": "前列腺炎吃什么药",
+                "delta": -85.46
+              },
+              {
+                "query": "吃什么药",
+                "delta": -51.14
+              },
+              {
+                "query": "男人时间太短吃什么药治疗好",
+                "delta": -41.25
+              },
+              {
+                "query": "肾虚吃什么药",
+                "delta": -40.0
+              }
+            ]
+          }
+        },
+        {
+          "label": "检验指标异常原因查询",
+          "rows_a": 40,
+          "rows_b": 615,
+          "row_share_a": 0.01353,
+          "row_share_b": 0.03076,
+          "row_share_delta_pp": 1.722,
+          "weight_share_a": 0.01097,
+          "weight_share_b": 0.03523,
+          "weight_share_delta_pp": 2.425,
+          "z_row_share": 5.25,
+          "delta_concentration": {
+            "n_distinct_queries": 449,
+            "top1_share_of_delta": 0.0305,
+            "top5_share_of_delta": 0.0892,
+            "hhi_of_delta": 0.0063,
+            "top_queries": [
+              {
+                "query": "肌酐低",
+                "delta": -30.0
+              },
+              {
+                "query": "高密度脂蛋白胆固醇低了怎么办",
+                "delta": -20.0
+              },
+              {
+                "query": "尿酸高的原因",
+                "delta": -12.94
+              },
+              {
+                "query": "甘油三酯偏高说明什么",
+                "delta": 12.5
+              },
+              {
+                "query": "总胆红素偏高说明什么",
+                "delta": 12.36
+              }
+            ]
+          }
+        },
+        {
+          "label": "医疗健康信息查询",
+          "rows_a": 156,
+          "rows_b": 926,
+          "row_share_a": 0.05277,
+          "row_share_b": 0.04631,
+          "row_share_delta_pp": -0.646,
+          "weight_share_a": 0.06115,
+          "weight_share_b": 0.03902,
+          "weight_share_delta_pp": -2.213,
+          "z_row_share": -1.55,
+          "delta_concentration": {
+            "n_distinct_queries": 698,
+            "top1_share_of_delta": 0.102,
+            "top5_share_of_delta": 0.1931,
+            "hhi_of_delta": 0.0159,
+            "top_queries": [
+              {
+                "query": "成人bmi",
+                "delta": -235.1
+              },
+              {
+                "query": "治阳痿",
+                "delta": -60.73
+              },
+              {
+                "query": "中医养生科普",
+                "delta": -53.67
+              },
+              {
+                "query": "姿势性震颤",
+                "delta": -50.27
+              },
+              {
+                "query": "无创呼吸机",
+                "delta": -45.15
+              }
+            ]
+          }
+        },
+        {
+          "label": "皮肤瘙痒起疙瘩原因与用药查询",
+          "rows_a": 110,
+          "rows_b": 375,
+          "row_share_a": 0.03721,
+          "row_share_b": 0.01875,
+          "row_share_delta_pp": -1.846,
+          "weight_share_a": 0.0379,
+          "weight_share_b": 0.01686,
+          "weight_share_delta_pp": -2.104,
+          "z_row_share": -6.51,
+          "delta_concentration": {
+            "n_distinct_queries": 374,
+            "top1_share_of_delta": 0.041,
+            "top5_share_of_delta": 0.1441,
+            "hhi_of_delta": 0.0096,
+            "top_queries": [
+              {
+                "query": "用电动牙刷刷脚底十分钟痒痒",
+                "delta": -60.0
+              },
+              {
+                "query": "女生脚心痒痒挠",
+                "delta": -59.78
+              },
+              {
+                "query": "男性生殖有小疙瘩是怎么回事",
+                "delta": -42.96
+              },
+              {
+                "query": "痒",
+                "delta": -25.35
+              },
+              {
+                "query": "勤洗头会变秃？",
+                "delta": -22.69
+              }
+            ]
+          }
+        },
+        {
+          "label": "健康调理食物宜忌查询",
+          "rows_a": 81,
+          "rows_b": 325,
+          "row_share_a": 0.0274,
+          "row_share_b": 0.01625,
+          "row_share_delta_pp": -1.115,
+          "weight_share_a": 0.03061,
+          "weight_share_b": 0.01563,
+          "weight_share_delta_pp": -1.498,
+          "z_row_share": -4.29,
+          "delta_concentration": {
+            "n_distinct_queries": 298,
+            "top1_share_of_delta": 0.0573,
+            "top5_share_of_delta": 0.18,
+            "hhi_of_delta": 0.0132,
+            "top_queries": [
+              {
+                "query": "肠胃健康指南",
+                "delta": -67.61
+              },
+              {
+                "query": "吃什么立马排便",
+                "delta": -45.91
+              },
+              {
+                "query": "饮食分析",
+                "delta": -37.89
+              },
+              {
+                "query": "补肾吃什么东西效果最好",
+                "delta": -31.71
+              },
+              {
+                "query": "吃什么能变白？",
+                "delta": -29.41
+              }
+            ]
+          }
+        },
+        {
+          "label": "查询症状原因与治疗方法",
+          "rows_a": 120,
+          "rows_b": 529,
+          "row_share_a": 0.0406,
+          "row_share_b": 0.02646,
+          "row_share_delta_pp": -1.414,
+          "weight_share_a": 0.0378,
+          "weight_share_b": 0.02321,
+          "weight_share_delta_pp": -1.459,
+          "z_row_share": -4.33,
+          "delta_concentration": {
+            "n_distinct_queries": 475,
+            "top1_share_of_delta": 0.0236,
+            "top5_share_of_delta": 0.0973,
+            "hhi_of_delta": 0.0063,
+            "top_queries": [
+              {
+                "query": "提高睡眠质量",
+                "delta": -36.97
+              },
+              {
+                "query": "血小板压低怎么回事",
+                "delta": -34.16
+              },
+              {
+                "query": "眼睛跳是怎么回事",
+                "delta": -30.0
+              },
+              {
+                "query": "睡觉手麻醒了一活动就恢复了",
+                "delta": -25.62
+              },
+              {
+                "query": "老师，我的头部不疼不痒也不晕，但是就觉得不舒服，这是怎么回事？按摩哪儿能解决这个问题？",
+                "delta": -25.62
+              }
+            ]
+          }
+        },
+        {
+          "label": "血糖与糖尿病问题查询",
+          "rows_a": 75,
+          "rows_b": 254,
+          "row_share_a": 0.02537,
+          "row_share_b": 0.0127,
+          "row_share_delta_pp": -1.267,
+          "weight_share_a": 0.02435,
+          "weight_share_b": 0.00996,
+          "weight_share_delta_pp": -1.438,
+          "z_row_share": -5.41,
+          "delta_concentration": {
+            "n_distinct_queries": 248,
+            "top1_share_of_delta": 0.0376,
+            "top5_share_of_delta": 0.1451,
+            "hhi_of_delta": 0.0118,
+            "top_queries": [
+              {
+                "query": "血糖高调理指南",
+                "delta": -33.12
+              },
+              {
+                "query": "糖尿病并发症分几个阶段",
+                "delta": -30.0
+              },
+              {
+                "query": "血糖高忌什么食物",
+                "delta": -24.87
+              },
+              {
+                "query": "糖尿病可以喝绿豆汤吗",
+                "delta": -20.0
+              },
+              {
+                "query": "糖尿病早餐怎么吃",
+                "delta": -20.0
+              }
+            ]
+          }
+        },
+        {
+          "label": "疾病发病原因查询",
+          "rows_a": 35,
+          "rows_b": 558,
+          "row_share_a": 0.01184,
+          "row_share_b": 0.02791,
+          "row_share_delta_pp": 1.607,
+          "weight_share_a": 0.01346,
+          "weight_share_b": 0.02645,
+          "weight_share_delta_pp": 1.299,
+          "z_row_share": 5.14,
+          "delta_concentration": {
+            "n_distinct_queries": 410,
+            "top1_share_of_delta": 0.0575,
+            "top5_share_of_delta": 0.1469,
+            "hhi_of_delta": 0.0103,
+            "top_queries": [
+              {
+                "query": "孩子总是生病免疫力差怎么办",
+                "delta": -51.95
+              },
+              {
+                "query": "这是什么病",
+                "delta": -29.49
+              },
+              {
+                "query": "黄精是管什么的",
+                "delta": -20.0
+              },
+              {
+                "query": "白班和白癜风是一种病吗",
+                "delta": -16.42
+              },
+              {
+                "query": "冠心病最怕什么刺激",
+                "delta": -14.86
+              }
+            ]
+          }
+        },
+        {
+          "label": "查询孕产流产相关时间",
+          "rows_a": 95,
+          "rows_b": 481,
+          "row_share_a": 0.03214,
+          "row_share_b": 0.02405,
+          "row_share_delta_pp": -0.808,
+          "weight_share_a": 0.03048,
+          "weight_share_b": 0.01769,
+          "weight_share_delta_pp": -1.279,
+          "z_row_share": -2.62,
+          "delta_concentration": {
+            "n_distinct_queries": 424,
+            "top1_share_of_delta": 0.0223,
+            "top5_share_of_delta": 0.0952,
+            "hhi_of_delta": 0.0071,
+            "top_queries": [
+              {
+                "query": "试管婴儿费用大概多少",
+                "delta": -27.64
+              },
+              {
+                "query": "想怀孕怎么才能怀上",
+                "delta": -25.44
+              },
+              {
+                "query": "怀孕",
+                "delta": -24.23
+              },
+              {
+                "query": "五十岁还能怀孕吗",
+                "delta": -20.93
+              },
+              {
+                "query": "腰椎压缩性骨折110天可以做多久",
+                "delta": -20.0
+              }
+            ]
+          }
+        },
+        {
+          "label": "症状原因与处理方法查询",
+          "rows_a": 90,
+          "rows_b": 350,
+          "row_share_a": 0.03045,
+          "row_share_b": 0.0175,
+          "row_share_delta_pp": -1.294,
+          "weight_share_a": 0.02772,
+          "weight_share_b": 0.01618,
+          "weight_share_delta_pp": -1.154,
+          "z_row_share": -4.79,
+          "delta_concentration": {
+            "n_distinct_queries": 320,
+            "top1_share_of_delta": 0.0305,
+            "top5_share_of_delta": 0.1081,
+            "hhi_of_delta": 0.0083,
+            "top_queries": [
+              {
+                "query": "怎么知道有没有口臭",
+                "delta": -34.16
+              },
+              {
+                "query": "嘴巴痛",
+                "delta": -30.0
+              },
+              {
+                "query": "上嘴唇上翘是什么原因",
+                "delta": -20.0
+              },
+              {
+                "query": "盆腔炎会引起嘴干不想吃饭恶心吗吃饱不吃饱",
+                "delta": -20.0
+              },
+              {
+                "query": "舌苔厚白是什么原因引起的",
+                "delta": 17.03
+              }
+            ]
+          }
+        },
+        {
+          "label": "查询身体异常症状原因及应对方法",
+          "rows_a": 87,
+          "rows_b": 447,
+          "row_share_a": 0.02943,
+          "row_share_b": 0.02235,
+          "row_share_delta_pp": -0.708,
+          "weight_share_a": 0.02836,
+          "weight_share_b": 0.01814,
+          "weight_share_delta_pp": -1.023,
+          "z_row_share": -2.38,
+          "delta_concentration": {
+            "n_distinct_queries": 405,
+            "top1_share_of_delta": 0.0191,
+            "top5_share_of_delta": 0.0798,
+            "hhi_of_delta": 0.0071,
+            "top_queries": [
+              {
+                "query": "变成孕妇肚子",
+                "delta": -22.76
+              },
+              {
+                "query": "尿多是什么原因男性",
+                "delta": -21.05
+              },
+              {
+                "query": "大便感觉拉不干净",
+                "delta": -17.08
+              },
+              {
+                "query": "只有发黄",
+                "delta": -17.08
+              },
+              {
+                "query": "拉大便拉出血",
+                "delta": -17.08
+              }
+            ]
+          }
+        },
+        {
+          "label": "医学术语与检查指标含义查询",
+          "rows_a": 36,
+          "rows_b": 471,
+          "row_share_a": 0.01218,
+          "row_share_b": 0.02355,
+          "row_share_delta_pp": 1.138,
+          "weight_share_a": 0.01157,
+          "weight_share_b": 0.0214,
+          "weight_share_delta_pp": 0.983,
+          "z_row_share": 3.93,
+          "delta_concentration": {
+            "n_distinct_queries": 360,
+            "top1_share_of_delta": 0.0293,
+            "top5_share_of_delta": 0.1019,
+            "hhi_of_delta": 0.0091,
+            "top_queries": [
+              {
+                "query": "普拉提是什么",
+                "delta": -20.0
+              },
+              {
+                "query": "夌角有什么好处",
+                "delta": -17.08
+              },
+              {
+                "query": "窦性心律是什么意思?",
+                "delta": 11.64
+              },
+              {
+                "query": "人dna与rna的杂交",
+                "delta": -10.69
+              },
+              {
+                "query": "肝脏合成vldl的原料有哪些",
+                "delta": -10.0
+              }
+            ]
+          }
+        },
+        {
+          "label": "中医方剂配方与食疗搭配吃法查询",
+          "rows_a": 46,
+          "rows_b": 172,
+          "row_share_a": 0.01556,
+          "row_share_b": 0.0086,
+          "row_share_delta_pp": -0.696,
+          "weight_share_a": 0.01397,
+          "weight_share_b": 0.00623,
+          "weight_share_delta_pp": -0.774,
+          "z_row_share": -3.64,
+          "delta_concentration": {
+            "n_distinct_queries": 168,
+            "top1_share_of_delta": 0.0374,
+            "top5_share_of_delta": 0.1553,
+            "hhi_of_delta": 0.0166,
+            "top_queries": [
+              {
+                "query": "赤小豆补血好还是红豆补血好",
+                "delta": -20.0
+              },
+              {
+                "query": "苹果配什么煮水减肥祛湿",
+                "delta": -20.0
+              },
+              {
+                "query": "鸭胸肉的营养价值跟鸡胸肉的营养价值哪个好",
+                "delta": -20.0
+              },
+              {
+                "query": "冬虫夏草怎样吃",
+                "delta": -13.02
+              },
+              {
+                "query": "白茶和什么水果最搭",
+                "delta": -10.0
+              }
+            ]
+          }
+        },
+        {
+          "label": "医学健康图片查询",
+          "rows_a": 21,
+          "rows_b": 210,
+          "row_share_a": 0.0071,
+          "row_share_b": 0.0105,
+          "row_share_delta_pp": 0.34,
+          "weight_share_a": 0.01484,
+          "weight_share_b": 0.00719,
+          "weight_share_delta_pp": -0.765,
+          "z_row_share": 1.73,
+          "delta_concentration": {
+            "n_distinct_queries": 161,
+            "top1_share_of_delta": 0.3244,
+            "top5_share_of_delta": 0.6023,
+            "hhi_of_delta": 0.1376,
+            "top_queries": [
+              {
+                "query": "大片黄色的黄芪图片大全",
+                "delta": -186.7
+              },
+              {
+                "query": "男性阴虱图片",
+                "delta": -86.51
+              },
+              {
+                "query": "热血毒皮肤照片",
+                "delta": -40.0
+              },
+              {
+                "query": "阴囊上长疙瘩图片",
+                "delta": -20.0
+              },
+              {
+                "query": "帮我画 男性阴虱图片",
+                "delta": -13.37
+              }
+            ]
+          }
+        },
+        {
+          "label": "药品及医疗产品信息查询",
+          "rows_a": 96,
+          "rows_b": 941,
+          "row_share_a": 0.03248,
+          "row_share_b": 0.04706,
+          "row_share_delta_pp": 1.458,
+          "weight_share_a": 0.03264,
+          "weight_share_b": 0.04001,
+          "weight_share_delta_pp": 0.737,
+          "z_row_share": 3.56,
+          "delta_concentration": {
+            "n_distinct_queries": 759,
+            "top1_share_of_delta": 0.0697,
+            "top5_share_of_delta": 0.1225,
+            "hhi_of_delta": 0.0086,
+            "top_queries": [
+              {
+                "query": "普拉洛芬滴眼液作用",
+                "delta": -111.02
+              },
+              {
+                "query": "专治淋巴肿瘤草药",
+                "delta": -24.75
+              },
+              {
+                "query": "家用高压氧舱",
+                "delta": -22.31
+              },
+              {
+                "query": "硝酸甘油使用说明书",
+                "delta": -20.0
+              },
+              {
+                "query": "左炔诺孕酮肠溶片的价格是多少",
+                "delta": -17.08
+              }
+            ]
+          }
+        },
+        {
+          "label": "查询皮肤病症状图片",
+          "rows_a": 21,
+          "rows_b": 206,
+          "row_share_a": 0.0071,
+          "row_share_b": 0.0103,
+          "row_share_delta_pp": 0.32,
+          "weight_share_a": 0.00627,
+          "weight_share_b": 0.01298,
+          "weight_share_delta_pp": 0.671,
+          "z_row_share": 1.64,
+          "delta_concentration": {
+            "n_distinct_queries": 148,
+            "top1_share_of_delta": 0.0694,
+            "top5_share_of_delta": 0.1974,
+            "hhi_of_delta": 0.0195,
+            "top_queries": [
+              {
+                "query": "请问图中是什么皮肤病？",
+                "delta": -24.9
+              },
+              {
+                "query": "梅毒的症状和图片",
+                "delta": 15.4
+              },
+              {
+                "query": "湿疹症状图片",
+                "delta": -10.27
+              },
+              {
+                "query": "梅毒症状图片",
+                "delta": -10.2
+              },
+              {
+                "query": "火麻仁长的什么样",
+                "delta": -10.0
+              }
+            ]
+          }
+        },
+        {
+          "label": "健康指标正常值范围查询",
+          "rows_a": 90,
+          "rows_b": 437,
+          "row_share_a": 0.03045,
+          "row_share_b": 0.02185,
+          "row_share_delta_pp": -0.859,
+          "weight_share_a": 0.02977,
+          "weight_share_b": 0.02482,
+          "weight_share_delta_pp": -0.495,
+          "z_row_share": -2.91,
+          "delta_concentration": {
+            "n_distinct_queries": 382,
+            "top1_share_of_delta": 0.0513,
+            "top5_share_of_delta": 0.1334,
+            "hhi_of_delta": 0.0095,
+            "top_queries": [
+              {
+                "query": "女性的bmi大好还是小好",
+                "delta": -68.1
+              },
+              {
+                "query": "血糖正常值范围 最新标准2025",
+                "delta": 33.89
+              },
+              {
+                "query": "血压正常值是多少范围",
+                "delta": 30.11
+              },
+              {
+                "query": "试管男孩多少钱",
+                "delta": -24.52
+              },
+              {
+                "query": "血糖正常值",
+                "delta": -20.36
+              }
+            ]
+          }
+        },
+        {
+          "label": "癌症早期症状查询",
+          "rows_a": 23,
+          "rows_b": 191,
+          "row_share_a": 0.00778,
+          "row_share_b": 0.00955,
+          "row_share_delta_pp": 0.177,
+          "weight_share_a": 0.00729,
+          "weight_share_b": 0.01141,
+          "weight_share_delta_pp": 0.412,
+          "z_row_share": 0.94,
+          "delta_concentration": {
+            "n_distinct_queries": 143,
+            "top1_share_of_delta": 0.0501,
+            "top5_share_of_delta": 0.1719,
+            "hhi_of_delta": 0.0171,
+            "top_queries": [
+              {
+                "query": "金沙洲肿瘤收费价目表",
+                "delta": -20.93
+              },
+              {
+                "query": "肝癌早期发现后，生存期有多长",
+                "delta": -17.08
+              },
+              {
+                "query": "肺癌早期症状",
+                "delta": -11.92
+              },
+              {
+                "query": "胃癌早期症状",
+                "delta": -11.08
+              },
+              {
+                "query": "乳腺癌的早期症状和前兆",
+                "delta": 10.78
+              }
+            ]
+          }
+        },
+        {
+          "label": "查询疾病最快最有效治疗方法",
+          "rows_a": 105,
+          "rows_b": 900,
+          "row_share_a": 0.03552,
+          "row_share_b": 0.04501,
+          "row_share_delta_pp": 0.949,
+          "weight_share_a": 0.03799,
+          "weight_share_b": 0.04194,
+          "weight_share_delta_pp": 0.395,
+          "z_row_share": 2.35,
+          "delta_concentration": {
+            "n_distinct_queries": 702,
+            "top1_share_of_delta": 0.1054,
+            "top5_share_of_delta": 0.1701,
+            "hhi_of_delta": 0.0152,
+            "top_queries": [
+              {
+                "query": "气虚出汗严重怎么调理",
+                "delta": -196.41
+              },
+              {
+                "query": "高血压断根最好的土方法",
+                "delta": -50.61
+              },
+              {
+                "query": "怎么治疗",
+                "delta": -29.56
+              },
+              {
+                "query": "牙疼怎么止疼最快",
+                "delta": 20.3
+              },
+              {
+                "query": "静脉血栓的最快消除方法",
+                "delta": -20.0
+              }
+            ]
+          }
+        },
+        {
+          "label": "身体疼痛病因查询",
+          "rows_a": 60,
+          "rows_b": 444,
+          "row_share_a": 0.0203,
+          "row_share_b": 0.0222,
+          "row_share_delta_pp": 0.191,
+          "weight_share_a": 0.01821,
+          "weight_share_b": 0.02136,
+          "weight_share_delta_pp": 0.315,
+          "z_row_share": 0.66,
+          "delta_concentration": {
+            "n_distinct_queries": 358,
+            "top1_share_of_delta": 0.0206,
+            "top5_share_of_delta": 0.0807,
+            "hhi_of_delta": 0.0073,
+            "top_queries": [
+              {
+                "query": "握拳时胳膊肘筋疼怎么办",
+                "delta": -20.0
+              },
+              {
+                "query": "脚后跟脚底板疼",
+                "delta": -17.08
+              },
+              {
+                "query": "久坐痛",
+                "delta": -17.08
+              },
+              {
+                "query": "脚后跟疼是怎么回事什么原因",
+                "delta": 12.5
+              },
+              {
+                "query": "胆囊炎的症状是哪里疼",
+                "delta": 11.57
+              }
+            ]
+          }
+        },
+        {
+          "label": "查询疾病传染性及传播途径",
+          "rows_a": 20,
+          "rows_b": 86,
+          "row_share_a": 0.00677,
+          "row_share_b": 0.0043,
+          "row_share_delta_pp": -0.247,
+          "weight_share_a": 0.00579,
+          "weight_share_b": 0.00333,
+          "weight_share_delta_pp": -0.247,
+          "z_row_share": -1.85,
+          "delta_concentration": {
+            "n_distinct_queries": 80,
+            "top1_share_of_delta": 0.058,
+            "top5_share_of_delta": 0.2249,
+            "hhi_of_delta": 0.0297,
+            "top_queries": [
+              {
+                "query": "流行病防护指南",
+                "delta": -13.9
+              },
+              {
+                "query": "HPV DV v hv 6是不是高危HPV 53传染的",
+                "delta": -10.0
+              },
+              {
+                "query": "小孩肺炎能经常做雾化吗",
+                "delta": -10.0
+              },
+              {
+                "query": "血液透析室丙肝等经血液传播疾病的防控措施",
+                "delta": -10.0
+              },
+              {
+                "query": "染头发不让染头膏挨住头皮可不可以伤害会不会小1点",
+                "delta": -10.0
+              }
+            ]
+          }
+        },
+        {
+          "label": "医学检查项目查询",
+          "rows_a": 35,
+          "rows_b": 279,
+          "row_share_a": 0.01184,
+          "row_share_b": 0.01395,
+          "row_share_delta_pp": 0.211,
+          "weight_share_a": 0.01264,
+          "weight_share_b": 0.01081,
+          "weight_share_delta_pp": -0.182,
+          "z_row_share": 0.92,
+          "delta_concentration": {
+            "n_distinct_queries": 221,
+            "top1_share_of_delta": 0.0576,
+            "top5_share_of_delta": 0.1982,
+            "hhi_of_delta": 0.0169,
+            "top_queries": [
+              {
+                "query": "阴道镜检查前需要做哪些准备",
+                "delta": -34.16
+              },
+              {
+                "query": "开始AI问诊",
+                "delta": -31.86
+              },
+              {
+                "query": "有CT",
+                "delta": -25.62
+              },
+              {
+                "query": "诊断冠心病的三个指标",
+                "delta": -14.74
+              },
+              {
+                "query": "挂什么科",
+                "delta": -11.12
+              }
+            ]
+          }
+        },
+        {
+          "label": "查询穴位及身体部位准确位置",
+          "rows_a": 47,
+          "rows_b": 340,
+          "row_share_a": 0.0159,
+          "row_share_b": 0.017,
+          "row_share_delta_pp": 0.11,
+          "weight_share_a": 0.01314,
+          "weight_share_b": 0.01492,
+          "weight_share_delta_pp": 0.178,
+          "z_row_share": 0.43,
+          "delta_concentration": {
+            "n_distinct_queries": 288,
+            "top1_share_of_delta": 0.0297,
+            "top5_share_of_delta": 0.1219,
+            "hhi_of_delta": 0.0106,
+            "top_queries": [
+              {
+                "query": "小腿胫骨位置图",
+                "delta": -20.0
+              },
+              {
+                "query": "人体结构器官位置图",
+                "delta": 18.05
+              },
+              {
+                "query": "人体五脏六腑图",
+                "delta": -16.35
+              },
+              {
+                "query": "骨骼",
+                "delta": -14.48
+              },
+              {
+                "query": "人体器官结构图",
+                "delta": -13.29
+              }
+            ]
+          }
+        },
+        {
+          "label": "查询食物寒热属性",
+          "rows_a": 25,
+          "rows_b": 162,
+          "row_share_a": 0.00846,
+          "row_share_b": 0.0081,
+          "row_share_delta_pp": -0.036,
+          "weight_share_a": 0.00785,
+          "weight_share_b": 0.00629,
+          "weight_share_delta_pp": -0.156,
+          "z_row_share": -0.2,
+          "delta_concentration": {
+            "n_distinct_queries": 146,
+            "top1_share_of_delta": 0.0277,
+            "top5_share_of_delta": 0.1385,
+            "hhi_of_delta": 0.0196,
+            "top_queries": [
+              {
+                "query": "21天的小婴儿高烧怎么降温",
+                "delta": -10.0
+              },
+              {
+                "query": "男人的脚热是怎么回事",
+                "delta": -10.0
+              },
+              {
+                "query": "为什么早上的体温比晚上的体温要高高1点呢",
+                "delta": -10.0
+              },
+              {
+                "query": "夏天55岁女人爱喝烫嘴的热水好吗",
+                "delta": -10.0
+              },
+              {
+                "query": "夏天天热有点恶心是什么原因",
+                "delta": -10.0
+              }
+            ]
+          }
+        }
+      ],
+      "emergent": [],
+      "receded": [],
+      "too_thin_to_compare": []
+    },
+    "bu_family_final": {
+      "comparable": true,
+      "snapshot_a": "AI助手",
+      "snapshot_b": "搜索",
+      "rows_a": 2956,
+      "rows_b": 19996,
+      "n_classes": 27,
+      "cramers_v": 0.2443,
+      "total_variation_weight": 0.3931,
+      "total_variation_rows": 0.3125,
+      "n_comparisons": 27,
+      "stable": [
+        {
+          "label": "#0 药品功效作用查询",
+          "rows_a": 403,
+          "rows_b": 6958,
+          "row_share_a": 0.13633,
+          "row_share_b": 0.34797,
+          "row_share_delta_pp": 21.164,
+          "weight_share_a": 0.12696,
+          "weight_share_b": 0.41116,
+          "weight_share_delta_pp": 28.421,
+          "z_row_share": 23.01,
+          "delta_concentration": {
+            "n_distinct_queries": 4894,
+            "top1_share_of_delta": 0.0157,
+            "top5_share_of_delta": 0.0348,
+            "hhi_of_delta": 0.001,
+            "top_queries": [
+              {
+                "query": "功效",
+                "delta": -180.0
+              },
+              {
+                "query": "黑枸杞的功效",
+                "delta": -60.0
+              },
+              {
+                "query": "自然之声助听器",
+                "delta": -56.95
+              },
+              {
+                "query": "柴胡白芍枳壳煮水功效",
+                "delta": -51.24
+              },
+              {
+                "query": "五珍百草培元颗粒",
+                "delta": -51.24
+              }
+            ]
+          }
+        },
+        {
+          "label": "#20 功效副作用与禁忌查询",
+          "rows_a": 277,
+          "rows_b": 536,
+          "row_share_a": 0.09371,
+          "row_share_b": 0.02681,
+          "row_share_delta_pp": -6.69,
+          "weight_share_a": 0.08738,
+          "weight_share_b": 0.01914,
+          "weight_share_delta_pp": -6.824,
+          "z_row_share": -18.37,
+          "delta_concentration": {
+            "n_distinct_queries": 678,
+            "top1_share_of_delta": 0.0162,
+            "top5_share_of_delta": 0.0474,
+            "hhi_of_delta": 0.0033,
+            "top_queries": [
+              {
+                "query": "秋葵三种人不宜吃",
+                "delta": -48.62
+              },
+              {
+                "query": "肾结石能吃豆腐吗",
+                "delta": -30.0
+              },
+              {
+                "query": "有癫痫病的人不能吃哪些东西",
+                "delta": -23.72
+              },
+              {
+                "query": "吃垃圾是他的严重问题吗",
+                "delta": -20.0
+              },
+              {
+                "query": "孔府吃荔枝会死亡吗",
+                "delta": -20.0
+              }
+            ]
+          }
+        },
+        {
+          "label": "#5 疾病治疗与手术方案查询",
+          "rows_a": 351,
+          "rows_b": 1196,
+          "row_share_a": 0.11874,
+          "row_share_b": 0.05981,
+          "row_share_delta_pp": -5.893,
+          "weight_share_a": 0.11339,
+          "weight_share_b": 0.05096,
+          "weight_share_delta_pp": -6.243,
+          "z_row_share": -11.93,
+          "delta_concentration": {
+            "n_distinct_queries": 1187,
+            "top1_share_of_delta": 0.0188,
+            "top5_share_of_delta": 0.0541,
+            "hhi_of_delta": 0.0025,
+            "top_queries": [
+              {
+                "query": "中药治疗肿瘤有效吗",
+                "delta": -80.59
+              },
+              {
+                "query": "晚上爱磨牙，牙套+咬合垫组合能解决吗",
+                "delta": -46.1
+              },
+              {
+                "query": "肿瘤介入治疗是一种什么治疗",
+                "delta": -43.31
+              },
+              {
+                "query": "碘伏和酒精哪个更安全",
+                "delta": -34.16
+              },
+              {
+                "query": "拍胸片是否脱上衣",
+                "delta": -27.82
+              }
+            ]
+          }
+        },
+        {
+          "label": "#1 疾病症状表现查询",
+          "rows_a": 86,
+          "rows_b": 1239,
+          "row_share_a": 0.02909,
+          "row_share_b": 0.06196,
+          "row_share_delta_pp": 3.287,
+          "weight_share_a": 0.02433,
+          "weight_share_b": 0.07477,
+          "weight_share_delta_pp": 5.043,
+          "z_row_share": 7.15,
+          "delta_concentration": {
+            "n_distinct_queries": 880,
+            "top1_share_of_delta": 0.024,
+            "top5_share_of_delta": 0.0623,
+            "hhi_of_delta": 0.0036,
+            "top_queries": [
+              {
+                "query": "肠胃炎的症状",
+                "delta": -49.38
+              },
+              {
+                "query": "金沙洲肿瘤收费价目表",
+                "delta": -20.93
+              },
+              {
+                "query": "人体最累的器官是什么",
+                "delta": -20.0
+              },
+              {
+                "query": "艾滋病初期有哪些症状",
+                "delta": 19.01
+              },
+              {
+                "query": "甲亢有哪些症状和表现",
+                "delta": 18.72
+              }
+            ]
+          }
+        },
+        {
+          "label": "#21 医院信息查询与挂号咨询",
+          "rows_a": 147,
+          "rows_b": 343,
+          "row_share_a": 0.04973,
+          "row_share_b": 0.01715,
+          "row_share_delta_pp": -3.258,
+          "weight_share_a": 0.06019,
+          "weight_share_b": 0.01059,
+          "weight_share_delta_pp": -4.96,
+          "z_row_share": -11.44,
+          "delta_concentration": {
+            "n_distinct_queries": 367,
+            "top1_share_of_delta": 0.0974,
+            "top5_share_of_delta": 0.2253,
+            "hhi_of_delta": 0.0191,
+            "top_queries": [
+              {
+                "query": "看男科性功能哪家医院好",
+                "delta": -194.65
+              },
+              {
+                "query": "试管婴儿那个医院成功率高",
+                "delta": -128.15
+              },
+              {
+                "query": "腋臭手术一般多少钱正规医院",
+                "delta": -54.12
+              },
+              {
+                "query": "苏州苏城医院",
+                "delta": -41.67
+              },
+              {
+                "query": "无痛人流预约留手机号",
+                "delta": -31.74
+              }
+            ]
+          }
+        },
+        {
+          "label": "#9 药品用法用量查询",
+          "rows_a": 150,
+          "rows_b": 368,
+          "row_share_a": 0.05074,
+          "row_share_b": 0.0184,
+          "row_share_delta_pp": -3.234,
+          "weight_share_a": 0.04881,
+          "weight_share_b": 0.01332,
+          "weight_share_delta_pp": -3.549,
+          "z_row_share": -11.05,
+          "delta_concentration": {
+            "n_distinct_queries": 405,
+            "top1_share_of_delta": 0.0527,
+            "top5_share_of_delta": 0.0968,
+            "hhi_of_delta": 0.0075,
+            "top_queries": [
+              {
+                "query": "胆结石禁吃一览表",
+                "delta": -91.06
+              },
+              {
+                "query": "麦冬玉竹沙参熬水喝一次用量多少",
+                "delta": -20.0
+              },
+              {
+                "query": "甘油三酯2.7需要吃药吗",
+                "delta": -20.0
+              },
+              {
+                "query": "一天吃几个鸡蛋合适",
+                "delta": -19.21
+              },
+              {
+                "query": "木香顺气丸和逍遥丸一起服用多久见效",
+                "delta": -17.08
+              }
+            ]
+          }
+        },
+        {
+          "label": "#14 病症用药推荐查询",
+          "rows_a": 134,
+          "rows_b": 659,
+          "row_share_a": 0.04533,
+          "row_share_b": 0.03296,
+          "row_share_delta_pp": -1.237,
+          "weight_share_a": 0.05617,
+          "weight_share_b": 0.02675,
+          "weight_share_delta_pp": -2.942,
+          "z_row_share": -3.44,
+          "delta_concentration": {
+            "n_distinct_queries": 586,
+            "top1_share_of_delta": 0.1377,
+            "top5_share_of_delta": 0.2381,
+            "hhi_of_delta": 0.025,
+            "top_queries": [
+              {
+                "query": "需要吃消炎药吗",
+                "delta": -298.89
+              },
+              {
+                "query": "前列腺炎吃什么药",
+                "delta": -85.46
+              },
+              {
+                "query": "吃什么药",
+                "delta": -51.14
+              },
+              {
+                "query": "男人时间太短吃什么药治疗好",
+                "delta": -41.25
+              },
+              {
+                "query": "肾虚吃什么药",
+                "delta": -40.0
+              }
+            ]
+          }
+        },
+        {
+          "label": "#17 检验指标异常原因查询",
+          "rows_a": 40,
+          "rows_b": 615,
+          "row_share_a": 0.01353,
+          "row_share_b": 0.03076,
+          "row_share_delta_pp": 1.722,
+          "weight_share_a": 0.01097,
+          "weight_share_b": 0.03523,
+          "weight_share_delta_pp": 2.425,
+          "z_row_share": 5.25,
+          "delta_concentration": {
+            "n_distinct_queries": 449,
+            "top1_share_of_delta": 0.0305,
+            "top5_share_of_delta": 0.0892,
+            "hhi_of_delta": 0.0063,
+            "top_queries": [
+              {
+                "query": "肌酐低",
+                "delta": -30.0
+              },
+              {
+                "query": "高密度脂蛋白胆固醇低了怎么办",
+                "delta": -20.0
+              },
+              {
+                "query": "尿酸高的原因",
+                "delta": -12.94
+              },
+              {
+                "query": "甘油三酯偏高说明什么",
+                "delta": 12.5
+              },
+              {
+                "query": "总胆红素偏高说明什么",
+                "delta": 12.36
+              }
+            ]
+          }
+        },
+        {
+          "label": "#25 医疗健康信息查询",
+          "rows_a": 156,
+          "rows_b": 926,
+          "row_share_a": 0.05277,
+          "row_share_b": 0.04631,
+          "row_share_delta_pp": -0.646,
+          "weight_share_a": 0.06115,
+          "weight_share_b": 0.03902,
+          "weight_share_delta_pp": -2.213,
+          "z_row_share": -1.55,
+          "delta_concentration": {
+            "n_distinct_queries": 698,
+            "top1_share_of_delta": 0.102,
+            "top5_share_of_delta": 0.1931,
+            "hhi_of_delta": 0.0159,
+            "top_queries": [
+              {
+                "query": "成人bmi",
+                "delta": -235.1
+              },
+              {
+                "query": "治阳痿",
+                "delta": -60.73
+              },
+              {
+                "query": "中医养生科普",
+                "delta": -53.67
+              },
+              {
+                "query": "姿势性震颤",
+                "delta": -50.27
+              },
+              {
+                "query": "无创呼吸机",
+                "delta": -45.15
+              }
+            ]
+          }
+        },
+        {
+          "label": "#16 皮肤瘙痒起疙瘩原因与用药查询",
+          "rows_a": 110,
+          "rows_b": 375,
+          "row_share_a": 0.03721,
+          "row_share_b": 0.01875,
+          "row_share_delta_pp": -1.846,
+          "weight_share_a": 0.0379,
+          "weight_share_b": 0.01686,
+          "weight_share_delta_pp": -2.104,
+          "z_row_share": -6.51,
+          "delta_concentration": {
+            "n_distinct_queries": 374,
+            "top1_share_of_delta": 0.041,
+            "top5_share_of_delta": 0.1441,
+            "hhi_of_delta": 0.0096,
+            "top_queries": [
+              {
+                "query": "用电动牙刷刷脚底十分钟痒痒",
+                "delta": -60.0
+              },
+              {
+                "query": "女生脚心痒痒挠",
+                "delta": -59.78
+              },
+              {
+                "query": "男性生殖有小疙瘩是怎么回事",
+                "delta": -42.96
+              },
+              {
+                "query": "痒",
+                "delta": -25.35
+              },
+              {
+                "query": "勤洗头会变秃？",
+                "delta": -22.69
+              }
+            ]
+          }
+        },
+        {
+          "label": "#4 健康调理食物宜忌查询",
+          "rows_a": 81,
+          "rows_b": 325,
+          "row_share_a": 0.0274,
+          "row_share_b": 0.01625,
+          "row_share_delta_pp": -1.115,
+          "weight_share_a": 0.03061,
+          "weight_share_b": 0.01563,
+          "weight_share_delta_pp": -1.498,
+          "z_row_share": -4.29,
+          "delta_concentration": {
+            "n_distinct_queries": 298,
+            "top1_share_of_delta": 0.0573,
+            "top5_share_of_delta": 0.18,
+            "hhi_of_delta": 0.0132,
+            "top_queries": [
+              {
+                "query": "肠胃健康指南",
+                "delta": -67.61
+              },
+              {
+                "query": "吃什么立马排便",
+                "delta": -45.91
+              },
+              {
+                "query": "饮食分析",
+                "delta": -37.89
+              },
+              {
+                "query": "补肾吃什么东西效果最好",
+                "delta": -31.71
+              },
+              {
+                "query": "吃什么能变白？",
+                "delta": -29.41
+              }
+            ]
+          }
+        },
+        {
+          "label": "#12 查询症状原因与治疗方法",
+          "rows_a": 120,
+          "rows_b": 529,
+          "row_share_a": 0.0406,
+          "row_share_b": 0.02646,
+          "row_share_delta_pp": -1.414,
+          "weight_share_a": 0.0378,
+          "weight_share_b": 0.02321,
+          "weight_share_delta_pp": -1.459,
+          "z_row_share": -4.33,
+          "delta_concentration": {
+            "n_distinct_queries": 475,
+            "top1_share_of_delta": 0.0236,
+            "top5_share_of_delta": 0.0973,
+            "hhi_of_delta": 0.0063,
+            "top_queries": [
+              {
+                "query": "提高睡眠质量",
+                "delta": -36.97
+              },
+              {
+                "query": "血小板压低怎么回事",
+                "delta": -34.16
+              },
+              {
+                "query": "眼睛跳是怎么回事",
+                "delta": -30.0
+              },
+              {
+                "query": "睡觉手麻醒了一活动就恢复了",
+                "delta": -25.62
+              },
+              {
+                "query": "老师，我的头部不疼不痒也不晕，但是就觉得不舒服，这是怎么回事？按摩哪儿能解决这个问题？",
+                "delta": -25.62
+              }
+            ]
+          }
+        },
+        {
+          "label": "#18 血糖与糖尿病问题查询",
+          "rows_a": 75,
+          "rows_b": 254,
+          "row_share_a": 0.02537,
+          "row_share_b": 0.0127,
+          "row_share_delta_pp": -1.267,
+          "weight_share_a": 0.02435,
+          "weight_share_b": 0.00996,
+          "weight_share_delta_pp": -1.438,
+          "z_row_share": -5.41,
+          "delta_concentration": {
+            "n_distinct_queries": 248,
+            "top1_share_of_delta": 0.0376,
+            "top5_share_of_delta": 0.1451,
+            "hhi_of_delta": 0.0118,
+            "top_queries": [
+              {
+                "query": "血糖高调理指南",
+                "delta": -33.12
+              },
+              {
+                "query": "糖尿病并发症分几个阶段",
+                "delta": -30.0
+              },
+              {
+                "query": "血糖高忌什么食物",
+                "delta": -24.87
+              },
+              {
+                "query": "糖尿病可以喝绿豆汤吗",
+                "delta": -20.0
+              },
+              {
+                "query": "糖尿病早餐怎么吃",
+                "delta": -20.0
+              }
+            ]
+          }
+        },
+        {
+          "label": "#3 疾病发病原因查询",
+          "rows_a": 35,
+          "rows_b": 558,
+          "row_share_a": 0.01184,
+          "row_share_b": 0.02791,
+          "row_share_delta_pp": 1.607,
+          "weight_share_a": 0.01346,
+          "weight_share_b": 0.02645,
+          "weight_share_delta_pp": 1.299,
+          "z_row_share": 5.14,
+          "delta_concentration": {
+            "n_distinct_queries": 410,
+            "top1_share_of_delta": 0.0575,
+            "top5_share_of_delta": 0.1469,
+            "hhi_of_delta": 0.0103,
+            "top_queries": [
+              {
+                "query": "孩子总是生病免疫力差怎么办",
+                "delta": -51.95
+              },
+              {
+                "query": "这是什么病",
+                "delta": -29.49
+              },
+              {
+                "query": "黄精是管什么的",
+                "delta": -20.0
+              },
+              {
+                "query": "白班和白癜风是一种病吗",
+                "delta": -16.42
+              },
+              {
+                "query": "冠心病最怕什么刺激",
+                "delta": -14.86
+              }
+            ]
+          }
+        },
+        {
+          "label": "#22 查询女性生理事件时间",
+          "rows_a": 95,
+          "rows_b": 481,
+          "row_share_a": 0.03214,
+          "row_share_b": 0.02405,
+          "row_share_delta_pp": -0.808,
+          "weight_share_a": 0.03048,
+          "weight_share_b": 0.01769,
+          "weight_share_delta_pp": -1.279,
+          "z_row_share": -2.62,
+          "delta_concentration": {
+            "n_distinct_queries": 424,
+            "top1_share_of_delta": 0.0223,
+            "top5_share_of_delta": 0.0952,
+            "hhi_of_delta": 0.0071,
+            "top_queries": [
+              {
+                "query": "试管婴儿费用大概多少",
+                "delta": -27.64
+              },
+              {
+                "query": "想怀孕怎么才能怀上",
+                "delta": -25.44
+              },
+              {
+                "query": "怀孕",
+                "delta": -24.23
+              },
+              {
+                "query": "五十岁还能怀孕吗",
+                "delta": -20.93
+              },
+              {
+                "query": "腰椎压缩性骨折110天可以做多久",
+                "delta": -20.0
+              }
+            ]
+          }
+        },
+        {
+          "label": "#8 症状原因与处理方法查询",
+          "rows_a": 90,
+          "rows_b": 350,
+          "row_share_a": 0.03045,
+          "row_share_b": 0.0175,
+          "row_share_delta_pp": -1.294,
+          "weight_share_a": 0.02772,
+          "weight_share_b": 0.01618,
+          "weight_share_delta_pp": -1.154,
+          "z_row_share": -4.79,
+          "delta_concentration": {
+            "n_distinct_queries": 320,
+            "top1_share_of_delta": 0.0305,
+            "top5_share_of_delta": 0.1081,
+            "hhi_of_delta": 0.0083,
+            "top_queries": [
+              {
+                "query": "怎么知道有没有口臭",
+                "delta": -34.16
+              },
+              {
+                "query": "嘴巴痛",
+                "delta": -30.0
+              },
+              {
+                "query": "上嘴唇上翘是什么原因",
+                "delta": -20.0
+              },
+              {
+                "query": "盆腔炎会引起嘴干不想吃饭恶心吗吃饱不吃饱",
+                "delta": -20.0
+              },
+              {
+                "query": "舌苔厚白是什么原因引起的",
+                "delta": 17.03
+              }
+            ]
+          }
+        },
+        {
+          "label": "#27 身体异常症状原因与应对方法查询",
+          "rows_a": 87,
+          "rows_b": 447,
+          "row_share_a": 0.02943,
+          "row_share_b": 0.02235,
+          "row_share_delta_pp": -0.708,
+          "weight_share_a": 0.02836,
+          "weight_share_b": 0.01814,
+          "weight_share_delta_pp": -1.023,
+          "z_row_share": -2.38,
+          "delta_concentration": {
+            "n_distinct_queries": 405,
+            "top1_share_of_delta": 0.0191,
+            "top5_share_of_delta": 0.0798,
+            "hhi_of_delta": 0.0071,
+            "top_queries": [
+              {
+                "query": "变成孕妇肚子",
+                "delta": -22.76
+              },
+              {
+                "query": "尿多是什么原因男性",
+                "delta": -21.05
+              },
+              {
+                "query": "大便感觉拉不干净",
+                "delta": -17.08
+              },
+              {
+                "query": "只有发黄",
+                "delta": -17.08
+              },
+              {
+                "query": "拉大便拉出血",
+                "delta": -17.08
+              }
+            ]
+          }
+        },
+        {
+          "label": "#19 中医方剂配方与食疗搭配吃法查询",
+          "rows_a": 46,
+          "rows_b": 172,
+          "row_share_a": 0.01556,
+          "row_share_b": 0.0086,
+          "row_share_delta_pp": -0.696,
+          "weight_share_a": 0.01397,
+          "weight_share_b": 0.00623,
+          "weight_share_delta_pp": -0.774,
+          "z_row_share": -3.64,
+          "delta_concentration": {
+            "n_distinct_queries": 168,
+            "top1_share_of_delta": 0.0374,
+            "top5_share_of_delta": 0.1553,
+            "hhi_of_delta": 0.0166,
+            "top_queries": [
+              {
+                "query": "赤小豆补血好还是红豆补血好",
+                "delta": -20.0
+              },
+              {
+                "query": "苹果配什么煮水减肥祛湿",
+                "delta": -20.0
+              },
+              {
+                "query": "鸭胸肉的营养价值跟鸡胸肉的营养价值哪个好",
+                "delta": -20.0
+              },
+              {
+                "query": "冬虫夏草怎样吃",
+                "delta": -13.02
+              },
+              {
+                "query": "白茶和什么水果最搭",
+                "delta": -10.0
+              }
+            ]
+          }
+        },
+        {
+          "label": "#24 医学健康图片查询",
+          "rows_a": 21,
+          "rows_b": 210,
+          "row_share_a": 0.0071,
+          "row_share_b": 0.0105,
+          "row_share_delta_pp": 0.34,
+          "weight_share_a": 0.01484,
+          "weight_share_b": 0.00719,
+          "weight_share_delta_pp": -0.765,
+          "z_row_share": 1.73,
+          "delta_concentration": {
+            "n_distinct_queries": 161,
+            "top1_share_of_delta": 0.3244,
+            "top5_share_of_delta": 0.6023,
+            "hhi_of_delta": 0.1376,
+            "top_queries": [
+              {
+                "query": "大片黄色的黄芪图片大全",
+                "delta": -186.7
+              },
+              {
+                "query": "男性阴虱图片",
+                "delta": -86.51
+              },
+              {
+                "query": "热血毒皮肤照片",
+                "delta": -40.0
+              },
+              {
+                "query": "阴囊上长疙瘩图片",
+                "delta": -20.0
+              },
+              {
+                "query": "帮我画 男性阴虱图片",
+                "delta": -13.37
+              }
+            ]
+          }
+        },
+        {
+          "label": "#11 药品及医疗产品信息查询",
+          "rows_a": 96,
+          "rows_b": 941,
+          "row_share_a": 0.03248,
+          "row_share_b": 0.04706,
+          "row_share_delta_pp": 1.458,
+          "weight_share_a": 0.03264,
+          "weight_share_b": 0.04001,
+          "weight_share_delta_pp": 0.737,
+          "z_row_share": 3.56,
+          "delta_concentration": {
+            "n_distinct_queries": 759,
+            "top1_share_of_delta": 0.0697,
+            "top5_share_of_delta": 0.1225,
+            "hhi_of_delta": 0.0086,
+            "top_queries": [
+              {
+                "query": "普拉洛芬滴眼液作用",
+                "delta": -111.02
+              },
+              {
+                "query": "专治淋巴肿瘤草药",
+                "delta": -24.75
+              },
+              {
+                "query": "家用高压氧舱",
+                "delta": -22.31
+              },
+              {
+                "query": "硝酸甘油使用说明书",
+                "delta": -20.0
+              },
+              {
+                "query": "左炔诺孕酮肠溶片的价格是多少",
+                "delta": -17.08
+              }
+            ]
+          }
+        },
+        {
+          "label": "#23 皮肤病症状图片查询",
+          "rows_a": 21,
+          "rows_b": 206,
+          "row_share_a": 0.0071,
+          "row_share_b": 0.0103,
+          "row_share_delta_pp": 0.32,
+          "weight_share_a": 0.00627,
+          "weight_share_b": 0.01298,
+          "weight_share_delta_pp": 0.671,
+          "z_row_share": 1.64,
+          "delta_concentration": {
+            "n_distinct_queries": 148,
+            "top1_share_of_delta": 0.0694,
+            "top5_share_of_delta": 0.1974,
+            "hhi_of_delta": 0.0195,
+            "top_queries": [
+              {
+                "query": "请问图中是什么皮肤病？",
+                "delta": -24.9
+              },
+              {
+                "query": "梅毒的症状和图片",
+                "delta": 15.4
+              },
+              {
+                "query": "湿疹症状图片",
+                "delta": -10.27
+              },
+              {
+                "query": "梅毒症状图片",
+                "delta": -10.2
+              },
+              {
+                "query": "火麻仁长的什么样",
+                "delta": -10.0
+              }
+            ]
+          }
+        },
+        {
+          "label": "#29 健康指标正常值范围查询",
+          "rows_a": 90,
+          "rows_b": 437,
+          "row_share_a": 0.03045,
+          "row_share_b": 0.02185,
+          "row_share_delta_pp": -0.859,
+          "weight_share_a": 0.02977,
+          "weight_share_b": 0.02482,
+          "weight_share_delta_pp": -0.495,
+          "z_row_share": -2.91,
+          "delta_concentration": {
+            "n_distinct_queries": 382,
+            "top1_share_of_delta": 0.0513,
+            "top5_share_of_delta": 0.1334,
+            "hhi_of_delta": 0.0095,
+            "top_queries": [
+              {
+                "query": "女性的bmi大好还是小好",
+                "delta": -68.1
+              },
+              {
+                "query": "血糖正常值范围 最新标准2025",
+                "delta": 33.89
+              },
+              {
+                "query": "血压正常值是多少范围",
+                "delta": 30.11
+              },
+              {
+                "query": "试管男孩多少钱",
+                "delta": -24.52
+              },
+              {
+                "query": "血糖正常值",
+                "delta": -20.36
+              }
+            ]
+          }
+        },
+        {
+          "label": "#15 查询疾病最快最有效治疗方法",
+          "rows_a": 105,
+          "rows_b": 900,
+          "row_share_a": 0.03552,
+          "row_share_b": 0.04501,
+          "row_share_delta_pp": 0.949,
+          "weight_share_a": 0.03799,
+          "weight_share_b": 0.04194,
+          "weight_share_delta_pp": 0.395,
+          "z_row_share": 2.35,
+          "delta_concentration": {
+            "n_distinct_queries": 702,
+            "top1_share_of_delta": 0.1054,
+            "top5_share_of_delta": 0.1701,
+            "hhi_of_delta": 0.0152,
+            "top_queries": [
+              {
+                "query": "气虚出汗严重怎么调理",
+                "delta": -196.41
+              },
+              {
+                "query": "高血压断根最好的土方法",
+                "delta": -50.61
+              },
+              {
+                "query": "怎么治疗",
+                "delta": -29.56
+              },
+              {
+                "query": "牙疼怎么止疼最快",
+                "delta": 20.3
+              },
+              {
+                "query": "静脉血栓的最快消除方法",
+                "delta": -20.0
+              }
+            ]
+          }
+        },
+        {
+          "label": "#26 身体疼痛病因查询",
+          "rows_a": 60,
+          "rows_b": 444,
+          "row_share_a": 0.0203,
+          "row_share_b": 0.0222,
+          "row_share_delta_pp": 0.191,
+          "weight_share_a": 0.01821,
+          "weight_share_b": 0.02136,
+          "weight_share_delta_pp": 0.315,
+          "z_row_share": 0.66,
+          "delta_concentration": {
+            "n_distinct_queries": 358,
+            "top1_share_of_delta": 0.0206,
+            "top5_share_of_delta": 0.0807,
+            "hhi_of_delta": 0.0073,
+            "top_queries": [
+              {
+                "query": "握拳时胳膊肘筋疼怎么办",
+                "delta": -20.0
+              },
+              {
+                "query": "脚后跟脚底板疼",
+                "delta": -17.08
+              },
+              {
+                "query": "久坐痛",
+                "delta": -17.08
+              },
+              {
+                "query": "脚后跟疼是怎么回事什么原因",
+                "delta": 12.5
+              },
+              {
+                "query": "胆囊炎的症状是哪里疼",
+                "delta": 11.57
+              }
+            ]
+          }
+        },
+        {
+          "label": "#13 疾病传染性与传播途径查询",
+          "rows_a": 20,
+          "rows_b": 86,
+          "row_share_a": 0.00677,
+          "row_share_b": 0.0043,
+          "row_share_delta_pp": -0.247,
+          "weight_share_a": 0.00579,
+          "weight_share_b": 0.00333,
+          "weight_share_delta_pp": -0.247,
+          "z_row_share": -1.85,
+          "delta_concentration": {
+            "n_distinct_queries": 80,
+            "top1_share_of_delta": 0.058,
+            "top5_share_of_delta": 0.2249,
+            "hhi_of_delta": 0.0297,
+            "top_queries": [
+              {
+                "query": "流行病防护指南",
+                "delta": -13.9
+              },
+              {
+                "query": "HPV DV v hv 6是不是高危HPV 53传染的",
+                "delta": -10.0
+              },
+              {
+                "query": "小孩肺炎能经常做雾化吗",
+                "delta": -10.0
+              },
+              {
+                "query": "血液透析室丙肝等经血液传播疾病的防控措施",
+                "delta": -10.0
+              },
+              {
+                "query": "染头发不让染头膏挨住头皮可不可以伤害会不会小1点",
+                "delta": -10.0
+              }
+            ]
+          }
+        },
+        {
+          "label": "#30 医学检查项目查询",
+          "rows_a": 35,
+          "rows_b": 279,
+          "row_share_a": 0.01184,
+          "row_share_b": 0.01395,
+          "row_share_delta_pp": 0.211,
+          "weight_share_a": 0.01264,
+          "weight_share_b": 0.01081,
+          "weight_share_delta_pp": -0.182,
+          "z_row_share": 0.92,
+          "delta_concentration": {
+            "n_distinct_queries": 221,
+            "top1_share_of_delta": 0.0576,
+            "top5_share_of_delta": 0.1982,
+            "hhi_of_delta": 0.0169,
+            "top_queries": [
+              {
+                "query": "阴道镜检查前需要做哪些准备",
+                "delta": -34.16
+              },
+              {
+                "query": "开始AI问诊",
+                "delta": -31.86
+              },
+              {
+                "query": "有CT",
+                "delta": -25.62
+              },
+              {
+                "query": "诊断冠心病的三个指标",
+                "delta": -14.74
+              },
+              {
+                "query": "挂什么科",
+                "delta": -11.12
+              }
+            ]
+          }
+        },
+        {
+          "label": "#28 查询食物寒热属性",
+          "rows_a": 25,
+          "rows_b": 162,
+          "row_share_a": 0.00846,
+          "row_share_b": 0.0081,
+          "row_share_delta_pp": -0.036,
+          "weight_share_a": 0.00785,
+          "weight_share_b": 0.00629,
+          "weight_share_delta_pp": -0.156,
+          "z_row_share": -0.2,
+          "delta_concentration": {
+            "n_distinct_queries": 146,
+            "top1_share_of_delta": 0.0277,
+            "top5_share_of_delta": 0.1385,
+            "hhi_of_delta": 0.0196,
+            "top_queries": [
+              {
+                "query": "21天的小婴儿高烧怎么降温",
+                "delta": -10.0
+              },
+              {
+                "query": "男人的脚热是怎么回事",
+                "delta": -10.0
+              },
+              {
+                "query": "为什么早上的体温比晚上的体温要高高1点呢",
+                "delta": -10.0
+              },
+              {
+                "query": "夏天55岁女人爱喝烫嘴的热水好吗",
+                "delta": -10.0
+              },
+              {
+                "query": "夏天天热有点恶心是什么原因",
+                "delta": -10.0
+              }
+            ]
+          }
+        }
+      ],
+      "emergent": [],
+      "receded": [],
+      "too_thin_to_compare": []
+    }
+  },
+  "purity": {
+    "td_l1": {
+      "checked": true,
+      "n_groups": 20,
+      "n_single_snapshot": 1,
+      "single_snapshot": [
+        {
+          "label": "DRUG_EFFICACY_LOOKUP",
+          "share_of_AI助手": 0.035,
+          "rows": 3003
+        }
+      ],
+      "share_min": 0.035,
+      "share_median": 0.127,
+      "share_max": 0.445
+    },
+    "bu_leaf_name": {
+      "checked": true,
+      "n_groups": 30,
+      "n_single_snapshot": 0,
+      "single_snapshot": [],
+      "share_min": 0.055,
+      "share_median": 0.154,
+      "share_max": 0.41
+    },
+    "bu_family_final": {
+      "checked": true,
+      "n_groups": 27,
+      "n_single_snapshot": 0,
+      "single_snapshot": [],
+      "share_min": 0.055,
+      "share_median": 0.165,
+      "share_max": 0.341
+    }
+  },
+  "note": "Shares are WITHIN-SNAPSHOT. The snapshots differ in total weight, so raw counts would report every class as declining. Both periods were labelled by ONE taxonomy and ONE tree in this run, which is what excludes 'the taxonomy changed' as an explanation."
+}

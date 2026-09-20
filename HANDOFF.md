@@ -12,7 +12,96 @@
 
 ---
 
-## 1. Status — last updated 2026-09-07
+## 1. Status — last updated 2026-09-16
+
+> **2026-09-16：人物8 / 影视8 / 医疗随机 三个域跑完并交付，途中在 `src/` 里修了三个真缺陷。**
+> 三份语料：`人物8_pooled5.parquet` 43,802 行、`影视8_pooled5.parquet` 43,933 行（各 8 个快照，新增语音随机 1k），
+> `医疗随机_pooled5.parquet` 20,316 行（传统搜索随机 1w + 健康管家随机 1w，都是 2026-09-14 单日导出）。
+> 新档案 `configs/domains/{people_zh_v2,film_tv_zh_v2}.yaml`（19 / 21 个种子，覆盖 27.95% / 32.68%）。
+> 三次运行都是 fast、routed、未 halt；人物域把 Zhipu 的角色全部改路由到 Kimi，全程 0 次内容过滤。
+> **交付运行：人物8 用 `runs/ppl-pool8b/gen01`（全新单次跑完，无 resume），影视8 / 医疗随机 用各自的 gen01。**
+> `ppl-pool8` 整个 run id 作废：gen01 有幻影类，gen02 体系漂了，gen03 是两次 resume 的产物——
+> 只有 14 个闸门（少了 `p2a_pilot_agreement` / `p2a_taxonomy_shape`，因为 `--reuse-taxonomy` 跳过了 p2a）、
+> 6 个 decision、`elapsed_s` 只记了 resume 之后那一段。ppl-pool8b 这三项分别是 16 / 7 / 5,318 秒。
+> 交付形状：人物 21 L1 / 53 L2 / 37 族 / 37 叶；影视 17 / 54 / 52 / 58；医疗随机 20 / 51 / 33 / 33。
+> 三份报告 `未匹配数字 0 · 问题引文 0`。按用户要求，人物 / 影视**不跑叙述工作流**（报告的散文段留空，表与图完整），
+> 且例子表**印真实 query**。
+>
+> **三个源码缺陷（都带回归测试，全量 747 通过、`ruff --select F` clean）：**
+> 1. `graph/nodes/topdown.py::_active_learning_round` 没有 round 1 的两道保护。标注员漏标的 22 行以
+>    `final="UNLABELED"` 进了金标，22 行过了 5 折支撑下限，于是 18 类的体系训出 19 类分类器，幻影类落到 11 行语料、
+>    进了 5 份交付文档。修好后 macro-F1 0.526 → 0.557。只有 ppl-pool8 中招（其余 7 次运行实测 0 行）。
+> 2. 同一文件 `_require_both_branches` 给 `Deps.gate()` 传了不存在的 `blocking=True`。这是**只有出错时才走的分支**，
+>    它的测试用 `**kw` 的假 deps，所以一直是绿的；gen03 真的在汇合点撞上缺分支时，运行死在 TypeError 而不是那道闸门。
+>    测试的假对象现在绑定真签名。
+> 3. `config.py` 的 fast 校验器只在开关「本来是开的」时才往 `fast_skipped` 里追加，于是每一次 `--resume` 重建出的清单
+>    只有 4 项。横幅是由这份清单生成的，gen03 的三份参考文档因此声称双标注、观察员、对抗验证、交付前审核都**跑过**。
+>    改为按 mode 推导，并断言重复校验幂等。
+>
+> **后处理侧（不动 `src/`）：** `pooled5_common.run_dir` 新增 `P5_GEN_<批次>` 代次覆盖；
+> `p5_postprocess_run_xlsx` 增 `DOMAIN_SRC_COLS["医疗随机"]`；`p5_snapshot_classes` 的产品层按语料时间口径改列名
+> （单日语料用 `当日PV`），并把 `EXTRA_QUOTE_BLOCK["医疗随机"]` 指到 医疗8 那条实测正则、`SCREENED_QUOTE_BLOCK`
+> 扩到四个域；`p5_snapshot_report` 增 `PREP_TEXT` 按域分流数据准备一节。
+> 引文护栏用 `p5_quote_hardrule_scan.py`（三条硬规则 + 医疗域加具名医生一条）复核：人物 9 命中 / 影视 9 / 医疗随机 76，
+> **三个域都是「已印进交付文档 0」**；命中串仍写进各域的 `privacy_screen/quote_block.json` 作为换例子时的保险。
+> 887 份既有交付文件哈希不变（唯一变的是按批次重写的 `work/snapshot_classes_all.json`，只写不读）。
+
+
+> **2026-09-15（晚）：医疗8（med-pool8）跑完并交付，纯后处理，`src/` 未动。**
+> fast、routed、未 halt、229 次调用、1 小时 53 分；`verify_run` 本运行 PASS 21 / FAIL 0（对照 ppl-pool5 PASS 9 / FAIL 3）。
+> 交付 17 L1 / 55 L2 / 41 叶 / 37 族，留出复现 0.9704。报告 `runs/med-pool8/gen01/postprocessed/medical_zh_v2_意图与聚类叶_跨快照对比.zh.md`
+> （叙述经两名独立复核员三轮对抗复核，「未匹配数字 0 · 问题引文 0」）。**本次最重要的发现是引文护栏的漏洞**：前五层正则 / 名单护栏
+> 在报告与工作簿的例子里漏了 38 个违规串；改为逐串阅读印出来的串（Claude 必读、DeepSeek 并集，轮次推进到收敛，再做独立第二遍），
+> 不可引名单 634 串，印出的 2,080 个语料串全部被 Claude 读过。测试 744 通过；已交付的 782 个文件除一个只写不读的汇总外哈希不变。
+
+> **2026-09-15（傍晚）：fin8 深挖报告已交付，纯后处理，`src/` 未动。**
+> `runs/fin-pool8/gen01/postprocessed/finance_zh_v2_意图内部结构与代表性样例.zh.md` + `.xlsx` + `img/意图结构_*.png`。
+> 回答三件事：主报告卡片例子（流量前 3）覆盖中位只有 32.8%，构成显式取例到 80.5%；同一意图跨快照的差别拆成
+> 「关于什么」（叶构成）与「要什么」（三个宽意图的盲标子功能，DeepSeek 跨模型 κ 0.963–0.986）；叶 × 子功能交叉回答
+> 「核实还是决策」（裁决意图 68.7% 是核实规则套到自己身上，直接要建议 3.8%）。叶优于家族（实测）。med-pool8 仍在跑。
+
+> **2026-09-15：修了一个披露层的源码缺陷（不改 K，不改任何数字）。**
+> `ops/cluster.py: reference_sensitivity(sweep, k, *, locator_column)` 现在只把**真正定位 K 的那一列**标为
+> `decides`（稳定性兜底时谁都不标）；`p5_k_references_agree` 闸门的 `observed.deciding_reference` 不再写死
+> `phrasing_groups`。声明的参考列定位 K 的运行（ai04、aiwire01、health-pool2、三个 k12_zh、live41 gen01/gen03、
+> live42、live44 —— 69 份 granularity.json 里 10 份）同一产物曾自相矛盾。实测：24 份措辞群定位的已存 sweep 用新旧代码
+> 重算**逐字节相同**，10 份受影响的只差两个 decides 与注记末句。新增 3 个测试（在原代码镜像里全部失败，5 个变异体各至少
+> 被一个抓到）；全量 **744 通过、exit 0**，`ruff --select F src/qmine/ tools/` clean。已存产物不重写（`qmine render`
+> 修不了，只有新 generation 重跑 p5 才会带上修复）。同类的姊妹缺陷记在 §2 第 20、21 条。详见文末当日 session。
+
+> **2026-09-13（深夜）：新增两个垂类 书籍文档 / 软件，全套跑完并交付。**
+> 语料 `data/raw/pooled5/{书籍文档,软件}_pooled5.parquet`（21,786 / 21,920 行，各 4 个快照，无语音）；
+> 领域档案 `configs/domains/{books_docs_zh,software_apps_zh}.yaml`（每个占比都是实测）；
+> 运行 `book-pool5` / `soft-pool5`，fast、routed、未 halt，`verify_run.py` 各 21 PASS / 0 FAIL；
+> 交付在各自 `postprocessed/`，跨批次表在 `work/cross_new2/`（**没有碰五域的 `work/cross/`**）。
+> **最硬的一条**：软件 `生成露骨性图像编辑` 是七个领域里**唯一**的「仅助手」类（51 行，搜索期望
+> 530.04，P(0)=0.0000）。**方法层面的一条**：领域档案是 hypothesis-first 写的，两个域的 agent
+> 都找到了它的盲区，最大的一类都比档案里已写的类大。详见本文件末尾当日 session。
+> 测试 741 通过、exit 0；ruff clean；**`src/` 未改动**（发现一个 openpyxl 公式缺陷，按约束只做后置修复）。
+
+> **2026-09-13（晚）：逐类 × 逐快照对照报告已交付**，每个领域一份，写在各运行自己的
+> `runs/<id>/gen01/postprocessed/` 里（`*_意图与聚类叶_跨快照对比.zh.md` + `.xlsx` + `img/`）。
+> 它回答的是主报告没回答的那一层：**每一个意图、每一个聚类叶在五个快照上各占多少、哪些类只出现在
+> 某个快照**。脚本在 `analysis/pooled5/p5_snapshot_{classes,figs,report,verify}.py`。
+> **纯后置分析，`src/` 与 `tests/` 本次一行未动**（两者的 mtime 仍是 09-12，上一次会话的风控哨兵修复）；
+> 全套测试 **741 通过、exit 0**，`ruff --select F src/qmine/ tools/` clean。
+> 关键口径：0 条必须配可检出性判定（助手 n≈1,000 时 0 条的上界仍有 0.39%）；「独占某快照」几乎
+> 恒为 0，改用「与其余每一个快照逐一比较都显著更高」的**特征类**。详见本文件末尾的当日 session。
+
+> **2026-09-13:** five POOLED-5 runs delivered (`fin/med/edu/film-pool5`, `ppl-pool5b`) — each
+> domain's 2025 search + 2026 search + assistant head + assistant tail + (finance/medical) voice
+> mined as ONE corpus so one taxonomy labels every source. Reports:
+> `docs/POOLED5_2026_五域同体系对比.zh.md` + `docs/POOLED5_2026_领域深挖.zh.md`, figures in
+> `docs/img/pooled5/`, reproduction package in `analysis/pooled5/`. Source-tagged copies of each
+> run's own workbook are in `runs/<id>/gen01/postprocessed/`; the originals are untouched.
+> **One pipeline fix shipped** (`naming.py`: the risk sentinel's fallback is a real `RiskReport`,
+> so a provider content filter degrades instead of halting p7 — `tests/test_risk_sentinel_degradation.py`).
+> **One fix deliberately NOT shipped**: the p2c branch-join guard, see open question 0v — its
+> diagnosis is false on a resume, so making it authoritative would have been worse than the crash.
+> Tests **741** pass, exit 0; `ruff --select F src/qmine/ tools/` clean.
+
+> **2026-09-10:** post-run analyses only, no pipeline source changed. Delivered `docs/SEARCH_VS_ASSISTANT_2026.zh.md`, its companion `docs/SEARCH_VS_ASSISTANT_2026_领域深挖.zh.md`, and the reproduction package `analysis/sva2026/`. New analysis tools: `tools/clean_assistant_functional.py` (v3), `tools/unified_intent_frame.py`, `tools/label_unified_intent.py`. Tests: **739 pass** (full suite, `-x`, no failures); `ruff --select F src/qmine/ tools/` clean. Details are in the 2026-09-10 session log below. The `ai04` status that follows is unchanged.
+
 
 # `ai04` DELIVERED: the multi-vertical AI-assistant corpus is mined end-to-end in fast mode, with the stratum comparison shipping under its own name. Two defects were found and fixed during the run.
 
@@ -152,11 +241,78 @@ about the distinction but was not touched.
 
 ## 2. Open questions — EDIT THIS SECTION, DO NOT APPEND
 
+**逐串筛查名单是按域建的，而两个医疗域的内容是重叠的。**（2026-09-17）
+`SCREENED_QUOTE_BLOCK` 每个域一份名单。做科室层报告时实测到：`女性到达顶峰什么症状` 在 医疗8 的名单上
+（med-pool8 逐串筛查判为性内容），却作为 医疗随机 的妇科例子印了出来——医疗随机 自己的名单里没有它。
+两份语料是同一个垂类，写法本来就重叠，一串在这边被判为不可引、在那边却可引，这个不一致是结构性的。
+科室层报告里已经按两域名单的并集处理（只影响那一份新报告）；**没有动任何一个域自己的护栏配置**，
+因为那会改变 医疗随机 已交付报告的重渲染结果。
+要不要改：把 `screened_quote_block(domain)` 改成按「同垂类域组」取并集（医疗8 + 医疗随机 + 健康），
+然后重渲染这三个域的报告并逐条核对例子变化。收益是口径一致，代价是三份已交付报告的例子会变。
+
+**`p2c_both_branches_arrived` 会停机，但闸门台账把它记成 `warned`。**（2026-09-16）
+它不在 `cfg.gates.blocking` 里，所以 `Deps.gate` 算出来是 `status='warned', blocking=False,
+halts_run=False`；真正的停机走的是节点返回的 `{"halted": True}`，`_gate_router` / `_wrap` 认这个键。
+后果：一次因为分支缺失而停掉的运行，`run_summary` 里仍然是 `gates_failed=0`，读台账的人看不出它是被拦下的。
+没有动它，因为改法是改闸门策略（把这个名字加进 `gates.blocking`），而运行本来就停了——属于披露层而不是行为层。
+要改的话：加进 blocking 列表后，确认 `test_the_delivered_leaves_gate_reaches_the_operator` 与
+`test_the_join_refuses_to_run_when_a_branch_never_arrived` 两侧都还成立。
+
+**并发分支的排程：金标从缓存重放时会被排到 `p456_tree` 之后。**（2026-09-16，ppl-pool8 gen03）
+gen01 里 p2b_gold 用了 100 秒真调用、远早于 p456_tree 的 638 秒完成，汇合点没事；gen03 全部缓存重放，
+p2b_gold 6.5 秒，却是在 p456_tree 完成的**同一秒**才开始，于是 p2c 在顶向下分支没到齐时就触发了。
+闸门本身已经修好（缺陷 ②），现在会干净地 halt 并说清缺哪个分支，但**为什么这么排没有查**：
+是 LangGraph 的 superstep 边界，还是两个 CPU 密集的自下而上节点把线程占满、饿死了另一条分支？
+影响：任何「上游全缓存命中」的 resume 都可能撞上，代价是一次干净的 halt + 一次 `--resume`。
+查法：在 `graph/build.py` 里给两条分支的节点加进入 / 退出时间戳跑一次全缓存 resume，看重叠区间。
+
 Resolved items are **deleted** here and their resolution recorded in that
 session's log below. A struck-through entry is a maintenance failure, not a
 record.
 
 ### P1 — worth doing next
+
+0v. **The concurrent-branch join guard misdiagnoses a resume, and its own gate call is a
+   latent TypeError. Both are still there — deliberately — and they have to be fixed
+   together.** Measured 2026-09-12 on `ppl-pool5` gen02 (a `--resume` after
+   `new-generation`), the only time this guard has fired in 84 runs on disk:
+
+   ```
+   20:58:23  !! 分支缺失: p2b_gold 从未运行, 但流程已到达汇合点
+   20:58:23  node p2c_classifier failed
+             TypeError: Deps.gate() got an unexpected keyword argument 'blocking'
+   20:59:59  ✔ p2b_gold completed in 95.3s          <- 96 seconds LATER
+   ```
+
+   - **The diagnosis is false.** `gen02/run_summary.json` lists `p2b` in
+     `completed_phases`; `gold.csv` and `gold_agreement.json` are on disk. The branch had
+     not "never run" — it had not FINISHED when p2c reached the join.
+     `_require_both_branches` (`graph/nodes/topdown.py:2739`) reads `phase_status`, which
+     records completion, so at a concurrent fan-in it cannot separate *never ran* from
+     *still running*.
+   - **The gate call cannot work either.** `deps.gate(..., blocking=True)` —
+     `Deps.gate` (`graph/deps.py:282`) has no `blocking` parameter; it derives blocking
+     from `name in cfg.gates.blocking`. So the guard raises from inside itself and the
+     remediation it carries ("open a new generation and run it in one go; the cache
+     replays paid calls") never reaches the operator. `_wrap` turns the crash into
+     `halt_kind="crash"` plus a lesson pointing at the wrong thing
+     ("p2c_classifier is not robust to this input").
+   - **Why nothing was fixed.** Repairing only the gate call was tried and then reverted
+     on 2026-09-12: it upgrades a FALSE diagnosis into a clean, authoritative halt whose
+     remediation tells the operator to spend a fresh generation on a branch that was 96
+     seconds from finishing. A crash at least reads as "this is not understood". Putting
+     the gate in `cfg.gates.blocking` was tried too and reverted: an independent audit
+     found it would list `p2c_both_branches_arrived` under
+     `declared_gates_never_evaluated` in **every healthy run's summary**.
+   - **The order to fix it in:** first establish how `phase_status` is written at the
+     fan-in on a resumed run (does the join node ever run before a sibling branch
+     completes in a NON-resumed run?), then make the premise able to say "not finished
+     yet"; only then make the gate speak authoritatively.
+   - **Test note:** `tests/test_concurrent_branches.py`'s fake `_gate` takes `**kw` and
+     derives `halts_run` from a `blocking=` argument the real API rejects — which is why
+     the TypeError was invisible to the suite. A fake that accepts more than the real
+     thing cannot catch a call the real thing rejects. The clean way to close that hole is
+     the real `Deps` from `conftest.py:54`, not a hand-synced fake.
 
 0t. **`--fast` is SILENTLY IGNORED on `--resume`, and a config file's `mode:` is
    silently overruled.** Both measured 2026-09-07, both the same failure class as
@@ -324,6 +480,20 @@ record.
    Until answered: open a new generation and run it ONCE, never restart mid-flight.
 
 ### P2 — measured, disclosed, not acted on
+
+0y. **其它域的已交付报告与工作簿例子没有逐串读过，可能同样漏引违规串（2026-09-15 在医疗8 实测）。** 医疗8 的前五层护栏在印出的例子里
+   漏了 38 串（未成年人与性、露骨 / 恋物题材、具名医生、民营医院、试管选性别），大多来自语音快照；DeepSeek 单独筛查只召回 15/38，
+   单名 Claude 读者 22/30。敏感域（医疗 med-pool5、健康 health-pool2）风险最高。做法现成：`analysis/pooled5/p5_privacy_screen_round.py`
+   （seed → 逐轮 apply / rerender → final）加 `p5_snapshot_classes.SCREENED_QUOTE_BLOCK` 按域登记名单文件；需要把路径按域参数化。
+
+0z. **旧报告里写死的「语料 87% 是搜索行」只对五域的金融、医疗成立**（87.2% / 87.1%）；教育 91.6%、影视 91.2%、书籍文档 91.7%、
+   软件 91.2%、金融8 91.0%、健康 90.9%。已改为按域计算（`p5_snapshot_report._search_share`），**已交付的旧报告没有重渲**。
+
+0x. **fin8 主报告的意图卡片例子是「流量前 3」，不代表该格（2026-09-15 测）。** 覆盖中位 32.8%，27 格的排序其实是文件顺序，
+   自助法 Jaccard 0.44。构成显式取例（`analysis/pooled5/p5_intent_structure.select_cover`：每叶中心、标份额、≤8 条到 80%）
+   已在深挖报告里用上，**没有**接进 `p5_snapshot_classes.examples`——那份报告七个域共用，改了要回归所有域的交付哈希。
+   同一次还测到：INVEST_ADVICE 约三分之一的行不是求建议（无评价标准的标的清单 20.4% + 事实/制度信息 14.0%），
+   下次 fin 运行值得写进领域档案的 `domain_notes` 作为边界提醒。
 
 0l. **Six measured limitations rescued from the README (2026-09-03).** The
    README's "Known limitations" section was deleted at the owner's request during
@@ -608,6 +778,33 @@ record.
     at ARI 0.0595 with a near-duplicate name; leaf 0 -> 49 at 0.3876). Disclosed
     by design (measure-don't-veto). Nobody has looked at them.
 
+20. **Four delivered strings still credit the phrasing groups with locating K** (found
+   2026-09-15 by the review of the `reference_sensitivity` fix, and left out of that fix on
+   purpose so it stayed a disclosure-field change). They print on every run a declared column
+   located — 10 of the 34 stored generations that carry `reference_sensitivity`. Locations
+   checked against the working tree on 2026-09-15:
+   - (a) `graph/nodes/bottomup.py` ~569, p5 decision record: rejected K get
+     `why_rejected = "lower alignment with the phrasing groups"` and `metrics.intent_alignment_ami`
+     whatever the locator was (live44's own auditor raised it as D005).
+   - (b) `report/zh_bottomup.py:339/342`: the tie-set column 「意图对齐 AMI (定位指标)」 prints
+     `intent_alignment_ami`, not the locator's column (which `tie_set` already carries).
+   - (c) `report/zh_bottomup.py:367`: 「K = 与措辞群的对齐度 (AMI) 定位」.
+   - (d) `report/i18n.py` ~300: the p5 rationale is translated as 「K 由与模板群的对齐度 (AMI) 定位」,
+     although the English source now says "the reference named in `deciding_reference`".
+   - (e) `report/narrative_brief.py:355`: narrator remit 「K 由与模板群的对齐度定位」.
+   Also stale prose that describes the phrasing groups as the only locator: `ops/cluster.py`
+   ~696, ~722, ~761; `graph/nodes/bottomup.py` ~366; `docs/PLAYBOOK_MAPPING.md:14`.
+   **Fix pattern:** read `tri["locator"]` / `tri["deciding_reference"]` as the 2026-09-15 fix does;
+   make (d)/(e) name the reference rather than the method. Pin with a test that renders a
+   declared-column `granularity` through `zh_bottomup` and asserts none of these strings appear.
+   **Follow-up check for `tools/verify_run.py`:** "the K locator is named correctly" SKIPs every
+   locator that is not `intent_alignment_ami`, so it was blind to all 10 affected runs. Proposed:
+   "the reference credited with deciding K is the one that located it" — SKIP without
+   `granularity` or without `reference_sensitivity.by_reference`; for `intent_alignment_ami` /
+   `ami_vs_<col>` expect the only `decides=true` entry to be that reference, `deciding_reference`
+   to equal it, and any 「决定权在」 note to name it; in the stability fallback expect no entry.
+   Run it with `live42/gen01` as the known-broken control.
+
 ### P3 — small, known, deliberately not growing
 
 15. **22 `deps.gate()` messages are English f-strings** printed verbatim into
@@ -630,11 +827,34 @@ record.
     `类目清单` / `标注规范与裁定规则` / `家族与叶层级` / `00_索引` under `zh` only, so
     an English run delivers the six reports and none of the reference documents.
 
+21. **The stability fallback still names `choose_locator`'s pick as the deciding reference.**
+   When `triangulate_k` cannot use the chosen locator (no finite values on stable rows) it ranks K
+   by stability and sets `locator` to a free-text string, but p5 still records the pick:
+   `graph/nodes/bottomup.py:438` sets `tri["deciding_reference"] = _deciding` unconditionally;
+   `:462` `is_the_deciding_reference = (locator_key == "intent_alignment_ami")` tests the REQUESTED
+   column; `:494` the reach gate observes `_deciding`; `report/narrative_brief.py:692-706` then
+   requires the final report to say 「由参照系 `X` 定位」 verbatim. `choose_locator`
+   (`ops/cluster.py:955/957/962`) silently returns `phrasing_groups` for an empty reach, for
+   `k_locator: phrasing` with no masks, and for an unknown `k_locator` name — the last hides a
+   misconfiguration. The fallback string blames "no phrasing groups available" even when a declared
+   column was chosen and had no values (`ops/cluster.py:761-766`). Related and pre-existing:
+   `graph/nodes/delivery.py` ~329-381 (p10 `locator_reference_validation`) describes the phrasing
+   groups as the K locator's reference. **0 of 69 stored generations reached the fallback.** The
+   2026-09-15 fix already makes `reference_sensitivity` and the references-disagree gate name nobody
+   there; `test_the_disagreement_gate_names_no_reference_when_stability_decided` deliberately does
+   not assert `tri["deciding_reference"]`, so fixing this item will not fight that test.
+   Also: live44's open finding `c751301fcba30ec4` checks `["decides"] == true`; the evaluator reads
+   the lowercase `true` as an artifact name, so the check is unverifiable on old and fixed
+   artifacts alike and will never auto-close. Waive it by hand once a new generation confirms the
+   fix. Observer-written checks containing JSON literals (`true`/`false`/`null`) are silently
+   unverifiable in general.
+
 ## 3. Durable notes — worth not re-learning
 
 - **`researcher_log_reading` on `moonshotai/kimi-k3` fails an attempt ROUTINELY and
-  recovers; ~5% of runs it does not.** Measured over the 38 runs on disk:
-  **36 produced the angle, 2 exhausted all three attempts** (`ai03`, `med03`).
+  recovers; ~5% of runs it does not.** Re-measured 2026-09-09 over the **39** runs
+  on disk that actually ran the angle: **37 produced it, 2 exhausted all three
+  attempts** (`ai03`, `med03`), and **10 failed an attempt then recovered**.
   Failing attempt 0 and succeeding on attempt 1 is normal — live34/35/36/42/43/44,
   med01/02 and `ai01` all did it. The failure mode is `ValueError: no parseable
   structured output` while already in plain-JSON mode, i.e. the model emits
@@ -3756,3 +3976,1431 @@ the single-annotator gold set is untested against a real annotator. `med04`'s
 40.3% vs `live38`'s 78.3% annotator-a win rate says which annotator is better
 flips by corpus and model, so `primary_annotator` is a recorded default, not a
 finding.
+
+
+---
+
+## Session 2026-09-10 — 2026 search vs AI assistant: cleaning, one-instrument intent, report
+
+**Delivered (post-run analysis only; no pipeline source changed).**
+
+- **Reports:**
+  - `docs/SEARCH_VS_ASSISTANT_2026.zh.md` (main report, §0–§9 plus appendices A–E)
+  - `docs/SEARCH_VS_ASSISTANT_2026_领域深挖.zh.md` (five domain deep-dives)
+  - figures `docs/img/sva2026/fig1–fig6`
+- **Correction box** added to `docs/DRIFT_2025_2026_WITH_ASSISTANT.zh.md` §3.3. Its "15 comparisons all point the same way" mixed search-head rows with assistant-tail rows. At matched depth both surfaces have a median query length of 6.
+- **Reproduction package:** `analysis/sva2026/` holds 89 scripts and `work/` (48 MB derived data). The exported `sva_report_tables.py` and `sva_report_tables_intent.py` regenerate the inserted tables byte-for-byte.
+
+**New tools** (not imported by tests; `ruff --select F src/qmine/ tools/` is clean):
+
+- **`tools/clean_assistant_functional.py` v3.** Tiers are S1 repeated, S2 template/feature, S3 card, S4 suggested chip, S5 headline, C1 content-free, C2 feed-control.
+  - First audit (on v2): removal precision was sound (S1 0.964, S2 0.851, C1 0.966, C2 0.998), but 11.3% of kept head rows were still system text.
+  - Second audit (fresh samples): kept-head miss rate 7.0% [4.6, 10.5], with 人物 head at 20.0%. Precision is 96.7% for new removals, 96% for S4 and 90% for S5.
+  - A census found 51.6% of kept head U05 rows are untagged headlines or topic strings. Corrected, pooled head U05 drops from 3.95% to 2.05% (人物 head 11.0% → 3.7%; the correction also removes the sample miss rate from the denominator).
+- **`tools/unified_intent_frame.py`:** 13-class frame plus a crosswalk covering all 112 classes of the six runs.
+- **`tools/label_unified_intent.py`:** blind, shuffled labelling with one prompt. Primary model is deepseek-v4-flash at `max_tokens=16000` with a preflight batch; qwen3.8-flash labels a 20% subset.
+
+**Measured, and worth not re-learning.**
+
+- **Crosswalk shares are not valid across surfaces.** Crosswalk and unified labels agree on only 35.9% of assistant head rows, against 76.6% for search head. For example, ai04 "投资理财建议" is 69.5% bare tickers and quotes in 金融.
+- **Reliability.**
+  - DeepSeek vs Qwen: κ 0.855 (n=7,032); assistant tail 0.761.
+  - Test-retest on 1,000 anchors with different batch neighbours: κ 0.850.
+  - Every intent difference ≥3pp has the same direction under both models: 32/32 against search top1000, 30/30 against top10k.
+- **Search PV floors dwarf the assistant's.** The search 10,000th query (158–477 PV) outranks the assistant top1k floor (44–280). So search top10k is labelled too and reported as a second lens. Search intent mix shifts a lot between top1000 and top10k in 教育 (U02 77% → 49%) and 医疗.
+- **The assistant random1k has no search counterpart.** 81.2% of its 5-domain rows (65.7–90.5% per domain) have no search top10k neighbour with cosine ≥0.70, against 5.5–27.9% for search's own deepest 1,000 rows; the gap holds after length control. Do not quote the ladder's D level (56.0%) as the no-neighbour share: D is what remains after the conversation (F) and personal-case (E) rows are taken out first.
+
+**Defects found and fixed in the process.**
+
+1. **pandas 3 string regex runs through RE2** (`\w` is ASCII-only). The audit-suggested `[^\W_]` read every Chinese query as empty, and 81.7% of head rows went C1. Fixed with `str.isalnum` plus `_check_engine_semantics()`. Memory `qmine-pandas3-re2-regex`.
+2. **S5 `来了$` caught a variety-show title** (`爸爸回来了`). The rule now requires ≥7 characters.
+3. **Label resilience.** Labels were reconstructable from `raw_ds.jsonl`: the reconstruction matches the delivered labels 14,452/14,452, so a failing second-model pass cannot lose paid primary labels.
+
+**Open, deliberately not resolved.**
+
+- **Audit-2 rules not applied.** They are validated on held-out rows but would desynchronise every table from the domain deep-dives, so they belong in a v4 for the next data: `有没有更多` chips, `#…#` feed copy, the `我想对作文《` template, the S5 news-keyword exemption, and three search-S5 exemptions.
+- **Residues known in v3.** 影视 has 31 `《X》的结局是什么 / 给我《X》的完整演员表` rows. 金融 has 10 identical `XX未来有上涨空间吗` rows (PV 44–76). 人物 head U05 topic strings are handled by the census correction, not a rule.
+- **Same-period data** (search and assistant ~2 months apart) and a typed-vs-tapped source field in the assistant log are the two things that would remove the report's largest confounds.
+
+**Adversarial verification of both documents.** An independent reviewer re-derived every number, example and citation read-only: 54 issues, 0 critical, 11 major, 43 minor, all applied. The majors were overclaims rather than wrong tables:
+
+- a removal-precision summary that ignored search S5's 68.2%;
+- a medical question-rate "reversal" whose CI contains 0;
+- the ladder D level quoted as the raw no-neighbour share;
+- wrap-pair and nearest-neighbour destinations conflated;
+- per-domain gaps below the audit's error bounds presented as findings;
+- head-vs-tail differences written as interface differences;
+- query overlap read as user overlap;
+- the 人物 U05 11.0% left uncorrected in the domain summary.
+
+The generated tables matched their generators with 0 mismatches. Every edit went through an assert-guarded script (`sva_apply_verifier_fixes.py`, in the package) that writes nothing unless every anchor matches exactly once. After the Qwen labels on the search top10k extension were promoted, T14 is n=7,032 and κ 0.855.
+
+**Tests:** 739 pass on the full suite (`-x`, no failures); `ruff --select F src/qmine/ tools/` clean.
+
+
+## Session 2026-09-12/13 — POOLED-5: five sources per domain, one taxonomy each
+
+**What was mined.** Per domain, one corpus: 2025 search top-10k + 2026 search top-10k + assistant
+top1k + assistant random1k + (finance, medical) assistant voice 1k. Built by
+`analysis/pooled5/build_pooled5_corpus.py`; assistant rows carry the audited v3 cleaning tiers,
+search rows get the same C1/S5 rules, voice gets content-free rules only (no PV, so no PV-gated
+rule can fire). Only `tier == user` rows are mined; the rest ship in the deliverable's own sheet.
+
+| run | rows | note |
+|---|---:|---|
+| `fin-pool5` | 22,934 | 18 L1 classes |
+| `med-pool5` | 22,952 | 20 |
+| `edu-pool5` | 21,799 | 20; `researcher_pragmatic_intents` refused by Zhipu, 4 of 5 angles |
+| `film-pool5` | 21,934 | 17, no catch-all class |
+| `ppl-pool5b` | 21,804 | 19; **relaunch** with every Zhipu role rerouted |
+
+**Why `ppl-pool5b` exists.** `ppl-pool5` gen01 halted at p7_audit: Zhipu's content filter refused
+the risk sentinel 3/3 on a corpus of Chinese public figures, and the fallback object had no
+`model_dump`. gen02 (a resume) halted again at the branch-join guard (open question 0v). The
+relaunch routes researcher/domain_scout/maintainer/reporter/referee/risk_sentinel to
+Moonshot/DeepSeek — `researcher_pragmatic_intents` then returned **12 candidates** (was 0) and the
+sentinel returned **8 findings**. The selection rule was written down *before* results were visible:
+`analysis/pooled5/work/people_run_choice.md`.
+
+**Measured, and worth not re-learning.**
+
+- **A string gets ONE label per run.** Zero strings carry two `td_l1` labels in any domain
+  (duplicated rows: 5,638–13,621 per domain). So "the queries both years share kept their label"
+  is a property of the instrument, not a finding, and the year-on-year difference can only come
+  from turnover. Real concept drift is invisible to this method.
+- **Depth beats interface in 4 of 5 domains.** TVD: depth .260–.525, interface .239–.643, time
+  .074–.256, typed→voice .373/.410. Education is the exception (interface .643). Every contrast
+  clears its same-source null band (.03–.13, `cross/tvd_ci.csv`).
+- **The equal-depth control goes the other way from the obvious objection.** Cutting search to its
+  own top-1,000 makes the interface TVD *larger* in all five domains (+.026 to +.185).
+- **Cross-domain regularities, measured without any class mapping** (one regex, five domains):
+  on the depth axis six markers × five domains are all same-signed and significant; on the
+  interface axis 疑问句 splits direction (人物 +11.8, 金融 +13.4, 影视 +9.7 vs 医疗 −6.7, 教育 −4.4).
+  Only 第一人称 (5/5) and 是非核实 (4/5) replicate across the interface change.
+- **Adding assistant rows did not measurably change how search rows are carved up.** AMI 0.59–0.74
+  against a **same-data-twice baseline of 0.774/0.687** (`fin02`/`fin03`). What did happen: classes
+  whose rows are majority assistant — finance 4, film 2, people 2, education 1, medical 0.
+- **Domain tuning cuts both ways.** It splits (education's generic 裸实体 → 按裸校名检索 44% +
+  启动翻译工具 30%) and merges (finance's 查询金融资产实时行情 is 52% 裸实体 + 46% 事实与数值 under
+  the generic frame). It also has no class for assistant-native behaviour: of education's 61.9%
+  assistant-head residue, 13.5% is 会话与系统指令 and 16.9% 裸实体 under the generic frame.
+- **Two independent routes agree less on assistant rows.** AMI(cluster leaf, top-down intent):
+  education .75 on search vs .39 head / .32 tail; finance .43 vs .36 / .20. Independent of the
+  classifier's own confidence.
+
+**Verification.** Every domain deep-dive was written by one agent, re-derived claim by claim by a
+second, then revised against that report; the cross-domain synthesis went through two rounds and
+lost three headline conclusions. Counts: 医疗 112/122, 教育 160/176, 金融 108/128, 影视 98/120,
+人物 121/130 confirmed; synthesis round 2: 90/96, 0 critical. Two defects the verifiers found in
+MY code: `p5_turnover.py` counted voice rows in the assistant denominator (only finance and medical
+have voice, so it diluted exactly those two and flipped the ranking), and a voice-overlap figure
+copied medical's number onto finance. Both fixed; the round-2 verifier also confirmed
+`pooled5_common.newcombe` is a correct Newcombe hybrid-score after the first verifier's own
+implementation was found to have its bounds contributions swapped.
+
+**What the report's verification actually caught** (three lenses on the assembled document —
+numbers / overclaim / consistency — 458 items, 53 findings, then a repair round and a re-check that
+found 3 more the repair had introduced). The five that would have misled a reader:
+
+1. **"Shared strings contribute 0 to intent differences" was backwards.** Removing the strings both
+   surfaces share RAISES the interface TVD (finance .281→.595, people .309→.542, film .239→.302,
+   education .643→.651, medical .308→.308), so every interface distance in the report is a LOWER
+   BOUND. The depth line is unaffected — assistant head and assistant tail share **zero** strings in
+   all five domains, which is why the repair's first attempt at this fix (extending "lower bound" to
+   the depth line) was itself wrong and had to be undone.
+2. **The shared-bucket composition was a different quantity than its sentence claimed.** "字面共用的
+   那一半 … 人物 100%/医疗 96%/影视 84%" was the U-purity of each domain's largest shared class over
+   ALL its rows. Recomputed over the shared rows themselves (172–513 per domain, U coverage 100%):
+   人物 95%, 影视 57%, 医疗 50%, 金融 `事实与数值` 45% + `裸实体` 42%, 教育 `无法判定` 51%.
+   `cross/shared_bucket_u_mix.csv`.
+3. **A 20-row cell caveat was attached to the wrong class**, making people's `核实与动态` read as
+   1 row when it is 98 (98→155). `个案判断与建议` is the class with the tiny cells (3/0/1 on the
+   assistant-head side for education/film/people).
+4. **A partial script run silently destroyed a cross-domain table.** `p5_vs_unified.py 人物`
+   overwrote `cross/vs_unified_*.csv`, so T10 shipped with one domain while the prose discussed
+   three others. Both `p5_vs_unified.py` and the report now guard against it.
+5. **`p5_turnover.py` counted voice rows in the assistant denominator** — only two domains have
+   voice, so it diluted exactly those two and flipped the ranking (finance 20.0%→26.5%,
+   medical 9.8%→13.9%).
+
+**Pipeline change.** `graph/nodes/naming.py` only: the risk sentinel's except branch now binds a
+real `RiskReport` instead of `SimpleNamespace(findings=[])`, which had no `model_dump` and killed
+p7 fifty lines later — the exact outcome the branch's own comment says must not happen. Regression
+test reproduces the production traceback against the old code.
+
+---
+
+## Session 2026-09-13 (evening) — 逐类 × 逐快照：每个意图、每个叶在五个快照上的对照
+
+主报告问「两个界面整体差多远」，用的是汇总距离。团队要的另一件事是**逐类**的：每一个意图、每一个
+聚类叶，在 2025搜索 / 2026搜索 / 助手头部1k / 助手随机1k / 助手语音1k 上各占多少、哪些类只出现在
+某个快照。本节只做**后置分析**——`src/` 一行未改，五次挖掘运行的产物一个字节未动。
+
+### 交付
+
+每个领域一套，写进各运行自己的 `postprocessed/`（原始产物保持不动）：
+
+| 文件 | 内容 |
+|---|---|
+| `runs/<id>/gen01/postprocessed/<stem>_意图与聚类叶_跨快照对比.zh.md` | 报告正文（11.9 万–21.9 万字符，936–1,551 行表格）：四个层级（L1 意图 / L2 子意图 / 家族 / 叶）各七张表 + 逐意图与逐叶卡片 + 六张图 + 目录 |
+| `runs/<id>/gen01/postprocessed/<stem>_意图与聚类叶_跨快照对比.xlsx` | 26–28 页全量表 |
+| `runs/<id>/gen01/postprocessed/img/*.png` | 六张图 |
+| `analysis/pooled5/work/<领域>/snapshot_classes/` | 全部中间表 + `narrative.md`（分析员写的叙述）+ `verify.md` |
+
+新脚本四个，都在 `analysis/pooled5/`：`p5_snapshot_classes.py`（表 + 工作簿）、
+`p5_snapshot_figs.py`（图）、`p5_snapshot_report.py`（渲染 + 填叙述 + 目录）、
+`p5_snapshot_verify.py`（叙述的机械复核）。README 与主报告附录 B 已指向它们。
+
+### 三个测量上的决定
+
+1. **「只在某快照出现」必须配可检出性。** 助手快照 n≈900–1,000，0 条的单侧 97.5% 上界仍有约
+   0.39%；同样 0 条落在 10,000 行的搜索快照上，上界只有 0.037%——**差一个数量级**。所以每个 0 条
+   都配了「该类在其余快照的合并占比 × 这个快照的 n」得到的期望条数与 P(0)，据此判
+   `真缺席 / 偏少但证据弱 / 不可判定`。报告只引判定，不自己解释 0。
+
+2. **「独占」这个口径几乎没有信息量，换成「特征类」。** 一个类只要在别的快照里出现过一条就不算
+   独占，实测五域四个层级里独占单快照的类总共只有 1 个（影视的一个 L2）。改用：该类在这个快照里
+   的占比，**与其余每一个快照逐一做 Newcombe 检验都显著更高**。这个口径能承重，快照越多越严。
+
+3. **两个指数都给，写清分母。** `指数` = 快照内占比 ÷ 全语料占比（与已交付的 `class_profile.csv`
+   同义，分母里 87% 是搜索行）；`均衡指数` = 快照内占比 ÷ 各快照占比的**未加权均值**。后者把
+   「搜索行数是助手十倍」除掉，热图用的是它。
+
+### 测出来的结果（五域一致）
+
+- **L1 意图层：没有任何一个类只属于某一个快照**（五域全部）。四个层级上**「仅助手」一律是 0**——
+  每一个在助手里出现的类，在 20,000 行搜索里也都出现过。这一侧 n 够大（助手里占 0.05% 的类在搜索
+  里期望 10 行），所以这不是检出力问题。**但它是关于交付分区的陈述，不是关于需求的**：体系拟合
+  在一份 87–92% 是搜索行的语料上，助手独有的表达如果没有类目，会被并进残余类。
+- 通过可检出性判定的「仅搜索」全域只有两条，都在教育：`查询考试成绩与出分动态`（L1）与
+  `查询高校一本二本层次`（叶），两条 P(0) 都是 0。
+- 界面差异显著的类：金融 13/18、医疗 14/20、教育 15/20、影视 13/17、人物 15/19（L1 层）。
+- 新发现的一类结构：**份额测不出差别、内部的叶完全换掉**。逐域都有，例如金融
+  `查找官方渠道与客服入口`（2025搜索 vs 助手语音1k 份额差区间含 0，意图内叶分布 TVD 0.5707），
+  医疗 `解读用户本人的检查数值或报告分级`（界面差不显著，内层 TVD 0.6784）。表 7-A / 7-B。
+
+### 隐私护栏：机械取例第一版选错了行
+
+逐类卡片的例子是机械选的（该类该快照流量最高的可引行）。第一版的护栏是「风控图层命中 + 一组
+露骨词/号码串正则」，它**漏掉了「十岁苗条小女孩」这种「低龄指向 + 外貌描述」的写法**——那两行
+出现在人物领域一个被命名员和风控哨兵同时标记的叶里，并被选成了该叶的代表。
+
+考虑过按叶屏蔽（不引任何被标风险的叶），实测代价太大：影视会掉 90% 的可引行、金融 60%——因为
+那些叶的风险是「不该那样作答」，不是「这句话不能被引用」。最后落在**三层窄护栏**：
+
+1. 风控图层命中的行（`risk_screen.json` 的 `flag_mask_indices`）；
+2. 与领域无关的硬规则：露骨内容、**低龄指向 + 外貌/性相关词（相邻）**、
+   **年轻女性称谓 + 身体/情色描述（共现，不要求相邻）**、软色情图片检索、可识别到个人的联系方式
+   与证件号、名誉与非自愿私密影像、成人向题材标记；
+3. **运行自己的风控机器点名过的具体字符串**（`tree_naming.json` 的 findings.evidence /
+   risk_reason / rationale 里加引号的串，`risk_screen.json` 各类的 exemplar / samples）。
+
+代价：可引行 94.2%–99.3%。共现那一条在全五域只多拦 3 行，但拦的正是长 prompt 那一类（相邻规则
+看不见隔着几十个字的两类词）。护栏只影响**引用**，每一张表的分母仍是全部行。
+
+### 复核
+
+- 表：用**另一套实现**（不 import `pooled5_common` 的任何 helper）重算了 5,347 个矩阵/界面/缺席值、
+  2,209 个 TVD / Cramér's V / Newcombe 值、735 个特征类/归属/排名值——**0 处不符**。
+  逐类占比还与已交付的 `shares_td_l1_name.csv` / `class_profile.csv` 逐格比对通过。
+- 叙述：五个领域各一位分析员写、一位独立复核员逐条重算，再修订。
+  `p5_snapshot_verify.py` 把叙述里的每个数字回查到表、每条引文回查到真实且可引的行——
+  五域全部 **未匹配数字 0 · 问题引文 0**。
+- 全文引文核查（不只叙述，含卡片与代表串）：**4,178 条引文，0 条不存在、0 条命中护栏**。
+- 图逐张读回。**热图第一版的字色规则是照发散色标写的**（低值=深蓝→白字），套到顺序色标上成了
+  浅黄底白字，整片读不出来；改成按格子实际亮度选字色。
+- 测试 **741 通过，exit 0**；`ruff --select F src/qmine/ tools/` clean。`src/` 未改动。
+
+### 复核员抓到的四类错，以及它们暴露的三个工具缺陷
+
+五位独立复核员逐条重算后提出的必须改项，修订员各自复算后**全部成立**（只有一条复核员给的替代说法
+本身是错的，被驳回）。四个代表：
+
+- **人物**：叙述的开头断言「这个领域没有一个类是某一侧独有的」是**错的**——L2 的
+  `PERSON_ATTRIBUTE_LOOKUP__2`（搜索 82 行 / 0.411%，助手 0 行，期望 7.55、P(0)=0.0005）与
+  `GROUP_ROSTER_ENUMERATION__3`（期望 5.99、P(0)=0.0025）都判真缺席，而前者全文一次没出现。
+- **医疗**：叙述写的可引行 21,800 与同一份报告附录的 21,763 直接打架。
+- **金融**：叙述把引用护栏说成只拦了 6 行，实际 150 行（5 + 59 + 91，并集），也与附录打架。
+- **影视**：一个「特征类」的 40 行里 22 行是同一部 8 月下旬在播的剧，剔掉后三对区间全部含 0——
+  姊妹报告《领域深挖》早已写明这个单剧混淆，叙述又踩了一次。
+
+这四类各自暴露了一个工具缺陷，都已修：
+
+1. **机械检查的数字池漏了 `summary.json`。** 于是正确的 `quotable_rows=21763` 会被判未匹配，
+   而写错的 `21,800` 恰好能在别的表里匹配上——**把对的拦下、把错的放过，比没有检查更坏**。
+   现在池子包含 summary.json 的全部数值与三层护栏的逐层条数。
+2. **内层 TVD 没有同源噪声上界。** 两位复核员各自补算了一遍才敢下判断。现在
+   `intent_leafmix.csv` / `leaf_intentmix.csv` 带 `同源噪声上界` / `超出噪声` 两列（口径与
+   `pairwise_tvd.csv` 一致，300 次对半切取 95 分位）。实测各域只有 37%–94% 的格子超出噪声。
+3. **自助法区间不可复现。** 原来是一条模块级随机流，任何一处新增抽样都会把后面每个领域的区间挪动
+   一点；复核员引进正文的区间端点，下一次重跑就对不上（实测 14 处）。现在按
+   (用途, 领域, 层级, 快照对) 各自播种，**单独重跑一个领域与在五域批量里跑逐位相同**（已验证）。
+
+### 补了噪声上界之后，五个领域各有结论被推翻
+
+官方的 `同源噪声上界` 列加进去以后，又跑了一轮专门的复核（每域一位），结果五个领域**都有**要改的：
+
+- **金融**：`查询A股股票及板块信息` 内层 TVD 0.0513 < 上界 0.1065。原文拿它证「叶内部意图分布也稳」
+  「换掉的是标的，不是需求」——**两处都是反向误用**：低于上界既证不了换了，也证不了没换。
+  另一处 0.0928 < 0.1246，据此下的「所以这个位移不是时间造的」整句删除。
+- **医疗**：官方列**推翻**了「构成没动」——原文只看了 助手头部×语音 一格（0.3179 < 0.3398），
+  而十对里有三对超出噪声。「四种组合都能找到实例」这句随之删除。原文「离上界还有很远」也不成立
+  （0.1722 对 0.2053，只差 0.033）。
+- **教育**：0.0329 < 0.0869，「两个搜索年内部没换」改为测不出；另修正两处过期的
+  `pairwise_tvd.csv` 噪声上界，其中一处是**定位到了错误的行**。
+- **影视**：0.0385 < 0.1076，改为两个方向都无证据；三处「自算 2000 次重抽」换成官方列。
+- **人物**：导读一处把方向**写反了**（0.0294 > 上界 0.0254，是可测的小变化，原文写成「低于噪声底」）。
+
+终检：五域 `未匹配数字 0 · 问题引文 0`；全文 4,181 条引文 0 条不存在、0 条命中护栏；
+结构审计 0 问题；叙述引用的 26 个内层 TVD 全部能在表里定位，**超出噪声的都写出了上界，未超出的
+都写成了双向测不出**。表的可复现性也验证过：单独重跑一个领域与在五域批量里跑，10 张抽样表逐字节相同。
+
+### 两条排版约定（新加，会被机械检查）
+
+- **「」只包语料里的真实 query。** 叙述里强调词组一律用 “”。运行自己写的类定义里也有 「」，
+  渲染时统一换成 “”（query 文本一个字不动）。
+- query 自己带 「」 的（例如 `「AI视频」一家三口温馨比心`），外层改用 『』，原文不改。
+
+---
+
+## Session 2026-09-13 (night) — 两个新垂类：书籍文档 / 软件
+
+用户给了两个从未分析过的垂类（各 2 份搜索导出 + 1 份助手导出），要求：先研究并写领域档案，
+再跑挖掘（fast），再做与五域同样的全套后处理与分析。本节记录**运行之前**已经定下来的部分；
+运行结果与报告见本节末尾。
+
+### 数据：新导出与已审计的助手语料是同一份
+
+两份助手 xlsx 与 `data/raw/ai_assistant_pooled.parquet` 逐条比对：**query 集合完全相同**，
+`search_num` 与 `l2` 一致率 0.987–1.000（差异只来自重复串取首行）。所以助手侧走**同一条已审计的
+v3 清洗路径**（`assistant_tiered.parquet`），结果与已交付的五域可比，不另开分支。
+搜索侧文件名不是 `<domain>query-<yy>.xlsx` 那一套，builder 加了 `SEARCH_FILE` 映射。
+
+语料：**书籍文档 21,786 行**（9,988 + 9,995 + 850 + 953）、**软件 21,920 行**（9,997 + 9,999 + 940 + 984）。
+**两个域都没有语音导出**，所以是 4 个快照，不是 5 个。已验证五域语料重建后行数逐个不变。
+
+### 领域档案：从测量出发，不从标签出发
+
+`configs/domains/books_docs_zh.yaml`、`configs/domains/software_apps_zh.yaml`。
+每一个占比都是 `str.contains` 在建好的语料上实测的，PV 一律来源内归一。
+
+**最重要的一条：类目名与内容对不上。**
+- **书籍文档不是书**：图片/头像/壁纸/表情包/素材 **28.74%** 行、漫画 **11.80%**、
+  可直接发的文案 **6.91%**、文档模板 **3.82%**、小说 **0.21%**。从标签出发会把前两大类的量级
+  搞错一个数量级。
+- **软件主要是导航**：下载/安装 **20.36%**、官网/入口 **10.57%**、社交平台机制 **22.33%**
+  （后者是实体名不是措辞模板，故意没做成种子——它与 howto_setting 重叠 927 行）。
+
+模板种子并集：书籍文档 32.9%、软件 36.4%，都在档案约定的 20–40% 内。运行实测**种子全部存活**
+（书籍 7/7、软件 7/8，`file_convert` 太小被吸收），另各长出 5 个挖掘族。
+
+风险类目全部实测（行数 / 来源内搜索 PV 25→26）：
+
+| 类目 | 行数 | 搜索 PV | 方向 |
+|---|---|---|---|
+| 未授权漫画聚合 | 992 (4.55%) | 4.94% → 6.18% | 涨 |
+| 成人漫画平台 | 110 (0.51%) | 1.52% → 1.41% | 平 |
+| 翻墙工具 | 779 (3.55%) | 6.29% → 7.33% | 涨 |
+| 破解/内购解锁 | 131 (0.60%) | 0.41% → 0.18% | **缩**（91 → 36 行） |
+| 口令/侵入/监看 | 122 (0.56%) | 1.28% → 0.92% | 缩 |
+| 未备案分发渠道 | 80 (0.37%) | 0.53% → 1.18% | **翻倍** |
+| 成人 App 分发 | 72 (0.33%) | 0.21% → 0.12% | 缩 |
+
+法条锚点来自当次检索：两高《侵犯知识产权刑事案件解释》2025-04-26 施行（刑法 217/218）、
+《计算机信息网络国际联网管理暂行规定》6/14 条（个人翻墙是**行政**责任，≤¥15,000；提供工具才
+可能到刑法 285(3) 或非法经营）、刑法 253-1（行踪轨迹/通信内容 50 条为情节严重）、288/225
+（干扰与器材）、363/364（淫秽物品，快播 2016）、工信部 App 备案。
+
+### 三件只有测量才能发现的事
+
+1. **`色` 作为成人内容信号完全没用**——它匹配 颜色/红色/色卡。第一版正则据此报了 520 行，
+   真正的信号是平台名（e站/jmcomic/哔咔/歪歪/土豪），110 行。
+2. **`胸`/`大腿` 单独做触发词会误伤**——匹配到一件摇粒绒卫衣和一只青蛙的大腿。收紧后 15 行，
+   零误报。
+3. **语料里有刻意绕过过滤的写法**：`ⅴpn加速器免费`（U+2174 罗马数字五）、
+   `wⅰf|万能钥匙下载`（U+2170 + 竖线）。
+
+### 一个真缺陷：`screen_risk` 不传 `case=False`
+
+`ops/audit.py:239` 的 `q.str.contains(_noncapturing(pat), regex=True, na=False)` **没有** `case=False`，
+所以只写小写的模式会漏掉 `VPN` / `Telegram` / `EhViewer` / `E站`。在 软件 这种拉丁字符密集的语料上
+实测漏 **126 行**（circumvention 653 → 779）。新档案的模式全部加了 `(?i)`（`_noncapturing` 的
+`\((?!\?)` 前瞻会跳过 `(?i)`，已验证）。
+
+**已交付的五域档案有同样的缺口，但没有改**：实测影响是 影视 **1 行**、医疗 **0 行**
+（`ai_assistant_zh` 未在本批语料上测）。为 1 行改动会让已交付报告里的 risk_screen 数字失效，
+不值得。要改就要连带重跑并重新核对那几份报告。
+
+### 批次（cohort）：跨领域产物必须说出自己是哪一批的
+
+加这两个域以后 `DOMAINS` 有 7 个，而已交付的五域报告和它引用的 `work/cross/*.csv` 全是五域的。
+任何一次重跑跨领域脚本都会把那份报告底下的表换成七域——数字全变而正文不变。
+所以引入 `COHORTS`（`pool5` / `new2` / `all7`）+ `cross_dir()` + `work_file()`：
+
+- 不设 `P5_COHORT` 时行为与加新域之前**逐字节相同**（`cmp` 验证过
+  `route_agreement_by_source.csv` / `concentration_by_source.csv` / `residue_breakdown.csv`
+  / `semantic_nn_summary.csv`）。
+- **试运行时真的抓到了一次泄漏**：`p5_cross.py` 把五域的 `semantic_nn.parquet` 汇总成了
+  new2 批次的 `semantic_nn_summary.csv`（17 行，第一行是 人物）。原因是 work/ 下有一批
+  **单文件、不按域分**的产物。现已全部按批次命名。
+- 空批次的扫描脚本从 `KeyError('source')` 改成一句明确的 SystemExit。
+
+### 这个批次做不了、五域做得了的两项分析
+
+- `p5_taxonomy_delta.py` 需要同样行的**纯搜索**对照运行（`fin-pool` vs `fin-pool5`）。
+  没有 `book-pool` / `soft-pool`，所以没有第二个框架可比。要补就得每域多跑一次挖掘。
+- `p5_vs_unified.py` 需要 13 类通用框架标在同样的串上。实测覆盖率：
+  书籍文档 **0.5%**（63/11,798）、软件 **0.1%**（14/11,923），五域全部 100%。
+  **在 0.1% 覆盖率上跑这个比较没有意义，所以整项略去**，报告里要写明是略去不是没发现。
+
+### 跑完了：两次都没有 halt，交付结构如下
+
+| 领域 | 运行 | 用时 | 调用 | L1 | L2 | 交付叶 | 交付家族 | verify_run |
+|---|---|---|---|---|---|---|---|---|
+| 书籍文档 | `book-pool5/gen01` | 63 分 | 210 | 20 | 59 | 30 | 21 | 21 PASS / 0 FAIL |
+| 软件 | `soft-pool5/gen01` | 65 分 | 214 | 25 | 58 | 39 | 26 | 21 PASS / 0 FAIL |
+
+两次都是 `mode=fast`、`provider=routed`、`halted=False`。控制组 `runs/ppl-pool5/gen01`（上一轮
+halt 掉的那次）在同一套检查下 3 FAIL，含 `p7_audit: SimpleNamespace has no model_dump`——
+所以这套检查是能区分的，不是见谁都 PASS。
+
+**预防性改路由的结果**：两跑都干净地过了 `p7_audit`（人物 halt 过两次的那一相），哨兵分别给出
+6 条与 12 条发现，全程没有 contentFilter。**但这只证明预测的故障没发生，不证明改路由是必要的**，
+config 里就是按「这是一个预测」写的。
+
+### 交付物（每域一套，写在各自运行的 postprocessed/ 里）
+
+`<stem>_query_挖掘结果_含来源.xlsx/.csv`、`<stem>_意图与聚类叶_跨快照对比.zh.md`（书籍 25.5 万字符 /
+软件 28.7 万字符）、同名 `.xlsx`、`img/` 六张图。跨批次表在 `work/cross_new2/`，
+T1–T16 在 `work/report_tables_new2.md`——**都没有碰 `work/cross/` 与五域的那份**。
+
+### 本批最硬的一条：七个领域里第一个「仅助手」类
+
+**软件 `生成露骨性图像编辑`（NON_CONSENSUAL_EXPLICIT_IMAGE_EDIT）：51 行全在助手侧
+（头部 33 / 随机 18），两个搜索快照合计 0 行；同发生率下搜索侧期望 530.04 行，P(0)=0.0000，
+判定真缺席。** 已交付五域加上书籍文档，四个层级的「仅助手」全是 0，这是唯一例外。
+
+机制上说得通：「P掉外衣」「把衣服变成透视装」是对着**手里那张图**下的编辑指令，搜索没有对应
+写法。生成面造出了一个搜索面无法表达的需求。33/51 在助手**头部**，不是长尾。
+
+### 领域档案是 hypothesis-first 写的，所以它漏的东西有规律
+
+两个域的 agent 都找到了档案的盲区，而且最大的一类都比档案里已经写了的类大：
+
+- 软件：档案 5 类 → 架构师另给 4 类（`获取灰色辅助或作弊工具` 101 行 > 档案的 80 / 72 两类）、
+  哨兵另给 12 条（HTML 载荷 20 行、AI 换脸 14 行、伪造证据 24 行、门禁卡克隆 2 行）；
+- 书籍文档：档案 4 类 → 哨兵另给 5 类（彩票谜语伪装、数字暗语 78 行、暴力图像生成、侮辱话术 29 行）、
+  架构师另给自残轻生（**18 行，比档案原有两类都大**）与情绪倾诉。
+
+**两条具体教训：**
+1. **彩票谜语这个模式仓库里早就有** —— `education_zh.yaml` 的 `zodiac_lottery_riddle`
+   在教育语料上 463 行，而书籍文档 PV 前 25 就有「脑筋急转弯大全6-12岁」。模式在隔壁档案里、
+   语料也对得上，还是没被搬过来，因为档案是按「我猜这个域有什么」写的，不是按「仓库已经知道什么」。
+2. **绕过有两种，档案只处理了一种。** 换字符（`ⅴpn` U+2174、`wⅰf|` U+2170）处理了；
+   **换说法**（`P掉外衣` / `三角裤消除` / `删除裙子` / `泳装透明度替换为100%`）完全没想到。
+   正则只拦得住那 51 行里的 12 行——这是后来加第四层护栏的直接原因。
+
+补进档案以后（`p5_new2_risk_supplement.py` 算 then-vs-now）：书籍文档 1,096 → 1,240 行（+144）、
+软件 1,150 → 1,311 行（+161）。新补的每一类，运行自带筛查几乎都是全漏——不是重叠，是盲区。
+
+### 引用护栏加到第四层：按运行自己的分类，不按正则
+
+正则在 `生成露骨性图像编辑` 上只拦住 51 行里的 12 行（换个衣物名词、换个动词就漏）。运行已经把
+这 51 行判进了一个带风险标注的类，那个判断比正则可靠，所以直接用类目拦。
+**只列性与自伤两类**：全量拦所有风险类要掉 11.4%（软件）/ 23.0%（书籍文档），而引用
+`漫蛙`/`vpn`/`请假条模板` 不构成伤害。结果：露骨类 0 行可引，总可引率 93.1% / 91.9%。
+
+### 两个数字层面的自我更正
+
+1. **「先验错了」说过头了。** 交付家族数 21 / 26、交付叶数 30 / 39，**全部落在
+   `expected_family_range: [12, 30]` 里**。先验对不上的只是 `chosen_family_k`（6 / 7）那个
+   治理前的数，档案这个字段确实是拿去和它比的、系统也确实按设计忽略了它——但「这个垂类只有
+   6–7 个家族」是错的。CLAUDE.md 那条「最终结果必须来自交付分区」，我数结构时守住了，
+   写结论时没守住。
+2. **「助手侧 12.76% 是情绪倾诉」是错读。** 书籍文档 `倾诉并寻求情绪支持` 274 行里主导叶是
+   `生成角色扮演对话` 233/274 = 85%，置信度只有 0.551（全域 0.784），样例大量是安全培训作业、
+   的/地用法、素材检索。它是低置信度兜底类。**不受影响的是**：自残轻生按词面 18 行确实存在，
+   而档案没有为它建任何类目。
+
+**顺带一个规律，值得写进报告**：书籍文档置信度最低的 5 个 L1 类里有 3 个带风险标注
+（0.517 / 0.551 / 0.577，全域均值 0.784）。**最需要准确的一批，正是分类器最没把握的一批。**
+
+### 一个 `src/` 里的真缺陷，没有改（按用户「不动源码」的约束）
+
+**openpyxl 把以 `=` 开头的 query 写成公式**，读回来是 NaN。`fast_deliver.py:395` 写的交付工作簿
+因此丢了 软件 第 4725 行的原文（`===发货啦~发货啦===…`，正是哨兵标的钓鱼/垃圾载荷那一行）。
+七个域逐格比对：**只有这 1 格**，五域与书籍文档都是 0。
+
+`p5_postprocess_run_xlsx.py` 的位置对齐断言**拦住了它**（拒绝生成，而不是把来源绑到坏行上）。
+现在按后置操作修：只容忍「工作簿是 NaN 且语料原文以 `=` 开头」这一种情况，从语料 parquet 修回来，
+并在「来源说明」页记一行；**其它任何一格文本对不上仍然拒绝生成**。
+要根治得改 `fast_deliver.py`（写 xlsx 前给 `=+-@` 开头的串加前导单引号），本次未改。
+
+### 这一批做不了的三项分析，报告里写成「略去」不是「没发现」
+
+- `p5_taxonomy_delta`：需要同样行的纯搜索对照运行，没有 `book-pool` / `soft-pool`；
+- `p5_residue`、`p5_vs_unified`：需要 13 类通用框架标在同样的串上，实测覆盖
+  **书籍文档 0.5%（63/11,798）、软件 0.1%（14/11,923）**，五域皆 100%。
+  `p5_residue.py` 已改成带着覆盖率数字拒绝运行，而不是抛 `KeyError('source')`。
+
+### 交付前最后一处修正：四快照域不该印 ASR 口径
+
+`p5_snapshot_report.py` §8「机械事实」原本无条件印一句「语音快照是 ASR 文本（无标点、约 40 字
+截断、抽样方式未知）」。**书籍文档 / 软件 / 教育 / 影视 / 人物 五个域没有语音导出**，这句话在那里
+是凭空多出一条对比线。改成按 `"assistant_voice" in srcs` 分支：没有语音的域改印
+
+> 本域**没有语音导出**，所以"输入方式"这条对比线整条不存在——凡本文没有语音的地方，
+> 都是没有这条线，不是测了没差别；
+
+金融 / 医疗 两个域文字不变。七份报告全部重出，`p5_snapshot_verify.py` 两批 **未匹配数字 0 ·
+问题引文 0**；逐域核对「语音」字样只在 fin/med 出现（软件那 1 处是叶名 `微信语音与声音设置查询`，
+是内容不是口径）。741 测试通过，`ruff --select F` clean。
+
+**顺带记一条口径**：`governance.json` 的 `delivered_leaves` / `delivered_families` 在这两个运行里
+读出来是 31/6、37/7，**不是交付形状**——前者是治理前叶数、后者是 `chosen_family_k`。交付形状要从
+`leaf_labels_final.npy` / `leaf_family_final.npy` 数：书籍文档 **30 叶 / 21 族**，软件 **39 叶 / 26 族**。
+
+## Session 2026-09-14 — 前 N 名覆盖：把「前十合起来占多少」加进两张表
+
+用户看到报告 §2.2 的「各快照前十」只列了十个名字，要求补上**合计行**：这十个类合起来占了
+这个快照多少 PV / 多少行。
+
+### 加在哪里
+
+- **表 2.2-L1 意图 / 表 2.2-聚类叶**（每个领域各两张）在 `第10` 下面多了五行：
+  `前3合计` / `前5合计` / `前10合计`（另附 `条数/该快照总行数`）/ `前10合计（流量）` / `前10之外`（附「余 K 类」）。
+- **表 1-<层级>**（四个层级都有）多了两列：`前10占比%`、`前10流量占比%`——原来的阶梯只到前5。
+  L2 子意图与家族两层只在表 1 里有，§2.2 仍只渲染 L1 与叶（用户问的是 intents/leaves）。
+- 工作簿多一页 `前N名覆盖`（4 层级 × 每个快照，含 前1/前3/前5/前10 两种单位 + 并列标记）。
+- 新文件 `work/<域>/snapshot_classes/topn_coverage.csv`（**未舍入**，复核脚本的数池自动收录）。
+
+### 口径（三条，都写进了表注）
+
+1. **每个快照各排各的前十。** 同一名次在两列里通常不是同一个类，所以这张表只能竖着读。
+2. **`前10合计（流量）` 是同样这十个类**（仍按行占比选出）按 `pv_norm` 加权后的占比，
+   **不是**「按流量重排以后的前十」。`pv_norm` 按来源各自归一到 10,000，只能在同一快照内读；
+   助手头部1k 本身就是按 PV 取的前 1,000 条，它的「流量」是这一千条内部的流量。
+   语音没有 PV、按均匀权重，所以语音那一格的「流量−行」恒等于 0.0——实测金融/医疗都是 0.0，
+   这是一条自带的自检。
+3. **并列：行合计免疫，流量合计不免疫。** 第 10 名的位置上常有多个条数相同的类（实测 120 格里
+   有 10 格，**全部在助手侧**——搜索侧一万行从不并列）。并列的类条数相同，所以 `前3/前5/前10合计`
+   与 `前10之外` 与挑中哪一个无关；但它们 `pv_norm` 不同，所以 `前10合计（流量）` **会变**。
+   现在给出 `前10流量占比%低/高` 与 `前10流量摆动pp`，表 2.2 在那一格后面印 `±x.xxpp`，
+   表 1 多一列 `前10流量摆动pp`（0 = 无并列）。摆动最大的是教育 助手随机1k 叶层 **5.25pp**。
+
+### 两个自己造出来又修掉的缺陷（都是**双重舍入**）
+
+1. `topn()` 原本先 round 到 3 位，表 1 与表 2.2 再各自 round 到 2 位，于是**同一个量在同一份
+   文档里印成 98.24 和 98.23**（前5 也有 69.43 / 69.44）。改成 topn() 存未舍入值、两张表都从它
+   格式化。副作用：`前10 + 前10之外` 现在逐格等于 100.00（之前有 99.99 的格子）。
+2. 工作簿 `前N名覆盖` 页 round 到 3 位、`快照画像` 页 round 到 2 位，于是同一个工作簿里
+   98.235 挨着 98.24。改成两页都 2 位；未舍入的值留在 `topn_coverage.csv`。
+
+**教训**：一个量只要在两个地方显示，就必须从**同一个未舍入的值**格式化。中间舍入一次，
+两处就会在半分点上分家，而且两边各自看都「对」。
+
+### 顺带修掉一处**陈旧数字**
+
+人物报告写「三层过后可引行 20,542 / 21,804」，重跑 `p5_snapshot_classes.py` 后是 **20,541**。
+实测三次都是 20,541，护栏本身没有随机性——上一次会话收紧护栏之后**只重渲染了报告、没有重跑
+classes**，于是报告读的是旧的 `summary.json`。
+**`p5_snapshot_verify.py` 抓不到这一类**：报告与数池读的是同一个陈旧文件，自己跟自己对得上。
+改护栏以后必须重跑 classes，不能只重渲染。
+
+### 核对
+
+- 独立复算（不 import `p5_snapshot_classes`，直接从 parquet + `labels_full.csv` 重算）
+  **1,200 个数字 · 120 组单调性 · 0 处不一致**，含「表 1 的 `前10占比%` 与表 2.2 的 `前10合计`
+  逐位相同」这条跨表恒等式。
+- 七份报告 `p5_snapshot_verify.py` **未匹配数字 0 · 问题引文 0**；741 测试通过；ruff clean。
+- 逐行 diff：书籍文档重跑**逐字节相同**（可复现）；其余六份的改动**全部落在 §1 与 §2.2 之间**，
+  唯一的例外就是上面那处陈旧数字。
+- `src/` 与 `tests/` 本次一行未动。
+
+### 这份新数据自己说了什么
+
+- **意图层几乎没有信息量**：前10 在七域 × 全快照都覆盖 81.7%–98.2%，因为 L1 本来就只有 17–25 个类。
+- **叶层才是分水岭**：软件 2025搜索 前10 只覆盖 51.4%、金融 54.4%，而书籍文档的助手两层是 91.6% / 92.9%。
+- **搜索侧的头部叶普遍「行多流量少」**：同样这十个叶，流量占比比行占比低 —— 金融 −8.8/−9.5/−8.2pp、
+  软件 2026搜索 −10.8pp、书籍文档 −6.0/−7.1pp。金融的机制是干净的：`今日金价查询` 只有 93 行
+  （0.93%）却占 7.21% 流量，而按行数排第 2 的 `股票股吧查询` 969 行只占 3.98% 流量。
+  **按行数排出来的「头部类」会系统性高估它实际拿到的流量。**
+
+### 复核工作流找出的两个真缺陷（我自己的检查看不见它们）
+
+我自己的独立复算 1,200 个数字全对——**因为我复算时是照着代码选前十的**，所以「选错了十个类」
+这一类错误对它天然隐形。七个并行复核 agent（每域一个，只给定义、不许 import 被测代码）找出了：
+
+1. **`前10合计（流量）` 汇总的十个类 ≠ 表里显示的十个类。** `topn()` 用 `value_counts()` 的次序，
+   报告另有一条 `sort_values(占比%)` 的次序——两条路径在**并列格**上会选到不同的类。
+   教育 助手随机1k 叶层实测：表里第 10 显示 `查询高校与职业院校信息`，流量行印的 73.98% 却是
+   挑 `录取分数线查询` 才得到的值，**差 5.25pp**，而表注还写着「同样这十个类」。
+   修法：`topn()` 按 `(条数降序, key 升序)` 定下唯一次序并输出 `topn_members.csv`，
+   **报告的第1..第10 只从这张成员表渲染**，显示与汇总不可能再分家。
+2. **表注「合计行不受影响」是错的**（见上面口径 3）。只有行占比的合计免疫，流量合计不免疫。
+
+### 顺带修掉一个**既有**缺陷：第N格的双重舍入
+
+表 2.2 的 `第1..第10` 原本取 `matrix_*.csv` 里已经舍入到 3 位的 `_占比%` 再格式化 2 位，于是
+书籍文档 叶 2025搜索 印 `12.46%`，而表 1 的 `首位占比%` 印 `12.45`（真值 1244/9988 = 12.4549%）
+——**同一份文档里同一个量两个数**。现在第N格一律由 `条数 ÷ 该快照行数` 直接算。
+实测 600 个第N格全部改为精确值；跨表恒等式 180 处全部成立。
+**注意 `matrix_*.csv` 本身仍存 3 位**，没有动——叙述里引的是 3 位值（如 `23.198%`），
+改存储精度会波及复核数池与全部叙述。§3/§4 的表 *-A 仍按 3 位显示，那是它自己的口径，不与 2 位打架。
+
+### 核对（重做）
+
+- 独立复算 **907 个数字**（含 600 个第N格、7 个带并列摆动的格）· 0 不一致；
+  跨表恒等式 **180 处**（表1 的 前10占比%/前10流量占比%/首位占比% ↔ 表2.2 的 前10合计/流量/第1）· 0 不一致。
+- 七份报告 `p5_snapshot_verify.py` 未匹配数字 0 · 问题引文 0；741 测试通过；ruff clean；`src/` 未动。
+
+### 第二轮：复核工作流的「批评」通道又找出五处，其中两处是我印出来的假数
+
+前一轮的七个复核 agent 只查算术。三个**批评** agent（标注/统计/一致性三条视角）查的是
+「这个数被标成了什么、周围的话还成不成立」，又找出：
+
+1. **`±0.64pp` 这个记号本身是假的。** 点值几乎总落在区间的**一端**（实测 10 格里 9 格），
+   所以 `44.42%　±0.64pp` 会被读成 43.78–45.06，而真区间是 43.78–44.42——**上半截是凭空的**，
+   而且同一张表三行以上的并列提示写的正是 43.78%–44.42%，**一格与它自己的注解打架**。
+   方向还会翻：书籍文档印 `92.79%　±0.50pp`，真区间 92.79–93.29，点在**低**端。
+   改成直接印区间：表 2.2 印 `79.23%　[73.98–79.23]`，表 1 印 `79.23（并列 73.98–79.23）`。
+   复核加了一条恒等式：**点值必须落在它自己印的区间内**（17 格全过）。
+2. **语音快照上的并列提示是胡话。** 医疗 助手语音1k 有并列，但语音 PV 均匀 ⇒ 并列的类
+   `pv_norm` 必然相等 ⇒ 摆动恒为 0，于是报告印出「流量合计因此可在 **66.70%–66.70%** 之间摆动」，
+   后面还跟一句「但它们的 `pv_norm` 不同」。两句都错。现在按**实际摆动**而不是「有没有并列」
+   分支，均匀权重的情形单独措辞。
+3. **`traffic_note` 只在表 1 用了，表 2.2 一个字都没有**——而表 2.2 才是那一行被横着读的地方
+   （代码注释还写着「两张表共用一句话」）。现在两张表都带。
+4. **「助手头部1k 的流量是这一千条内部的流量」是错的，而且错得很多。** 头部 1k 先按 PV 取，
+   **再过清洗层**：被清洗掉的行带走了该导出 **软件 98.47% / 书籍文档 88.45% / 影视 78.33% /
+   教育 57.81% / 金融 42.32%** 的原始 PV（`work/build_audit.csv: pv_dropped_%`）。
+   所以那一格的「流量」是清洗后剩下那一小部分头部流量内部的份额，**主要是清洗规则的函数**。
+   影视的叙述早就写过这件事（「所以本叙述全程只用行占比，一次也没有引用流量列」），
+   我加流量列时没有把这条带过来。现在按域插入实测数字。
+5. **流量口径根本没有精度声明。** 全文每个类占比都配 Wilson 区间、每个 TVD 都配噪声上界，
+   只有流量是裸点估计。流量的有效样本量是 `1/Σw²`，**不是行数**：金融 2026搜索 9,999 行、
+   有效 **111.5**，单行最高占该快照流量的 **7.39%**。表 1 加一列 `流量有效n`，
+   表注明说「本表没有给它区间」。
+
+另外改掉三处措辞：表 2.2 的「占比**一律**由条数 ÷ 行数算出」对流量行不成立；
+「后**五**行是合计」——`前10之外` 是余额不是合计；`前10之外` 改名 `前10之外（行）`，
+因为它紧贴在流量行下面，原来那一列读起来像是要和 44.42 相加。
+
+**核对（第二轮）**：独立复算 **1,827 个数字**（含 10 个并列区间、点值落区间恒等式）· 0 不一致；
+七份报告未匹配数字 0 · 问题引文 0；741 测试通过；ruff clean；`src/` 未动。
+
+**教训**：算术复核与标注复核是两件事。第一轮七个 agent 把 2,256 个数字算了一遍，没有一个
+说「这个 ± 记号是假的」——因为 `±0.64` 里的 0.64 **确实**等于 hi−lo，算术是对的，错的是那个
+记号承诺的形状。**能被算对的数字，仍然可以是被标错的数字。**
+
+## Session 2026-09-14（下午）— 金融 8 快照：三份新导出，以及一处**上游数据缺陷**
+
+用户新给了三份金融导出：`金融25_random10k.xlsx` / `金融26_random10k.xlsx`（搜索两年的**随机** 1 万）
+与 `金融ai_voice_top1k.xlsx`（**按 PV 排序**的语音头部 1 千，自带 wise_pv）。连同原有五份共 8 个快照。
+
+### 为什么这三份重要（不是「多一点数据」）
+
+原来的金融设计把**界面**和**深度**混在一起：搜索只有头部 1 万，助手却有头部和随机两层，所以
+「搜索 vs 助手」的每一条发现都可能其实是「头部 vs 长尾」。两份搜索随机 1 万把这个洞补上了，
+设计变成 **界面 × 层**，年份再交叉进搜索侧。原始文件实测：头部与随机是真正不同的层
+（25头 ∩ 25随机 = 30 串 / 各 1 万，PV 中位 285 vs 1），而且**长尾逐年换血、头部不换**
+（头25 ∩ 头26 = 5,447 串；随25 ∩ 随26 = 30）。
+
+### 最重要的发现：**Excel 把纯数字 query 存成了数字，前导零在进入任何代码之前就没了**
+
+`data/raw/金融query-250701.xlsx` 的 `original_query` 列里有 **1,005** 个数字型单元格
+（openpyxl `data_type=="n"`），260701 有 **1,057** 个。于是 `000519` 变成 `519`。
+三条独立证据，全部在本语料上复算过：
+
+1. **前导零检验**：1,318 条裸 6 位 query 里以 `0` 开头的 = **0 条**；而长 query 内部出现的
+   1,467 个 6 位码里 **513 个（35.0%）**以 `0` 开头。若用户真的原样键入，期望约 461 条。
+2. **孪生检验**：617 个不同的裸短串里 **223 个（36.1%）**补零后的 6 位形式出现在**同一份语料**的
+   长 query 里（`519`↔`000519`、`2015`↔`002015协鑫能科股吧`、`1`↔`000001`）。
+   同码段随机码的零假设是 **7.6% ± 1.0%**（200 次重抽）。
+3. **竞争假设排除**：港股假设不成立（裸 4 位在港股最密的 0001–0999 段里 0 条）；
+   年份假设只影响 51 行，其中 13 个值有语料内孪生，真正像年份又无佐证的只有 10 行。
+
+**这解释了用户问的那个 8.21% 残余类**：它的 40.3% 是被截断的证券代码。而且
+「残余置信度 0.671 vs 域均值 0.872」是两个群体的混合——**数字那一半是 0.817，是高置信度地判错了**，
+非数字那一半才是 0.572 的「判不出」。
+
+**其它域也中招，但轻得多**：教育 22/35、书籍文档 22/29、影视 8/5、人物 5/4、软件 1/1、**医疗 0**。
+金融最重，因为证券代码本来就是纯数字。已交付的七个域**未重建**——修它们要重跑挖掘。
+
+### 用户那个例子的实测结论（与直觉相反，如实记下）
+
+`十大股东占比16.7%为高还是低` 这个形态在 22,934 行里只有 **6 行**——是轶事，不是类目。
+残余类里 **88.5% 的行连一个疑问标记都没有**（没有 吗/呢/？/为什么/怎么/哪/什么/如何/多少）。
+真正成立的是同族的另一半：「描述一段已发生的行情再问为什么」（阳光电源今天为什么大跌），
+助手随机层 2.23% vs 搜索侧 0.02–0.03%，约 75 倍——**但它是边界问题不是残余问题**：
+其中 18 行现在落在**风险标注类**「寻求个股买卖与持有决策建议」里，把一次解释请求路由到了投顾合规路径上。
+
+### 这一轮建了什么
+
+- `analysis/pooled5/build_fin8_corpus.py` → `data/raw/pooled5/金融8_pooled5.parquet`（44,000 行 → 入挖掘 43,934）。
+  **不覆盖 `金融_pooled5.parquet`**（它与 fin-pool5 的 labels_full.csv 逐行绑定）。
+  脚本对五个共有快照逐格断言与已交付语料相同（用 `query_raw` 比，因为 `query` 已修复）。
+  补零 839 行，`code_repaired` / `repair_conf` 标出，10 行标为 `low_yearlike`。
+- `configs/domains/finance_zh_v2.yaml`：8 条 pragmatic hint、8 个风控类（v1 的 3 类在 43,934 行上
+  合计只命中 21 行；新加的 `debt_collection_distress` 单独 57 行，其中 40 行在随机层）、L1 先验放宽到 [18,30]。
+- `configs/pool8_fin.yaml`、`analysis/pooled5/run_fin8.sh`。
+- `pooled5_common.py`：新增伪领域 `金融8`→`fin-pool8`、cohort `fin8`、三个新 source 与中文名。
+  **新 source 追加在各自年份/界面之后，没有动已有五个的相对次序**——七个已交付域逐字节验证不变。
+- `p5_snapshot_figs.py`：快照对数 ≥15 时 TVD 图改画下三角矩阵（8 快照是 28 对，柱状图必糊）。
+  ≤10 对仍走原路径，金融 10 对的图逐字节相同。
+
+### 运行结果：fin-pool8
+
+`fin-pool8` fast/routed/未 halt，270 次调用，102 分钟；`verify_run.py` **21 PASS / 0 FAIL**
+（对照 `ppl-pool5` 照常 FAIL，证明这套检查会失败）。
+交付 **L1 20 类 / L2 58 / 叶 62 / 家族 46 / 43,934 行**（fin-pool5 是 18 / 47 / 68 / ? / 22,934）。
+
+**残余类 8.21% → 3.86%**，而且成色完全变了：纯数字从 759 行降到 **7 行**，中位长度从 4 字升到
+10 字，剩下的是真正的残余（蚂蚁庄园答题、营销短信、含混的消费金融问题）。
+`查询金融资产实时行情` 这个 55% 的巨类也拆开了，新体系里 `查询可报价品种实时行情与价格` 是 35.06%。
+
+**架构师自己把边界切得比我的 hint 更准**：类名叫 `解析裸非可报价名称`——「非可报价」正是
+机构名 vs 证券名那条线；我 hint 里的例子把 `铜牛信息`（带 信息 后缀，实际是证券，对照组实测
+623 行里 618 行落在行情类、置信度 0.956）和 `人民银行`（机构）混为一谈，是写错了。
+运行没有被我带偏。
+
+### 用户那个例子：先判「是轶事」，最后证明是**头部语料的假象**
+
+`十大股东占比16.7%为高还是低` 在旧的 22,934 行里只有 6 行，我据此写了「是轶事不是类目」。
+**新语料把这条结论推翻了**：新体系里 `对"是不是/是A还是B"给出裁决结论` 逐快照占比是
+
+| 2025搜索 | 2025随机1w | 2026搜索 | 2026随机1w | 助手头部 | 助手随机 | 语音头部 | 语音1k |
+|---|---|---|---|---|---|---|---|
+| 0.80% | **10.88%** | 0.27% | **9.00%** | 0.84% | **7.70%** | 0.60% | **8.50%** |
+
+它是长尾里的头部意图，在头部语料里几乎不存在（0.27–0.84%）。旧语料只有头部，所以只看得见 6 行。
+**用户的直觉是对的，看不见它的原因恰好就是他补数据的原因。**
+
+同族的 `解释已发生市场现象的原因` 也成立：助手随机 2.74% vs 2026搜索 0.05%，55 倍。
+
+### 这批新数据买到的最硬的一条：**深度 > 界面 > 时间**
+
+一次只变一个因素（L1 层，TVD，全部超出同源噪声上界）：
+
+| 变什么 | 对 | TVD |
+|---|---|---|
+| 只变年份（都在头部） | 2025搜索 ↔ 2026搜索 | 0.15 |
+| 只变年份（都在随机层） | 2025随机 ↔ 2026随机 | 0.12 |
+| **只变层（同一天、同一个搜索导出内部）** | 2025搜索 ↔ 2025随机 | **0.57** |
+| **只变层（同上，2026）** | 2026搜索 ↔ 2026随机 | **0.60** |
+| **只变层（助手内部）** | 助手头部 ↔ 助手随机 | **0.57** |
+| 只变界面（都在头部） | 2026搜索 ↔ 助手头部 | 0.29 |
+| 只变界面（都在随机层） | 2026随机 ↔ 助手随机 | 0.28 |
+| 只变输入方式（都在头部） | 助手头部 ↔ 助手语音头部 | 0.26 |
+| 界面+层一起变（**旧设计只能测到这个**） | 2026搜索 ↔ 助手随机 | **0.77** |
+
+**同一天、同一个导出、同一个界面，只换抽样层，距离就有 0.57–0.60；而把层对齐以后，
+搜索与助手只差 0.28–0.29。** 旧的五快照设计里搜索只有头部，所以「界面差异」永远和深度绑在一起，
+测到的 0.77 是两个因素之和。**已交付的 fin-pool5 报告里每一条「搜索 vs 助手」的结论都带着这个混淆**，
+这不是那份报告写错了，是它的语料没法把两者分开。
+
+**顺带测出语音那份「抽样方式未知」的导出是什么**：它到 2026搜索随机1w 的 TVD 只有 **0.11**，
+到 助手语音头部1k 是 **0.62**。八个快照里它离一份随机搜索样本最近。
+证据支持「它是长尾/随机样本」，但仍然不改名——导出本身没有任何抽样字段。
+
+### 后处理
+
+`P5_COHORT=fin8` 跑完整套：含来源 xlsx/csv、跨快照对比工作簿与报告（**351,334 字符 / 2,022 表格行**）、
+六张图；`p5_snapshot_verify.py` **未匹配数字 0 · 问题引文 0**。
+28 对快照的 TVD 图走新的下三角矩阵路径（已看图确认可读）。
+
+## Session 2026-09-14（夜）— fin8 的三处交付缺陷；健康两份新导出的准备与清洗
+
+### 先修已交付的 fin8（三处缺陷，都已重建并复核）
+
+1. **界面层（表 *-E、「仅搜索/仅助手」、界面散点图）静默漏掉三个快照。** `p5_snapshot_classes.py`
+   把 `SEARCH` / `ASSIST` 写死成旧五个 source，于是两年的搜索随机 1 万和语音头部 1 千没进界面对比：
+   搜索n 读成 19,997、助手n 读成 2,937。现在从每行自己的 `surface` 列分界面（`surface_groups`，
+   一个快照没有或有两个 surface 值就直接报错）。修后 39,997 / 3,937。
+2. **fin8 报告里一句流量警示都没有。** 构建审计只查 `build_audit.csv`（fin8 写的是 `build_audit_fin8.csv`），
+   而且那段代码是跨三行的隐式拼接后挂 `if _drop else "。"`——条件表达式优先级低于拼接，找不到行时
+   **①②③整段**被换成「。」。现在①②无条件印，③按任意 `build_audit*.csv` 里被清洗掉 ≥5% PV 的快照印。
+3. **只对旧批次成立的措辞印在了 fin8 上**：「本域是 2026-09-13 新接入的」「搜索每年 ~10,000 行」
+   「两个搜索快照都在 7 月初」「搜索侧那两万行」、附录里的构建脚本与配置名。改为逐域文字
+   （`DOMAIN_INTRO` / `DOMAIN_TIME` / `DOMAIN_BUILD`）并按实际快照数与行数渲染。
+
+**回归测试抓到了我自己的一处越界**：第一版把通用的③措辞也用在了七个已交付域上，七份报告各变 6 处。
+恢复成原句后七份逐字节相同；医疗的逐类 CSV 逐文件相同。**fin8 仍缺叙述段（7 个 NARR 块全空）**，
+新两域是有的——待补。
+
+### 健康：两份导出的形态
+
+- `健康搜索_top1w.xlsx` 与 `健康ai管家_top1w.xlsx`：同一周（2026-09-04 至 09-10），都是
+  「query × 天」取前 1 万行，都带平台自己的三级分类。**AI 文件也有跨天重复**（1,075 串在 7 天都出现），
+  不只是用户点名的搜索文件，所以两份都按 query 合并。两份都是纯文本单元格，没有金融那种前导零缺陷。
+- 搜索 10,000 → 2,260 串；9 串在**同一天**有两行、分类不同、PV 不同——是一次导出把同一 query 的流量
+  拆到了两个标签上，PV 相加。19 串分类冲突，保留 PV 占优的标签并存完整拆分。
+- 周 PV 只在 7 天都在榜时是精确值，其余是下界；`pv_week_upper` 按每个缺席日自己的截断线补上界。
+
+### 健康：清洗（详见 `analysis/pooled5/work/health_clean_audit.md`）
+
+- **搜索**只去掉 16 个「科室+姓名+医生」串（16 位不同医生周 PV 164k–179k，跨医生 CV 0.026，每天都如此；
+  同 PV 段的有机串日 CV 0.422）和 8 个健康新闻标题。**日 CV 低本身不是信号**：69 个 7 天齐全的串 CV<0.03，
+  大多是常青的有机查询。私立医院导流（60 串，搜索 PV 6.57%）是用户搜索，进风控类，不清洗。
+- **AI 管家**：三个视角盲标全部 1,887 串（Fleiss κ 0.945，95.6% 三票全同）。**多数判为用户键入的只有
+  199 串（PV 4.09%）**：作答 chip 1,243（60.85%）、功能/卡片按钮 69（23.55%）、推送问题 245（8.39%）、
+  包装模板 118。原有的通用助手清洗器只抓到 13 串（PV 5.90%），头部 40 串漏 37。
+- 规则扩展到审计暴露的每个族以后，**单用规则**对多数：精确率 0.993、召回 0.707（PV 0.999 / 0.939）——
+  chip 是开放词表，召回有结构性上限。所以 **三票全同时用盲标决定，分票（83 串）时用规则决定**，每行记
+  `tier_source` / `rule_tier` / `audit_majority` / `audit_votes`。
+- **唯一定不下来的边界是裸词**（头晕 / 糖尿病 / 阿司匹林 / 血常规）：审计保留的 160 个裸词里 49 个原样出现在
+  人工键入日志中，其余 111 个都嵌在更长的键入搜索里；被判为 chip 的 1,180 个几乎从不原样出现；两者流量
+  形态分不开。**保留为 user 并加 `flag_bare_term_origin_unknown`**（入挖掘的 225 个 AI 串里 184 个）。
+- 最终入挖掘 **2,461 行 = 搜索 2,236 + AI 225**。
+
+### 健康：参考列（用户说明：只改运行命令，不改源码）
+
+预注册条件（在最终语料出来之前写进配置）：每列与界面的 Cramér's V ≤ 0.55，且没有占比 >1% 的单边类。
+最终：`legacy_l2` V=0.251 → 声明（第一列，负责金标/试点/读日志分层）；`legacy_type` V=0.362 → 声明；
+`legacy_dept` V=0.348 但有两个 >1% 的单边类 → **撤下**。命令里显式传 `--reference-columns legacy_l2,legacy_type`
+（`analysis/pooled5/run_health.sh`），与配置一致。
+
+### 健康：新建的文件
+
+`analysis/pooled5/build_health_corpus.py` · `configs/domains/health_zh.yaml`（医疗种子原样沿用，实测覆盖 30.8%；
+医疗的 9 个风控类在这周几乎不点火，新增 私立医院导流 / 偏方与速效根治 / 未成年+性，年龄写成
+`(?:^|[^0-9])`，因为 `47岁` 实测会被当成 `7岁`）· `configs/pool2_health.yaml` · `analysis/pooled5/run_health.sh` ·
+`analysis/pooled5/work/health_ai_audit_labels.csv` / `health_clean_audit.md` / `build_audit_health.csv` / `build_tiers_health.csv`。
+`pooled5_common.py` 登记伪领域 `健康`→`health-pool2`、cohort `health2`、两个 source 与一个对比对（追加在末尾，
+其它域列序不变）。`p5_snapshot_classes.py` 加了**按领域**的第五层不可引护栏（只对 健康 生效：未成年+私密、
+露骨性行为描述、具名医生），verify 同步套用；医疗与书籍文档重跑后逐文件、逐字节不变。
+
+### 同一夜的补充：交付脚本逐域化、健康专用分析、以及「有没有回退」的实证
+
+- **交付脚本也写死了五域口径，已逐域化**：`p5_postprocess_run_xlsx.py`（`来源说明`页写「五个取值」、硬取 `l2` 列——健康没有这一列会直接报错）与
+  `p5_deliverables.py`（五域说明、硬取被剔除行的 `l2`）。现在 `DOMAIN_SRC_COLS` / `DOMAIN_NOTE` / `DOMAIN_ORDER_EXTRA` /
+  `DOMAIN_REMOVED_COLS` 只对 金融8、健康 生效；医疗重跑后 `含来源.csv` 逐字节相同、`labeled.parquet` 内容相同。
+  金融8 的两份交付物已按 8 个来源与修复列重建（`金融8_all_rows.parquet` 写于前导零修复之前，所以被剔除行不带 `query_raw`）。
+- **健康专用分析，全部按文件/列存在与否开关，其它域不产出**：`product_layer()`（被清洗掉的产品层按来源×层级的串数与周 PV、
+  每层头部串——具名医生卡只给条数、命中护栏的不引原文、盲标一致度与规则单独的精确率/召回、合并前后统计）；
+  `reference_columns_check()`（重测预注册条件，并**断言与运行实际声明的参考列一致**，不一致直接拒绝）；
+  `bare_term_sensitivity()`（去掉 AI 侧来源不明裸词以后，每个类的界面差异是否翻转）。报告新增「## 0 数据准备：合并、清洗与盲标」，
+  同样只在这些 CSV 存在时渲染。
+- **自己踩的坑**：第五层不可引护栏第一版用 `Series.str.contains`，pyarrow 字符串会把正则交给 RE2，而 RE2 不认 `一-鿿`
+  转义，健康一跑就抛 `ArrowInvalid`；只对健康生效所以其它域的回归抓不到，是验证时撞上的。改为 Python `re` 求值。
+- **用户问「fin8 是不是有缺陷、会不会回退」，实证如下**：`src/` 与 `tests/` 最后修改 2026-09-12 22:51；fin-pool8 挖掘产物全部是
+  运行当时（09-14 17:26–18:37）的，gen01 里唯一更新的文件是 Finder 写的 `.DS_Store`；此前交付的七份逐类对照报告与交付版
+  **SHA-256 相同**（mtime 变了是因为回归测试重渲染过）。fin8 报告相对交付版有 25 处变动，全部来自那三处修复。
+  **fin8 的缺陷全在后处理交付物里，不在运行里**；我向用户报告过的 fin8 结论（深度>界面>时间、裁决类长尾占比、残余 3.86%、
+  20/58/62/46）都来自逐快照的表，不受界面层那处缺陷影响。
+- 叙述任务书：`work/snapshot_narrative_brief_fin8.md`、`work/snapshot_narrative_brief_health.md`（后者跑完再补具体数字）。
+  fin8 叙述工作流（写作→独立复核→修订）在跑。
+- **fin8 叙述已完成**（工作流 wf_4a29d549-b3d，3 个代理）：复核员不采信任何表，把 parquet 与 labels_full 按行位置对齐后重算
+  270 个数字、12 条引文，提出 13 条（3 必须改 / 6 应该改 / 4 可选）。三条必须改都是**结论被区间推翻**：两层对齐后方向一致的类是
+  8 个不是 7 个（漏了寻找绕征信借款）；「差在层，不在界面」被只换界面也显著推翻；「集中在一个子意图」被 signature_td_l2 推翻
+  （INVEST_ADVICE__1 同样是特征类）。修订员先自己复算再改，第 9 条连复核员的机制解释也说过头了，没照写。
+  **我自己又独立数了一遍**：newcombe_td_l1.csv 两层都显著且同向 = 8 个，与修订一致；22 个定义 L1、20 个交付、2 个 0 行一致。
+  重渲染 + verify：「未匹配数字 0 · 问题引文 0」，叙述 10,159 字符，报告 364,177 字符。任务书自己也写错一处
+  （流量有效n 最低的是 2026搜索随机1w 37.2，不是助手头部1k）——叙述照 CSV 写，是对的。fin8 四件交付物已重发用户。
+- **回归基线**：健康后处理开跑前，对 8 个 run 的跨快照报告 / 工作簿 / 含来源 csv 与 `deliverables/` 下 csv/parquet 共 32 个文件
+  记了 SHA-256（scratchpad `legacy_sha_before_health.txt`），健康后处理结束后对比。
+- **health-pool2 跑完**（2026-09-15 00:54 退出 0，约 60 分钟）：`run_summary.json` mode=fast、provider=routed、halted=False；
+  架构师第 0 次返回不可解析 JSON，程序自己重问一次成功（无人工干预）。`tools/verify_run.py runs/health-pool2/gen01 runs/ppl-pool5/gen01`：
+  新运行 **20 PASS / 0 FAIL / 6 N/A / 2 SKIP**，对照组 3 FAIL。交付形状：定义 21 个 L1、交付 20 个（RED_FLAG_TRIAGE 0 行）、
+  L2 23、叶 16、**家族 16 且每族恰好 1 叶**——治理前 13 叶 / 4 族，p8 执行 3 次拆叶 + 8 次风险隔离、拒 3 条，隔离把几乎每个叶
+  挪进各自的风险家族。K 由 `legacy_l2` 定位到 4（治理前）。risk_screen 167 行；医疗档案原九类里四类 0 命中。
+- **健康后处理**（`analysis/pooled5/post_health.sh`，六步，exit 0）：报告 93,653 字符 / 985 表格行，机械复核 0 / 0（叙述前）。
+  最硬的一条：L1 界面差异显著 12 类，**去掉 AI 侧 184 行来源不明的裸词后只剩 6 类、翻转 12 类**；AI 侧首位意图
+  「由自身症状反查原因」67.11% 里 94% 是裸词。仍成立且方向不变的只有功效类、定位机构（两者 AI 0 行）与反查原因。
+- **后处理代码里又抓到两处写死的旧措辞**（都在 `p5_snapshot_figs.py`，都是看图看出来的）：界面散点轴名写死「搜索（2025+2026 合并）/
+  助手（各层合并）」→ `IFACE_AXES` 按域覆盖；快照距离图标题写死「25搜/26搜 = 两个搜索快照…」→ 只在刻度真的用了缩写时才印。
+  按每个域的 `pairwise_tvd.csv` 实测：七个旧域的刻度全是缩写（标题逐字不变），金融8 走矩阵图（不经过这段），只有健康变。
+- **运行自己的两份定义文档会印样例原文**（架构师判例、模板示例、质心/边缘样本），其中有露骨性描述与成人内容标题。
+  `analysis/pooled5/redact_health_run_docs.py` 在 `postprocessed/` 生成 `*_引文护栏版.md`，只替换查询样例（反引号 / 「」/ ≤40 字的表格单元），
+  护栏 = 硬规则 + 共现规则 + 健康第五层 + 具名医生 + **只取与未成年人/性内容有关的**运行点名串。第一版用了报告的全部点名串，
+  自上而下文档被换掉 56 处，按层拆开看大半是偏方、导流、药物相互作用、自我诊断的样本——正常健康查询，所以收窄。原件留在 gen01。收窄后：自上而下替换 14 处、自下而上 2 处、分层对比 0 处；护栏版里剩下的
+  模式命中只在护栏版自己的说明行与治理理由的描述性文字里（不是查询样例），脚本对「查询样例仍命中」做了断言。另：描述性文字里若在护栏话题的同一行带「（…14岁…）」这类
+  含年龄的具体描述括注，替换成「（具体描述略）」（自下而上治理理由 1 处），也有断言。
+- **回归**：健康后处理前记下的 32 个文件（8 个 run 的跨快照报告 / 工作簿 / 含来源 csv + deliverables 下 csv/parquet）SHA-256 全部相同；
+  `ruff --select F src/qmine/ tools/ analysis/pooled5/` 通过。`src/`、`tests/` 本会话未改。
+  全量 `pytest tests/ -q`：29 个文件、741 个测试，exit 0（健康后处理与两处作图修正之后跑的）。
+- **健康叙述已完成**（工作流 wf_12ecd73b-df3）：复核员逐行对齐重算 195 个数字、40 条引文，隐私与引文全部通过（P007 隔离的叶 9 没有一条引文），
+  提出 16 条（3 必须改 / 8 应该改 / 5 可选）。三条必须改：导读对 4 个翻转类只给了全部行一套数；路线交叉对翻转类「解读医学名词」只给一套数；
+  边界把被清洗掉的产品推送层当成「周内热点推高两边」的直接证据（入挖掘两侧行里开学/新冠/暴雨等题材词 0 行）。修订员 11 条全改。
+  我自己重渲染 + verify：「未匹配数字 0 · 问题引文 0」，报告 105,901 字符；隐私扫描：报告里唯一的模式命中是「未成年人与性相关」这个类名 + 条数。
+  健康报告已发用户。回归：32 个基线文件 SHA-256 再次全部相同；`src/`、`tests/` 未改。
+- **程序缺陷（未改源码，已记录、已开独立任务）**：`src/qmine/ops/cluster.py: reference_sensitivity()` 写死 `"decides": key == "intent_alignment_ami"`，
+  注记写「决定权在 `phrasing_groups`」；`graph/nodes/bottomup.py` 的 `p5_k_references_agree` 闸门 observed 写死 `deciding_reference="phrasing_groups"`。
+  当声明的参考列定位 K 时（health-pool2：`triangulation.locator=ami_vs_legacy_l2`）产物自相矛盾，自下而上定义文档的闸门行因此写错。
+  同一文件里决策记录早先修过同一类错（live41 注释），这两处漏了。只影响披露文字，不改任何 K 与数字。live41/42/44、ai04、aiwire01、三个 k12_zh 的
+  granularity.json 也带这条注记（其中 locator 本来就是措辞组的那些是对的，要逐个看）。**本次处理**：交付给用户的自下而上护栏版在那一行加注
+  「程序缺陷：本次实际定位 K 的参照系是 legacy_l2」（`redact_health_run_docs.py`，带断言）；健康叙述里也点明了。源码修复需要改两处 + 回归测试，
+  按用户要求单独审慎处理，未在本次动。发现者是健康叙述的写作代理——我起初以为它读错了，逐字查文件后确认它是对的。
+- **我自己审计笔记里的一个错数**（复核员发现）：`health_clean_audit.md` 与 `build_health_corpus.py` 说明里写搜索侧 7 天都在榜 890 个串，
+  实为 893。原始导出逐行重算：890 是「恰好 7 条原始行」的串数；同一天被拆成两行的 5 个全周串有 8 行，另有 2 个 7 行串不满 7 天。
+  第一次我猜「890 = 满 7 天且恰 7 行」，断言没过就没改（那个数是 888）；按原始导出确认原因后才改。报告表 0-A 一直是 893。
+  另：交付的自下而上护栏版多了一处缺陷注记，已与改正后的审计笔记一起重发用户。
+
+## 4. Session (2026-09-15) — the reference credited with deciding K
+
+Resolves the bullet 「程序缺陷（未改源码，已记录、已开独立任务）」 in the 2026-09-14 session above,
+which recorded this defect during the health-pool2 work and deferred the source fix.
+
+### The defect (disclosure only)
+
+- `ops/cluster.py: reference_sensitivity()` set `"decides": key == "intent_alignment_ami"` for every
+  reference and its note ended 「决定权在 `phrasing_groups`」 — true while the phrasing groups were the
+  only locator, silently wrong once `choose_locator` could hand K to a declared column.
+- `graph/nodes/bottomup.py`, gate `p5_k_references_agree`: `observed.deciding_reference` was the literal
+  `"phrasing_groups"`, and the bottom-up reports print that gate row.
+- A second wrong output of the same hardcode: with declared columns and **no** phrasing groups, every
+  `decides` was false, so the only reference "decided nothing".
+- Stored damage, measured read-only over all 69 `runs/*/gen*/granularity.json`: 10 generations — ai04,
+  aiwire01 (`ami_vs_l2` / `ami_vs_l1`), health-pool2, the three k12_zh-20260901-*, live41 gen01+gen03,
+  live42, live44 (`ami_vs_legacy_*`). The other 24 of the 34 that carry `reference_sensitivity` were
+  phrasing-located and correct. None reached the stability fallback.
+- The same bug class was fixed twice before (decision record `decisive_metrics`, locator profile);
+  these two sites were missed both times.
+
+### The change
+
+- `reference_sensitivity(sweep, chosen_k, *, locator_column: str | None)` — **required keyword-only, no
+  default**, because a default is exactly how this defect recurred. `decides = key == locator_column`;
+  `None` marks nothing. The value is the sweep key (`intent_alignment_ami` / `ami_vs_<col>`), the same
+  namespace as `triangulate_k`'s `locator_key`. **No keys added**, so `granularity.json` stays
+  byte-identical for phrasing-located runs and their p5 observer prompts still replay from `llm_cache`.
+- `triangulate_k` passes `locator_column=locator_key if located else None` (in the fallback `locator` is
+  a free-text stability string and nothing located K).
+- The gate records `tri.get("deciding_reference") if tri.get("locator") == locator_key else None`. The
+  guard matters: in the fallback `tri["deciding_reference"]` still names `choose_locator`'s pick (§2 #21).
+- `tests/test_measurement_soundness.py`: `test_k_is_reported_under_every_available_reference` now passes
+  `locator_column="intent_alignment_ami"` explicitly (assertions unchanged). New:
+  `test_the_reference_marked_as_deciding_is_the_one_that_located_k` (pure; phrasing, declared column,
+  declared-only single and pair, fallback with an unscored column and with a column scored only at a K
+  stability rejected), `test_the_disagreement_gate_names_the_reference_that_actually_located_k` and
+  `test_the_disagreement_gate_names_no_reference_when_stability_decided` (real `p5_granularity` on a
+  4x3-blob synthetic corpus via the `deps` fixture, ~0.1 s each, every precondition asserted).
+- Invariant rows went to `.claude/rules/measurement.md`, not `CLAUDE.md` (already 227 lines against its
+  200-line target). `analysis/pooled5/redact_health_run_docs.py`'s comment updated: its annotation still
+  applies to health-pool2 gen01 and is a no-op on a fixed run.
+
+### How it was checked
+
+- **Before:** full suite passed (exit 0), ruff clean, both files backed up; HEAD equals the backups.
+- **Discovery workflow** (three read-only lenses): every consumer (renderers, audit, findings recheck,
+  render/resume/verify_run replay), a behavioural harness, and a branch-by-branch table.
+- **A trap worth not re-learning:** `tests/conftest.py:17` inserts the working-tree `src` at
+  `sys.path[0]`, so a mutation check run as `PYTHONPATH=<copy>/src pytest tests/...` silently tests the
+  FIXED code — the first mutation check "passed" on the original for exactly that reason. It was redone
+  as full mirror projects (src + tests + pyproject, configs/data symlinked) with a probe test asserting
+  `qmine.ops.cluster.__file__` lies inside the mirror.
+- **Mutation matrix on the final tests:** fixed passes all four; the original fails all four;
+  M1 gate hardcoded → both gate tests; M2 `decides` keyed on phrasing → pure + located-gate;
+  M3 call site passes `locator_key` unconditionally → pure; M4 gate unguarded → fallback-gate test;
+  M5 name compared with column → existing + pure + located-gate.
+- **Review workflow** (four lenses, three skeptics per finding; 12 upheld, 9 dropped). Applied: docstring
+  column names and counts; the M3 and M4 pins (both mutants had survived the first version of the
+  tests). Recorded: §2 #20, #21. Measured by the review: `reference_sensitivity` recomputed with old and
+  new code on all 34 stored sweeps — 24 identical, 10 differ in exactly three leaves (two `decides`
+  flags and the note's last clause); the whole `triangulate_k` output identical for 59 of 69 and
+  `chosen_family_k` identical for all; `None` renders as 无 / null everywhere; the behavioural test is
+  deterministic across seeds and thread counts.
+- **After:** full suite **744 passed, exit 0** on the exact final tree (741 + 3 new);
+  `ruff --select F src/qmine/ tools/` clean. The 3 F findings in `tests/test_measurement_soundness.py`
+  are identical at HEAD. Pre-existing working-tree diffs in `graph/nodes/naming.py` and
+  `tools/postprocess_assistant_run.py` were not touched.
+
+### Deliberately not done
+
+- No stored artifact rewritten. `qmine render` re-projects artifacts and cannot repair the 10
+  generations; a new generation that re-runs p5 gets the fix (and, for those 10 only, a p5 observer
+  cache miss). They remain usable as the known-broken control for a future `verify_run` check (§2 #20).
+- Sibling strings that still credit the phrasing groups in delivered documents (§2 #20) and the
+  fallback-only attribution (§2 #21) — each needs report-generator or fallback-semantics changes that
+  deserve their own review.
+
+## Session 2026-09-15（下午）— 医疗 8 快照：三份新导出、语料构建、v2 档案（进行中）
+
+用户补来三份医疗导出（`25医疗搜索随机1w.xlsx`、`26医疗搜索随机1w.xlsx`、`医疗ai_voice_top1k.xlsx`），要求与 fin-pool8
+同样的一整套：补进已交付的 `med-pool5` 这一侧（**不是** health-pool2），fast 模式重跑 8 快照，并做同样的后处理、分析与报告。
+
+### 数据实测（原始文件，不含 query 原文）
+
+- 六份医疗导出的 `original_query` **全部是文本单元格**（数字型 0 个），所以金融8 的前导零修复不需要、也没有跑。
+- 头部与随机是真正不同的层：25头 ∩ 25随机 = 26 串，26头 ∩ 26随机 = 4；PV 中位数 604 / 303 vs 1。
+  头部逐年延续（25头 ∩ 26头 = 6,329），长尾几乎完全换血（25随机 ∩ 26随机 = 2）。
+- **`医疗ai_voice_top1k.xlsx` 实为 10,000 行**（金融的同名导出是 1,000 行），按 `wise_pv` 降序。第 1,000 行 PV=11，
+  PV=11 的并列行有 152 行（第 916–1,067 行）。**决定：取 PV ≥ 11 的全部 1,067 行**——在并列处按导出顺序截断会凭顺序定成员；
+  其余 8,933 行不入挖掘。构建脚本断言排序与截断。列头仍叫「助手语音头部1k」（`SRC_ZH` 是跨域共用的，改名会动金融8 的输出），
+  报告与交付说明里写明本域是 1,067 行。
+- 模板种子（v1 在头部挖出来的）ANY 覆盖：头部 54.5% / 60.1%，随机层 21.7% / 19.4%，语音头部 20.1%，语音1k 23.9%。
+  疑问标记占比：头部 43.6%，随机层 64.6–65.4%；语音头部中位长度 4 字、疑问标记 9.3%。
+- 风控词形按层：未成年人与性相关 头部 0 / 随机 7；私立医院导流 头部 8 / 随机 35；自行用药、药物相互作用、特殊人群用药、
+  个人信息都是随机层更多；「偏方与根治」头部 476 / 随机 63——头部偏重，精度待审（v2 研究工作流在查）。
+- med-pool5 的残余类 `OUT_OF_DOMAIN_OR_UNCLASSIFIABLE` 1,405 行（6.12%，搜索 4.4–4.6%，助手 17.8–19.5%，置信度 0.589 vs 0.811），
+  自下而上叶却是明明白白的医疗叶（药品功效 166、药品产品 151、正常值 124、治疗手术 124、孕产流产 111）——
+  和金融 v1 一样，是边界问题不是「非医疗」。私下读过的样本里有药企名、缺指代的助手追问、营养/卡路里计算、ASR 碎片。
+  **其中一条露骨性描述没有被报告的任何一层引用护栏拦住**——医疗8 需要自己的、实测过的第五层（后处理时加）。
+
+### 建了什么
+
+- `analysis/pooled5/build_med8_corpus.py` → `data/raw/pooled5/医疗8_pooled5.parquet`（44,067 行 → 入挖掘 44,019），
+  `work/医疗8_all_rows.parquet`、`work/build_audit_med8.csv`、`work/build_facts_med8.json`、`work/med8_build_audit.md`。
+  **不覆盖 `医疗_pooled5.parquet`**。五个共有快照在 query/source/surface/l2/tier/pv_raw/pv_norm 七列逐格断言相同。
+- **构建时自己的断言先报错，查明是表示差异**：旧 parquet 把缺失 `l2` 存成字符串类型的 NaN，新构建是 pd.NA，
+  `astype(str)` 比较把 9,998 行全判成不同。逐列实测「两边都缺失 / 一边缺失 / 取值不同」= 9,998 / 0 / 0（五个快照七列全部如此）
+  以后，才把断言改成「两边都缺失即相等，一边缺失或取值不同仍失败」。金融8 的断言根本没比 `l2`，所以没撞上。
+- `configs/pool8_med.yaml`（照 `pool8_fin.yaml`；无参考列：`l2` 只覆盖助手 1,956 行 = 4.4%）、`analysis/pooled5/run_med8.sh`
+  （`--domain medical_zh_v2 --run-id med-pool8 --fast`）。
+- 注册：`pooled5_common.py` 新增 `医疗8`→`med8`、cohort `med8`、`RUN_ID` `med-pool8`；`p5_snapshot_report.py` 的
+  `DOMAIN_INTRO/TIME/BUILD`、`p5_postprocess_run_xlsx.py` 的 `DOMAIN_NOTE`、`p5_deliverables.py` 的 `domain_note` 各加一条 `医疗8`。
+  全是按域追加，其它域不经过这些分支。后处理前记下 782 个交付文件的 SHA-256（scratchpad `med8_baseline_sha.txt`）。
+
+### 进行中 / 待办
+
+- `medical_zh_v2.yaml`：五个视角的研究工作流（残余与边界、长尾风险精度审计、种子纯度、先验与提示、法规原文核验），
+  每条提议两名怀疑者独立复算，再由整合评审查冲突。**v1 不动**（med-pool5 的 resolved config 要能复现）。
+- 之后：启动 `med-pool8`；运行期间准备第五层引用护栏与叙述任务书；跑完 `verify_run`（对照组）、后处理六步、
+  隐私扫描（含运行自己的两份定义文档）、叙述工作流、回归哈希、交付。
+
+### 档案 `configs/domains/medical_zh_v2.yaml`（2026-09-15）
+
+- **研究**（工作流 wf_6a245f6b-818，84 个代理，0 错误）：五个视角提出 39 条改动，每条两名怀疑者独立复算，34 条两人都未推翻，
+  再由整合评审合并冲突（五对风险类合并、六条边界提醒改放 domain_notes、四处种子互相打架的修正）。整合评审从代码里查实了几件决定
+  取舍的事：`pragmatic_intents_hint` 只进架构师、标题是「本体系必须承载的意图」，所以「不要立类」的边界提醒放不进去；类别的
+  `rationale` / `policy` 没有任何决策代码读；`expected_min_share`、`expected_l1_range` 没人读（架构师的界是运行配置里的
+  `taxonomy.l1_target_range` 15–25）；种子不过凝聚度闸门，但 `build_groups` 对种子也施加 0.004×行数（176 行）的静默下限；
+  **`screen_risk` 的样本会原文进 risk_compliance 研究员的提示词和 fast 工作簿的风险清单——不可引类必须在后处理里处理。**
+- **组装工作流中途叫停**（用户指出档案已耗时过久、ROI 不划算）：没有产出任何草稿，改为我直接从整合评审的**测量脚本里的最终
+  模式对象**生成 YAML（不手抄 20 个片段），`domain_notes` 自己写（4,105 字，含逐层实测形态、v1 的中西医与风险两段原文、
+  边界决定 (a)–(f)、法规锚点 (A)–(F)；麻精目录引用 NMPA 公告2025年第55号，删掉无人核实的右美沙芬条款）。
+- **校验（程序自己的函数）**：`_load_domain("medical_zh_v2")` 通过；`screen_risk` 13 类逐类命中与预期完全一致，并集 2,870 行
+  （v1 1,977）；12 个种子逐源命中与计划一致，并集 41.59%（v1 37.5%），随机层 29.6 / 28.4%（v1 21.7 / 19.4%）；
+  v1 的六条提示逐字保留；`qmine doctor` 列出 `medical_zh_v2` ok。`medical_zh.yaml`（v1）未改。
+- 与整合计划的唯一差别：`accidental_ingestion_and_overdose` 用计划写的 36 行版本（加了「吃/喝了十几片」那一式），
+  整合脚本 `FINAL` 里是 34 行版本。
+- **K 网格没有改**：三次运行（med-pool5 / fin-pool8 / health-pool2）的网格提议者都自己加了 8 以下的 K（[4,7] / [6] / [4,5,6,7]），
+  为了与 fin-pool8 可比，本次沿用默认配置。
+
+### 运行 `med-pool8` 已启动；第五层引用护栏
+
+- `analysis/pooled5/run_med8.sh`：`--config configs/pool8_med.yaml --domain medical_zh_v2 --run-id med-pool8 --fast`。
+- `p5_snapshot_classes.py` 新增 `EXTRA_QUOTE_BLOCK["医疗8"]`：健康那一条原样 + 露骨性行为词（44,019 行里 57 行原本三层护栏
+  都没拦住）+ 具名医生两种写法（排除泛称，21 行原本可引，几乎都在随机层）+ 伴侣与性行为描述共现（构建前抽查里穿过所有护栏的写法）。
+  只有键为 `医疗8` 时生效，其它域不经过。
+
+## Session 2026-09-15（傍晚）— fin8 深挖：例子的代表性、同一意图的跨快照差异、叶 × 语用子功能
+
+用户问：主报告每个意图、每个快照的真实例子怎么选的、能不能代表；同一意图在不同快照之间差在哪、差多真
+（例：助手侧「消息公告」例子更像咨询）；能不能用自下而上的叶把宽 L1（例：「是不是 / 是A还是B」裁决）拆开看是核实还是决策。
+中途追问：用叶会不会太碎、改用家族是否更好。
+
+### 交付（纯后处理，`src/` 与 `tests/` 未动）
+
+- `runs/fin-pool8/gen01/postprocessed/finance_zh_v2_意图内部结构与代表性样例.zh.md`（约 6.5 万字）+ 同名 `.xlsx` + `img/意图结构_*.png`（8 张）。
+  不改主报告任何数字。
+- 脚本（`analysis/pooled5/`）：`p5_intent_structure.py`（三种取例法同一组指标、叶/L2 构成、说法词表、Fightin' Words、C2ST、盲样本）、
+  `p5_leaf_namefit.py`（意图 × 叶的名实 + 叶与家族的粒度对比）、`p5_facet_aggregate.py`（三视角聚合）、
+  `p5_facet_crossmodel.py`（DeepSeek 跨模型盲标）、`p5_intent_structure_report.py`（渲染；叙述在 `work/金融8/intent_structure/narrative.md`）。
+- 盲标工作流 `wf_7aebad7e-0ba`（33 个代理，0 错误）的 journal 拷在 `work/金融8/intent_structure/facets/`，结果由 journal 重建。
+
+### 测到的
+
+- **例子**：主报告卡片 = 每格可引行 `pv_norm` 前 3。n≥10 的 120 格：覆盖中位 32.8%；27 格的第 3 条与 3 行以上并列（随机层与语音 PV 几乎全是 1），
+  排序实为文件顺序；自助法 Jaccard 0.44（助手语音1k 0.06）。Hamilton k=3（同样 3 条）到 56.4%、0.82；构成显式中位 80.5%、平均 6.3 条。
+- **叶名是整叶的多数**：意图 × 叶 361 格，cos差（意图内中心 vs 叶其余中心，减同大小随机切分基线）中位 −0.093、p10 −0.188。
+  例：「计算存贷款利息」叶里属于消息公告意图的行是个股利好消息（−0.327）。报告里每个案例都给叶名 + 意图内中心例子 + 叶其余中心例子。
+- **叶 vs 家族（用户追问）**：62 叶 / 46 族，7 个多叶族装 42.1% 的行；意图 × 快照格（n≥30）有效组数 12.4 → 10.8，覆盖 80% 9 → 8，
+  组内到中心余弦 0.660 → 0.634（更松）；有族把「查询电话号码归属」与代码类叶、「蚂蚁庄园今日答案查询」与「查询市场行情」并在一起。
+  分散来自意图本身横跨话题，不是叶切得太细，所以以叶为单位。
+- **盲标子功能**（每意图 9 码；样本 542 / 582 / 682 行，按快照分层）：三 Claude 视角 κ 0.994 / 0.980 / 0.988 是**同模型自洽**
+  （查过 transcript：各自手工逐行给码，没有互读文件）；**DeepSeek 用同一码本独立盲标子样本 κ 0.986 / 0.963 / 0.980（n 175 / 164 / 182）**。
+- **NEWS_EVENT**：界面随机层（2026搜索随机1w ↔ 助手随机1k）分析型（预测 + 评估 + 问原因）16.7% → 45.6%（+28.9pp [+16.4, +41.0]），
+  预测 9.3% → 27.8%；叶构成 TVD 0.265 < 噪声 0.297。助手侧仍有 50.6% 是查找型。主报告助手随机1k 的 3 条卡片里 2 条预测型：方向对，程度放大。
+  搜索内头部 → 长尾：浏览最新消息 −25.6、进度 −18.7、事件数据 +36.1；两年随机层之间没有显著子功能差。
+- **VERDICT_QUESTION**：按权重 68.7% 核实规则/资格/后果（业务规则 41.7、资格承保 12.9、补救 8.3、后果 5.8），16.2% 类别辨析与事实状态，
+  13.8% 辅助决策（安全质量评估 10.0、直接建议 3.8）。搜索头部辅助决策 27.5–29.6%，随机层规则类 68–75%。界面随机层规则类 −20.6pp，
+  事实状态/时事走势 +15.1pp [+6.3, +25.7]（唯一显著单项）。叶：「贷款提前还款查询」规则类 98.6%，「车险购买与理赔咨询」直接建议 19.8%。
+- **INVEST_ADVICE**：名单 32.7（无评价标准清单 20.4 + 荐股择优 12.2）、判断/预测 30.8、信息/方法 22.7、要一个决定 12.0。
+  头部界面：清单 51.9 → 6.5（−45.4pp），预测 16.7 → 53.2（+36.6pp）。「通用规律/投资方法」2025 → 2026 头部 19.3 → 3.7、随机 17.3 → 8.0，两层同向显著。
+  预测集中在价格类叶（「查询价格走势图」92.1%，「查询金价」90.2%）；L2 `__3` 88.2% 清单、`__4` 79.2% 预测。
+
+### 自己犯的错与被断言拦下的
+
+- `hamilton` 初版逐轮取整，把名额全给首位叶；改最大余数法后单测 `{'a':2,'b':1,'c':1,'d':1,'e':0,'f':0}`。
+- C2ST 30 次置换时出现「标显著但 p=0.065」，改 100 次、以 p<0.05 为准。
+- 叶名适用度表的中心例子一度选中 150 字的荐股指令（堆常见词的长串与均值向量余弦高）；改为只在该部分长度 p10–p90 内取 medoid。
+- 叙述里两条示例的子功能是我推断的、不在盲标样本里，逐条对照后换成三票一致、可引、离该码中心最近的行。
+- 盲标工作流里一个代理把 `INV0660` 写了两遍、漏了 `INV0659`：覆盖断言拒收。其余 199 条按盲表顺序排列、错位那份恰在 `INV0659` 的位置，
+  但它的码（DECIDE）与该行内容不符，所以**不补码**，记为声明缺票（上限 1%），多数用其余两票（都是 SCREEN），κ 只在完整行上算；写进 `summary.json` 的 `repairs`。
+- 图：Set2 只有 8 色，第 9 个码与第 1 个撞色；改 tab10，无法判定一律灰色放最后。码本代理用英文写了两份定义，进了中文交付；
+  译文放 `facets/codebook_zh.json`，拉丁字母占比高的定义没有译文就拒绝渲染。
+- 家族段落初稿说「39 个家族只含一个叶，家族与叶几乎是同一个划分」：按个数对，按行数误导（多叶族装 42.1% 的行），已改为实测对比。
+
+### 核验
+
+- 叙述里 124 个带小数的数全部能在报告表格或 `work/金融8/intent_structure/` 的 CSV/JSON 里逐字找到；119 个「」片段中没有任何一条是不可引的语料行；
+  全报告 419 个引号片段无催收 / 征信修复 / 套现类词。`ruff --select F` 覆盖新脚本。
+
+### 环境陷阱
+
+- 本机 `HTTP(S)_PROXY` 下，`urllib` 请求 DeepSeek 0.0 秒被断开（关沙箱仍一样），`httpx` 正常 200。跨模型脚本用 `httpx`。
+
+### 没做
+
+- 主报告卡片仍是流量前 3（见 §2 新条目）。盲标只做了三个宽意图；其余意图的「要什么」只有说法词表。
+
+## Session 2026-09-15（晚）— 医疗8：运行、后处理、叙述，以及引文护栏的第六层（逐串阅读）
+
+### 运行 `med-pool8`
+- `analysis/pooled5/run_med8.sh`（`--domain medical_zh_v2 --fast`），15:00 启动、16:53 结束，exit 0；`run_summary.json`：mode=fast、provider=routed、
+  halted=False、229 次调用、18 个阶段、失败闸门 0。最长的是 p2a 分类体系 2,490 秒与 p8 治理 1,694 秒。
+- `verify_run`（对照 `ppl-pool5/gen01`）：本运行 PASS 21 / N/A 6 / SKIP 1 / FAIL 0；对照 PASS 9 / FAIL 3 / SKIP 10 / N/A 6。
+- 形状：L1 定义 18、交付 17（`SELF_HARM_CRISIS` 0 行）；L2 55；治理前 49 叶 / 8 族，交付 41 叶 / 37 族；留出复现 0.9704（n=8,804）；
+  K 由意图对齐定位，决定性参考 `phrasing_groups`（没有声明参考列）。治理 32 条（执行 23、拒绝 9）：P013 / P014 是**整叶移出家族**（叶里各混入
+  一条自伤求法 / 伪装成医学评测的成人内容），不是拆出敏感行；风控哨兵 10 条发现。风控屏 13 类并集 2,870 行（6.52%）。
+
+### 后处理（按域 `医疗8`，其它域不经过；每一处都复算过老域可引行数逐字相同）
+- `post_med8.sh` 六步（脚本没有执行权限，exit 126，改用 `bash` 调用）。
+- `NEVER_QUOTE_CLASSES["医疗8"]`：自伤危机类（0 行）与误食过量类（6 行）。
+- `EXTRA_QUOTE_BLOCK["医疗8"]` 加三式：色情片俗称、治理理由点名的成人标题、「让自己患病 / 弄伤自己」式自伤求法（44,019 行上新增 3 行）。
+- `redact_med8_run_docs.py`（护栏版定义文档）：加自伤正则；治理理由里的“”引号片段与长单元格（原件的治理表把自伤求法与成人标题印在里面）；
+  名单串出现在行内任何位置都替换；自伤方法的散文转述只替换那几个字，类定义原文保留。
+- `p5_snapshot_report._search_share`：「语料 X% 是搜索行」按域计算（原来写死 87%，见 §2）。
+
+### 叙述（工作流 wf_75d0cc9a-b43：写作 → 数字与断言 / 隐私与引文两名复核员 × 3 轮 → 修订；10 个代理）
+- 结论要点（数字都在 `work/医疗8/snapshot_classes/` 的表里）：医疗也是**深度 > 界面 > 时间**——L1 只变层 0.38 / 0.40（搜索）、0.33（助手），
+  只变界面头部 0.207、随机 0.102（低于噪声上界）；只变年份 0.042 / 0.032。许可式问法（能否吃用做）是长尾现象：2026 头部 1.48% → 随机 13.81%。
+  语音1k 的分布像随机层（证据强）；语音头部在叶层自成一格。自伤危机类 0 行配上界 0.0084%，风控词表命中 13 行被判进 7 个别的意图。
+- 数字复核员三轮都没有算错的数，问题都在措辞与证据强度；隐私复核员三轮都放行叙述，但**拦下报告表格**（下一节）。第 3 轮修订后没有再复核，
+  由 `p5_snapshot_verify`（0/0）与本节的最终闸兜底。叙述里一条引文在例子重排后不再是示例行，换成同一格的「还有导尿管」。
+
+### 引文护栏的漏洞，与第六层
+- 隐私复核员逐串读了报告里 1,037 个引文串，标出约 45 行 / 38 串：未成年人与性、露骨与恋物题材、具名医生、民营医院全名、试管选性别，
+  **全部穿过了前五层**，大多来自两个语音快照。另外，跨快照工作簿印的例子比 Markdown 报告多约 1,000 串，没有人读过。
+- 召回实测（以这 38 串为参照）：DeepSeek 15/38；单名 Claude 读者 22/30。所以 Claude 是必需的读者，DeepSeek 只作并集。
+- 第六层 `SCREENED_QUOTE_BLOCK`（`p5_snapshot_classes`，名单是数据文件 `work/医疗8/privacy_screen/quote_block.json`；`p5_intent_structure.quotable_mask`
+  与护栏版脚本同样读它；文件不存在时是空集合）。标准写在 `privacy_screen/criteria.md`（7 个码）。
+- 轮次（`p5_privacy_screen_round.py`）：r1（被中止的全量子集筛查已完成的 8 块，6,080 串，标 571）→ r2（1,322 串，Claude 49 / DeepSeek 23）
+  → r3（182 串，7 / 3）→ r4（15 串，0）→ 独立第二遍（当时印出的全部 2,081 串，5 名读者，12 标，其中 5 串是新的）→ r5（11 串，2）→ r6（4 串，0）。
+  最终名单 634 串；Claude 读过 7,314 串；`final` 闸：报告、叙述、三份护栏版、工作簿里名单串 0 处，印出的 2,080 个语料串全部读过，叙述 12 条引文全部有效。
+- 代价：7 个 L1 格与 3 个叶格只剩「不引原文」占位（误食类四个搜索格与语音头部的几个 1–4 行小格）。
+- 用户中途要求降低这一项的投入：DeepSeek 全量筛查（36,673 串）只跑了 10/245 批就停了，全量子集的 Claude 筛查停在 8/11 块；最后两个小轮次由主会话读。
+  结果文件都在 `privacy_screen/` 下，可断点续跑。
+
+### 自己犯的错与被拦下的
+- 第一版护栏版脚本只替换反引号、「」与短单元格，漏了治理理由里的“”引号；自伤求法的散文转述也漏了。
+- 名单布线脚本的「json 已导入」断言写死了写法，整段中止（没有写入任何文件），改成正则判断后重做。
+- DeepSeek 脚本有一个未用的 import，`ruff && run` 链没启动；它的并发 8 太慢，改成可配置、6 次退避重试、可续跑。
+- 复核员把被标串存成「行号 → 哈希」，按引文串求哈希对不上（口径未知），改从它的逐串清单按序号还原 38 串。
+- 例子表的占位行写作「不引原文（…）」，最终闸初版按「== 不引原文」比较，已改为前缀匹配。
+
+### 核验
+- `p5_snapshot_verify`：未匹配数字 0 · 问题引文 0。全量测试 744 通过（pytest 的 `-q -q` 不打印汇总行，按点数与 exit 0 计）；`ruff --select F src/qmine/ tools/` clean；
+  `src/`、`tests/` 自测试以来没有文件改动。
+- 已交付文件的 SHA-256 基线（782 个）：781 个不变；变的是 `work/snapshot_classes_all.json`——每次按当前 cohort 覆盖写、代码里没有任何读者。
+- 老域可引行数在每次护栏改动后逐域复算：金融 22,784、医疗 21,763、书籍文档 20,016、软件 20,400、金融8 43,497、健康 2,235，全部与已交付的 summary.json 相同。
+
+### 没做
+- 其它域的例子没有逐串读（§2）；医疗8 没有做金融8 那份「意图内部结构」深挖。
+- 全量数据工作簿（`*_query_挖掘结果_含来源.xlsx/.csv`、`医疗8_POOLED5_逐行标注.xlsx`）按设计含全部 44,019 行原文——那是数据，不是引文，没有做护栏版。
+
+---
+
+## 4. Session (2026-09-16) — 人物 / 影视 / 医疗随机，以及一个哨兵被当成类训练
+
+三个域并行：人物8（ppl-pool8）、影视8（film-pool8）、医疗随机（health-pool3）。全部 fast、routed、未 halt。
+用户的三条要求：人物域把 Zhipu 的角色改路由到 Kimi（此前实测过中文公众人物触发 contentFilter）；
+人物 / 影视**跳过叙述工作流**；例子表**印真实 query**。三条都照做了，且都验证过：人物运行 log 里
+`glm` 出现 0 次、contentFilter 0 次；两份报告的散文段留空而表与图完整；例子表没有占位符。
+
+### 语料与档案
+
+| 语料 | 行数 | 快照 | 档案 | 构建脚本 |
+|---|---|---|---|---|
+| 人物8 | 43,802（44,000 进） | 8 | `people_zh_v2`（19 种子，覆盖 27.95%） | `build_pool8_corpus.py` |
+| 影视8 | 43,933（44,000 进） | 8 | `film_tv_zh_v2`（21 种子，覆盖 32.68%） | `build_pool8_corpus.py` |
+| 医疗随机 | 20,316（20,622 进，删 305） | 2 | `medical_zh_v2` | `build_medrand_corpus.py` |
+
+两份 pool8 语料新增第 8 个快照 `assistant_voice_random`。语音头部那一份是**已经截断过的** 1,000 行导出，
+所以 `tie_boundary_checkable: False` 写进了构建事实——不像 医疗8 的 1 万行导出可以自己查并列边界。
+
+医疗随机的两份导出 `event_day` 都是 **20260914**（单日，09-15 导出），来源侧已去重。
+口径按用户要求比 health-pool2 放宽：助手输入的包装模板只从串里**剥掉**、行保留（`wrapper_stripped` 记住），
+宽口径规则只用来挑要盲标的行，**只有三个窄规则**（功能/卡片位、医生卡、无内容）可以删没盲标过的行，
+盲标三票一致判为非用户内容才删。结果：助手侧留存 97.1%（health-pool2 是 12%），删的正好是 305 行三票一致的产品层。
+三个参考列（`legacy_l2` / `legacy_dept` / `legacy_type`）都满足预注册条件（Cramér's V ≤ 0.55、无 >1% 的单边类），
+全部声明；health-pool2 当时撤回过一列。Fleiss κ 0.617 只在歧义那一片上算，报告里照此披露。
+
+### 三个源码缺陷
+
+**① 哨兵被当成第 19 个 L1 类训练。** `_active_learning_round` 建金标行时没有 round 1 的两道保护。
+fast 模式只有一个标注员，漏标的行由调用方填 `UNLABELED`；`a2 == b2 == UNLABELED` 满足相等判断，于是
+`agreed=True, final="UNLABELED"` 进了金标，过了 p2c 的非空过滤，22 行又过了 5 折支撑下限——
+18 个码的体系训出 19 类分类器，幻影类预测到 11 行语料，进了 5 份交付文档，
+`topdown_metrics.json` 的 macro-F1 / ECE / CV accuracy 全部是在一个不存在的 19 类问题上算的。
+`verify_run` 对照 ppl-pool5b 抓到（新运行 FAIL 1，对照 PASS）。实测爆炸半径：8 次运行里只有 ppl-pool8 中招
+（fin-pool8 / med-pool8 / film-pool8 / health-pool3 / ppl-pool5b / film-pool5 / health-pool2 / book-pool5 都是 0 行）——
+人物域中招是因为主动学习取的是边界行，而边界行正好是标注员会拒答的敏感尾巴。
+修好后 3,178 行训练、18 类、macro-F1 0.526 → 0.557。
+
+**② 只有出错时才走的分支，自己就是坏的。** `_require_both_branches` 传了 `blocking=True`，
+而 `Deps.gate()` 从来没有这个参数。它的测试用 `SimpleNamespace(**kw)` 当假 deps，所以一直绿着。
+gen03 因为金标从缓存 6.5 秒重放、被排到 `p456_tree` 之后，汇合点真的遇到缺分支——
+那道本该报出「缺哪个分支 + 怎么补」的闸门抛了 TypeError，运行死在 traceback 上。
+测试的假对象现在 `inspect.signature(Deps.gate).bind(...)`，多一个关键字就报错。
+
+**③ `fast_skipped` 在 resume 时缩水成 4 项。** fast 校验器只在开关「本来是开的」时才追加，
+而 `--resume` 读的是源代已经规范化过的配置，于是重建出的清单只剩 4 个无条件项。
+横幅是由这份清单生成的，gen03 的三份参考文档因此写着双标注、各阶段观察员、对抗验证、agent 报告、
+交付前审核、结果解读**都跑过**——交付文档里的一句假话。改成按 mode 推导，测试断言重复校验幂等。
+
+### 交付代次
+
+人物8 的交付代次是 **gen03**，不是 gen01：
+- gen01 = 有幻影类的那一次，留作证据；
+- gen02 = 试图用 `--resume` 重跑，结果 `taxonomy_architect` **没命中缓存**、返回 21 个节点（gen01 是 18），
+  整棵体系漂了，当场杀掉。这正是 `CLAUDE.md` 警告的「用 web 的研究员不确定，改了 architect 的提示词就一路 miss」；
+- gen03 = `--resume --reuse-taxonomy ppl-pool8/gen01`，p2a 0.0 秒跳过、沿用 gen01 的 18 个意图 45 条规则，
+  只让修好的金标构造重算 p2c 及其下游。55 次调用（gen01 是 196），其余全部缓存重放；
+- gen04 = `qmine render`，只为把缺陷 ③ 修好后的横幅重新渲染出来（三份参考文档 + 运行工作簿）。
+  gen03 的 `config.resolved.yaml` 里那份缩水的 `fast_skipped` 已按 mode 推导更正，更正理由写进了 gen03 的 `_why.txt`。
+
+后处理因此需要指定代次：`pooled5_common.run_dir` 新增 `P5_GEN_<批次>` 环境变量（与既有的 `P5_RUN_<批次>` 成对），
+`post_ppl8.sh` 里写死 `P5_GEN_ppl8=gen03`。默认仍是 gen01，其它域不受影响。
+
+### 引文护栏
+
+人物 / 影视按用户要求印真实 query，所以**没有**走 医疗8 那套广谱逐串筛查（那次拦了 634 串、掏空了 10 个格子）。
+改用 `p5_quote_hardrule_scan.py`：只按三条硬规则扫（未成年人与性、露骨性内容、普通个人可识别信息），
+命中不自动拦，打印出来交给人逐条看。医疗随机多一条 `NAMED_DOCTOR`，作为第五层正则的**复核**。
+
+| 域 | 命中行 / 去重串 | 扫描时仍可引 | 已印进交付文档 | 最终 |
+|---|---|---|---|---|
+| 人物8 | 9 / 9 | 0 | 0 | 0 可引 |
+| 影视8 | 9 / 8 | 4 | 0 | 0 可引 |
+| 医疗随机 | 76 / 75 | 8（全部是未成年人与性） | 0 | 0 可引 |
+
+三个域都是**没有一个命中串出现在交付文档里**。仍然把命中串写进了各域的
+`work/<域>/privacy_screen/quote_block.json`，作为以后换例子时的保险；影视那 8 串里包含一部真实作品名，
+按「未成年人与性」从严一并拦下。`EXTRA_QUOTE_BLOCK["医疗随机"]` 指向 医疗8 那条按语料实测出来的正则——
+新域少这一层，等于把 med-pool8 验证过的三类写法重新放行。
+
+### 回归
+
+全量 **747 通过**（原 744 + 3 个新测试），`ruff --select F src/qmine/ tools/ analysis/pooled5/*.py` clean。
+三个新测试在各自的缺陷代码上都验证过会失败。887 份既有交付文件哈希不变，唯一变的是
+`work/snapshot_classes_all.json`——按批次重写的中间汇总，只写不读，不是交付物。
+
+### 没做
+- 人物 / 影视没有叙述工作流（用户明确跳过），两份报告的散文段是空的。
+- 医疗随机也没做叙述工作流——用户没提，而它是和人物 / 影视同一批交付的。需要的话单独说一声。
+- 意图内部结构深挖仍然只有 fin-pool8 一份。
+- 缺陷 ② 只修了「闸门建不出来」，**没有修排程本身**：gen03 第一次跑时 p2b_gold 确实被排到了 p456_tree 之后。
+  现在再撞上会干净地 halt 并说清楚缺哪个分支，但为什么会这样排还没查。见 §2。
+
+### 补记（2026-09-16 傍晚）—— 人物域重跑成 ppl-pool8b，并复查了这次会话的全部源码改动
+
+用户提了两件事：一是源码改动必须经得起推敲、不能把已经稳定的程序改坏；二是 **resume + fast 本来就是
+§2 里没关掉的口子**（0t / 0v），那 gen03 的交付到底可不可信。两件都成立，处理如下。
+
+**① 人物域整个 run id 作废，重跑 `ppl-pool8b`。** 不是因为 gen03 的数字查出了错，而是因为它的**记录**
+确实比别人薄，而且这一薄是可测量的：
+
+| | ppl-pool8 gen03 | ppl-pool8b gen01 |
+|---|---|---|
+| 闸门 | 14（缺 `p2a_pilot_agreement`、`p2a_taxonomy_shape`） | **16** |
+| decisions | 6 | **7** |
+| `elapsed_s` | 141.5（只有 resume 之后那一段） | **5,318** |
+| `fast_skipped` | 4（事后更正） | **10**（本来就对） |
+| resumed | True | **False** |
+| provenance | 两次 resume + 一次崩溃 | 一次跑完 |
+
+缺的那两个闸门是真的质量检查，因为 `--reuse-taxonomy` 跳过了 p2a 才没跑。其余七次运行全是单次全新运行，
+人物域不该是唯一的例外。ppl-pool8b：fast、routed、未 halt、238 次调用、88.6 分钟、18 个阶段，
+`verify_run` 对照 ppl-pool8/gen01 是 **21 PASS / 0 FAIL**（对照仍然 FAIL 幻影类那一项，说明工具在咬）。
+分支汇合点这次是正常的：p2b_gold 16:25:04 ✔、p456_tree 16:32:58 ✔、p2c 16:33:01 ✔，两条分支都到齐了，
+护栏没触发——**gen03 那次错序是缓存重放的 resume 造成的，不是全新运行里潜伏的缺陷**。
+
+标注员这次一条没漏（3000/3000 + 200/200），所以修好的保护根本没用上：gold 3,200 行、0 个哨兵。
+gen01 那 22 行漏标是随机的（一个 batch 三次重试后丢了行），不是语料的性质。
+
+体系是独立重推的：**22 个 L1，与 gen01 的 18 个只共用 2 个码**——两次运行不共享标签空间，这是
+CLAUDE.md 写明的，所以不要拿两次的类目互相比。交付形状 21 L1 / 53 L2 / 37 族 / 37 叶
+（gen03 是 18 / 50 / 22 / 23），叶和族都厚了不少。分类器：21 类、CV 0.719、macro-F1 0.399、
+**按流量加权的准确率 0.703（三者里最高）**、ECE 0.022（三者里最好）。macro-F1 掉是因为类数从 18 变 21、
+分母里多了几个稀有类，不是退化——读这个数必须同时读基数。
+`n_dropped_rare=3` 是**行数不是类数**：真正训不了的类只有 1 个（`JUDICIAL_RECORD_CHECK` 涉案判决与失信记录核查，
+金标只有 3 行），而且交付语料里没有任何一行落在它下面。
+
+**② 三处源码改动经过了一轮对抗复核**（20 个 agent、6 个维度、每条发现都由独立的怀疑者试着推翻；
+14 条候选里推翻 12 条、确认 2 条）。三处改动本身**全部通过**，其中最值得记的一条排除：
+空的 `final` 写进 csv 再读回来，会不会变成字符串 `"nan"`（长度 3）从而穿过 p2c 的 `str.len() > 0`
+过滤、把本该剔除的行又放回训练集？三种方法实测：不会。这是改动 ① 唯一可能「白改」的方式。
+
+确认的两条都是我自己的，都不在挖掘程序里：
+- **我新写的那个测试断言不可能失败。** `gate.status != "PASSED"` —— `GateStatus` 是小写字面量；
+  `getattr(gate, "warn_only", False)` —— `GateResult` 根本没有这个字段。变异测试里 `passed=True`、
+  `skipped=True` 都活了下来。更糟的是它的失败信息说的是假话：这个闸门实测是
+  `status='warned', blocking=False, halts_run=False`，因为 `p2c_both_branches_arrived` 不在
+  `cfg.gates.blocking` 里。已改成断言真正承载停机的东西（返回字典的 `halted` / `halt_kind` /
+  `halt_reason` + 闸门的真实 status + remediation 非空），现在三个变异体全部被咬掉。
+- **`P5_GEN` 改了「读哪个代次」，但生成文案里四处写死的 `gen01` 没跟着改**
+  （p5_snapshot_report.py:479/857/860、p5_snapshot_classes.py:1094）。于是人物域的交付文档正文写着
+  `ppl-pool8/gen01`、复现表指向一个不存在的图目录。四处都改成跟 `run_dir` 走；gen01 的域重渲染后
+  `.md` 逐字节相同、工作簿每一格相同（只有 zip 时间戳变）。
+
+**③ 复核者判错了一条，我自己复查后确认它是真的。**
+`p5_quote_hardrule_scan.py` 写死 gen01 而 `load()` 跟着 `P5_GEN`，所以**人物域那次扫描读到的文档数是 0**，
+「已印进交付文档 0」是一句空话而不是一个测量结果——而我把这个数字当成结论报给了用户。
+按真实文档重测，答案仍然是 0（结论没错，但当时没有证据）。脚本已改成跟 `run_dir` 走，并且
+**读不到文档就直接 assert 失败**，让沉默不可能再被当成通过。影视 / 医疗随机当时各读到 1 份文档，是真测量。
+
+回归：全量 **747 通过**，`ruff --select F` clean，887 份既有交付文件里 886 份哈希不变
+（唯一变的仍是按批次重写、只写不读的 `work/snapshot_classes_all.json`）。
+
+### 补记（2026-09-16 深夜）—— CLAUDE.md 例行维护
+
+228 行 → **199 行**（目标线以下），内容一条没丢：40 条不变量里 34 条**搬进** `.claude/rules/` 的对应文件
+（按 `paths:` 只在打开相关文件时才加载），CLAUDE.md 只留 6 条真正跨领域的——它们正好各自对应「Rules」一节里
+的一条规则，表变成了那一节的执行索引。搬家后逐条核对：40 个测试名仍然全部出现在文档里，
+8 个规则文件的 `paths:` 通配符全部命中真实文件，文档里点名的每个测试在 `tests/` 里都恰好定义一次。
+
+**改对的事实（都是实测，不是读 HANDOFF 得来的）：**
+- 测试数 ~730 → ~750（实测 747），`make demo` ~4 分钟 → ~3 分钟（与 Makefile 自己的说明一致）。
+- **文档里的 pytest 命令自己把答案藏起来了。** `pyproject.toml` 的 `addopts` 已经带了 `-q`，
+  命令行再加一个就是 `-qq`：`-k` 匹配不到任何测试时输出**一个字节**，而不是 `N deselected`。
+  本次会话里我自己中过两次（`pytest -q | grep passed` 什么都没有）。命令里的 `-q` 已删，并写明不要加回去。
+- **`--fast` 只有在全新 run id 的命令行上才生效。** 实测：`_load_config` 总是传显式 mode，所以
+  `--config` 文件里写 `mode: fast` 会被读成 `full`；`--resume` 根本不看这个标志，只沿用源代次的配置，
+  且只应用 `run_root` 与 `--reuse-taxonomy`。这条原来完全没写在 CLAUDE.md 里，而它决定一次运行花多少钱、
+  有没有 kappa。（§2 的 0t 记着这件事，但措辞是「resume 会变成 full 模式」——不准确，实际是「沿用源代次的模式」。）
+- **`extends:` 是一条链，不是一行。** 原文写「必须以 `extends: live.yaml` 开头」，而
+  `configs/live_finance.yaml` 其实 extends `corpus_wise_export.yaml`。改成「链必须到达 live.yaml」，
+  并给了直接（`pool5_fin.yaml`）与两级（`live_finance.yaml`）两个例子。
+- `verify_run` 的状态是五个不是四个，`ERROR` 原来没写。
+- README 的「711 tests」同步刷新。
+
+**新增的三条通用规则**（都来自本次会话踩到的真事，且都不是某个子系统专属）：
+- **`--fast` 只在全新 run id 生效**（上面那条）。
+- **断言不只用于脚本改写，也用于扫描的输入集**：glob 之后 `assert files`——空的输入集是 SKIP，不是 PASS。
+- **不可能失败的测试会永远是绿的**：新测试先证明它在缺陷上会挂，再信它；比真接口松的假对象
+  （`SimpleNamespace(**kw)`）和断言一个类型根本没有的字段，都会在坏代码上保持绿色。
+
+**没改的：** `make full ~25 分钟`（复核 agent 实测 12 分钟，但 Makefile 自己的说明也写 25，两处一致，
+且这个数字不指导任何决定，留着）；「fast 模式交付 3 份参考文档」（实测两次 pooled fast 运行都正好 3 份，
+复核 agent 提的「pooled 时 4 份」与实测不符）。
+
+### 补记（2026-09-17）—— 给两个医疗域新建了一层「科室」
+
+用户问：这两份医疗语料里到底涉及哪些医院科室、跨快照怎么比、为什么。现有标签答不了这个问题，
+所以**新建了一层**，纯后处理，不改任何运行产物或已交付文件。
+
+**为什么不能用现成标签（实测）：**
+- **医疗8 没有科室列。** 唯一的平台标签 `l2` 只覆盖 1,956/44,019 行（4.4%，只在两个助手快照），
+  而且是内容类型不是科室（疾病知识/药品保健品/养生知识/医疗服务/医疗器械/医疗其它）。
+- **医疗随机 的 `legacy_dept` 测的不是科室。** 20 个取值覆盖全部行，但 **44.62%（9,066 行）是空档**；
+  词表里**没有肿瘤科**——本层判为肿瘤科的 476 行，平台给的是 内科 257、两个空档 100、妇产科 64……
+  一行都没落到任何肿瘤相关取值上；「内科」4,104 行被本层拆成 消化 781、心血管 541、内分泌 397、
+  呼吸 322、检验影像 261、肿瘤 257、神经 228……；取值里还混着 综合医院、医疗服务其它、五官科
+  （现行名录里已被眼科/耳鼻咽喉科/口腔科取代）这类根本不是科室的东西。
+- 空档也不是随机缺的：9,066 行空档里 **5,163 行本层判给了具体临床科室**，只有 3,903 行真是非临床。
+
+**做法：** 预注册码本（`work/科室/codebook.md`）锚在**《医疗机构诊疗科目名录》**（卫医发〔1994〕第27号，
+国家卫健委现行有效版本，34 个一级 / 148 个二级）。三处偏离都写明理由：内科与外科**拆到二级**
+（不拆就是复制平台标签的缺陷）、增设**男科**（名录外但中国医院普遍设置）、性病在皮肤科下单列。
+判定口径是**分诊**（该挂哪个门诊），并设 5 个非临床码，不把养生/用药/挂号硬塞进科室。
+56,937 个不同 query 全量逐串判定（`deepseek-v4-flash`，0 条未标）。
+
+**信度（三个读数测的是三件事，不能混）：** 跨供应商 kimi-k3 n=1,500 **一致 82.4%、κ 0.815**（这才是信度）；
+同族 deepseek-v4-pro n=1,000 一致 88.3%、κ 0.866（测容量差）；可审计的规则词表覆盖 23.5%、一致 76.9%、
+κ 0.755（测「只认锚点的仪器」）。**越独立的仪器越不一致**。临床/非临床粗分跨供应商一致 **92.7%**。
+不一致集中在几对固有模糊边界：痛风（内分泌↔风湿免疫）、淋巴瘤（肿瘤↔血液）、早孕（产科↔妇科）。
+
+**主要发现：**
+- 两份语料各出现 **34 个临床科室**；临床行占比 医疗8 67.24%、医疗随机 73.65%。
+- **时间几乎什么都没发生**：2025→2026 随机层最大科室变动 0.86pp、头部层 0.95pp。
+- **分层比时间大近八倍**：同一天头部 vs 随机最大 6.61pp。头部堆中医（12.72% vs 6.37%）、用药、养生；
+  随机尾部才是就医事务、儿科、产科。**任何只看头部 1w 的医疗分析都会系统性高估中医养生、低估儿科产科。**
+  两年独立复现同一形状。
+- **两份语料的「搜索 vs 助手」方向相反。** 医疗8：39 类中 17 类显著，**14 类搜索侧更高**，助手侧唯一
+  大幅上升的是「无法判断」+12.09pp；形态表给出原因——该助手上的串**更短**（中位 8.5 vs 10.4 字）、
+  **更不像问句**（30.9% vs 37.8%）。医疗随机：18 类显著，**12 类助手侧更高**，串**更长**（12.2 vs 10.7）、
+  **更像问句**（55.4% vs 46.4%）、**第一人称多近两倍**（5.9% vs 2.2%）。原因是产品不同：前者是通用助手的
+  医疗切片，后者是健康管家。
+- **肿瘤科在两份语料里符号相反**：通用助手 −0.46pp（搜索更高），健康管家 +1.29pp（助手更高），两处都显著。
+- **语音**：语音头部「无法判断」24.65% vs 文字头部 16.18%；「就医事务」在语音里几乎消失（0.37% vs 7.83%）。
+
+**护栏：** 例子走与其它交付报告相同的七层护栏，**外加两个医疗域筛查名单的并集**——这个并集是必要的，
+实测到一个 医疗8 名单上的串作为 医疗随机 的例子印了出来（见 §2 新增条目）。最终 1,100 条例子
+**四条硬规则命中 0、筛查名单命中 0**。
+
+**交付：** `deliverables/医疗科室层_跨快照对照.zh.md`（55,048 字符 / 870 表格行）+ 同名 `.xlsx`（18 页）
++ `work/科室/` 下的码本、逐串标注、规则词表、19 张对照表。
+新脚本：`p5_department_label.py`、`p5_department_rules.py`、`p5_department_compare.py`、
+`p5_department_reliability.py`、`p5_department_report.py`。
+
+**没做：** 没有图（这一层的结论靠表就能读，图会重复）；没有把科室层交叉到意图层（`load()` 已经让两者
+落在同一份行上，随时可做）；没有动任何域的护栏配置。
+
+### 补记（2026-09-17 晚）—— 医疗3：用 health-pool3 自己的产物给新快照打标签，凑齐三快照
+
+新数据：`健康管家-医疗-Top1w.xlsx`（11,464 行），与 health-pool3 的两个快照**同一天**（`event_day` 都是
+20260914）。它补上的正是那次运行缺的那一层——健康管家的**头部**。于是三快照是：
+
+| 快照 | 界面 | 抽样 | 行数（清洗后） |
+|---|---|---|---|
+| 传统搜索随机1w | 搜索 | 随机 | 10,000 |
+| 健康管家随机1w | AI助手 | 随机 | 10,316 |
+| **健康管家Top1w** | AI助手 | **头部** | **11,252** |
+
+**没有重新推导任何体系**，交付形状与 health-pool3 逐项相同：**20 L1 / 51 L2 / 33 家族 / 33 叶**。
+
+**打标签怎么做的（关键）：** 用该运行自己的产物打分，不重训不重聚类。
+- 稀疏空间在**原语料的 20,316 条文本**上重拟合，实测**逐位复现**该运行的 `emb_svd_char.npy`
+  （max abs diff **0.000e+00**，vocab 50,732、evr 0.218149 全对得上）；稠密编码器
+  `shibing624/text2vec-base-chinese` 复现到 3.3e-07、平均余弦 1.00000000。所以新串落进的是**同一个**空间。
+- 叶与家族用 `centroid_classifier.joblib`（37 叶心 × 1024 维），L1 用 `topdown_model.joblib`
+  （RuleEngine + StandardScaler + LogReg），L2 用从原语料 (`emb_base`, `td_l1`, `td_l2`) 现算的 L1 内子中心。
+- **打分器准确性是测出来的**（同一条路径给原语料 20,316 行打一遍，比交付标签）：
+  **td_l1 100.00%、td_l2 99.57%、叶与家族 95.51%**。叶那 4.5% 的差是最近中心法在逼近
+  「聚类 + p8 治理」的结果，而这正是该运行 `deployment.json` 自己写明的服务路径。
+- **老两个快照的标签一个都没重打**，直接取 `labels_full.csv`。
+
+**清洗：口径相同，但仪器是重建的，而且重建过一次才达标。**
+规则直接 import 自 `build_medrand_corpus`（同一份对象，不是副本）。盲标码本当年写在工作流提示里没落盘，
+这次重建并**落到文件**（`work/医疗3/audit_codebook.md`）。为了证明重建复刻得了原仪器，除 989 个新歧义串外
+还重标了原来 1,192 串里的 300 串做校准：
+- **第一版：删/留结论只一致 78.7%，且偏差完全单向**——多删 0 串、少删 64 串，其中 71 串原仪器判 A、
+  重建版判 U。读那批串后定位到定义错误：**把「描述自己的症状」当成了用户键入的证据，而分诊表单的选项
+  本来就在描述症状**。
+- 补上「A 的识别 signature」（选项兜底词「都没有/不清楚/都不是」、无连接词的平列症状、纯检查数值罗列）后
+  **第二版：多数码 90.7%、删/留 91.3%、逐票 82.3%，Fleiss κ 0.748 → 0.838**。
+- **残余偏差 8.0pp，仍是单向偏保守**（原仪器删 73、重建版删 49，只多删 1）。必须修的理由是可比性：
+  仪器比另外两个快照宽松，就会把仪器差异算到快照头上。第一版产物留在 `audit_v1/`。
+- 新快照：11,464 → **11,252**（留存 98.2%，随机快照是 97.1%）；包装模板占比 **85.8%**（随机快照 75.4%）。
+
+**主要发现（三快照同一天，所以时间不是任何一对的混杂项）：**
+- **分层差异 > 界面差异，而且是两倍多。** L1 层 TVD：搜索随机 ↔ 助手随机（界面，两个产品）**0.147**；
+  助手随机 ↔ 助手头部（分层，**同一个产品、同一天**）**0.324**。
+- 助手的**头部是通用知识查询**，尾部才是个人化的临床问题：
+  「药品/保健品/食物信息与功效」头部 **30.88%** vs 随机 9.68%（+21.2pp）、
+  「医学名词/检查/疾病定义」21.86% vs 11.86%（+10.0pp）；
+  反过来「症状或体征的原因」8.14% vs 17.89%（−9.7pp）、
+  「判读个人测量值/检查结果」3.71% vs 11.36%（−7.7pp）。
+- 这与 医疗8 在**搜索侧**看到的头尾结构是同一个形状，现在在**同一个助手产品内部**独立复现了一次。
+
+**护栏：** 新快照没有运行自己的风控图层（第一层按行号对齐，只覆盖前 20,316 行）。补法：把
+`EXTRA_QUOTE_BLOCK["医疗3"]` 指到 医疗8 那条实测正则、`NAMED_DOCTOR` 复核规则扩到 医疗3、
+筛查名单取 **医疗8 + 医疗随机 + 本次硬规则命中**的并集（769 串）。最终 `未匹配数字 0 · 问题引文 0`，
+硬规则命中 137 行中**仍可引 0、已印进交付文档 0**。
+
+**派生目录不是运行：** `runs/health-pool3_scored3snap/gen01`，带 `_why.txt` 写明它没有 run_summary /
+run.log / llm_cache，**不要对它跑 `verify_run.py`**，以及那份复制来的运行工作簿只为定义页
+（逐行页只覆盖 20,316 行，与这里 31,568 行不对齐，所以 `p5_postprocess_run_xlsx` 不在链条里）。
+
+**顺手修的一个通用缺陷：** `p5_deliverables` 用 `src_x.exists()` 判断运行工作簿是否存在，而
+glob 落空时 `next(..., "")` 会让 `src_x` 变成运行**目录**，目录也 exists——于是 pd.ExcelFile 收到一个文件夹。
+改成 `.is_file()`，有工作簿的域行为不变。
+
+**回归：** 全量 **747 通过**、`ruff --select F` clean、887 份既有交付文件里 886 份哈希不变
+（唯一变的仍是按批次重写、只写不读的 `work/snapshot_classes_all.json`）。health-pool3 的运行目录与
+它的交付物一个字节都没动。
+
+**没做：** 按用户要求**不跑叙述工作流**（报告的散文段留空，表与图完整）；没做科室层的三快照版
+（那一层的码本与脚本都在，随时可以对 医疗3 跑一遍）。

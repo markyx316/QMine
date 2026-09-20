@@ -1,0 +1,7 @@
+a,b,why,n_a,n_b,tvd,cramers_v,n_sig_classes,emergent,receded,top_movers
+2025search,2026search,时间（搜索内部，2025→2026）,9998,9998,0.0713,0.0966,9,0,0,0 +4.2pp | 11 -2.5pp | 25 -2.0pp | 20 +0.7pp | 5 +0.6pp
+2026search,assistant_top,界面（同为头部流量）,9998,958,0.2323,0.1982,10,0,1,0 -13.7pp | 25 +8.1pp | 21 +6.8pp | 3 -1.6pp | 26 -1.6pp
+assistant_top,assistant_random,深度（助手头部→长尾）,958,998,0.4338,0.4886,15,1,0,0 -18.4pp | 5 +11.7pp | 25 -9.7pp | 20 +8.5pp | 9 +6.0pp
+2026search,assistant_random,界面+深度（不可单独归因）,9998,998,0.4554,0.2894,21,0,0,0 -32.1pp | 5 +11.7pp | 20 +7.5pp | 9 +5.1pp | 1 -4.7pp
+assistant_top,assistant_voice,输入方式（打字头部→语音）,958,1000,0.3759,0.4359,15,1,0,20 +13.3pp | 0 -9.9pp | 25 -9.3pp | 21 -5.8pp | 9 +5.3pp
+assistant_random,assistant_voice,输入方式（打字长尾→语音）,998,1000,0.2043,0.238,6,0,0,0 +8.5pp | 5 -6.7pp | 20 +4.8pp | 22 -2.8pp | 27 -2.1pp

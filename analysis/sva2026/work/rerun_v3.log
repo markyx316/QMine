@@ -1,0 +1,11 @@
+metrics done 17:31:01
+question_specificity done 17:31:02
+conv_markers done 17:31:02
+logodds done 17:31:04
+own_tax done 17:31:04
+overlap done 17:31:05
+assistant cols: ['query', 'bu_leaf', 'bu_leaf_name', 'bu_user_need', 'bu_leaf_pre_governance', 'bu_family_pre_governance', 'bu_family_final', 'bu_margin', 'bu_ambiguous', 'td_l1', 'td_l1_name', 'td_user_need', 'td_confidence', 'td_margin', 'td_ambiguous', 'td_decided_by', 'td_l2', 'ref_l1', 'ref_l2', 'run_id', 'generation', 'snapshot', 'l1', 'l2', 'weight', 'search_num', 'qlen', 'n_l1_same_string', 'flag_S1', 'flag_S2', 'flag_S3', 'flag_S4', 'flag_S5', 'flag_C1', 'flag_C2', 'flag_S2_long_high_pv', 'flag_bare_number', 'flag_wrapper_template', 'tier']
+search cols: ['domain', 'query', 'wise_pv', 'rank', 'td_l1', 'td_l1_name', 'bu_leaf_name', 'bu_family_final', 'flag_C1', 'flag_bare_number', 'flag_C2', 'flag_S5', 'tier']
+done
+pvw done
+nn done 17:33:43

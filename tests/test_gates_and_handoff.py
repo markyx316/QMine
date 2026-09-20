@@ -804,6 +804,99 @@ def test_a_row_nobody_labelled_is_not_agreement():
         "and must not be sent to the referee, which has no second opinion to weigh"
 
 
+def test_the_branch_join_guard_can_actually_build_its_gate(deps):
+    """The guard that catches a half-pipeline could not run at all.
+
+    `_require_both_branches` passed `blocking=True`, which is not a parameter of
+    `Deps.gate`. Nothing exercised it until `ppl-pool8` gen03 reached the join with
+    `p2b_gold` unfinished: the guard fired and raised `TypeError` instead of
+    returning the gate, so the run died on a traceback and the operator got neither
+    the missing-branch list nor the remediation. An error path nobody calls is an
+    error path nobody has tested — so call it.
+    """
+    from qmine.graph.nodes.topdown import _require_both_branches
+
+    out = _require_both_branches({"phase_status": {"p2a_taxonomy": "ok"}}, deps)
+    gate = out["gates"]["p2c_both_branches_arrived"]
+
+    # WHAT ACTUALLY CARRIES THE HALT IS THE RETURNED DICT, NOT THE GATE'S SEVERITY.
+    # An earlier version of this test asserted `gate.status != "PASSED" and not
+    # getattr(gate, "warn_only", False)` — both clauses are unfalsifiable: `GateStatus`
+    # is lowercase, so the uppercase comparison is always True, and `GateResult` has no
+    # `warn_only` field, so the getattr default is always False. Measured, this gate comes
+    # back `status="warned", blocking=False, halts_run=False`, because
+    # `p2c_both_branches_arrived` is not in `cfg.gates.blocking` — so the old assertion's
+    # own message ("it must be a blocking gate") was false of the object it inspected.
+    # Assert the mechanism that is real.
+    assert out.get("halted") is True, "a missing branch must halt the run"
+    assert out.get("halt_kind") == "branch_missing"
+    assert "p2b_gold" in out.get("halt_reason", ""), "the halt must name the branch that never ran"
+    assert gate.status == "warned", (
+        "the ledger severity of this gate: not passed, not skipped. It reads `warned` rather "
+        "than `failed` only because the name is absent from cfg.gates.blocking — the halt "
+        "itself travels in the returned dict, which the assertions above pin")
+    assert "p2b_gold" in str(gate.observed) or "p456_tree" in str(gate.observed), \
+        "the gate must name which branch phases never ran"
+    assert gate.remediation, "and must tell the operator what to do about it"
+    assert _require_both_branches({"phase_status": {}}, deps).get("halted") is True
+
+
+def test_the_active_learning_round_applies_the_same_two_protections(deps, monkeypatch):
+    """The round-2 batch built its gold rows without either round-1 protection.
+
+    On `ppl-pool8` the annotator omitted 22 of the 200 boundary rows. `a2 == b2 ==
+    UNLABELED` satisfied the equality, so each was recorded `agreed=True,
+    final="UNLABELED"`, cleared p2c's non-empty filter, and — 22 rows clearing the
+    5-fold support floor — WAS TRAINED AS A CLASS: an 18-code taxonomy shipped a
+    19-class classifier whose phantom class landed on 11 corpus rows and reached
+    five delivered documents. A row nobody labelled is missing data, not agreement,
+    and solo has no second reading to contradict an invented code.
+    """
+    import numpy as np
+    import pandas as pd
+
+    from qmine.graph.nodes import topdown
+    from qmine.ops.classify import UNLABELED
+    from qmine.records import GoldRow, Taxonomy, TaxonomyNode
+
+    codes = ["ASK_FACT", "COMPARE_TWO"]
+    texts = [f"第{i}个查询的写法差别" for i in range(80)]
+    df = pd.DataFrame({deps.cfg.data.text_column: texts})
+    rows = [GoldRow(query=texts[i], idx=i, label_a=codes[i % 2], label_b=codes[i % 2],
+                    final=codes[i % 2], agreed=True, n_annotators=1) for i in range(60)]
+    tax = Taxonomy(nodes=[TaxonomyNode(code=c, name=c, definition=c) for c in codes])
+
+    seen: dict[str, int] = {}
+
+    def _fake_annotate(ctx, queries, classes_txt, rules_txt, guide, d):
+        seen["n"] = len(queries)
+        # row 0: annotator omitted it.  row 1: a class that is not in this taxonomy
+        # and is too far from one to snap.  the rest: a real code.
+        out = []
+        for j in range(len(queries)):
+            out.append({"query": queries[j],
+                        "label": UNLABELED if j == 0 else ("ZZZ_NOT_A_CLASS" if j == 1 else codes[j % 2]),
+                        "rationale": "r"})
+        return out, None            # solo: one annotator
+
+    monkeypatch.setattr(topdown, "_annotate_both", _fake_annotate)
+    got = topdown._active_learning_round(
+        deps, object(), rows, df, "classes", "rules", tax,
+        np.array([r.idx for r in rows], dtype=np.int64))
+
+    assert got and seen.get("n"), "the round must actually have annotated a batch"
+    assert not any(r.final == UNLABELED for r in got), \
+        "the omission sentinel must never become a gold label — it trains as a class"
+    assert got[0].final == "" and not got[0].agreed, \
+        "a row nobody labelled is missing data, not agreement"
+    assert got[1].final == "" and got[1].label_a == UNLABELED, \
+        "an unrepairable off-schema label must leave the gold set, not teach a phantom class"
+    assert all(r.final in ("", *codes) for r in got), \
+        "every label that survives must be a code in this taxonomy"
+    assert any(r.final in codes and r.agreed for r in got), \
+        "and the protections must not empty the batch"
+
+
 def test_guide_repair_on_a_fresh_sample_keeps_the_refereed_rows():
     """Round 2 annotates DIFFERENT queries, so replacing the list is pure loss.
 

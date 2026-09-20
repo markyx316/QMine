@@ -1,0 +1,4 @@
+domain,source,pairs,same_intent,median_added
+医疗,assistant_random,188,0.06914893617021277,10.0
+医疗,assistant_top,216,0.13425925925925927,4.0
+医疗,assistant_voice,224,0.08482142857142858,8.0

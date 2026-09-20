@@ -24,9 +24,7 @@ from typing import Any
 import numpy as np
 from langgraph.types import Send
 
-from types import SimpleNamespace
-
-from ...agents.roles import AuditorAgent, NamerAgent, RiskSentinelAgent
+from ...agents.roles import AuditorAgent, NamerAgent, RiskReport, RiskSentinelAgent
 from ...ops.cards import (
     build_naming_cards,
     centroid_similarity_pairs,
@@ -214,7 +212,12 @@ def p7_audit(state: PipelineState, deps: Deps) -> dict[str, Any]:
         deps.emit(f"  ⚠ risk sentinel unavailable ({_why}) — no INDEPENDENT risk sweep "
                   f"this run; `p7_risk_independently_found` can only report the namers' "
                   f"own flags, which is not the same evidence")
-        risk = SimpleNamespace(findings=[])
+        # The SHAPE of the fallback is load-bearing, and getting it wrong cost a second
+        # paid run. `SimpleNamespace(findings=[])` satisfies the two lines directly below
+        # and then dies 50 lines later at `risk.model_dump()` — so the try/except above
+        # announced a graceful degradation and the run halted anyway, which is the exact
+        # outcome its comment says must not happen. Fall back to the real schema, empty.
+        risk = RiskReport(findings=[], clean=True, summary=f"sentinel unavailable ({_why})")
     deps.emit(f"  auditor: {len(audit.prescriptions)} prescriptions; "
               f"risk sentinel: {len(risk.findings)} findings")
 

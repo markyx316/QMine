@@ -1,0 +1,18 @@
+{
+ "domain": "医疗",
+ "n_rows": 22952,
+ "sources": {
+  "2025search": 9998,
+  "2026search": 9998,
+  "assistant_top": 958,
+  "assistant_random": 998,
+  "assistant_voice": 1000
+ },
+ "cramers_v_td_l1_name": 0.2008,
+ "n_classes_td_l1_name": 20,
+ "cramers_v_bu_family_final": 0.1636,
+ "n_classes_bu_family_final": 27,
+ "cramers_v_bu_leaf_name": 0.1795,
+ "n_classes_bu_leaf_name": 30,
+ "risk_total": 1147
+}

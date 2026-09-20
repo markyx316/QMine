@@ -1,0 +1,263 @@
+                               sample   n  distinct   A   B  C        metric   k  rate   lo    hi  rate_exclC  lo_exclC  hi_exclC  pv_weighted
+                          1_head_kept 300       299  21 245 34 miss rate A/n  21   7.0  4.6  10.5         7.9       5.2      11.8          6.1
+                       1_head_kept:金融  60        60   1  59  0 miss rate A/n   1   1.7  0.3   8.9         1.7       0.3       8.9          0.7
+                       1_head_kept:医疗  60        60   0  57  3 miss rate A/n   0   0.0  0.0   6.0         0.0       0.0       6.3          0.0
+                       1_head_kept:教育  60        60   4  32 24 miss rate A/n   4   6.7  2.6  15.9        11.1       4.4      25.3          4.0
+                       1_head_kept:影视  60        60   4  51  5 miss rate A/n   4   6.7  2.6  15.9         7.3       2.9      17.3          4.6
+                       1_head_kept:人物  60        60  12  46  2 miss rate A/n  12  20.0 11.8  31.8        20.7      12.3      32.8         26.0
+                          2_tail_kept 200       200  10 165 25 miss rate A/n  10   5.0  2.7   9.0         5.7       3.1      10.2          4.1
+                       2_tail_kept:金融  40        40   1  37  2 miss rate A/n   1   2.5  0.4  12.9         2.6       0.5      13.5          2.1
+                       2_tail_kept:医疗  40        40   1  38  1 miss rate A/n   1   2.5  0.4  12.9         2.6       0.5      13.2          2.0
+                       2_tail_kept:教育  40        40   1  36  3 miss rate A/n   1   2.5  0.4  12.9         2.7       0.5      13.8          1.7
+                       2_tail_kept:影视  40        40   4  31  5 miss rate A/n   4  10.0  4.0  23.1        11.4       4.5      26.0          9.1
+                       2_tail_kept:人物  40        40   3  23 14 miss rate A/n   3   7.5  2.6  19.9        11.5       4.0      29.0          7.1
+  3a_removed (v2 user -> v3 non-user) 150       150 145   4  1 precision A/n 145  96.7 92.4  98.6        97.3      93.3      99.0         99.4
+     3a_removed:C1_content_free:top1k   2         2   2   0  0 precision A/n   2 100.0 34.2 100.0       100.0      34.2     100.0        100.0
+  3a_removed:S3_card_passage:random1k   1         1   1   0  0 precision A/n   1 100.0 20.7 100.0       100.0      20.7     100.0        100.0
+3a_removed:S4_suggested_chip:random1k  85        85  81   3  1 precision A/n  81  95.3 88.5  98.2        96.4      90.0      98.8         95.6
+   3a_removed:S4_suggested_chip:top1k  42        42  42   0  0 precision A/n  42 100.0 91.6 100.0       100.0      91.6     100.0        100.0
+         3a_removed:S5_headline:top1k  20        20  19   1  0 precision A/n  19  95.0 76.4  99.1        95.0      76.4      99.1         96.9
+ 3a_restored (v2 non-user -> v3 user)   3         3   0   3  0 precision B/n   3 100.0 43.8 100.0       100.0      43.8     100.0        100.0
+                                3b_S4 100        99  96   3  1 precision A/n  96  96.0 90.2  98.4        97.0      91.5      99.0         99.9
+                       3b_S4:random1k  49        49  46   3  0 precision A/n  46  93.9 83.5  97.9        93.9      83.5      97.9         94.5
+                          3b_S4:top1k  51        50  50   0  1 precision A/n  50  98.0 89.7  99.7       100.0      92.9     100.0         99.9
+                                3c_S5 100       100  90  10  0 precision A/n  90  90.0 82.6  94.5        90.0      82.6      94.5         89.0
+                          3c_S5:top1k 100       100  90  10  0 precision A/n  90  90.0 82.6  94.5        90.0      82.6      94.5         89.0
+                       4a_search_kept 150       150   0 150  0 miss rate A/n   0   0.0  0.0   2.5         0.0       0.0       2.5          0.0
+                    4b_search_nonuser  22        22  15   6  1 precision A/n  15  68.2 47.3  83.6        71.4      50.0      86.2         76.5
+        4b_search_nonuser:S5_headline  22        22  15   6  1 precision A/n  15  68.2 47.3  83.6        71.4      50.0      86.2         76.5
+1_head_kept domain-weighted A 0.068 C 0.109 ; PV-share bootstrap 95%: [3.2 9.7]
+2_tail_kept domain-weighted A 0.050 C 0.123 ; PV-share bootstrap 95%: [1.8 6.8]
+
+== misses (n=31) ==
+                                                       qs domain category snapshot   pv tier v2_tier          why u_ds      sample
+                                                       你妈     教育     教育培训    top1k  727 user    user content_free  U13 1_head_kept
+                                                       什么     教育     教育培训    top1k  537 user    user content_free  U13 1_head_kept
+                                                       随便     教育     教育培训    top1k  326 user    user content_free  U13 1_head_kept
+                                                  AI做爆款视频     影视     影视动漫    top1k  186 user    user      feature  U13 1_head_kept
+                                        #爆款短剧火爆短剧来袭好看又上头#     影视     影视动漫    top1k  262 user    user    feed_copy  U13 1_head_kept
+                                               孙宇晨 我的女友景甜     人物       人物    top1k 1150 user    user     headline  U05 1_head_kept
+                                                  包贝尔疑似出轨     人物       人物    top1k  355 user    user     headline  U05 1_head_kept
+                                               景甜一夜涨粉3.1万     人物       人物    top1k  344 user    user     headline  U05 1_head_kept
+                                             覃伟中辞去深圳市市长职务     人物       人物    top1k  324 user    user     headline  U05 1_head_kept
+                                                宋丹丹菜市场被偶遇     人物       人物    top1k  320 user    user     headline  U05 1_head_kept
+                                                 景甜早期颜值好美     人物       人物    top1k  274 user    user     headline  U13 1_head_kept
+                                            黄晓明陈冠希同框状态差距大     人物       人物    top1k  246 user    user     headline  U05 1_head_kept
+                                              孙俪杨幂提名宴友好互动     人物       人物    top1k  172 user    user     headline  U05 1_head_kept
+                                       AI短剧《非妖哉》导演：1集成本1万     影视     影视动漫    top1k  166 user    user     headline  U04 1_head_kept
+                                              景甜财务曾为其扛事进去     人物       人物    top1k  134 user    user     headline  U12 1_head_kept
+                                            导演称吴镇宇转型老好人律师     人物       人物    top1k  124 user    user     headline  U05 1_head_kept
+                                              梅母去世梅艳芳遗产全捐     人物       人物    top1k  122 user    user     headline  U05 1_head_kept
+                                               歼轰7总师陈一坚逝世     人物       人物    top1k  117 user    user     headline  U05 1_head_kept
+                                              花开不设限拟邀杨幂闫妮     影视     影视动漫    top1k  108 user    user     headline  U05 1_head_kept
+                                                英伟达即将发布业绩     金融       金融    top1k   73 user    user     headline  U05 1_head_kept
+                                   我想对作文《《西游记》读后感》进行个性化编辑     教育     教育培训    top1k  338 user    user     template  U10 1_head_kept
+符合哺乳纲核心特征包括：‌胎生‌（胚胎在母体子宫内通过胎盘发育）；‌乳腺哺育‌（雌性具功能性乳腺，产后分泌乳汁）；     教育     教育培训 random1k    1 user    user         card  U04 2_tail_kept
+                     谢忠卫，现任江苏省徐州市交通运输局四级调研员。 谢忠卫之前在哪个单位任职     人物       人物 random1k    1 user    user         card  U03 2_tail_kept
+                                            有没有更多日本后宫动漫推荐     影视     影视动漫 random1k    1 user    user         chip  U08 2_tail_kept
+                                         马九斤和格格在剧中有哪些感人瞬间     影视     影视动漫 random1k    1 user    user         chip  U08 2_tail_kept
+                                        第50集里小蓝苏醒时有哪些感人瞬间     影视     影视动漫 random1k    1 user    user         chip  U08 2_tail_kept
+                                              蒋培是否公开过个人履历     人物       人物 random1k    1 user    user         chip  U05 2_tail_kept
+                                           崔丕军的出生年月有官方报道吗     人物       人物 random1k    1 user    user         chip  U05 2_tail_kept
+                                            神经病，脑残一言不合的智障     医疗       医疗 random1k    1 user    user content_free  U11 2_tail_kept
+                                  日元三年升值100%？广场协议后汇率变化全解析     金融       金融 random1k    1 user    user     headline  U04 2_tail_kept
+                                请帮我生成一个视频：1558558，比例为1:1。     影视     影视动漫 random1k    1 user    user     template  U10 2_tail_kept
+
+== kept_C (n=59) ==
+                      qs domain category snapshot   pv tier v2_tier          why u_ds      sample
+                       少     教育     教育培训    top1k 2028 user    user     fragment  U13 1_head_kept
+                       的     教育     教育培训    top1k 1874 user    user     fragment  U13 1_head_kept
+                       3     教育     教育培训    top1k 1499 user    user     fragment  U13 1_head_kept
+                       走     教育     教育培训    top1k 1296 user    user     fragment  U13 1_head_kept
+                       小     教育     教育培训    top1k 1265 user    user     fragment  U13 1_head_kept
+                       错     教育     教育培训    top1k 1249 user    user     fragment  U13 1_head_kept
+                     第二题     教育     教育培训    top1k 1029 user    user     fragment  U13 1_head_kept
+                       上     教育     教育培训    top1k  859 user    user     fragment  U13 1_head_kept
+                      年代     教育     教育培训    top1k  827 user    user     fragment  U02 1_head_kept
+                       开     教育     教育培训    top1k  783 user    user     fragment  U13 1_head_kept
+                     五年级     教育     教育培训    top1k  636 user    user     fragment  U02 1_head_kept
+                       5     教育     教育培训    top1k  567 user    user     fragment  U13 1_head_kept
+                       女     教育     教育培训    top1k  524 user    user     fragment  U13 1_head_kept
+                       七     教育     教育培训    top1k  509 user    user     fragment  U13 1_head_kept
+                       把     教育     教育培训    top1k  406 user    user     fragment  U13 1_head_kept
+                     六年级     教育     教育培训    top1k  388 user    user     fragment  U13 1_head_kept
+                      坐下     教育     教育培训    top1k  388 user    user     fragment  U13 1_head_kept
+                       需     教育     教育培训    top1k  343 user    user     fragment  U13 1_head_kept
+                       v     教育     教育培训    top1k  314 user    user     fragment  U13 1_head_kept
+                      站着     教育     教育培训    top1k  312 user    user     fragment  U13 1_head_kept
+                      后背     医疗       医疗    top1k  249 user    user     fragment  U02 1_head_kept
+                     初中生     人物       人物    top1k  245 user    user     fragment  U02 1_head_kept
+                      道歉     影视     影视动漫    top1k  143 user    user     fragment  U13 1_head_kept
+                    领导班子     人物       人物    top1k  120 user    user     fragment  U02 1_head_kept
+                     好看的     影视     影视动漫    top1k  104 user    user     fragment  U13 1_head_kept
+                      片子     影视     影视动漫    top1k  103 user    user     fragment  U02 1_head_kept
+                使用更高级的表达     教育     教育培训    top1k 1123 user    user origin_equal  U11 1_head_kept
+                      退出     教育     教育培训    top1k  661 user    user origin_equal  U11 1_head_kept
+              帮我画 教师节手抄报     教育     教育培训    top1k  441 user    user origin_equal  U10 1_head_kept
+          这个谜语还有其他可能的答案吗     教育     教育培训    top1k  338 user    user origin_equal  U11 1_head_kept
+             《蝉》的剧情简介是什么     影视     影视动漫    top1k  199 user    user origin_equal  U04 1_head_kept
+         《我们的少年时代2》有哪些亮点     影视     影视动漫    top1k  199 user    user origin_equal  U04 1_head_kept
+               这个处方有副作用吗     医疗       医疗    top1k  129 user    user origin_equal  U07 1_head_kept
+              这个处方适合哪些人群     医疗       医疗    top1k  122 user    user origin_equal  U13 1_head_kept
+                     衣全白     教育     教育培训 random1k    3 user    user     fragment  U02 2_tail_kept
+                  晚上8点左右     教育     教育培训 random1k    2 user    user     fragment  U13 2_tail_kept
+                   这个小脚丫     人物       人物 random1k    1 user    user     fragment  U13 2_tail_kept
+                     美女男     人物       人物 random1k    1 user    user     fragment  U13 2_tail_kept
+                     arc     人物       人物 random1k    1 user    user     fragment  U02 2_tail_kept
+          孟景伟离开安庆市的原因是什么     人物       人物 random1k    2 user    user origin_equal  U05 2_tail_kept
+      金控财智中心是否有可能改造为感知中心     金融       金融 random1k    1 user    user origin_equal  U07 2_tail_kept
+             授权代办方式是否更便捷     金融       金融 random1k    1 user    user origin_equal  U13 2_tail_kept
+       李清贤医生在山东省心内科的地位如何     医疗       医疗 random1k    1 user    user origin_equal  U04 2_tail_kept
+         山西华严寺还有哪些著名诗人题咏     教育     教育培训 random1k    1 user    user origin_equal  U08 2_tail_kept
+            武动乾坤第七季有哪些看点     影视     影视动漫 random1k    1 user    user origin_equal  U08 2_tail_kept
+         《赤霞雕流年》的豆瓣评分是多少     影视     影视动漫 random1k    1 user    user origin_equal  U03 2_tail_kept
+        苗侨伟是否记得最难忘的穆念慈戏份     影视     影视动漫 random1k    1 user    user origin_equal  U03 2_tail_kept
+           第24集里许小成受伤严重吗     影视     影视动漫 random1k    1 user    user origin_equal  U03 2_tail_kept
+           如果队员强行检查手镯会怎样     影视     影视动漫 random1k    1 user    user origin_equal  U13 2_tail_kept
+          李林和陈海峰分管哪些具体工作     人物       人物 random1k    1 user    user origin_equal  U03 2_tail_kept
+             庞红义的教育背景是什么     人物       人物 random1k    1 user    user origin_equal  U03 2_tail_kept
+       李汉晋在山西交通企业协会任职多久了     人物       人物 random1k    1 user    user origin_equal  U03 2_tail_kept
+              陈彬煌现在在哪里任职     人物       人物 random1k    1 user    user origin_equal  U05 2_tail_kept
+        武尚志离休后有没有被追授更高军衔     人物       人物 random1k    1 user    user origin_equal  U05 2_tail_kept
+          卢志强在郑州还有哪些关联企业     人物       人物 random1k    1 user    user origin_equal  U08 2_tail_kept
+          曾国藩的三甲进士身份有何影响     人物       人物 random1k    1 user    user origin_equal  U04 2_tail_kept
+能提供更多2026年中国最长寿的10位名人信息吗     人物       人物 random1k    1 user    user origin_equal  U08 2_tail_kept
+         刘乃贵毕业后最初在哪个机构任职     人物       人物 random1k    1 user    user origin_equal  U03 2_tail_kept
+        陕西铁塔领导班子是否有新成员加入     人物       人物 random1k    1 user    user origin_equal  U05 2_tail_kept
+
+== wrong_removed (n=5) ==
+                                                                  qs domain category snapshot  pv              tier v2_tier          why u_ds     sample lab
+                                                      叶建春落马后江西省长由谁接任     人物       人物    top1k 188       S5_headline    user         user  U05 3a_changed   B
+                                         能否增加一些怪盗基德半夜偷跑出偷宝石，还受伤的过程吗？     影视     影视动漫 random1k   1 S4_suggested_chip    user         user  U10 3a_changed   B
+                                             能否把第三道题，第四道题，第五道题短到20个字     教育     教育培训 random1k   1 S4_suggested_chip    user         user  U11 3a_changed   B
+及管理部门在对某企业进行安全检查中发现，该企业重大危险源未登记建档，责令限期整改后逾期仍未改正。根据安全生产法的规定，应对该企业a是暂停     教育     教育培训 random1k   1 S4_suggested_chip    user         user  U09 3a_changed   B
+                                                         能否用这三个词造个句子     教育     教育培训 random1k   1 S4_suggested_chip    user origin_equal  U10 3a_changed   C
+
+== wrong_restored (n=0) ==
+Empty DataFrame
+Columns: [qs, domain, category, snapshot, pv, tier, v2_tier, why, u_ds, sample, lab]
+Index: []
+
+== wrong_3b_S4 (n=4) ==
+              qs domain category snapshot  pv              tier v2_tier          why u_ds sample lab
+    能否对比下南通中公和华图    NaN       软件 random1k   1 S4_suggested_chip    user         user  NaN  3b_S4   B
+        可否配十安充电器    NaN     交通出行 random1k   1 S4_suggested_chip    user         user  NaN  3b_S4   B
+      能否把题目文字发给我    NaN     书籍文档 random1k   1 S4_suggested_chip    user         user  NaN  3b_S4   B
+能否用大白话解释天翼账号隐私政策    NaN       通信    top1k   8 S4_suggested_chip    user origin_equal  NaN  3b_S4   C
+
+== wrong_3c_S5 (n=10) ==
+           qs domain category snapshot  pv        tier v2_tier  why u_ds sample lab
+台风“沙德尔”的最新路径图    NaN       政务    top1k 878 S5_headline    user user  NaN  3c_S5   B
+   四川8633坠机事故    NaN       新闻    top1k 864 S5_headline    user user  NaN  3c_S5   B
+ 西藏吉隆县泥石流救援进展    NaN       新闻    top1k 375 S5_headline    user user  NaN  3c_S5   B
+     油价调整最新消息    NaN       新闻    top1k 323 S5_headline    user user  NaN  3c_S5   B
+   吉隆口岸受灾前后对比    NaN       新闻    top1k 247 S5_headline    user user  NaN  3c_S5   B
+ 普京登岛事件后续最新消息    NaN       新闻    top1k 170 S5_headline    user user  NaN  3c_S5   B
+   工龄工资调整最新通知    NaN       新闻    top1k 103 S5_headline    user user  NaN  3c_S5   B
+ A 股印花税最新调整政策    NaN       新闻    top1k 103 S5_headline    user user  NaN  3c_S5   B
+ 大连英博北京国安冲突后续    NaN       新闻    top1k 102 S5_headline    user user  NaN  3c_S5   B
+  大连车主被锁车最新进展    NaN       新闻    top1k  98 S5_headline    user user  NaN  3c_S5   B
+
+== wrong_4b_search_nonuser (n=7) ==
+          qs domain category   snapshot   pv        tier v2_tier      why u_ds            sample lab
+召唤魅魔结果是义魔母来了     影视       影视 search2026 1169 S5_headline    user     user  NaN 4b_search_nonuser   B
+冯小刚对韩红言论有何回应     人物       人物 search2026  608 S5_headline    user     user  NaN 4b_search_nonuser   B
+        妹爷去世     人物       人物 search2026  322 S5_headline    user     user  NaN 4b_search_nonuser   B
+   “七一勋章”获得者     人物       人物 search2026  247 S5_headline    user     user  NaN 4b_search_nonuser   B
+      “今日金价”     金融       金融 search2026  206 S5_headline    user     user  NaN 4b_search_nonuser   B
+       江泽民去世     人物       人物 search2026  187 S5_headline    user     user  NaN 4b_search_nonuser   B
+          去世     人物       人物 search2026  242 S5_headline    user fragment  NaN 4b_search_nonuser   C
+
+== dist_1_head_kept_A: total q = 7.0% (Wilson upper 10.5%) ==
+u_ds  share_kept  n_sample_in_class  n_A  within_class_A  within_lo  within_hi      q  share_after  shift_pp  max_inflation_pp  max_deflation_pp
+ U01      0.0291                  8    0          0.0000     0.0000     0.3244 0.0000       0.0312   -0.2187            1.2433            0.3396
+ U02      0.3034                 85    0          0.0000     0.0000     0.0432 0.0000       0.3262   -2.2837            0.8920            3.5457
+ U03      0.0952                 29    0          0.0000     0.0000     0.1170 0.0000       0.1024   -0.7166            1.1586            1.1126
+ U04      0.1197                 32    1          0.0312     0.0055     0.1574 0.0033       0.1251   -0.5426            1.6718            1.3912
+ U05      0.0395                 19   12          0.6316     0.4104     0.8085 0.0400       0.0000    3.9471            3.9471            0.3598
+ U06      0.0282                  6    0          0.0000     0.0000     0.3903 0.0000       0.0303   -0.2122            1.2444            0.3295
+ U07      0.0345                  6    0          0.0000     0.0000     0.3903 0.0000       0.0371   -0.2595            1.2364            0.4030
+ U08      0.0540                 16    0          0.0000     0.0000     0.1936 0.0000       0.0581   -0.4065            1.2114            0.6311
+ U09      0.0824                 23    0          0.0000     0.0000     0.1431 0.0000       0.0886   -0.6203            1.1750            0.9631
+ U10      0.0217                  6    1          0.1667     0.0301     0.5635 0.0033       0.0197    0.1952            1.8579            0.2520
+ U11      0.0282                  8    0          0.0000     0.0000     0.3244 0.0000       0.0303   -0.2122            1.2444            0.3295
+ U12      0.0059                  2    1          0.5000     0.0945     0.9055 0.0033       0.0027    0.3143            0.5856            0.0680
+ U13      0.1583                 60    6          0.1000     0.0466     0.2015 0.0200       0.1487    0.9589            3.7764            1.6875
+
+== dist_1_head_kept_C: total q = 11.3% (Wilson upper 15.4%) ==
+u_ds  share_kept  n_sample_in_class  n_C  within_class_C  within_lo  within_hi      q  share_after  shift_pp  max_inflation_pp  max_deflation_pp
+ U01      0.0291                  8    0          0.0000     0.0000     0.3244 0.0000       0.0328   -0.3715            1.2433            0.5298
+ U02      0.3034                 85    6          0.0706     0.0328     0.1456 0.0200       0.3196   -1.6225            3.1254            5.2015
+ U03      0.0952                 29    0          0.0000     0.0000     0.1170 0.0000       0.1074   -1.2169            1.1586            1.7357
+ U04      0.1197                 32    2          0.0625     0.0173     0.2015 0.0067       0.1275   -0.7783            2.1626            2.1566
+ U05      0.0395                 19    0          0.0000     0.0000     0.1682 0.0000       0.0445   -0.5045            1.2300            0.7196
+ U06      0.0282                  6    0          0.0000     0.0000     0.3903 0.0000       0.0318   -0.3604            1.2444            0.5140
+ U07      0.0345                  6    1          0.1667     0.0301     0.5635 0.0033       0.0351   -0.0648            1.8336            0.6263
+ U08      0.0540                 16    0          0.0000     0.0000     0.1936 0.0000       0.0609   -0.6902            1.2114            0.9845
+ U09      0.0824                 23    0          0.0000     0.0000     0.1431 0.0000       0.0929   -1.0534            1.1750            1.5025
+ U10      0.0217                  6    1          0.1667     0.0301     0.5635 0.0033       0.0207    0.0987            1.8579            0.3939
+ U11      0.0282                  8    3          0.3750     0.1368     0.6943 0.0100       0.0205    0.7675            2.8193            0.5026
+ U12      0.0059                  2    0          0.0000     0.0000     0.6576 0.0000       0.0066   -0.0748            0.5856            0.1068
+ U13      0.1583                 60   21          0.3500     0.2417     0.4764 0.0700       0.0996    5.8711            9.8363            2.0209
+
+== dist_2_tail_kept_A: total q = 5.0% (Wilson upper 9.0%) ==
+u_ds  share_kept  n_sample_in_class  n_A  within_class_A  within_lo  within_hi     q  share_after  shift_pp  max_inflation_pp  max_deflation_pp
+ U01      0.0041                  1    0          0.0000     0.0000     0.7935 0.000       0.0043   -0.0215            0.4092            0.0403
+ U02      0.0520                 14    0          0.0000     0.0000     0.2153 0.000       0.0547   -0.2736            1.8210            0.5114
+ U03      0.1490                 33    1          0.0303     0.0054     0.1532 0.005       0.1515   -0.2577            2.4312            1.4513
+ U04      0.1488                 26    2          0.0769     0.0214     0.2414 0.010       0.1461    0.2697            3.1535            1.4188
+ U05      0.0864                 22    2          0.0909     0.0253     0.2782 0.010       0.0804    0.5981            3.3847            0.8236
+ U06      0.0469                 14    0          0.0000     0.0000     0.2153 0.000       0.0493   -0.2466            1.8308            0.4611
+ U07      0.1410                 19    0          0.0000     0.0000     0.1682 0.000       0.1484   -0.7420            1.6500            1.3872
+ U08      0.0952                 23    3          0.1304     0.0454     0.3213 0.015       0.0844    1.0782            4.0821            0.8828
+ U09      0.0636                  8    0          0.0000     0.0000     0.3244 0.000       0.0670   -0.3349            1.7986            0.6262
+ U10      0.0587                 14    1          0.0714     0.0127     0.3147 0.005       0.0566    0.2172            2.6890            0.5721
+ U11      0.0241                  3    1          0.3333     0.0615     0.7923 0.005       0.0202    0.3992            2.4146            0.2352
+ U12      0.0108                  3    0          0.0000     0.0000     0.5615 0.000       0.0114   -0.0571            1.0845            0.1067
+ U13      0.1195                 20    0          0.0000     0.0000     0.1611 0.000       0.1258   -0.6290            1.6913            1.1758
+
+== dist_2_tail_kept_C: total q = 12.5% (Wilson upper 17.8%) ==
+u_ds  share_kept  n_sample_in_class  n_C  within_class_C  within_lo  within_hi     q  share_after  shift_pp  max_inflation_pp  max_deflation_pp
+ U01      0.0041                  1    0          0.0000     0.0000     0.7935 0.000       0.0047   -0.0585            0.4092            0.0886
+ U02      0.0520                 14    2          0.1429     0.0401     0.3994 0.010       0.0480    0.4004            3.5120            1.1082
+ U03      0.1490                 33    7          0.2121     0.1068     0.3775 0.035       0.1302    1.8719            6.4520            2.9170
+ U04      0.1488                 26    2          0.0769     0.0214     0.2414 0.010       0.1586   -0.9823            3.1535            3.1720
+ U05      0.0864                 22    4          0.1818     0.0731     0.3852 0.020       0.0758    1.0521            4.8378            1.7881
+ U06      0.0469                 14    0          0.0000     0.0000     0.2153 0.000       0.0536   -0.6694            1.8308            1.0148
+ U07      0.1410                 19    1          0.0526     0.0094     0.2464 0.005       0.1554   -1.4427            2.4540            3.0382
+ U08      0.0952                 23    4          0.1739     0.0698     0.3714 0.020       0.0859    0.9264            4.7912            1.9703
+ U09      0.0636                  8    0          0.0000     0.0000     0.3244 0.000       0.0727   -0.9091            1.7986            1.3782
+ U10      0.0587                 14    0          0.0000     0.0000     0.2153 0.000       0.0671   -0.8390            1.8080            1.2718
+ U11      0.0241                  3    0          0.0000     0.0000     0.5615 0.000       0.0276   -0.3449            1.8744            0.5229
+ U12      0.0108                  3    0          0.0000     0.0000     0.5615 0.000       0.0124   -0.1549            1.0845            0.2349
+ U13      0.1195                 20    5          0.2500     0.1119     0.4687 0.025       0.1080    1.1500            5.3400            2.4321
+
+== dist_4a_search_kept_A: total q = 0.0% (Wilson upper 2.5%) ==
+u_ds  share_kept  n_sample_in_class  n_A  within_class_A  within_lo  within_hi   q  share_after  shift_pp  max_inflation_pp  max_deflation_pp
+ U01      0.0644                 12    0             0.0        0.0     0.2425 0.0       0.0644       0.0            2.3960            0.1650
+ U02      0.4443                 58    0             0.0        0.0     0.0621 0.0       0.4443       0.0            1.4233            1.1378
+ U03      0.1099                 23    0             0.0        0.0     0.1431 0.0       0.1099       0.0            2.2797            0.2814
+ U04      0.2325                 36    0             0.0        0.0     0.0964 0.0       0.2325       0.0            1.9655            0.5955
+ U05      0.0022                  1    0             0.0        0.0     0.7935 0.0       0.0022       0.0            0.2201            0.0056
+ U06      0.0092                  2    0             0.0        0.0     0.6576 0.0       0.0092       0.0            0.9206            0.0236
+ U07      0.0116                  4    0             0.0        0.0     0.4899 0.0       0.0116       0.0            1.1607            0.0297
+ U08      0.0204                  2    0             0.0        0.0     0.6576 0.0       0.0204       0.0            2.0412            0.0523
+ U09      0.0885                 10    0             0.0        0.0     0.2775 0.0       0.0885       0.0            2.3345            0.2265
+ U10      0.0008                  0    0             NaN        NaN        NaN 0.0       0.0008       0.0            0.0800            0.0021
+ U12      0.0076                  1    0             0.0        0.0     0.7935 0.0       0.0076       0.0            0.7605            0.0195
+ U13      0.0086                  1    0             0.0        0.0     0.7935 0.0       0.0086       0.0            0.8605            0.0220
+
+== dist_4a_search_kept_C: total q = 0.0% (Wilson upper 2.5%) ==
+u_ds  share_kept  n_sample_in_class  n_C  within_class_C  within_lo  within_hi   q  share_after  shift_pp  max_inflation_pp  max_deflation_pp
+ U01      0.0644                 12    0             0.0        0.0     0.2425 0.0       0.0644       0.0            2.3960            0.1650
+ U02      0.4443                 58    0             0.0        0.0     0.0621 0.0       0.4443       0.0            1.4233            1.1378
+ U03      0.1099                 23    0             0.0        0.0     0.1431 0.0       0.1099       0.0            2.2797            0.2814
+ U04      0.2325                 36    0             0.0        0.0     0.0964 0.0       0.2325       0.0            1.9655            0.5955
+ U05      0.0022                  1    0             0.0        0.0     0.7935 0.0       0.0022       0.0            0.2201            0.0056
+ U06      0.0092                  2    0             0.0        0.0     0.6576 0.0       0.0092       0.0            0.9206            0.0236
+ U07      0.0116                  4    0             0.0        0.0     0.4899 0.0       0.0116       0.0            1.1607            0.0297
+ U08      0.0204                  2    0             0.0        0.0     0.6576 0.0       0.0204       0.0            2.0412            0.0523
+ U09      0.0885                 10    0             0.0        0.0     0.2775 0.0       0.0885       0.0            2.3345            0.2265
+ U10      0.0008                  0    0             NaN        NaN        NaN 0.0       0.0008       0.0            0.0800            0.0021
+ U12      0.0076                  1    0             0.0        0.0     0.7935 0.0       0.0076       0.0            0.7605            0.0195
+ U13      0.0086                  1    0             0.0        0.0     0.7935 0.0       0.0086       0.0            0.8605            0.0220

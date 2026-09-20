@@ -1,0 +1,6 @@
+domain,source,pairs,same_intent,median_added
+影视,assistant_random,264,0.26515151515151514,10.5
+影视,assistant_top,250,0.596,6.0
+金融,assistant_random,216,0.22685185185185186,10.0
+金融,assistant_top,361,0.5069252077562327,4.0
+金融,assistant_voice,385,0.2701298701298701,9.0

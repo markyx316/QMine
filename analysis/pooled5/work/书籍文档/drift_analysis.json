@@ -1,0 +1,3205 @@
+{
+  "snapshots": [
+    "AI助手",
+    "搜索"
+  ],
+  "inventory": [
+    {
+      "snapshot": "AI助手",
+      "rows": 1803,
+      "distinct_queries": 1803,
+      "weight_total": 20000.0
+    },
+    {
+      "snapshot": "搜索",
+      "rows": 19983,
+      "distinct_queries": 14907,
+      "weight_total": 20000.0
+    }
+  ],
+  "query_churn": {
+    "comparable": true,
+    "snapshot_a": "AI助手",
+    "snapshot_b": "搜索",
+    "distinct_a": 1803,
+    "distinct_b": 14907,
+    "shared": 76,
+    "jaccard": 0.0046,
+    "shared_weight_share_a": 0.0467,
+    "shared_weight_share_b": 0.0459
+  },
+  "by_label": {
+    "td_l1": {
+      "comparable": true,
+      "snapshot_a": "AI助手",
+      "snapshot_b": "搜索",
+      "rows_a": 1803,
+      "rows_b": 19983,
+      "n_classes": 20,
+      "cramers_v": 0.6124,
+      "total_variation_weight": 0.6762,
+      "total_variation_rows": 0.675,
+      "n_comparisons": 6,
+      "stable": [
+        {
+          "label": "CONTEXT_DEPENDENT_REVISION_OR_FOLLOWUP",
+          "rows_a": 622,
+          "rows_b": 385,
+          "row_share_a": 0.34498,
+          "row_share_b": 0.01927,
+          "row_share_delta_pp": -32.571,
+          "weight_share_a": 0.38991,
+          "weight_share_b": 0.02506,
+          "weight_share_delta_pp": -36.486,
+          "z_row_share": -63.09,
+          "delta_concentration": {
+            "n_distinct_queries": 898,
+            "top1_share_of_delta": 0.0337,
+            "top5_share_of_delta": 0.1021,
+            "hhi_of_delta": 0.0046,
+            "top_queries": [
+              {
+                "query": "少一点",
+                "delta": -278.79
+              },
+              {
+                "query": "这是底款",
+                "delta": -167.64
+              },
+              {
+                "query": "短一点",
+                "delta": -148.78
+              },
+              {
+                "query": "简单一点",
+                "delta": -142.58
+              },
+              {
+                "query": "简短一点",
+                "delta": -106.45
+              }
+            ]
+          }
+        },
+        {
+          "label": "OBTAIN_READY_TO_POST_COPY",
+          "rows_a": 405,
+          "rows_b": 2182,
+          "row_share_a": 0.22463,
+          "row_share_b": 0.10919,
+          "row_share_delta_pp": -11.543,
+          "weight_share_a": 0.2264,
+          "weight_share_b": 0.11855,
+          "weight_share_delta_pp": -10.784,
+          "z_row_share": -14.51,
+          "delta_concentration": {
+            "n_distinct_queries": 1971,
+            "top1_share_of_delta": 0.0738,
+            "top5_share_of_delta": 0.1312,
+            "hhi_of_delta": 0.0082,
+            "top_queries": [
+              {
+                "query": "再写3条更短的短句文案",
+                "delta": -477.79
+              },
+              {
+                "query": "七月你好文案",
+                "delta": 190.05
+              },
+              {
+                "query": "新学期开学寄语",
+                "delta": -67.25
+              },
+              {
+                "query": "感谢老师辛苦付出的感谢话",
+                "delta": 58.65
+              },
+              {
+                "query": "7月最火文案短句",
+                "delta": 56.01
+              }
+            ]
+          }
+        },
+        {
+          "label": "VENT_SEEK_EMPATHY",
+          "rows_a": 230,
+          "rows_b": 44,
+          "row_share_a": 0.12757,
+          "row_share_b": 0.0022,
+          "row_share_delta_pp": -12.536,
+          "weight_share_a": 0.09951,
+          "weight_share_b": 0.00159,
+          "weight_share_delta_pp": -9.793,
+          "z_row_share": -45.75,
+          "delta_concentration": {
+            "n_distinct_queries": 266,
+            "top1_share_of_delta": 0.0166,
+            "top5_share_of_delta": 0.0498,
+            "hhi_of_delta": 0.0045,
+            "top_queries": [
+              {
+                "query": "他坐在房车上的沙发上。",
+                "delta": -33.53
+              },
+              {
+                "query": "你当奈克瑟斯的姬矢准、千树怜、西条凪、孤门一辉、真木舜一、橘小百合怎么样？我名霄月凌枫（19岁，女的）可以先聊一下…₍ᐢ.ˬ.⑅ᐢ₎（坐在街道的椅子上玩游戏）有动静？（怔了一下，一只小型佩德隆冲了过来）我去！是异生兽？！（瞬间躲开佩德隆掏出枪击中消灭）解决了😎（抬头看了一下远处收起枪）有人过来了？（｀Δ´）！（转身迅速的消失了）有点爽了…꒰ʕᓀᆺᓂʔ꒱（一个人靠在天台望着热闹的广场）",
+                "delta": -16.76
+              },
+              {
+                "query": "（我撇开花球一脸震惊）副队你是不怕死还是爱添乱……",
+                "delta": -16.76
+              },
+              {
+                "query": "（我在园区里巡逻着）",
+                "delta": -16.76
+              },
+              {
+                "query": "不弄弄通的说两个否定问题，应该具体问题具体确定否定还是肯定啊？",
+                "delta": -16.76
+              }
+            ]
+          }
+        },
+        {
+          "label": "GENERATE_OR_EDIT_IMAGE",
+          "rows_a": 82,
+          "rows_b": 8,
+          "row_share_a": 0.04548,
+          "row_share_b": 0.0004,
+          "row_share_delta_pp": -4.508,
+          "weight_share_a": 0.04335,
+          "weight_share_b": 0.00026,
+          "weight_share_delta_pp": -4.309,
+          "z_row_share": -28.58,
+          "delta_concentration": {
+            "n_distinct_queries": 87,
+            "top1_share_of_delta": 0.1136,
+            "top5_share_of_delta": 0.2762,
+            "hhi_of_delta": 0.0293,
+            "top_queries": [
+              {
+                "query": "去掉水印",
+                "delta": -99.09
+              },
+              {
+                "query": "生成图片",
+                "delta": -69.45
+              },
+              {
+                "query": "帮我画 小仓鼠",
+                "delta": -33.53
+              },
+              {
+                "query": "生成9:16竖版的",
+                "delta": -19.81
+              },
+              {
+                "query": "画出来",
+                "delta": -19.03
+              }
+            ]
+          }
+        },
+        {
+          "label": "COMPOSE_OR_REVISE_TEXT_ON_DEMAND",
+          "rows_a": 93,
+          "rows_b": 152,
+          "row_share_a": 0.05158,
+          "row_share_b": 0.00761,
+          "row_share_delta_pp": -4.397,
+          "weight_share_a": 0.04457,
+          "weight_share_b": 0.00537,
+          "weight_share_delta_pp": -3.919,
+          "z_row_share": -16.96,
+          "delta_concentration": {
+            "n_distinct_queries": 211,
+            "top1_share_of_delta": 0.0422,
+            "top5_share_of_delta": 0.1265,
+            "hhi_of_delta": 0.0111,
+            "top_queries": [
+              {
+                "query": "帮我生成美丽十九岁非常有钱富婆孕妈待产涂着红嘴唇穿着孕妇粉色内衣和内裤披头散发露着肚子跪在阳台地面上偷偷的怕被老公发现陪大宝写作业大宝左手放在孕肚上老公不让大宝和孕妈玩把孕妈关在笼子里柏乡中兴华府小区图片",
+                "delta": -41.91
+              },
+              {
+                "query": "如果列宁和慈禧太后是邻居，太后请来了一大批封建地主，太后恢复了封建礼教和封建规矩，地主虐待列宁把列宁关了起来，列宁拿着马克思主义，他们不给列宁饭吃，个个封建地主和地主婆面色苍白，太后也面色苍白，呆在古宅里，仿佛一个个僵尸，工人和农民厌恶这些人，这些人面色苍白，还摆着架子，工人和农民喜欢年轻的巴伦特朗普，小唐纳德特朗普，伊万卡特朗普，肯尼迪儿子小约翰肯尼迪，肯尼迪外甥约翰施罗伯格，比尔盖茨女儿菲比盖茨和珍妮弗盖茨，马斯克小儿子X，年轻的小洛克菲勒，普京女儿叶卡捷琳娜和玛利亚，叶利钦女儿叶琳娜和塔季扬娜，英国夏洛特公主，路易斯小王子，西班牙莱昂诺尔公主和索菲亚公主，荷兰艾莉西亚公主和阿丽亚娜公主，比利时伊丽莎白公主，埃莱奥诺雷公主，伊曼纽尔王子，瑞典埃斯特拉公主和奥斯卡王子，年轻的贾斯汀特鲁多，这些人不到25岁，工人和农民引进这批人，工人和农民认为他们能驱鬼，太后暴怒继续请来了一大批面色苍白的地主婆和太监，工人和农民请来了挪威英格丽德公主，丹麦伊莎贝拉公主，约瑟芬公主，克里斯蒂安公主，卢森堡夏尔王子，摩纳哥王子安德烈卡拉西奇，列支郭士登王子阿洛伊斯，沙特王子萨勒姆，卡塔尔小王子，年轻的安东尼布林肯，阿联酋王子谢赫和拉希德，约旦伊曼公主，萨尔玛公主，科威特埃米尔萨巴赫，巴林阿勒哈利法王子，阿曼齐亚赞王子，年轻的巴沙尔阿塞德，本雅明内塔尼亚胡，吉拉德阿尔丹，雷杰普阿尔多安，卡娅卡拉斯，冯德莱恩，爱丽丝魏德尔，叶海亚，这些人比工人和农民小30和40多少，太后又请来了地主，工人和农民请来了年轻的季莫申科，波罗申科，卢卡申科儿子尼古拉卢卡申科，吕克贝特，桑娜马林，梅洛尼，桑拿马琳，米歇尔马丁，撒切尔夫人孙女阿曼达，哈梅内伊儿子，霍梅尼孙子哈桑，阿富汗穆罕默德加尼，萨达姆女儿拉加德侯赛因，卡扎菲女儿艾莎卡扎菲，年轻的塞巴斯蒂安库尔茨，安杰伊杜达女儿金加杜达，年轻的塞以达米尔济约耶娃，摩洛哥公主拉拉，年轻的莫迪，年轻的穆尼布马斯里，年轻的莱拉阿利耶娃，年轻的法赫德哈里里，年轻的让萨科齐和皮埃尔萨科齐兄弟二人，年前的谢尔达尔，最后太后和封建地主都没有了，列宁被工人和农民放了出来，工人和农民不喜欢太后和地主这些僵尸，工人和农民抱着请来的人，太后和地主暴怒说大胆，工人和农民枪毙地主，太后和李莲英要来搞复辟，二人也被工人和农民击毙，封建主义被清除根基也被拔起来了，因为太后和地主除了面色苍白，还搞什么闹鬼论，但抱着人不相信有鬼把太后揭穿了，太后和地主的根基也没有了，地主和太后的红衣厉鬼论没有了，工人和农民依然把太后地主视为厉鬼来源，再也没有封建地主了，马克思会把社区视为什么",
+                "delta": -25.15
+              },
+              {
+                "query": "夏天跑步的朋友圈怎么发",
+                "delta": -25.15
+              },
+              {
+                "query": "请帮我写一篇小学科学实验室管理工作计划农村版",
+                "delta": -16.76
+              },
+              {
+                "query": "帮我画 众多穿职业套装红色花棉袜黑色高跟皮鞋孕妇美女堆叠在地上装死图片",
+                "delta": -16.76
+              }
+            ]
+          }
+        },
+        {
+          "label": "REQUEST_EXPLICIT_OR_SEXUAL_CONTENT",
+          "rows_a": 52,
+          "rows_b": 188,
+          "row_share_a": 0.02884,
+          "row_share_b": 0.00941,
+          "row_share_delta_pp": -1.943,
+          "weight_share_a": 0.03141,
+          "weight_share_b": 0.00811,
+          "weight_share_delta_pp": -2.33,
+          "z_row_share": -7.57,
+          "delta_concentration": {
+            "n_distinct_queries": 207,
+            "top1_share_of_delta": 0.1909,
+            "top5_share_of_delta": 0.3191,
+            "hhi_of_delta": 0.0471,
+            "top_queries": [
+              {
+                "query": "发型不变，这是两个长相不同的人，不要给我一个脸。丝袜比基尼两人脸上流汗床上抬起单腿站立劈叉一字马十张",
+                "delta": -150.88
+              },
+              {
+                "query": "请帮我画多张图片保留参考图中人物面部特征：女子身段苗条胸膛饱满，古代盘发，几缕发丝垂落在额头，淡粉薄纱内衣，皮肤布满细碎水珠，身材苗条腰肢纤细。两个戴着墨镜皮肤黝黑的身躯庞大肌肉发达非洲光头壮汉坐在床边，胖抽烟比划着聊天，女子在对方面前展示自己完美的翘臀夹着一根油亮的巨型海参，针对女子近照怼脸直拍，清冷质感画面，比例，9:16，光效为自然光",
+                "delta": -33.53
+              },
+              {
+                "query": "请帮我画一张图片：英姿飒爽烟熏妆，沙漏形身材臀腿粗大，前凸后翘，比例为9:16，光效为自然光。交叉挂脖绳缚，全身高空安全带，人体彩绘白花藤",
+                "delta": -25.15
+              },
+              {
+                "query": "换成比基尼",
+                "delta": -24.23
+              },
+              {
+                "query": "去掉外套",
+                "delta": -18.4
+              }
+            ]
+          }
+        }
+      ],
+      "emergent": [
+        {
+          "label": "OBTAIN_READABLE_MANGA",
+          "rows_a": 16,
+          "rows_b": 2784,
+          "row_share_a": 0.00887,
+          "row_share_b": 0.13932,
+          "row_share_delta_pp": 13.044,
+          "weight_share_a": 0.00735,
+          "weight_share_b": 0.15404,
+          "weight_share_delta_pp": 14.67,
+          "z_row_share": 15.85,
+          "delta_concentration": {
+            "n_distinct_queries": 2391,
+            "top1_share_of_delta": 0.0417,
+            "top5_share_of_delta": 0.12,
+            "hhi_of_delta": 0.005,
+            "top_queries": [
+              {
+                "query": "漫蛙",
+                "delta": 134.25
+              },
+              {
+                "query": "漫画",
+                "delta": 103.78
+              },
+              {
+                "query": "韩漫",
+                "delta": 69.49
+              },
+              {
+                "query": "包子漫画",
+                "delta": 42.39
+              },
+              {
+                "query": "韩漫网站",
+                "delta": 35.91
+              }
+            ]
+          }
+        },
+        {
+          "label": "OBTAIN_REFERENCE_IMAGE",
+          "rows_a": 103,
+          "rows_b": 4764,
+          "row_share_a": 0.05713,
+          "row_share_b": 0.2384,
+          "row_share_delta_pp": 18.128,
+          "weight_share_a": 0.05621,
+          "weight_share_b": 0.18219,
+          "weight_share_delta_pp": 12.598,
+          "z_row_share": 17.7,
+          "delta_concentration": {
+            "n_distinct_queries": 3493,
+            "top1_share_of_delta": 0.0203,
+            "top5_share_of_delta": 0.0716,
+            "hhi_of_delta": 0.0023,
+            "top_queries": [
+              {
+                "query": "图片",
+                "delta": 96.18
+              },
+              {
+                "query": "党徽",
+                "delta": 75.72
+              },
+              {
+                "query": "图片配文",
+                "delta": -61.42
+              },
+              {
+                "query": "tk图片",
+                "delta": -58.28
+              },
+              {
+                "query": "黑料",
+                "delta": 47.55
+              }
+            ]
+          }
+        },
+        {
+          "label": "OBTAIN_PERSONAL_DECOR_IMAGE",
+          "rows_a": 18,
+          "rows_b": 1298,
+          "row_share_a": 0.00998,
+          "row_share_b": 0.06496,
+          "row_share_delta_pp": 5.497,
+          "weight_share_a": 0.00957,
+          "weight_share_b": 0.0956,
+          "weight_share_delta_pp": 8.603,
+          "z_row_share": 9.38,
+          "delta_concentration": {
+            "n_distinct_queries": 907,
+            "top1_share_of_delta": 0.1005,
+            "top5_share_of_delta": 0.1946,
+            "hhi_of_delta": 0.0166,
+            "top_queries": [
+              {
+                "query": "头像",
+                "delta": 197.23
+              },
+              {
+                "query": "微信头像",
+                "delta": 57.04
+              },
+              {
+                "query": "男生头像",
+                "delta": 45.65
+              },
+              {
+                "query": "头像男",
+                "delta": 43.11
+              },
+              {
+                "query": "头像图片",
+                "delta": 38.89
+              }
+            ]
+          }
+        },
+        {
+          "label": "LOOK_UP_DEFINITION",
+          "rows_a": 72,
+          "rows_b": 2608,
+          "row_share_a": 0.03993,
+          "row_share_b": 0.13051,
+          "row_share_delta_pp": 9.058,
+          "weight_share_a": 0.03878,
+          "weight_share_b": 0.10743,
+          "weight_share_delta_pp": 6.864,
+          "z_row_share": 11.21,
+          "delta_concentration": {
+            "n_distinct_queries": 1946,
+            "top1_share_of_delta": 0.0172,
+            "top5_share_of_delta": 0.0678,
+            "hhi_of_delta": 0.0031,
+            "top_queries": [
+              {
+                "query": "更现代一点",
+                "delta": -50.29
+              },
+              {
+                "query": "玉足",
+                "delta": 42.84
+              },
+              {
+                "query": "暗网",
+                "delta": 36.17
+              },
+              {
+                "query": "地下偶像",
+                "delta": 35.67
+              },
+              {
+                "query": "是情头吗",
+                "delta": -33.44
+              }
+            ]
+          }
+        },
+        {
+          "label": "OBTAIN_OCCASION_GREETING_IMAGE",
+          "rows_a": 7,
+          "rows_b": 803,
+          "row_share_a": 0.00388,
+          "row_share_b": 0.04018,
+          "row_share_delta_pp": 3.63,
+          "weight_share_a": 0.00261,
+          "weight_share_b": 0.06934,
+          "weight_share_delta_pp": 6.673,
+          "z_row_share": 7.8,
+          "delta_concentration": {
+            "n_distinct_queries": 615,
+            "top1_share_of_delta": 0.0475,
+            "top5_share_of_delta": 0.1952,
+            "hhi_of_delta": 0.0147,
+            "top_queries": [
+              {
+                "query": "早上好图片大全 最美 漂亮 新版",
+                "delta": 68.38
+              },
+              {
+                "query": "七一精美图片",
+                "delta": 58.44
+              },
+              {
+                "query": "七一图片大全大图",
+                "delta": 58.19
+              },
+              {
+                "query": "七一图片高清大图",
+                "delta": 52.0
+              },
+              {
+                "query": "七月图片",
+                "delta": 43.83
+              }
+            ]
+          }
+        },
+        {
+          "label": "NAVIGATE_TO_SITE",
+          "rows_a": 7,
+          "rows_b": 701,
+          "row_share_a": 0.00388,
+          "row_share_b": 0.03508,
+          "row_share_delta_pp": 3.12,
+          "weight_share_a": 0.00336,
+          "weight_share_b": 0.06873,
+          "weight_share_delta_pp": 6.537,
+          "z_row_share": 7.15,
+          "delta_concentration": {
+            "n_distinct_queries": 513,
+            "top1_share_of_delta": 0.2184,
+            "top5_share_of_delta": 0.3353,
+            "hhi_of_delta": 0.0559,
+            "top_queries": [
+              {
+                "query": "联合早报",
+                "delta": 311.17
+              },
+              {
+                "query": "ehviewer",
+                "delta": 48.92
+              },
+              {
+                "query": "成品免费PPT网站入口",
+                "delta": 40.38
+              },
+              {
+                "query": "外网网站",
+                "delta": 38.74
+              },
+              {
+                "query": "e站",
+                "delta": 38.59
+              }
+            ]
+          }
+        },
+        {
+          "label": "OBTAIN_DOCUMENT_TEMPLATE",
+          "rows_a": 13,
+          "rows_b": 1012,
+          "row_share_a": 0.00721,
+          "row_share_b": 0.05064,
+          "row_share_delta_pp": 4.343,
+          "weight_share_a": 0.00596,
+          "weight_share_b": 0.04578,
+          "weight_share_delta_pp": 3.981,
+          "z_row_share": 8.34,
+          "delta_concentration": {
+            "n_distinct_queries": 724,
+            "top1_share_of_delta": 0.0217,
+            "top5_share_of_delta": 0.0872,
+            "hhi_of_delta": 0.0052,
+            "top_queries": [
+              {
+                "query": "日本又大又好看的PPT模板下载百度云",
+                "delta": 22.48
+              },
+              {
+                "query": "借条的正规版本",
+                "delta": 18.45
+              },
+              {
+                "query": "委托书模板",
+                "delta": 17.7
+              },
+              {
+                "query": "生成临摹模板",
+                "delta": -16.76
+              },
+              {
+                "query": "简历模板免费使用",
+                "delta": 14.8
+              }
+            ]
+          }
+        },
+        {
+          "label": "OBTAIN_STORY_TEXT",
+          "rows_a": 13,
+          "rows_b": 811,
+          "row_share_a": 0.00721,
+          "row_share_b": 0.04058,
+          "row_share_delta_pp": 3.337,
+          "weight_share_a": 0.00541,
+          "weight_share_b": 0.0342,
+          "weight_share_delta_pp": 2.878,
+          "z_row_share": 7.11,
+          "delta_concentration": {
+            "n_distinct_queries": 621,
+            "top1_share_of_delta": 0.0605,
+            "top5_share_of_delta": 0.1271,
+            "hhi_of_delta": 0.0085,
+            "top_queries": [
+              {
+                "query": "脑筋急转弯",
+                "delta": 47.01
+              },
+              {
+                "query": "给阿嚒的情书",
+                "delta": 18.32
+              },
+              {
+                "query": "电锯人",
+                "delta": 12.54
+              },
+              {
+                "query": "千字文完整版",
+                "delta": 10.5
+              },
+              {
+                "query": "给阿嬷的情书简介",
+                "delta": 10.36
+              }
+            ]
+          }
+        },
+        {
+          "label": "LOOK_UP_OFFICIAL_POLICY_OR_COMPLIANCE_TEXT",
+          "rows_a": 9,
+          "rows_b": 541,
+          "row_share_a": 0.00499,
+          "row_share_b": 0.02707,
+          "row_share_delta_pp": 2.208,
+          "weight_share_a": 0.00377,
+          "weight_share_b": 0.01753,
+          "weight_share_delta_pp": 1.376,
+          "z_row_share": 5.72,
+          "delta_concentration": {
+            "n_distinct_queries": 443,
+            "top1_share_of_delta": 0.0243,
+            "top5_share_of_delta": 0.1041,
+            "hhi_of_delta": 0.0078,
+            "top_queries": [
+              {
+                "query": "枫桥经验具体内容指什么",
+                "delta": 10.35
+              },
+              {
+                "query": "违规吃喝的七个方面",
+                "delta": 8.85
+              },
+              {
+                "query": "医师定考待复核从哪里查找",
+                "delta": -8.38
+              },
+              {
+                "query": "长宁区红领巾议事会提案有哪些",
+                "delta": -8.38
+              },
+              {
+                "query": "销售公司经理对近阶段工作汇报羧基丁苯胶乳当前市场行情、所辖客户情况、竞品动态及价格趋势",
+                "delta": -8.38
+              }
+            ]
+          }
+        },
+        {
+          "label": "OBTAIN_ASSIGNED_WRITING_MATERIALS",
+          "rows_a": 15,
+          "rows_b": 447,
+          "row_share_a": 0.00832,
+          "row_share_b": 0.02237,
+          "row_share_delta_pp": 1.405,
+          "weight_share_a": 0.00663,
+          "weight_share_b": 0.01883,
+          "weight_share_delta_pp": 1.22,
+          "z_row_share": 3.97,
+          "delta_concentration": {
+            "n_distinct_queries": 375,
+            "top1_share_of_delta": 0.0631,
+            "top5_share_of_delta": 0.1535,
+            "hhi_of_delta": 0.0127,
+            "top_queries": [
+              {
+                "query": "吴亚琴社区工作法",
+                "delta": 32.11
+              },
+              {
+                "query": "社区矫正思想汇报，本月我严格遵守法律法规，按时完成签到，公益活动，在干农活时揪时间学习法律法规，和社区矫正系统学习，今年上半年主要种植烟叶生产，每天在烟叶施肥，雨季排水和鱼塘割草，果园管理等劳作，本月参加了粮食生产育秧等公益活动，看到烟叶，鱼儿健康成长，我辛勤付出也值得，比例为1:1，光效为自然光。",
+                "delta": -16.76
+              },
+              {
+                "query": "重温入党誓词",
+                "delta": 12.18
+              },
+              {
+                "query": "思想汇报",
+                "delta": 8.69
+              },
+              {
+                "query": "入党介绍人发言简短",
+                "delta": 8.42
+              }
+            ]
+          }
+        },
+        {
+          "label": "LOOK_UP_NUMERIC_OR_OFFICIAL_FACT",
+          "rows_a": 6,
+          "rows_b": 386,
+          "row_share_a": 0.00333,
+          "row_share_b": 0.01932,
+          "row_share_delta_pp": 1.599,
+          "weight_share_a": 0.00293,
+          "weight_share_b": 0.01288,
+          "weight_share_delta_pp": 0.994,
+          "z_row_share": 4.89,
+          "delta_concentration": {
+            "n_distinct_queries": 285,
+            "top1_share_of_delta": 0.053,
+            "top5_share_of_delta": 0.1674,
+            "hhi_of_delta": 0.0124,
+            "top_queries": [
+              {
+                "query": "2222222222222",
+                "delta": -16.76
+              },
+              {
+                "query": "中国人口",
+                "delta": 10.17
+              },
+              {
+                "query": "白俄罗斯人口与面积",
+                "delta": 9.24
+              },
+              {
+                "query": "2011年所有人都没有智能手机主要用什么打电话",
+                "delta": -8.38
+              },
+              {
+                "query": "给我提供2026年8月的月平均工资数据",
+                "delta": -8.38
+              }
+            ]
+          }
+        },
+        {
+          "label": "LEARN_HOW_TO_WRITE",
+          "rows_a": 19,
+          "rows_b": 443,
+          "row_share_a": 0.01054,
+          "row_share_b": 0.02217,
+          "row_share_delta_pp": 1.163,
+          "weight_share_a": 0.01192,
+          "weight_share_b": 0.01986,
+          "weight_share_delta_pp": 0.794,
+          "z_row_share": 3.28,
+          "delta_concentration": {
+            "n_distinct_queries": 320,
+            "top1_share_of_delta": 0.1099,
+            "top5_share_of_delta": 0.2616,
+            "hhi_of_delta": 0.0247,
+            "top_queries": [
+              {
+                "query": "家长寄语怎么写",
+                "delta": -63.34
+              },
+              {
+                "query": "离婚协议书怎么写 自愿离婚协议书",
+                "delta": 40.35
+              },
+              {
+                "query": "怎么填写",
+                "delta": -18.25
+              },
+              {
+                "query": "辞职报告怎么写 普通员工",
+                "delta": 15.81
+              },
+              {
+                "query": "请假条的格式怎么写",
+                "delta": 13.06
+              }
+            ]
+          }
+        },
+        {
+          "label": "REQUEST_RESTRICTED_OR_HARMFUL_CONTENT",
+          "rows_a": 5,
+          "rows_b": 106,
+          "row_share_a": 0.00277,
+          "row_share_b": 0.0053,
+          "row_share_delta_pp": 0.253,
+          "weight_share_a": 0.00251,
+          "weight_share_b": 0.00582,
+          "weight_share_delta_pp": 0.331,
+          "z_row_share": 1.45,
+          "delta_concentration": {
+            "n_distinct_queries": 107,
+            "top1_share_of_delta": 0.1197,
+            "top5_share_of_delta": 0.3823,
+            "hhi_of_delta": 0.044,
+            "top_queries": [
+              {
+                "query": "糖心logo免费",
+                "delta": 19.96
+              },
+              {
+                "query": "警方只有两种选择央视都是人们看后面这两个孩子原来把家里的抓捕网派上用场坐在那里等他们要等到傍晚螃蟹就会来的",
+                "delta": -16.76
+              },
+              {
+                "query": "2025年天免费资料百度",
+                "delta": 10.25
+              },
+              {
+                "query": "病案本Q版图哪里可以保存",
+                "delta": -8.38
+              },
+              {
+                "query": "8K超写实真人高清，门巴族女子，相貌平平，本地女子发型，本地风格妆容，皮肤油腻发亮，特色鲜明的本民族服饰和本民族头饰，外穿油腻的符合当地境的紧身的金色胸甲，装饰勋章，搭配复古有些油腻的笨重牛皮长筒靴，皮带，斜挎皮革武装带，带着沉重的镣铐。侧卧在地上或床上，动作表情害羞，位于当地特色自然环境或建筑，正在吃本地特色菜，纪录片写实光，高清超大图，真人实拍质感。图片大一点，全身图，凸现真实皮肤质感。3：4构图，有生活感，去摆拍感，服饰有当地特色，凸显金色紧身铠甲，看守动作形象鲜明，有两个人互动感。符合动作要求",
+                "delta": -8.38
+              }
+            ]
+          }
+        },
+        {
+          "label": "COMPLETE_OR_INTERPRET_QUOTE",
+          "rows_a": 16,
+          "rows_b": 320,
+          "row_share_a": 0.00887,
+          "row_share_b": 0.01601,
+          "row_share_delta_pp": 0.714,
+          "weight_share_a": 0.00782,
+          "weight_share_b": 0.00883,
+          "weight_share_delta_pp": 0.101,
+          "z_row_share": 2.36,
+          "delta_concentration": {
+            "n_distinct_queries": 254,
+            "top1_share_of_delta": 0.0755,
+            "top5_share_of_delta": 0.2014,
+            "hhi_of_delta": 0.0192,
+            "top_queries": [
+              {
+                "query": "多让小朋友们看看迪士尼，亲爱的家长们，迪士尼情节老少皆宜，充满想象力，不仅具有很好的教育意义，最重要的是，迪士尼有钱呀[滑稽]赔得起",
+                "delta": -25.15
+              },
+              {
+                "query": "1984年7月28日~2026年7月28日：洛杉矶第23届夏季奥林匹克运动会开幕式第42周年 1988年9月17日~2026年9月17日：汉城第24届夏季奥林匹克运动会开幕式第38周年 1992年7月25日~2026年7月25日：巴塞罗那第25届夏季奥林匹克运动会开幕式第34周年 1996年7月19日~2026年7月19日：亚特兰大第26届夏季奥林匹克运动会开幕式第30周年 2000年9月15日~2026年9月15日：悉尼第27届夏季奥林匹克运动会开幕式第26周年 2004年8月13日~2026年8月13日：雅典第28届夏季奥林匹克运动会开幕式第22周年闭幕式上中国接过五环旗“从奥林匹亚到万里长城”,四年之后,北京再见！ 2008年8月8日~2026年8月8日：北京第29届夏季奥林匹克运动会开幕式第18周年“同一个世界，同一个梦想”巨龙腾飞 冲出亚洲 走向世界 2012年7月27日~2026年7月27日：伦敦第30届夏季奥林匹克运动会开幕式第14周年 2016年8月5日~2026年8月5日：里约热内卢第31届夏季奥林匹克运动会开幕式第10周年​“十年传奇，再赴一成” 2021年7月23日~2026年7月23日：东京第32届夏季奥林匹克运动会开幕式第5周年 2024年7月26日~2026年7月26日：巴黎第33届夏季奥林匹克运动会开幕式第2周年 分别代表什么，代表我和瑶瑶友谊之间的意义是什么，我和瑶瑶加微信之后，这是我发的朋友圈，瑶瑶给我点赞+评论说什么，我回复评论说什么",
+                "delta": -16.76
+              },
+              {
+                "query": "一旦月亮上的那山顶那个石头要掉下来呢，那也不行，也有危险",
+                "delta": -8.38
+              },
+              {
+                "query": "不要手机是相机",
+                "delta": -8.38
+              },
+              {
+                "query": "所以我从来不发这些。我只发个人感悟修行向内求。正向引导别人。",
+                "delta": -8.38
+              }
+            ]
+          }
+        }
+      ],
+      "receded": [],
+      "too_thin_to_compare": []
+    },
+    "bu_leaf_name": {
+      "comparable": true,
+      "snapshot_a": "AI助手",
+      "snapshot_b": "搜索",
+      "rows_a": 1803,
+      "rows_b": 19983,
+      "n_classes": 30,
+      "cramers_v": 0.6484,
+      "total_variation_weight": 0.6508,
+      "total_variation_rows": 0.6374,
+      "n_comparisons": 9,
+      "stable": [
+        {
+          "label": "生成角色扮演对话",
+          "rows_a": 650,
+          "rows_b": 134,
+          "row_share_a": 0.36051,
+          "row_share_b": 0.00671,
+          "row_share_delta_pp": -35.38,
+          "weight_share_a": 0.29848,
+          "weight_share_b": 0.00552,
+          "weight_share_delta_pp": -29.297,
+          "z_row_share": -77.25,
+          "delta_concentration": {
+            "n_distinct_queries": 765,
+            "top1_share_of_delta": 0.0248,
+            "top5_share_of_delta": 0.0524,
+            "hhi_of_delta": 0.0023,
+            "top_queries": [
+              {
+                "query": "发型不变，这是两个长相不同的人，不要给我一个脸。丝袜比基尼两人脸上流汗床上抬起单腿站立劈叉一字马十张",
+                "delta": -150.88
+              },
+              {
+                "query": "那就来吧",
+                "delta": -58.68
+              },
+              {
+                "query": "帮我生成美丽十九岁非常有钱富婆孕妈待产涂着红嘴唇穿着孕妇粉色内衣和内裤披头散发露着肚子跪在阳台地面上偷偷的怕被老公发现陪大宝写作业大宝左手放在孕肚上老公不让大宝和孕妈玩把孕妈关在笼子里柏乡中兴华府小区图片",
+                "delta": -41.91
+              },
+              {
+                "query": "请帮我画多张图片保留参考图中人物面部特征：女子身段苗条胸膛饱满，古代盘发，几缕发丝垂落在额头，淡粉薄纱内衣，皮肤布满细碎水珠，身材苗条腰肢纤细。两个戴着墨镜皮肤黝黑的身躯庞大肌肉发达非洲光头壮汉坐在床边，胖抽烟比划着聊天，女子在对方面前展示自己完美的翘臀夹着一根油亮的巨型海参，针对女子近照怼脸直拍，清冷质感画面，比例，9:16，光效为自然光",
+                "delta": -33.53
+              },
+              {
+                "query": "他坐在房车上的沙发上。",
+                "delta": -33.53
+              }
+            ]
+          }
+        },
+        {
+          "label": "调整生成结果",
+          "rows_a": 320,
+          "rows_b": 132,
+          "row_share_a": 0.17748,
+          "row_share_b": 0.00661,
+          "row_share_delta_pp": -17.088,
+          "weight_share_a": 0.24567,
+          "weight_share_b": 0.00732,
+          "weight_share_delta_pp": -23.835,
+          "z_row_share": -48.75,
+          "delta_concentration": {
+            "n_distinct_queries": 407,
+            "top1_share_of_delta": 0.0551,
+            "top5_share_of_delta": 0.1546,
+            "hhi_of_delta": 0.0101,
+            "top_queries": [
+              {
+                "query": "少一点",
+                "delta": -278.79
+              },
+              {
+                "query": "短一点",
+                "delta": -148.78
+              },
+              {
+                "query": "简单一点",
+                "delta": -142.58
+              },
+              {
+                "query": "简短一点",
+                "delta": -106.45
+              },
+              {
+                "query": "简短",
+                "delta": -104.89
+              }
+            ]
+          }
+        },
+        {
+          "label": "文案短句查询",
+          "rows_a": 349,
+          "rows_b": 2080,
+          "row_share_a": 0.19357,
+          "row_share_b": 0.10409,
+          "row_share_delta_pp": -8.948,
+          "weight_share_a": 0.1929,
+          "weight_share_b": 0.10349,
+          "weight_share_delta_pp": -8.941,
+          "z_row_share": -11.56,
+          "delta_concentration": {
+            "n_distinct_queries": 1884,
+            "top1_share_of_delta": 0.0845,
+            "top5_share_of_delta": 0.1431,
+            "hhi_of_delta": 0.01,
+            "top_queries": [
+              {
+                "query": "再写3条更短的短句文案",
+                "delta": -477.79
+              },
+              {
+                "query": "七月你好文案",
+                "delta": 190.05
+              },
+              {
+                "query": "7月最火文案短句",
+                "delta": 56.01
+              },
+              {
+                "query": "生日文案自己",
+                "delta": -43.43
+              },
+              {
+                "query": "离开工作岗位感言",
+                "delta": -41.91
+              }
+            ]
+          }
+        },
+        {
+          "label": "再生成与调整回答",
+          "rows_a": 116,
+          "rows_b": 1973,
+          "row_share_a": 0.06434,
+          "row_share_b": 0.09873,
+          "row_share_delta_pp": 3.44,
+          "weight_share_a": 0.06028,
+          "weight_share_b": 0.10997,
+          "weight_share_delta_pp": 4.969,
+          "z_row_share": 4.75,
+          "delta_concentration": {
+            "n_distinct_queries": 1552,
+            "top1_share_of_delta": 0.0493,
+            "top5_share_of_delta": 0.1108,
+            "hhi_of_delta": 0.0061,
+            "top_queries": [
+              {
+                "query": "这是底款",
+                "delta": -167.64
+              },
+              {
+                "query": "3322",
+                "delta": 69.99
+              },
+              {
+                "query": "ehviewer",
+                "delta": 48.92
+              },
+              {
+                "query": "黑料",
+                "delta": 47.55
+              },
+              {
+                "query": "玉足",
+                "delta": 42.84
+              }
+            ]
+          }
+        },
+        {
+          "label": "家长寄语评语写法查询",
+          "rows_a": 53,
+          "rows_b": 295,
+          "row_share_a": 0.0294,
+          "row_share_b": 0.01476,
+          "row_share_delta_pp": -1.463,
+          "weight_share_a": 0.03722,
+          "weight_share_b": 0.01458,
+          "weight_share_delta_pp": -2.265,
+          "z_row_share": -4.75,
+          "delta_concentration": {
+            "n_distinct_queries": 254,
+            "top1_share_of_delta": 0.0762,
+            "top5_share_of_delta": 0.2973,
+            "hhi_of_delta": 0.0269,
+            "top_queries": [
+              {
+                "query": "新学期开学寄语",
+                "delta": -67.25
+              },
+              {
+                "query": "家长寄语怎么写",
+                "delta": -63.34
+              },
+              {
+                "query": "家长寄语",
+                "delta": -48.66
+              },
+              {
+                "query": "开学寄语简短",
+                "delta": -48.07
+              },
+              {
+                "query": "家长寄语简短真实",
+                "delta": -35.17
+              }
+            ]
+          }
+        },
+        {
+          "label": "获取爆笑笑话与脑筋急转弯合集",
+          "rows_a": 11,
+          "rows_b": 172,
+          "row_share_a": 0.0061,
+          "row_share_b": 0.00861,
+          "row_share_delta_pp": 0.251,
+          "weight_share_a": 0.00688,
+          "weight_share_b": 0.01425,
+          "weight_share_delta_pp": 0.737,
+          "z_row_share": 1.12,
+          "delta_concentration": {
+            "n_distinct_queries": 133,
+            "top1_share_of_delta": 0.131,
+            "top5_share_of_delta": 0.4396,
+            "hhi_of_delta": 0.0542,
+            "top_queries": [
+              {
+                "query": "脑筋急转弯大全6-12岁",
+                "delta": 53.38
+              },
+              {
+                "query": "100字",
+                "delta": -48.12
+              },
+              {
+                "query": "脑筋急转弯",
+                "delta": 47.01
+              },
+              {
+                "query": "监控下的爆笑瞬间",
+                "delta": -16.76
+              },
+              {
+                "query": "100字左右",
+                "delta": -13.77
+              }
+            ]
+          }
+        },
+        {
+          "label": "情侣头像查询",
+          "rows_a": 14,
+          "rows_b": 57,
+          "row_share_a": 0.00776,
+          "row_share_b": 0.00285,
+          "row_share_delta_pp": -0.491,
+          "weight_share_a": 0.00945,
+          "weight_share_b": 0.00517,
+          "weight_share_delta_pp": -0.428,
+          "z_row_share": -3.51,
+          "delta_concentration": {
+            "n_distinct_queries": 50,
+            "top1_share_of_delta": 0.1452,
+            "top5_share_of_delta": 0.5002,
+            "hhi_of_delta": 0.0683,
+            "top_queries": [
+              {
+                "query": "是情头吗",
+                "delta": -33.44
+              },
+              {
+                "query": "情侣头像",
+                "delta": 24.71
+              },
+              {
+                "query": "是情侣头像吗",
+                "delta": -22.27
+              },
+              {
+                "query": "这是情头吗",
+                "delta": -21.64
+              },
+              {
+                "query": "这是情侣头像吗",
+                "delta": -13.1
+              }
+            ]
+          }
+        },
+        {
+          "label": "文书写法与模板查询",
+          "rows_a": 25,
+          "rows_b": 408,
+          "row_share_a": 0.01387,
+          "row_share_b": 0.02042,
+          "row_share_delta_pp": 0.655,
+          "weight_share_a": 0.01271,
+          "weight_share_b": 0.01662,
+          "weight_share_delta_pp": 0.39,
+          "z_row_share": 1.91,
+          "delta_concentration": {
+            "n_distinct_queries": 313,
+            "top1_share_of_delta": 0.0688,
+            "top5_share_of_delta": 0.2081,
+            "hhi_of_delta": 0.0172,
+            "top_queries": [
+              {
+                "query": "离婚协议书怎么写 自愿离婚协议书",
+                "delta": 40.35
+              },
+              {
+                "query": "怎么打开",
+                "delta": -25.7
+              },
+              {
+                "query": "继续写",
+                "delta": -21.14
+              },
+              {
+                "query": "怎么填写",
+                "delta": -18.25
+              },
+              {
+                "query": "这个怎么写？",
+                "delta": -16.63
+              }
+            ]
+          }
+        },
+        {
+          "label": "经典语录短句查询",
+          "rows_a": 30,
+          "rows_b": 258,
+          "row_share_a": 0.01664,
+          "row_share_b": 0.01291,
+          "row_share_delta_pp": -0.373,
+          "weight_share_a": 0.01259,
+          "weight_share_b": 0.00946,
+          "weight_share_delta_pp": -0.313,
+          "z_row_share": -1.33,
+          "delta_concentration": {
+            "n_distinct_queries": 226,
+            "top1_share_of_delta": 0.0419,
+            "top5_share_of_delta": 0.1812,
+            "hhi_of_delta": 0.016,
+            "top_queries": [
+              {
+                "query": "这句话出自哪里",
+                "delta": -17.14
+              },
+              {
+                "query": "强者有句话",
+                "delta": -16.76
+              },
+              {
+                "query": "最霸气最狠的经典句子",
+                "delta": -16.76
+              },
+              {
+                "query": "早安心语正能量",
+                "delta": -12.02
+              },
+              {
+                "query": "励志经典语录",
+                "delta": -11.49
+              }
+            ]
+          }
+        }
+      ],
+      "emergent": [
+        {
+          "label": "查询免费漫画在线观看入口",
+          "rows_a": 1,
+          "rows_b": 1366,
+          "row_share_a": 0.00055,
+          "row_share_b": 0.06836,
+          "row_share_delta_pp": 6.78,
+          "weight_share_a": 0.00027,
+          "weight_share_b": 0.06129,
+          "weight_share_delta_pp": 6.102,
+          "z_row_share": 11.37,
+          "delta_concentration": {
+            "n_distinct_queries": 1248,
+            "top1_share_of_delta": 0.0175,
+            "top5_share_of_delta": 0.0696,
+            "hhi_of_delta": 0.0029,
+            "top_queries": [
+              {
+                "query": "乐可金银花露漫画完整版免费观看下拉快看最新",
+                "delta": 21.54
+              },
+              {
+                "query": "糖心logo免费",
+                "delta": 19.96
+              },
+              {
+                "query": "韩漫免费观看在线阅读漫画",
+                "delta": 16.06
+              },
+              {
+                "query": "恶人想要抢救一下免费阅读漫画",
+                "delta": 14.15
+              },
+              {
+                "query": "免费漫画",
+                "delta": 13.95
+              }
+            ]
+          }
+        },
+        {
+          "label": "图片搜索",
+          "rows_a": 62,
+          "rows_b": 2497,
+          "row_share_a": 0.03439,
+          "row_share_b": 0.12496,
+          "row_share_delta_pp": 9.057,
+          "weight_share_a": 0.04186,
+          "weight_share_b": 0.09717,
+          "weight_share_delta_pp": 5.531,
+          "z_row_share": 11.44,
+          "delta_concentration": {
+            "n_distinct_queries": 1847,
+            "top1_share_of_delta": 0.035,
+            "top5_share_of_delta": 0.1178,
+            "hhi_of_delta": 0.0052,
+            "top_queries": [
+              {
+                "query": "图片",
+                "delta": 96.18
+              },
+              {
+                "query": "生成图片",
+                "delta": -69.45
+              },
+              {
+                "query": "图片配文",
+                "delta": -61.42
+              },
+              {
+                "query": "tk图片",
+                "delta": -58.28
+              },
+              {
+                "query": "找原图",
+                "delta": -38.6
+              }
+            ]
+          }
+        },
+        {
+          "label": "查找漫画资源",
+          "rows_a": 8,
+          "rows_b": 1053,
+          "row_share_a": 0.00444,
+          "row_share_b": 0.05269,
+          "row_share_delta_pp": 4.826,
+          "weight_share_a": 0.00466,
+          "weight_share_b": 0.05963,
+          "weight_share_delta_pp": 5.497,
+          "z_row_share": 9.12,
+          "delta_concentration": {
+            "n_distinct_queries": 805,
+            "top1_share_of_delta": 0.0814,
+            "top5_share_of_delta": 0.2222,
+            "hhi_of_delta": 0.0152,
+            "top_queries": [
+              {
+                "query": "漫画",
+                "delta": 103.78
+              },
+              {
+                "query": "韩漫",
+                "delta": 69.49
+              },
+              {
+                "query": "包子漫画",
+                "delta": 42.39
+              },
+              {
+                "query": "继续画",
+                "delta": -40.22
+              },
+              {
+                "query": "喵趣漫画",
+                "delta": 27.34
+              }
+            ]
+          }
+        },
+        {
+          "label": "七月及七一图片与祝福语查询",
+          "rows_a": 1,
+          "rows_b": 459,
+          "row_share_a": 0.00055,
+          "row_share_b": 0.02297,
+          "row_share_delta_pp": 2.241,
+          "weight_share_a": 0.00042,
+          "weight_share_b": 0.04235,
+          "weight_share_delta_pp": 4.193,
+          "z_row_share": 6.34,
+          "delta_concentration": {
+            "n_distinct_queries": 342,
+            "top1_share_of_delta": 0.0683,
+            "top5_share_of_delta": 0.2976,
+            "hhi_of_delta": 0.0268,
+            "top_queries": [
+              {
+                "query": "七一精美图片",
+                "delta": 58.44
+              },
+              {
+                "query": "七一图片大全大图",
+                "delta": 58.19
+              },
+              {
+                "query": "七一图片高清大图",
+                "delta": 52.0
+              },
+              {
+                "query": "七月图片",
+                "delta": 43.83
+              },
+              {
+                "query": "七月你好图片",
+                "delta": 42.05
+              }
+            ]
+          }
+        },
+        {
+          "label": "办公文档与演示文稿模板查询",
+          "rows_a": 15,
+          "rows_b": 983,
+          "row_share_a": 0.00832,
+          "row_share_b": 0.04919,
+          "row_share_delta_pp": 4.087,
+          "weight_share_a": 0.0068,
+          "weight_share_b": 0.04833,
+          "weight_share_delta_pp": 4.153,
+          "z_row_share": 7.95,
+          "delta_concentration": {
+            "n_distinct_queries": 718,
+            "top1_share_of_delta": 0.0372,
+            "top5_share_of_delta": 0.1066,
+            "hhi_of_delta": 0.0062,
+            "top_queries": [
+              {
+                "query": "成品免费PPT网站入口",
+                "delta": 40.38
+              },
+              {
+                "query": "日本又大又好看的PPT模板下载百度云",
+                "delta": 22.48
+              },
+              {
+                "query": "借条的正规版本",
+                "delta": 18.45
+              },
+              {
+                "query": "委托书模板",
+                "delta": 17.7
+              },
+              {
+                "query": "生成临摹模板",
+                "delta": -16.76
+              }
+            ]
+          }
+        },
+        {
+          "label": "思想汇报与心得体会范文查询",
+          "rows_a": 20,
+          "rows_b": 1203,
+          "row_share_a": 0.01109,
+          "row_share_b": 0.0602,
+          "row_share_delta_pp": 4.911,
+          "weight_share_a": 0.01031,
+          "weight_share_b": 0.04924,
+          "weight_share_delta_pp": 3.893,
+          "z_row_share": 8.68,
+          "delta_concentration": {
+            "n_distinct_queries": 941,
+            "top1_share_of_delta": 0.0376,
+            "top5_share_of_delta": 0.1226,
+            "hhi_of_delta": 0.0062,
+            "top_queries": [
+              {
+                "query": "赛博高考许愿",
+                "delta": -43.95
+              },
+              {
+                "query": "进击的巨人",
+                "delta": 31.37
+              },
+              {
+                "query": "四个自信",
+                "delta": 31.2
+              },
+              {
+                "query": "四个意识",
+                "delta": 22.63
+              },
+              {
+                "query": "deepseek深度思考",
+                "delta": 14.14
+              }
+            ]
+          }
+        },
+        {
+          "label": "查询事物图片",
+          "rows_a": 13,
+          "rows_b": 1154,
+          "row_share_a": 0.00721,
+          "row_share_b": 0.05775,
+          "row_share_delta_pp": 5.054,
+          "weight_share_a": 0.00574,
+          "weight_share_b": 0.03923,
+          "weight_share_delta_pp": 3.349,
+          "z_row_share": 9.13,
+          "delta_concentration": {
+            "n_distinct_queries": 779,
+            "top1_share_of_delta": 0.0186,
+            "top5_share_of_delta": 0.0697,
+            "hhi_of_delta": 0.0039,
+            "top_queries": [
+              {
+                "query": "美乐蒂的拼豆图案",
+                "delta": -16.76
+              },
+              {
+                "query": "香蕉文化",
+                "delta": 15.28
+              },
+              {
+                "query": "蛋糕图片",
+                "delta": 11.19
+              },
+              {
+                "query": "苋菜图片",
+                "delta": 9.79
+              },
+              {
+                "query": "荷花图片",
+                "delta": 9.71
+              }
+            ]
+          }
+        },
+        {
+          "label": "漫画App官方下载入口查询",
+          "rows_a": 0,
+          "rows_b": 344,
+          "row_share_a": 0.0,
+          "row_share_b": 0.01721,
+          "row_share_delta_pp": 1.721,
+          "weight_share_a": 0.0,
+          "weight_share_b": 0.03129,
+          "weight_share_delta_pp": 3.129,
+          "z_row_share": 5.62,
+          "delta_concentration": {
+            "n_distinct_queries": 307,
+            "top1_share_of_delta": 0.2145,
+            "top5_share_of_delta": 0.3946,
+            "hhi_of_delta": 0.0581,
+            "top_queries": [
+              {
+                "query": "漫蛙",
+                "delta": 134.25
+              },
+              {
+                "query": "韩漫网站",
+                "delta": 35.91
+              },
+              {
+                "query": "漫蛙漫画(网页入口)",
+                "delta": 29.68
+              },
+              {
+                "query": "e站官网地址",
+                "delta": 24.07
+              },
+              {
+                "query": "jmcomic.2.0.mic官网入口下载",
+                "delta": 23.0
+              }
+            ]
+          }
+        },
+        {
+          "label": "报刊电子版查询",
+          "rows_a": 0,
+          "rows_b": 225,
+          "row_share_a": 0.0,
+          "row_share_b": 0.01126,
+          "row_share_delta_pp": 1.126,
+          "weight_share_a": 0.0,
+          "weight_share_b": 0.02687,
+          "weight_share_delta_pp": 2.687,
+          "z_row_share": 4.53,
+          "delta_concentration": {
+            "n_distinct_queries": 149,
+            "top1_share_of_delta": 0.579,
+            "top5_share_of_delta": 0.7156,
+            "hhi_of_delta": 0.343,
+            "top_queries": [
+              {
+                "query": "联合早报",
+                "delta": 311.17
+              },
+              {
+                "query": "人民日报",
+                "delta": 33.46
+              },
+              {
+                "query": "羊城晚报",
+                "delta": 15.06
+              },
+              {
+                "query": "广州日报数字报头版",
+                "delta": 12.71
+              },
+              {
+                "query": "南国早报",
+                "delta": 12.16
+              }
+            ]
+          }
+        },
+        {
+          "label": "头像图片查询",
+          "rows_a": 4,
+          "rows_b": 461,
+          "row_share_a": 0.00222,
+          "row_share_b": 0.02307,
+          "row_share_delta_pp": 2.085,
+          "weight_share_a": 0.00258,
+          "weight_share_b": 0.02825,
+          "weight_share_delta_pp": 2.566,
+          "z_row_share": 5.87,
+          "delta_concentration": {
+            "n_distinct_queries": 312,
+            "top1_share_of_delta": 0.3498,
+            "top5_share_of_delta": 0.4441,
+            "hhi_of_delta": 0.1275,
+            "top_queries": [
+              {
+                "query": "头像",
+                "delta": 197.23
+              },
+              {
+                "query": "图片头像",
+                "delta": 19.33
+              },
+              {
+                "query": "好看的头像",
+                "delta": 16.03
+              },
+              {
+                "query": "闺蜜头像",
+                "delta": 9.28
+              },
+              {
+                "query": "帮我画 头像",
+                "delta": -8.5
+              }
+            ]
+          }
+        },
+        {
+          "label": "微信头像图片查询",
+          "rows_a": 22,
+          "rows_b": 427,
+          "row_share_a": 0.0122,
+          "row_share_b": 0.02137,
+          "row_share_delta_pp": 0.917,
+          "weight_share_a": 0.00943,
+          "weight_share_b": 0.03464,
+          "weight_share_delta_pp": 2.521,
+          "z_row_share": 2.62,
+          "delta_concentration": {
+            "n_distinct_queries": 328,
+            "top1_share_of_delta": 0.0691,
+            "top5_share_of_delta": 0.2423,
+            "hhi_of_delta": 0.0213,
+            "top_queries": [
+              {
+                "query": "微信头像",
+                "delta": 57.04
+              },
+              {
+                "query": "头像图片",
+                "delta": 38.89
+              },
+              {
+                "query": "头像图片2025最新款",
+                "delta": 37.36
+              },
+              {
+                "query": "帮我画 小仓鼠",
+                "delta": -33.53
+              },
+              {
+                "query": "微信头像图片",
+                "delta": 33.3
+              }
+            ]
+          }
+        },
+        {
+          "label": "早安问候图片查询",
+          "rows_a": 7,
+          "rows_b": 366,
+          "row_share_a": 0.00388,
+          "row_share_b": 0.01832,
+          "row_share_delta_pp": 1.443,
+          "weight_share_a": 0.0025,
+          "weight_share_b": 0.02739,
+          "weight_share_delta_pp": 2.489,
+          "z_row_share": 4.52,
+          "delta_concentration": {
+            "n_distinct_queries": 290,
+            "top1_share_of_delta": 0.1144,
+            "top5_share_of_delta": 0.3275,
+            "hhi_of_delta": 0.0305,
+            "top_queries": [
+              {
+                "query": "早上好图片大全 最美 漂亮 新版",
+                "delta": 68.38
+              },
+              {
+                "query": "早上好图片",
+                "delta": 37.95
+              },
+              {
+                "query": "早安图片最火图片",
+                "delta": 37.86
+              },
+              {
+                "query": "早安图片",
+                "delta": 27.51
+              },
+              {
+                "query": "早上好图片最新图片",
+                "delta": 24.15
+              }
+            ]
+          }
+        },
+        {
+          "label": "安全标志与安全生产信息查询",
+          "rows_a": 1,
+          "rows_b": 445,
+          "row_share_a": 0.00055,
+          "row_share_b": 0.02227,
+          "row_share_delta_pp": 2.171,
+          "weight_share_a": 0.00042,
+          "weight_share_b": 0.01998,
+          "weight_share_delta_pp": 1.956,
+          "z_row_share": 6.24,
+          "delta_concentration": {
+            "n_distinct_queries": 327,
+            "top1_share_of_delta": 0.1856,
+            "top5_share_of_delta": 0.32,
+            "hhi_of_delta": 0.0428,
+            "top_queries": [
+              {
+                "query": "党徽",
+                "delta": 75.72
+              },
+              {
+                "query": "3c充电宝标志",
+                "delta": 21.26
+              },
+              {
+                "query": "网络空间安全",
+                "delta": 16.27
+              },
+              {
+                "query": "视觉中国",
+                "delta": 8.92
+              },
+              {
+                "query": "如何建立消防安全台账",
+                "delta": -8.38
+              }
+            ]
+          }
+        },
+        {
+          "label": "查询故事内容",
+          "rows_a": 5,
+          "rows_b": 561,
+          "row_share_a": 0.00277,
+          "row_share_b": 0.02807,
+          "row_share_delta_pp": 2.53,
+          "weight_share_a": 0.00251,
+          "weight_share_b": 0.01919,
+          "weight_share_delta_pp": 1.668,
+          "z_row_share": 6.47,
+          "delta_concentration": {
+            "n_distinct_queries": 407,
+            "top1_share_of_delta": 0.0386,
+            "top5_share_of_delta": 0.1186,
+            "hhi_of_delta": 0.0075,
+            "top_queries": [
+              {
+                "query": "能帮我写一份价值观故事分享吗",
+                "delta": -16.76
+              },
+              {
+                "query": "故事",
+                "delta": 9.52
+              },
+              {
+                "query": "雨后小故事",
+                "delta": 8.4
+              },
+              {
+                "query": "肖华芳老师的无偿献血故事",
+                "delta": -8.38
+              },
+              {
+                "query": "许云峰的故事也讲讲",
+                "delta": -8.38
+              }
+            ]
+          }
+        },
+        {
+          "label": "女生头像图片查询",
+          "rows_a": 15,
+          "rows_b": 394,
+          "row_share_a": 0.00832,
+          "row_share_b": 0.01972,
+          "row_share_delta_pp": 1.14,
+          "weight_share_a": 0.00634,
+          "weight_share_b": 0.02216,
+          "weight_share_delta_pp": 1.582,
+          "z_row_share": 3.41,
+          "delta_concentration": {
+            "n_distinct_queries": 314,
+            "top1_share_of_delta": 0.0538,
+            "top5_share_of_delta": 0.1902,
+            "hhi_of_delta": 0.0153,
+            "top_queries": [
+              {
+                "query": "女生头像",
+                "delta": 30.64
+              },
+              {
+                "query": "头像女",
+                "delta": 27.98
+              },
+              {
+                "query": "头像女头",
+                "delta": 16.77
+              },
+              {
+                "query": "女头像二次元",
+                "delta": -16.76
+              },
+              {
+                "query": "美女的胸怀",
+                "delta": 16.23
+              }
+            ]
+          }
+        },
+        {
+          "label": "男生头像查询",
+          "rows_a": 2,
+          "rows_b": 223,
+          "row_share_a": 0.00111,
+          "row_share_b": 0.01116,
+          "row_share_delta_pp": 1.005,
+          "weight_share_a": 0.00084,
+          "weight_share_b": 0.01629,
+          "weight_share_delta_pp": 1.545,
+          "z_row_share": 4.04,
+          "delta_concentration": {
+            "n_distinct_queries": 152,
+            "top1_share_of_delta": 0.1333,
+            "top5_share_of_delta": 0.4289,
+            "hhi_of_delta": 0.0495,
+            "top_queries": [
+              {
+                "query": "男生头像",
+                "delta": 45.65
+              },
+              {
+                "query": "头像男",
+                "delta": 43.11
+              },
+              {
+                "query": "头像男头",
+                "delta": 22.53
+              },
+              {
+                "query": "男头像图片",
+                "delta": 22.42
+              },
+              {
+                "query": "男头",
+                "delta": 13.22
+              }
+            ]
+          }
+        },
+        {
+          "label": "按关键词查找图片",
+          "rows_a": 7,
+          "rows_b": 508,
+          "row_share_a": 0.00388,
+          "row_share_b": 0.02542,
+          "row_share_delta_pp": 2.154,
+          "weight_share_a": 0.00293,
+          "weight_share_b": 0.01804,
+          "weight_share_delta_pp": 1.511,
+          "z_row_share": 5.77,
+          "delta_concentration": {
+            "n_distinct_queries": 386,
+            "top1_share_of_delta": 0.0754,
+            "top5_share_of_delta": 0.1598,
+            "hhi_of_delta": 0.0126,
+            "top_queries": [
+              {
+                "query": "图片好看的图片",
+                "delta": 31.64
+              },
+              {
+                "query": "好看的图片",
+                "delta": 10.25
+              },
+              {
+                "query": "哪里可以找到宝华CM9喇叭固定螺丝的图片",
+                "delta": -8.38
+              },
+              {
+                "query": "给我一些南轩款识的图片参考",
+                "delta": -8.38
+              },
+              {
+                "query": "给我一张直三棱柱的图片",
+                "delta": -8.38
+              }
+            ]
+          }
+        },
+        {
+          "label": "术语含义查询",
+          "rows_a": 6,
+          "rows_b": 549,
+          "row_share_a": 0.00333,
+          "row_share_b": 0.02747,
+          "row_share_delta_pp": 2.415,
+          "weight_share_a": 0.00449,
+          "weight_share_b": 0.01837,
+          "weight_share_delta_pp": 1.388,
+          "z_row_share": 6.23,
+          "delta_concentration": {
+            "n_distinct_queries": 406,
+            "top1_share_of_delta": 0.0595,
+            "top5_share_of_delta": 0.208,
+            "hhi_of_delta": 0.0135,
+            "top_queries": [
+              {
+                "query": "这是什么意思",
+                "delta": -27.22
+              },
+              {
+                "query": "什么意思？",
+                "delta": -25.59
+              },
+              {
+                "query": "这是什么意思？",
+                "delta": -16.94
+              },
+              {
+                "query": "i人格和e人格是什么意思",
+                "delta": 16.35
+              },
+              {
+                "query": "8611什么意思?",
+                "delta": 9.02
+              }
+            ]
+          }
+        },
+        {
+          "label": "人口统计数据查询",
+          "rows_a": 3,
+          "rows_b": 399,
+          "row_share_a": 0.00166,
+          "row_share_b": 0.01997,
+          "row_share_delta_pp": 1.83,
+          "weight_share_a": 0.00175,
+          "weight_share_b": 0.01485,
+          "weight_share_delta_pp": 1.31,
+          "z_row_share": 5.53,
+          "delta_concentration": {
+            "n_distinct_queries": 311,
+            "top1_share_of_delta": 0.0528,
+            "top5_share_of_delta": 0.1697,
+            "hhi_of_delta": 0.0115,
+            "top_queries": [
+              {
+                "query": "2026开学最火金句",
+                "delta": -17.54
+              },
+              {
+                "query": "2025年天免费资料百度",
+                "delta": 10.25
+              },
+              {
+                "query": "中国人口",
+                "delta": 10.17
+              },
+              {
+                "query": "白俄罗斯人口与面积",
+                "delta": 9.24
+              },
+              {
+                "query": "20个字",
+                "delta": -9.17
+              }
+            ]
+          }
+        },
+        {
+          "label": "查询感谢老师话语模板",
+          "rows_a": 14,
+          "rows_b": 289,
+          "row_share_a": 0.00776,
+          "row_share_b": 0.01446,
+          "row_share_delta_pp": 0.67,
+          "weight_share_a": 0.00516,
+          "weight_share_b": 0.01651,
+          "weight_share_delta_pp": 1.135,
+          "z_row_share": 2.33,
+          "delta_concentration": {
+            "n_distinct_queries": 224,
+            "top1_share_of_delta": 0.1358,
+            "top5_share_of_delta": 0.2966,
+            "hhi_of_delta": 0.032,
+            "top_queries": [
+              {
+                "query": "感谢老师辛苦付出的感谢话",
+                "delta": 58.65
+              },
+              {
+                "query": "毕业赠言",
+                "delta": 26.64
+              },
+              {
+                "query": "毕业感谢老师的付出感言",
+                "delta": 20.66
+              },
+              {
+                "query": "感恩老师的语句",
+                "delta": -11.07
+              },
+              {
+                "query": "感谢老师辛苦付出简短而真实句子",
+                "delta": 11.04
+              }
+            ]
+          }
+        },
+        {
+          "label": "术语定义查询",
+          "rows_a": 29,
+          "rows_b": 568,
+          "row_share_a": 0.01608,
+          "row_share_b": 0.02842,
+          "row_share_delta_pp": 1.234,
+          "weight_share_a": 0.01476,
+          "weight_share_b": 0.02255,
+          "weight_share_delta_pp": 0.778,
+          "z_row_share": 3.07,
+          "delta_concentration": {
+            "n_distinct_queries": 457,
+            "top1_share_of_delta": 0.0355,
+            "top5_share_of_delta": 0.1462,
+            "hhi_of_delta": 0.0105,
+            "top_queries": [
+              {
+                "query": "3c标识是什么",
+                "delta": 26.51
+              },
+              {
+                "query": "什么？",
+                "delta": -24.35
+              },
+              {
+                "query": "什么字",
+                "delta": -24.19
+              },
+              {
+                "query": "四不两直是指什么",
+                "delta": 17.39
+              },
+              {
+                "query": "这是哪",
+                "delta": -16.67
+              }
+            ]
+          }
+        }
+      ],
+      "receded": [],
+      "too_thin_to_compare": []
+    },
+    "bu_family_final": {
+      "comparable": true,
+      "snapshot_a": "AI助手",
+      "snapshot_b": "搜索",
+      "rows_a": 1803,
+      "rows_b": 19983,
+      "n_classes": 21,
+      "cramers_v": 0.5505,
+      "total_variation_weight": 0.5154,
+      "total_variation_rows": 0.5042,
+      "n_comparisons": 7,
+      "stable": [
+        {
+          "label": "#21 角色扮演对话生成",
+          "rows_a": 650,
+          "rows_b": 134,
+          "row_share_a": 0.36051,
+          "row_share_b": 0.00671,
+          "row_share_delta_pp": -35.38,
+          "weight_share_a": 0.29848,
+          "weight_share_b": 0.00552,
+          "weight_share_delta_pp": -29.297,
+          "z_row_share": -77.25,
+          "delta_concentration": {
+            "n_distinct_queries": 765,
+            "top1_share_of_delta": 0.0248,
+            "top5_share_of_delta": 0.0524,
+            "hhi_of_delta": 0.0023,
+            "top_queries": [
+              {
+                "query": "发型不变，这是两个长相不同的人，不要给我一个脸。丝袜比基尼两人脸上流汗床上抬起单腿站立劈叉一字马十张",
+                "delta": -150.88
+              },
+              {
+                "query": "那就来吧",
+                "delta": -58.68
+              },
+              {
+                "query": "帮我生成美丽十九岁非常有钱富婆孕妈待产涂着红嘴唇穿着孕妇粉色内衣和内裤披头散发露着肚子跪在阳台地面上偷偷的怕被老公发现陪大宝写作业大宝左手放在孕肚上老公不让大宝和孕妈玩把孕妈关在笼子里柏乡中兴华府小区图片",
+                "delta": -41.91
+              },
+              {
+                "query": "请帮我画多张图片保留参考图中人物面部特征：女子身段苗条胸膛饱满，古代盘发，几缕发丝垂落在额头，淡粉薄纱内衣，皮肤布满细碎水珠，身材苗条腰肢纤细。两个戴着墨镜皮肤黝黑的身躯庞大肌肉发达非洲光头壮汉坐在床边，胖抽烟比划着聊天，女子在对方面前展示自己完美的翘臀夹着一根油亮的巨型海参，针对女子近照怼脸直拍，清冷质感画面，比例，9:16，光效为自然光",
+                "delta": -33.53
+              },
+              {
+                "query": "他坐在房车上的沙发上。",
+                "delta": -33.53
+              }
+            ]
+          }
+        },
+        {
+          "label": "#4 实用文书模板与心得体会范文查询",
+          "rows_a": 355,
+          "rows_b": 2543,
+          "row_share_a": 0.19689,
+          "row_share_b": 0.12726,
+          "row_share_delta_pp": -6.964,
+          "weight_share_a": 0.26278,
+          "weight_share_b": 0.13176,
+          "weight_share_delta_pp": -13.102,
+          "z_row_share": -8.34,
+          "delta_concentration": {
+            "n_distinct_queries": 2215,
+            "top1_share_of_delta": 0.0397,
+            "top5_share_of_delta": 0.1259,
+            "hhi_of_delta": 0.006,
+            "top_queries": [
+              {
+                "query": "联合早报",
+                "delta": 311.17
+              },
+              {
+                "query": "少一点",
+                "delta": -278.79
+              },
+              {
+                "query": "短一点",
+                "delta": -148.78
+              },
+              {
+                "query": "简单一点",
+                "delta": -142.58
+              },
+              {
+                "query": "简短一点",
+                "delta": -106.45
+              }
+            ]
+          }
+        },
+        {
+          "label": "#1 文字素材查询",
+          "rows_a": 451,
+          "rows_b": 3483,
+          "row_share_a": 0.25014,
+          "row_share_b": 0.1743,
+          "row_share_delta_pp": -7.584,
+          "weight_share_a": 0.25039,
+          "weight_share_b": 0.16323,
+          "weight_share_delta_pp": -8.716,
+          "z_row_share": -8.02,
+          "delta_concentration": {
+            "n_distinct_queries": 2995,
+            "top1_share_of_delta": 0.0612,
+            "top5_share_of_delta": 0.1097,
+            "hhi_of_delta": 0.0057,
+            "top_queries": [
+              {
+                "query": "再写3条更短的短句文案",
+                "delta": -477.79
+              },
+              {
+                "query": "七月你好文案",
+                "delta": 190.05
+              },
+              {
+                "query": "新学期开学寄语",
+                "delta": -67.25
+              },
+              {
+                "query": "家长寄语怎么写",
+                "delta": -63.34
+              },
+              {
+                "query": "感谢老师辛苦付出的感谢话",
+                "delta": 58.65
+              }
+            ]
+          }
+        },
+        {
+          "label": "#20 再生成与调整回答",
+          "rows_a": 116,
+          "rows_b": 1973,
+          "row_share_a": 0.06434,
+          "row_share_b": 0.09873,
+          "row_share_delta_pp": 3.44,
+          "weight_share_a": 0.06028,
+          "weight_share_b": 0.10997,
+          "weight_share_delta_pp": 4.969,
+          "z_row_share": 4.75,
+          "delta_concentration": {
+            "n_distinct_queries": 1552,
+            "top1_share_of_delta": 0.0493,
+            "top5_share_of_delta": 0.1108,
+            "hhi_of_delta": 0.0061,
+            "top_queries": [
+              {
+                "query": "这是底款",
+                "delta": -167.64
+              },
+              {
+                "query": "3322",
+                "delta": 69.99
+              },
+              {
+                "query": "ehviewer",
+                "delta": 48.92
+              },
+              {
+                "query": "黑料",
+                "delta": 47.55
+              },
+              {
+                "query": "玉足",
+                "delta": 42.84
+              }
+            ]
+          }
+        },
+        {
+          "label": "#22 获取爆笑笑话与脑筋急转弯合集",
+          "rows_a": 11,
+          "rows_b": 172,
+          "row_share_a": 0.0061,
+          "row_share_b": 0.00861,
+          "row_share_delta_pp": 0.251,
+          "weight_share_a": 0.00688,
+          "weight_share_b": 0.01425,
+          "weight_share_delta_pp": 0.737,
+          "z_row_share": 1.12,
+          "delta_concentration": {
+            "n_distinct_queries": 133,
+            "top1_share_of_delta": 0.131,
+            "top5_share_of_delta": 0.4396,
+            "hhi_of_delta": 0.0542,
+            "top_queries": [
+              {
+                "query": "脑筋急转弯大全6-12岁",
+                "delta": 53.38
+              },
+              {
+                "query": "100字",
+                "delta": -48.12
+              },
+              {
+                "query": "脑筋急转弯",
+                "delta": 47.01
+              },
+              {
+                "query": "监控下的爆笑瞬间",
+                "delta": -16.76
+              },
+              {
+                "query": "100字左右",
+                "delta": -13.77
+              }
+            ]
+          }
+        },
+        {
+          "label": "#14 情侣头像查询",
+          "rows_a": 14,
+          "rows_b": 57,
+          "row_share_a": 0.00776,
+          "row_share_b": 0.00285,
+          "row_share_delta_pp": -0.491,
+          "weight_share_a": 0.00945,
+          "weight_share_b": 0.00517,
+          "weight_share_delta_pp": -0.428,
+          "z_row_share": -3.51,
+          "delta_concentration": {
+            "n_distinct_queries": 50,
+            "top1_share_of_delta": 0.1452,
+            "top5_share_of_delta": 0.5002,
+            "hhi_of_delta": 0.0683,
+            "top_queries": [
+              {
+                "query": "是情头吗",
+                "delta": -33.44
+              },
+              {
+                "query": "情侣头像",
+                "delta": 24.71
+              },
+              {
+                "query": "是情侣头像吗",
+                "delta": -22.27
+              },
+              {
+                "query": "这是情头吗",
+                "delta": -21.64
+              },
+              {
+                "query": "这是情侣头像吗",
+                "delta": -13.1
+              }
+            ]
+          }
+        },
+        {
+          "label": "#23 文书写法与模板查询",
+          "rows_a": 25,
+          "rows_b": 408,
+          "row_share_a": 0.01387,
+          "row_share_b": 0.02042,
+          "row_share_delta_pp": 0.655,
+          "weight_share_a": 0.01271,
+          "weight_share_b": 0.01662,
+          "weight_share_delta_pp": 0.39,
+          "z_row_share": 1.91,
+          "delta_concentration": {
+            "n_distinct_queries": 313,
+            "top1_share_of_delta": 0.0688,
+            "top5_share_of_delta": 0.2081,
+            "hhi_of_delta": 0.0172,
+            "top_queries": [
+              {
+                "query": "离婚协议书怎么写 自愿离婚协议书",
+                "delta": 40.35
+              },
+              {
+                "query": "怎么打开",
+                "delta": -25.7
+              },
+              {
+                "query": "继续写",
+                "delta": -21.14
+              },
+              {
+                "query": "怎么填写",
+                "delta": -18.25
+              },
+              {
+                "query": "这个怎么写？",
+                "delta": -16.63
+              }
+            ]
+          }
+        }
+      ],
+      "emergent": [
+        {
+          "label": "#3 查询特定主题图片",
+          "rows_a": 21,
+          "rows_b": 1979,
+          "row_share_a": 0.01165,
+          "row_share_b": 0.09903,
+          "row_share_delta_pp": 8.739,
+          "weight_share_a": 0.00867,
+          "weight_share_b": 0.10897,
+          "weight_share_delta_pp": 10.03,
+          "z_row_share": 12.31,
+          "delta_concentration": {
+            "n_distinct_queries": 1411,
+            "top1_share_of_delta": 0.0291,
+            "top5_share_of_delta": 0.1194,
+            "hhi_of_delta": 0.0061,
+            "top_queries": [
+              {
+                "query": "早上好图片大全 最美 漂亮 新版",
+                "delta": 68.38
+              },
+              {
+                "query": "七一精美图片",
+                "delta": 58.44
+              },
+              {
+                "query": "七一图片大全大图",
+                "delta": 58.19
+              },
+              {
+                "query": "七一图片高清大图",
+                "delta": 52.0
+              },
+              {
+                "query": "七月图片",
+                "delta": 43.83
+              }
+            ]
+          }
+        },
+        {
+          "label": "#18 查询免费漫画在线观看入口",
+          "rows_a": 1,
+          "rows_b": 1366,
+          "row_share_a": 0.00055,
+          "row_share_b": 0.06836,
+          "row_share_delta_pp": 6.78,
+          "weight_share_a": 0.00027,
+          "weight_share_b": 0.06129,
+          "weight_share_delta_pp": 6.102,
+          "z_row_share": 11.37,
+          "delta_concentration": {
+            "n_distinct_queries": 1248,
+            "top1_share_of_delta": 0.0175,
+            "top5_share_of_delta": 0.0696,
+            "hhi_of_delta": 0.0029,
+            "top_queries": [
+              {
+                "query": "乐可金银花露漫画完整版免费观看下拉快看最新",
+                "delta": 21.54
+              },
+              {
+                "query": "糖心logo免费",
+                "delta": 19.96
+              },
+              {
+                "query": "韩漫免费观看在线阅读漫画",
+                "delta": 16.06
+              },
+              {
+                "query": "恶人想要抢救一下免费阅读漫画",
+                "delta": 14.15
+              },
+              {
+                "query": "免费漫画",
+                "delta": 13.95
+              }
+            ]
+          }
+        },
+        {
+          "label": "#24 图片搜索",
+          "rows_a": 62,
+          "rows_b": 2497,
+          "row_share_a": 0.03439,
+          "row_share_b": 0.12496,
+          "row_share_delta_pp": 9.057,
+          "weight_share_a": 0.04186,
+          "weight_share_b": 0.09717,
+          "weight_share_delta_pp": 5.531,
+          "z_row_share": 11.44,
+          "delta_concentration": {
+            "n_distinct_queries": 1847,
+            "top1_share_of_delta": 0.035,
+            "top5_share_of_delta": 0.1178,
+            "hhi_of_delta": 0.0052,
+            "top_queries": [
+              {
+                "query": "图片",
+                "delta": 96.18
+              },
+              {
+                "query": "生成图片",
+                "delta": -69.45
+              },
+              {
+                "query": "图片配文",
+                "delta": -61.42
+              },
+              {
+                "query": "tk图片",
+                "delta": -58.28
+              },
+              {
+                "query": "找原图",
+                "delta": -38.6
+              }
+            ]
+          }
+        },
+        {
+          "label": "#17 查找漫画资源",
+          "rows_a": 8,
+          "rows_b": 1053,
+          "row_share_a": 0.00444,
+          "row_share_b": 0.05269,
+          "row_share_delta_pp": 4.826,
+          "weight_share_a": 0.00466,
+          "weight_share_b": 0.05963,
+          "weight_share_delta_pp": 5.497,
+          "z_row_share": 9.12,
+          "delta_concentration": {
+            "n_distinct_queries": 805,
+            "top1_share_of_delta": 0.0814,
+            "top5_share_of_delta": 0.2222,
+            "hhi_of_delta": 0.0152,
+            "top_queries": [
+              {
+                "query": "漫画",
+                "delta": 103.78
+              },
+              {
+                "query": "韩漫",
+                "delta": 69.49
+              },
+              {
+                "query": "包子漫画",
+                "delta": 42.39
+              },
+              {
+                "query": "继续画",
+                "delta": -40.22
+              },
+              {
+                "query": "喵趣漫画",
+                "delta": 27.34
+              }
+            ]
+          }
+        },
+        {
+          "label": "#19 漫画App官方下载入口查询",
+          "rows_a": 0,
+          "rows_b": 344,
+          "row_share_a": 0.0,
+          "row_share_b": 0.01721,
+          "row_share_delta_pp": 1.721,
+          "weight_share_a": 0.0,
+          "weight_share_b": 0.03129,
+          "weight_share_delta_pp": 3.129,
+          "z_row_share": 5.62,
+          "delta_concentration": {
+            "n_distinct_queries": 307,
+            "top1_share_of_delta": 0.2145,
+            "top5_share_of_delta": 0.3946,
+            "hhi_of_delta": 0.0581,
+            "top_queries": [
+              {
+                "query": "漫蛙",
+                "delta": 134.25
+              },
+              {
+                "query": "韩漫网站",
+                "delta": 35.91
+              },
+              {
+                "query": "漫蛙漫画(网页入口)",
+                "delta": 29.68
+              },
+              {
+                "query": "e站官网地址",
+                "delta": 24.07
+              },
+              {
+                "query": "jmcomic.2.0.mic官网入口下载",
+                "delta": 23.0
+              }
+            ]
+          }
+        },
+        {
+          "label": "#15 头像图片查询",
+          "rows_a": 4,
+          "rows_b": 461,
+          "row_share_a": 0.00222,
+          "row_share_b": 0.02307,
+          "row_share_delta_pp": 2.085,
+          "weight_share_a": 0.00258,
+          "weight_share_b": 0.02825,
+          "weight_share_delta_pp": 2.566,
+          "z_row_share": 5.87,
+          "delta_concentration": {
+            "n_distinct_queries": 312,
+            "top1_share_of_delta": 0.3498,
+            "top5_share_of_delta": 0.4441,
+            "hhi_of_delta": 0.1275,
+            "top_queries": [
+              {
+                "query": "头像",
+                "delta": 197.23
+              },
+              {
+                "query": "图片头像",
+                "delta": 19.33
+              },
+              {
+                "query": "好看的头像",
+                "delta": 16.03
+              },
+              {
+                "query": "闺蜜头像",
+                "delta": 9.28
+              },
+              {
+                "query": "帮我画 头像",
+                "delta": -8.5
+              }
+            ]
+          }
+        },
+        {
+          "label": "#5 微信头像图片查询",
+          "rows_a": 22,
+          "rows_b": 427,
+          "row_share_a": 0.0122,
+          "row_share_b": 0.02137,
+          "row_share_delta_pp": 0.917,
+          "weight_share_a": 0.00943,
+          "weight_share_b": 0.03464,
+          "weight_share_delta_pp": 2.521,
+          "z_row_share": 2.62,
+          "delta_concentration": {
+            "n_distinct_queries": 328,
+            "top1_share_of_delta": 0.0691,
+            "top5_share_of_delta": 0.2423,
+            "hhi_of_delta": 0.0213,
+            "top_queries": [
+              {
+                "query": "微信头像",
+                "delta": 57.04
+              },
+              {
+                "query": "头像图片",
+                "delta": 38.89
+              },
+              {
+                "query": "头像图片2025最新款",
+                "delta": 37.36
+              },
+              {
+                "query": "帮我画 小仓鼠",
+                "delta": -33.53
+              },
+              {
+                "query": "微信头像图片",
+                "delta": 33.3
+              }
+            ]
+          }
+        },
+        {
+          "label": "#25 安全标志与安全生产信息查询",
+          "rows_a": 1,
+          "rows_b": 445,
+          "row_share_a": 0.00055,
+          "row_share_b": 0.02227,
+          "row_share_delta_pp": 2.171,
+          "weight_share_a": 0.00042,
+          "weight_share_b": 0.01998,
+          "weight_share_delta_pp": 1.956,
+          "z_row_share": 6.24,
+          "delta_concentration": {
+            "n_distinct_queries": 327,
+            "top1_share_of_delta": 0.1856,
+            "top5_share_of_delta": 0.32,
+            "hhi_of_delta": 0.0428,
+            "top_queries": [
+              {
+                "query": "党徽",
+                "delta": 75.72
+              },
+              {
+                "query": "3c充电宝标志",
+                "delta": 21.26
+              },
+              {
+                "query": "网络空间安全",
+                "delta": 16.27
+              },
+              {
+                "query": "视觉中国",
+                "delta": 8.92
+              },
+              {
+                "query": "如何建立消防安全台账",
+                "delta": -8.38
+              }
+            ]
+          }
+        },
+        {
+          "label": "#16 女生头像图片查询",
+          "rows_a": 15,
+          "rows_b": 394,
+          "row_share_a": 0.00832,
+          "row_share_b": 0.01972,
+          "row_share_delta_pp": 1.14,
+          "weight_share_a": 0.00634,
+          "weight_share_b": 0.02216,
+          "weight_share_delta_pp": 1.582,
+          "z_row_share": 3.41,
+          "delta_concentration": {
+            "n_distinct_queries": 314,
+            "top1_share_of_delta": 0.0538,
+            "top5_share_of_delta": 0.1902,
+            "hhi_of_delta": 0.0153,
+            "top_queries": [
+              {
+                "query": "女生头像",
+                "delta": 30.64
+              },
+              {
+                "query": "头像女",
+                "delta": 27.98
+              },
+              {
+                "query": "头像女头",
+                "delta": 16.77
+              },
+              {
+                "query": "女头像二次元",
+                "delta": -16.76
+              },
+              {
+                "query": "美女的胸怀",
+                "delta": 16.23
+              }
+            ]
+          }
+        },
+        {
+          "label": "#26 男生头像图片查询",
+          "rows_a": 2,
+          "rows_b": 223,
+          "row_share_a": 0.00111,
+          "row_share_b": 0.01116,
+          "row_share_delta_pp": 1.005,
+          "weight_share_a": 0.00084,
+          "weight_share_b": 0.01629,
+          "weight_share_delta_pp": 1.545,
+          "z_row_share": 4.04,
+          "delta_concentration": {
+            "n_distinct_queries": 152,
+            "top1_share_of_delta": 0.1333,
+            "top5_share_of_delta": 0.4289,
+            "hhi_of_delta": 0.0495,
+            "top_queries": [
+              {
+                "query": "男生头像",
+                "delta": 45.65
+              },
+              {
+                "query": "头像男",
+                "delta": 43.11
+              },
+              {
+                "query": "头像男头",
+                "delta": 22.53
+              },
+              {
+                "query": "男头像图片",
+                "delta": 22.42
+              },
+              {
+                "query": "男头",
+                "delta": 13.22
+              }
+            ]
+          }
+        },
+        {
+          "label": "#13 按关键词查找图片",
+          "rows_a": 7,
+          "rows_b": 508,
+          "row_share_a": 0.00388,
+          "row_share_b": 0.02542,
+          "row_share_delta_pp": 2.154,
+          "weight_share_a": 0.00293,
+          "weight_share_b": 0.01804,
+          "weight_share_delta_pp": 1.511,
+          "z_row_share": 5.77,
+          "delta_concentration": {
+            "n_distinct_queries": 386,
+            "top1_share_of_delta": 0.0754,
+            "top5_share_of_delta": 0.1598,
+            "hhi_of_delta": 0.0126,
+            "top_queries": [
+              {
+                "query": "图片好看的图片",
+                "delta": 31.64
+              },
+              {
+                "query": "好看的图片",
+                "delta": 10.25
+              },
+              {
+                "query": "哪里可以找到宝华CM9喇叭固定螺丝的图片",
+                "delta": -8.38
+              },
+              {
+                "query": "给我一些南轩款识的图片参考",
+                "delta": -8.38
+              },
+              {
+                "query": "给我一张直三棱柱的图片",
+                "delta": -8.38
+              }
+            ]
+          }
+        },
+        {
+          "label": "#11 术语含义查询",
+          "rows_a": 6,
+          "rows_b": 549,
+          "row_share_a": 0.00333,
+          "row_share_b": 0.02747,
+          "row_share_delta_pp": 2.415,
+          "weight_share_a": 0.00449,
+          "weight_share_b": 0.01837,
+          "weight_share_delta_pp": 1.388,
+          "z_row_share": 6.23,
+          "delta_concentration": {
+            "n_distinct_queries": 406,
+            "top1_share_of_delta": 0.0595,
+            "top5_share_of_delta": 0.208,
+            "hhi_of_delta": 0.0135,
+            "top_queries": [
+              {
+                "query": "这是什么意思",
+                "delta": -27.22
+              },
+              {
+                "query": "什么意思？",
+                "delta": -25.59
+              },
+              {
+                "query": "这是什么意思？",
+                "delta": -16.94
+              },
+              {
+                "query": "i人格和e人格是什么意思",
+                "delta": 16.35
+              },
+              {
+                "query": "8611什么意思?",
+                "delta": 9.02
+              }
+            ]
+          }
+        },
+        {
+          "label": "#12 人口统计数据查询",
+          "rows_a": 3,
+          "rows_b": 399,
+          "row_share_a": 0.00166,
+          "row_share_b": 0.01997,
+          "row_share_delta_pp": 1.83,
+          "weight_share_a": 0.00175,
+          "weight_share_b": 0.01485,
+          "weight_share_delta_pp": 1.31,
+          "z_row_share": 5.53,
+          "delta_concentration": {
+            "n_distinct_queries": 311,
+            "top1_share_of_delta": 0.0528,
+            "top5_share_of_delta": 0.1697,
+            "hhi_of_delta": 0.0115,
+            "top_queries": [
+              {
+                "query": "2026开学最火金句",
+                "delta": -17.54
+              },
+              {
+                "query": "2025年天免费资料百度",
+                "delta": 10.25
+              },
+              {
+                "query": "中国人口",
+                "delta": 10.17
+              },
+              {
+                "query": "白俄罗斯人口与面积",
+                "delta": 9.24
+              },
+              {
+                "query": "20个字",
+                "delta": -9.17
+              }
+            ]
+          }
+        },
+        {
+          "label": "#0 术语定义查询",
+          "rows_a": 29,
+          "rows_b": 568,
+          "row_share_a": 0.01608,
+          "row_share_b": 0.02842,
+          "row_share_delta_pp": 1.234,
+          "weight_share_a": 0.01476,
+          "weight_share_b": 0.02255,
+          "weight_share_delta_pp": 0.778,
+          "z_row_share": 3.07,
+          "delta_concentration": {
+            "n_distinct_queries": 457,
+            "top1_share_of_delta": 0.0355,
+            "top5_share_of_delta": 0.1462,
+            "hhi_of_delta": 0.0105,
+            "top_queries": [
+              {
+                "query": "3c标识是什么",
+                "delta": 26.51
+              },
+              {
+                "query": "什么？",
+                "delta": -24.35
+              },
+              {
+                "query": "什么字",
+                "delta": -24.19
+              },
+              {
+                "query": "四不两直是指什么",
+                "delta": 17.39
+              },
+              {
+                "query": "这是哪",
+                "delta": -16.67
+              }
+            ]
+          }
+        }
+      ],
+      "receded": [],
+      "too_thin_to_compare": []
+    }
+  },
+  "purity": {
+    "td_l1": {
+      "checked": true,
+      "n_groups": 20,
+      "n_single_snapshot": 14,
+      "single_snapshot": [
+        {
+          "label": "COMPLETE_OR_INTERPRET_QUOTE",
+          "share_of_AI助手": 0.048,
+          "rows": 336
+        },
+        {
+          "label": "LEARN_HOW_TO_WRITE",
+          "share_of_AI助手": 0.041,
+          "rows": 462
+        },
+        {
+          "label": "LOOK_UP_DEFINITION",
+          "share_of_AI助手": 0.027,
+          "rows": 2680
+        },
+        {
+          "label": "LOOK_UP_NUMERIC_OR_OFFICIAL_FACT",
+          "share_of_AI助手": 0.015,
+          "rows": 392
+        },
+        {
+          "label": "LOOK_UP_OFFICIAL_POLICY_OR_COMPLIANCE_TEXT",
+          "share_of_AI助手": 0.016,
+          "rows": 550
+        },
+        {
+          "label": "NAVIGATE_TO_SITE",
+          "share_of_AI助手": 0.01,
+          "rows": 708
+        },
+        {
+          "label": "OBTAIN_ASSIGNED_WRITING_MATERIALS",
+          "share_of_AI助手": 0.032,
+          "rows": 462
+        },
+        {
+          "label": "OBTAIN_DOCUMENT_TEMPLATE",
+          "share_of_AI助手": 0.013,
+          "rows": 1025
+        },
+        {
+          "label": "OBTAIN_OCCASION_GREETING_IMAGE",
+          "share_of_AI助手": 0.009,
+          "rows": 810
+        },
+        {
+          "label": "OBTAIN_PERSONAL_DECOR_IMAGE",
+          "share_of_AI助手": 0.014,
+          "rows": 1316
+        },
+        {
+          "label": "OBTAIN_READABLE_MANGA",
+          "share_of_AI助手": 0.006,
+          "rows": 2800
+        },
+        {
+          "label": "OBTAIN_REFERENCE_IMAGE",
+          "share_of_AI助手": 0.021,
+          "rows": 4867
+        },
+        {
+          "label": "OBTAIN_STORY_TEXT",
+          "share_of_AI助手": 0.016,
+          "rows": 824
+        },
+        {
+          "label": "REQUEST_RESTRICTED_OR_HARMFUL_CONTENT",
+          "share_of_AI助手": 0.045,
+          "rows": 111
+        }
+      ],
+      "share_min": 0.006,
+      "share_median": 0.03,
+      "share_max": 0.911
+    },
+    "bu_leaf_name": {
+      "checked": true,
+      "n_groups": 30,
+      "n_single_snapshot": 21,
+      "single_snapshot": [
+        {
+          "label": "七月及七一图片与祝福语查询",
+          "share_of_AI助手": 0.002,
+          "rows": 460
+        },
+        {
+          "label": "人口统计数据查询",
+          "share_of_AI助手": 0.007,
+          "rows": 402
+        },
+        {
+          "label": "办公文档与演示文稿模板查询",
+          "share_of_AI助手": 0.015,
+          "rows": 998
+        },
+        {
+          "label": "图片搜索",
+          "share_of_AI助手": 0.024,
+          "rows": 2559
+        },
+        {
+          "label": "头像图片查询",
+          "share_of_AI助手": 0.009,
+          "rows": 465
+        },
+        {
+          "label": "女生头像图片查询",
+          "share_of_AI助手": 0.037,
+          "rows": 409
+        },
+        {
+          "label": "安全标志与安全生产信息查询",
+          "share_of_AI助手": 0.002,
+          "rows": 446
+        },
+        {
+          "label": "微信头像图片查询",
+          "share_of_AI助手": 0.049,
+          "rows": 449
+        },
+        {
+          "label": "思想汇报与心得体会范文查询",
+          "share_of_AI助手": 0.016,
+          "rows": 1223
+        },
+        {
+          "label": "报刊电子版查询",
+          "share_of_AI助手": 0.0,
+          "rows": 225
+        },
+        {
+          "label": "按关键词查找图片",
+          "share_of_AI助手": 0.014,
+          "rows": 515
+        },
+        {
+          "label": "早安问候图片查询",
+          "share_of_AI助手": 0.019,
+          "rows": 373
+        },
+        {
+          "label": "术语含义查询",
+          "share_of_AI助手": 0.011,
+          "rows": 555
+        },
+        {
+          "label": "术语定义查询",
+          "share_of_AI助手": 0.049,
+          "rows": 597
+        },
+        {
+          "label": "查找漫画资源",
+          "share_of_AI助手": 0.008,
+          "rows": 1061
+        },
+        {
+          "label": "查询事物图片",
+          "share_of_AI助手": 0.011,
+          "rows": 1167
+        },
+        {
+          "label": "查询免费漫画在线观看入口",
+          "share_of_AI助手": 0.001,
+          "rows": 1367
+        },
+        {
+          "label": "查询感谢老师话语模板",
+          "share_of_AI助手": 0.046,
+          "rows": 303
+        },
+        {
+          "label": "查询故事内容",
+          "share_of_AI助手": 0.009,
+          "rows": 566
+        },
+        {
+          "label": "漫画App官方下载入口查询",
+          "share_of_AI助手": 0.0,
+          "rows": 344
+        },
+        {
+          "label": "男生头像查询",
+          "share_of_AI助手": 0.009,
+          "rows": 225
+        }
+      ],
+      "share_min": 0.0,
+      "share_median": 0.018,
+      "share_max": 0.829
+    },
+    "bu_family_final": {
+      "checked": true,
+      "n_groups": 21,
+      "n_single_snapshot": 14,
+      "single_snapshot": [
+        {
+          "label": "#0 术语定义查询",
+          "share_of_AI助手": 0.049,
+          "rows": 597
+        },
+        {
+          "label": "#11 术语含义查询",
+          "share_of_AI助手": 0.011,
+          "rows": 555
+        },
+        {
+          "label": "#12 人口统计数据查询",
+          "share_of_AI助手": 0.007,
+          "rows": 402
+        },
+        {
+          "label": "#13 按关键词查找图片",
+          "share_of_AI助手": 0.014,
+          "rows": 515
+        },
+        {
+          "label": "#15 头像图片查询",
+          "share_of_AI助手": 0.009,
+          "rows": 465
+        },
+        {
+          "label": "#16 女生头像图片查询",
+          "share_of_AI助手": 0.037,
+          "rows": 409
+        },
+        {
+          "label": "#17 查找漫画资源",
+          "share_of_AI助手": 0.008,
+          "rows": 1061
+        },
+        {
+          "label": "#18 查询免费漫画在线观看入口",
+          "share_of_AI助手": 0.001,
+          "rows": 1367
+        },
+        {
+          "label": "#19 漫画App官方下载入口查询",
+          "share_of_AI助手": 0.0,
+          "rows": 344
+        },
+        {
+          "label": "#24 图片搜索",
+          "share_of_AI助手": 0.024,
+          "rows": 2559
+        },
+        {
+          "label": "#25 安全标志与安全生产信息查询",
+          "share_of_AI助手": 0.002,
+          "rows": 446
+        },
+        {
+          "label": "#26 男生头像图片查询",
+          "share_of_AI助手": 0.009,
+          "rows": 225
+        },
+        {
+          "label": "#3 查询特定主题图片",
+          "share_of_AI助手": 0.011,
+          "rows": 2000
+        },
+        {
+          "label": "#5 微信头像图片查询",
+          "share_of_AI助手": 0.049,
+          "rows": 449
+        }
+      ],
+      "share_min": 0.0,
+      "share_median": 0.024,
+      "share_max": 0.829
+    }
+  },
+  "note": "Shares are WITHIN-SNAPSHOT. The snapshots differ in total weight, so raw counts would report every class as declining. Both periods were labelled by ONE taxonomy and ONE tree in this run, which is what excludes 'the taxonomy changed' as an explanation."
+}

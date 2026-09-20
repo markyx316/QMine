@@ -1,0 +1,254 @@
+{
+  "k_sweep": [
+    {
+      "k": 5,
+      "intent_alignment_ami": 0.5039,
+      "stability_ari": 0.9938,
+      "silhouette": 0.1268,
+      "template_fragmentation": 2.0429
+    },
+    {
+      "k": 7,
+      "intent_alignment_ami": 0.4969,
+      "stability_ari": 0.9968,
+      "silhouette": 0.0959,
+      "template_fragmentation": 2.1165
+    },
+    {
+      "k": 8,
+      "intent_alignment_ami": 0.5037,
+      "stability_ari": 0.865,
+      "silhouette": 0.1021,
+      "template_fragmentation": 2.0112
+    },
+    {
+      "k": 10,
+      "intent_alignment_ami": 0.5232,
+      "stability_ari": 0.9301,
+      "silhouette": 0.1139,
+      "template_fragmentation": 2.1219
+    },
+    {
+      "k": 12,
+      "intent_alignment_ami": 0.5289,
+      "stability_ari": 0.8201,
+      "silhouette": 0.1151,
+      "template_fragmentation": 2.3013
+    },
+    {
+      "k": 15,
+      "intent_alignment_ami": 0.5028,
+      "stability_ari": 0.7672,
+      "silhouette": 0.1147,
+      "template_fragmentation": 2.9798
+    },
+    {
+      "k": 18,
+      "intent_alignment_ami": 0.4818,
+      "stability_ari": 0.5875,
+      "silhouette": 0.1127,
+      "template_fragmentation": 3.647
+    },
+    {
+      "k": 20,
+      "intent_alignment_ami": 0.5211,
+      "stability_ari": 0.755,
+      "silhouette": 0.1217,
+      "template_fragmentation": 2.7059
+    },
+    {
+      "k": 25,
+      "intent_alignment_ami": 0.6052,
+      "stability_ari": 0.7628,
+      "silhouette": 0.1322,
+      "template_fragmentation": 2.9985
+    },
+    {
+      "k": 30,
+      "intent_alignment_ami": 0.4228,
+      "stability_ari": 0.5577,
+      "silhouette": 0.1198,
+      "template_fragmentation": 4.7148
+    },
+    {
+      "k": 40,
+      "intent_alignment_ami": 0.5596,
+      "stability_ari": 0.6562,
+      "silhouette": 0.1467,
+      "template_fragmentation": 3.8116
+    },
+    {
+      "k": 50,
+      "intent_alignment_ami": 0.5455,
+      "stability_ari": 0.6721,
+      "silhouette": 0.1391,
+      "template_fragmentation": 4.631
+    },
+    {
+      "k": 65,
+      "intent_alignment_ami": 0.538,
+      "stability_ari": 0.7466,
+      "silhouette": 0.1641,
+      "template_fragmentation": 6.0581
+    },
+    {
+      "k": 80,
+      "intent_alignment_ami": 0.4952,
+      "stability_ari": 0.6137,
+      "silhouette": 0.174,
+      "template_fragmentation": 7.0468
+    },
+    {
+      "k": 100,
+      "intent_alignment_ami": 0.4752,
+      "stability_ari": 0.6114,
+      "silhouette": 0.1773,
+      "template_fragmentation": 8.016
+    },
+    {
+      "k": 120,
+      "intent_alignment_ami": 0.4901,
+      "stability_ari": 0.6354,
+      "silhouette": 0.1914,
+      "template_fragmentation": 8.5529
+    }
+  ],
+  "deep_aligned": {
+    "k_overcluster": 51,
+    "survival_threshold": 449.7,
+    "k_estimate": 20,
+    "size_distribution": {
+      "max": 2692,
+      "median": 344,
+      "min": 143
+    }
+  },
+  "triangulation": {
+    "estimates": {
+      "located_k": 25,
+      "located_by": "intent_alignment_ami",
+      "deep_aligned_leaf_k": 20,
+      "deep_aligned_implied_family_k": 6.7,
+      "expert_range": [
+        12,
+        22
+      ],
+      "silhouette_peak_k": 120
+    },
+    "chosen_family_k": 25,
+    "locator": "intent_alignment_ami",
+    "stability_floor": 0.55,
+    "n_rejected_as_unstable": 0,
+    "tie_set": [
+      {
+        "k": 25,
+        "intent_alignment_ami": 0.6052,
+        "stability_ari": 0.7628,
+        "template_fragmentation": 2.9985
+      }
+    ],
+    "chosen_by": "stability >= 0.55 rejects irreproducible K; among survivors the highest intent_alignment_ami; ties within 0.040047 — 2x measured noise (se=0.020024) — broken toward the simpler tree",
+    "converged": false,
+    "agreement": "none",
+    "measured_estimators_agree": false,
+    "prior_agrees": false,
+    "divergence_note": "两个实测估计彼此不一致。**记录分歧而不取平均** — 平均出来的 K 谁也说服不了。定案由「intent_alignment_ami」给出 (稳定性只负责剔除不可复现的 K, 不负责排序); 家族层按暂定读取, 细分靠叶层。",
+    "silhouette_disagrees": true,
+    "reference_sensitivity": {
+      "by_reference": {
+        "phrasing_groups": {
+          "locates_k": 25,
+          "peak_value": 0.6052,
+          "value_at_chosen_k": 0.6052,
+          "decides": true
+        }
+      },
+      "chosen_k": 25,
+      "note_scope": "raw argmax per reference, before the stability veto and the tie band",
+      "located_k_values": {
+        "phrasing_groups": 25
+      },
+      "n_references": 1,
+      "references_agree": null
+    },
+    "locator_reach": {
+      "phrasing_groups": {
+        "reach": 0.24,
+        "mass": 0.2082,
+        "n_clusters_reached": 6,
+        "n_clusters": 25,
+        "row_coverage": 0.0693,
+        "min_share": 0.1,
+        "column": "intent_alignment_ami",
+        "discrimination": 9.11
+      }
+    },
+    "deciding_reference": "phrasing_groups"
+  },
+  "locator_reference": {
+    "reference": "phrasing (template) groups",
+    "n_classes": 4,
+    "coverage": 0.0693,
+    "n_rows_scored": 1590,
+    "caveat": "这是**措辞群**参照系的画像, 不一定是最终定位 K 的那个参照系 —— 后者见 `triangulation.deciding_reference`。定位到的 K 跟着参照系**触及到多少簇**走 (不是它的类目数: 固定行集、只改类目数, 6/9/25 类都定位到同一个 K), 参照系没覆盖到的行则完全不计分。换一个参照系, 答案就会变。",
+    "is_the_deciding_reference": true,
+    "deciding_reference": "phrasing_groups"
+  },
+  "grid_proposal": {
+    "incumbent": [
+      8,
+      10,
+      12,
+      15,
+      18,
+      20,
+      25,
+      30,
+      40,
+      50,
+      65,
+      80,
+      100,
+      120
+    ],
+    "proposed_kept": [
+      5,
+      7
+    ],
+    "proposed_rejected": [],
+    "n_extra_comparisons": 2,
+    "widened": [
+      5,
+      7,
+      8,
+      10,
+      12,
+      15,
+      18,
+      20,
+      25,
+      30,
+      40,
+      50,
+      65,
+      80,
+      100,
+      120
+    ],
+    "rationale": "finance_zh 是窄垂类语料，22934 行、16817 个唯一查询，但只有一个主领域；12 个说法组仅覆盖 17.1% 的查询，说明措辞模板有一定信号但不是大量细碎意图。当前网格从 8 开始，未覆盖更粗的顶层聚类；按流量计算 K=5 时平均每类约 4587 行，K=7 时约 3276 行，仍然足够命名和评估，更符合窄垂类顶层意图会合并成少量大类的假设。因此只补 5 和 7 两个更粗候选，不密集填补低 K 区间。高 K 端 100/120 在该规模下平均每类仅约 229/191 行，容易产生过小簇，列为不建议采用。",
+    "corpus_signals": [
+      "n_rows",
+      "n_unique",
+      "n_phrasing_groups",
+      "phrasing_group_coverage",
+      "domain"
+    ],
+    "drop_advisory_ignored": [
+      100.0,
+      120.0
+    ],
+    "chosen": 25,
+    "a_proposed_value_won": false,
+    "verdict": "the incumbent grid still held the winner — these additions cost comparisons and returned nothing"
+  }
+}

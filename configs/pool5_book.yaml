@@ -1,0 +1,66 @@
+# POOLED-4 corpus for the 书籍文档 domain: 2025 search + 2026 search + AI-assistant head + tail.
+# (No voice export exists for this vertical, so it has four snapshots, not five — same shape as
+# 教育 / 影视 / 人物.)
+#
+# Built by `analysis/pooled5/build_pooled5_corpus.py`; its docstring carries the reasoning for
+# every column below. One run, one taxonomy, four sources, because two runs over the same rows
+# shared 0 of 35 class codes.
+#
+# `extends: live.yaml` because `--config` REPLACES the default rather than merging it; without
+# this line the whole provider policy is silently dropped.
+extends: live.yaml
+
+data:
+  input_path: data/raw/pooled5/书籍文档_pooled5.parquet
+  text_column: query
+
+  # Normalised WITHIN source to 10,000 (see the builder). Search PV (wise_pv) and assistant PV
+  # (search_num) are different instruments; raw PV pooled over them would make every weighted
+  # metric a statement about search. In THIS vertical the point is sharper than usual: v3
+  # cleaning removed 150 of the 1,000 assistant-head rows and with them 88.45% of that export's
+  # PV (the top row 总结全文概要 = 5,796,587 is a system feature chip), so even within-source
+  # assistant PV must be read as a supplement to row shares, never as the headline.
+  weight_column: pv_norm
+
+  # `ops/drift.label_drift` compares EXACTLY two groups, so p10b is pointed at the two-level
+  # surface column; the four-level `source` column rides along for the post-run analysis and is
+  # re-joined positionally (`labels_full.csv` preserves input order).
+  snapshot_column: surface
+
+  # The groups differ by SURFACE, not by date: the time branch's prose would be false here and
+  # one of its caveats inverts (.claude/rules/multi-snapshot.md).
+  comparison_axis: stratum
+
+  # Deliberately empty. `l2` exists for assistant rows only (~8% coverage) — declared as a
+  # reference it would ask the K locator to find a partition that separates the assistant from
+  # search, which is the comparison, not the frame.
+  reference_label_columns: []
+
+llm:
+  # PRE-EMPTIVE ROUTING, and it is a PREDICTION the run will test — not a measured fact yet.
+  #
+  # Measured precedent: on 人物 (Chinese public figures) Zhipu returned 400 `contentFilter` on
+  # generation. `researcher_pragmatic_intents` refused 3/3 in both generations, so the taxonomy
+  # was designed from 4 of 5 research angles; `risk_sentinel` refused 3/3 in gen01, which halted
+  # p7_audit. Two halted runs before the corpus was rerouted (see configs/pool5_ppl_b.yaml).
+  #
+  # Why these two roles and this corpus. Both roles are handed the RAW risky rows by design, and
+  # both corpora carry material a PRC-hosted filter plausibly refuses: 软件 has a measured 3.55%
+  # of rows in circumvention tooling (VPN / 翻墙 / 推特 / Telegram — a censorship-policy topic)
+  # plus 0.33% porn-app distribution codes; 书籍文档 has 0.51% adult-manga platform names
+  # (E站 / 禁漫 / 里番). The remedy for a content filter is routing, not retrying.
+  #
+  # Deliberately NARROW — three roles, and here is the line.
+  # MOVED: `risk_sentinel` and `researcher` have the OBSERVED failure mode on 人物 (3/3 refusals
+  # each). `domain_scout` is moved on the same reasoning rather than on evidence: it is the third
+  # role handed raw rows, and its job is literally to propose candidate risk categories, so a
+  # filter refusal there costs the run its independent risk discovery in a single call.
+  # LEFT ON ZHIPU, deliberately: `referee` (sees short contested query pairs; moving it would
+  # disturb lab independence from annotator_a=deepseek and annotator_b=qwen), `reporter` and
+  # `maintainer` (both work from already-produced artifacts — class names and numbers — not from
+  # raw porn-app codes or circumvention strings). If one of those three refuses, that is a
+  # finding this config predicted wrong, and it belongs in the run log, not in a silent retry.
+  model_overrides:
+    risk_sentinel: openrouter:moonshotai/kimi-k3
+    researcher: deepseek:deepseek-v4-pro
+    domain_scout: deepseek:deepseek-v4-pro

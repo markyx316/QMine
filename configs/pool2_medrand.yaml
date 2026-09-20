@@ -1,0 +1,53 @@
+# POOLED-2 corpus for `医疗随机`: 2026-09-14, 医疗 category, a RANDOM 10k export from traditional search and
+# one from the 健康管家 assistant, pooled into one file so one taxonomy labels both.
+#
+# WHY IT EXISTS BESIDE `健康`. health-pool2 mined the same two products a week earlier from "top 10,000
+# (query x day)" exports; after aggregation and cleaning its assistant side was down to 225 rows. These
+# exports are random samples of DISTINCT queries, so the long tail is present and the product layer —
+# which repeats heavily and therefore dominated a top-by-day export — collapses to one row per string.
+# Built by `analysis/pooled5/build_medrand_corpus.py`. `健康_pooled5.parquet` is untouched.
+#
+# WHAT THE CLEANING DID, AND WHY SO LITTLE WAS REMOVED (20,622 rows -> 20,313 mined, 98.5%):
+#   - the product's input template 我想咨询 prefixes 75.4% of the assistant rows; it is STRIPPED, not
+#     deleted (health-pool2 deleted that form). The text after it is the user's own question: median
+#     length 12, 66.6% carry a question marker, and stripping yields 10,621 distinct strings.
+#   - a row is removed only when THREE independent blind readings agree it is product layer
+#     (305 rows). A split reading keeps the row (351 rows), and the codebook's own tie-break is
+#     "if unsure between chip and user, choose user". Fleiss kappa 0.617, 70.6% unanimous — lower
+#     than health-pool2's 0.945 because only the AMBIGUOUS 1,192 strings were audited, not all of them.
+#   - the search side lost 0 rows: content-free and headline rules match nothing here, and
+#     health-pool2's doctor-card rule is not applied (its evidence was a seven-day uniform-traffic
+#     signature that a one-day random export cannot show).
+#
+# `extends: live.yaml` because `--config` REPLACES the default rather than merging it.
+extends: live.yaml
+
+data:
+  input_path: data/raw/pooled5/医疗随机_pooled5.parquet
+  text_column: query
+
+  # Day PV, normalised WITHIN source to 10,000. Search PV and assistant PV are different instruments;
+  # both are tail-heavy here (median 2 and 1), so weighted metrics say little that row shares do not.
+  weight_column: pv_norm
+
+  # `ops/drift.label_drift` compares EXACTLY two groups; there are exactly two sources and `surface`
+  # (搜索 / AI助手) names them.
+  snapshot_column: surface
+
+  # Same DAY on both sides, so the groups differ by SURFACE (and product), not by date — the time
+  # branch's prose would be false here (.claude/rules/multi-snapshot.md).
+  comparison_axis: stratum
+
+  # LEGACY LABELS — both exports carry the platform's own three-level category on every row, and
+  # `legacy_l3` is 科室-类型 crossed, split into the two orthogonal facets below.
+  #
+  # PRE-REGISTERED CONDITION (the same one health-pool2 used, written before this corpus existed):
+  # a column stays declared only if, on the final cleaned corpus, Cramér's V(column, surface) <= 0.55
+  # AND no class holding more than 1% of rows appears on one surface only.
+  # OUTCOME, printed by the builder on the final 20,313 rows:
+  #   legacy_l2    V = 0.218, no one-sided class  -> declared (first: it stratifies gold, pilot and the
+  #                log-reading sample)
+  #   legacy_dept  V = 0.122, no one-sided class  -> declared (health-pool2 had to WITHDRAW this one at
+  #                V = 0.348 with two one-sided classes; the random strata fixed that)
+  #   legacy_type  V = 0.192, no one-sided class  -> declared
+  reference_label_columns: [legacy_l2, legacy_dept, legacy_type]

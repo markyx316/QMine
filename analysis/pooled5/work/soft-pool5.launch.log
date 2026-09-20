@@ -1,0 +1,1212 @@
+loaded 5 key(s) from /Users/mayouxuan/Documents/Claude/Search Query Mining Agent
+Team/QMine/.env
+────────── QMine · domain software_apps_zh · config 37b5b3029ba65038 ───────────
+  dashboard → runs/soft-pool5/dashboard.html
+20:10:51 INFO    qmine.llm: provider quirks recalled from .cache/model_quirks.json: 15 model(s) start in plain-JSON mode, 5 with a raised output cap — not rediscovered this run
+20:10:52 INFO    httpx: HTTP Request: GET https://raw.githubusercontent.com/BerriAI/litellm/main/model_prices_and_context_window.json "HTTP/1.1 200 OK"
+20:10:52 INFO    httpx: HTTP Request: GET https://openrouter.ai/api/v1/models "HTTP/1.1 200 OK"
+20:10:52 INFO    qmine.llm: routing plan: 19 roles, estimated $4.02, catalogue ['litellm', 'openrouter']
+20:10:52 INFO    qmine.llm:   role assignments for this run (model · lab · est. calls · est. $):
+20:10:52 INFO    qmine.llm:     annotator_a             deepseek:deepseek-v4-flash  lab=deepseek  128 calls  $2.074
+20:10:52 INFO    qmine.llm:     namer                   deepseek:deepseek-v4-pro  lab=deepseek  60 calls  $1.188
+20:10:52 INFO    qmine.llm:     researcher_log_reading  openrouter:moonshotai/kimi-k3  lab=moonshot  5 calls  $0.478
+20:10:52 INFO    qmine.llm:     taxonomy_architect      deepseek:deepseek-v4-pro  lab=deepseek  2 calls  $0.158
+20:10:52 INFO    qmine.llm:     tree_auditor            deepseek:deepseek-v4-pro  lab=deepseek  1 calls  $0.040
+20:10:52 INFO    qmine.llm:     l2_interpreter          openrouter:deepseek/deepseek-v4.1-flash  lab=deepseek  20 calls  $0.032
+20:10:52 INFO    qmine.llm:     proposer                deepseek:deepseek-v4-pro  lab=deepseek  2 calls  $0.025
+20:10:52 INFO    qmine.llm:     maintainer              zhipu:glm-5.3  lab=zhipu  1 calls  $0.022
+20:10:52 INFO    qmine.llm:     adversary               openrouter:moonshotai/kimi-k3  lab=moonshot  0 calls  $0.000
+20:10:52 INFO    qmine.llm:     delivery_auditor        openrouter:moonshotai/kimi-k3  lab=moonshot  0 calls  $0.000
+20:10:52 INFO    qmine.llm:     domain_scout            deepseek:deepseek-v4-pro  lab=deepseek  1 calls  $0.000
+20:10:52 INFO    qmine.llm:     interpreter             deepseek:deepseek-v4-pro  lab=deepseek  0 calls  $0.000
+20:10:52 INFO    qmine.llm:     observer                openrouter:moonshotai/kimi-k3  lab=moonshot  0 calls  $0.000
+20:10:52 INFO    qmine.llm:     reporter                zhipu:glm-5.3  lab=zhipu  0 calls  $0.000
+20:10:52 INFO    qmine.llm:     researcher              deepseek:deepseek-v4-pro  lab=deepseek  5 calls  $0.000
+20:10:52 INFO    qmine.llm:     risk_sentinel           openrouter:moonshotai/kimi-k3  lab=moonshot  1 calls  $0.000
+20:10:52 INFO    qmine.llm:     taxonomy_critic         deepseek:deepseek-v4-pro  lab=deepseek  0 calls  $0.000
+20:10:52 INFO    qmine.llm:     annotator_b             qwen:qwen3.8-flash  lab=qwen  0 calls  $0.000
+20:10:52 INFO    qmine.llm:     referee                 zhipu:glm-5.3-flash  lab=zhipu  0 calls  $0.000
+20:10:52 INFO    qmine.llm:     annotator/referee labs: a=deepseek, b=qwen, referee=zhipu — independent
+20:10:52 INFO    qmine.llm:     ! taxonomy_architect: pinned with NO FALLBACK — nothing reachable meets this role's 200,000-token context need in another lab, so a single provider outage silently removes this role from the run
+20:10:52 INFO    qmine.llm:     ! tree_auditor: pinned with NO FALLBACK — nothing reachable meets this role's 200,000-token context need in another lab, so a single provider outage silently removes this role from the run
+20:10:52 INFO    qmine.llm:     ! maintainer: chosen from the configured `capable_models` list; price only broke ties inside it, never against it
+20:10:52 INFO    qmine.llm:     ! delivery_auditor: pinned with NO FALLBACK — nothing reachable meets this role's 200,000-token context need in another lab, so a single provider outage silently removes this role from the run
+20:10:52 INFO    qmine.llm:     ! domain_scout: deepseek:deepseek-v4-pro publishes NO PRICE in the catalogue — the pin overrides `_eligible`'s exclusion of unpriced models. Its estimate reads $0.00 and the spend ledger will under-report: the cost is UNKNOWN, not free.
+20:10:52 INFO    qmine.llm:     ! observer: pinned with NO FALLBACK — nothing reachable meets this role's 200,000-token context need in another lab, so a single provider outage silently removes this role from the run
+20:10:52 INFO    qmine.llm:     ! reporter: chosen from the configured `capable_models` list; price only broke ties inside it, never against it
+20:10:52 INFO    qmine.llm:     ! researcher: deepseek:deepseek-v4-pro publishes NO PRICE in the catalogue — the pin overrides `_eligible`'s exclusion of unpriced models. Its estimate reads $0.00 and the spend ledger will under-report: the cost is UNKNOWN, not free.
+20:10:52 INFO    qmine.llm:     ! risk_sentinel: openrouter:moonshotai/kimi-k3 publishes NO PRICE in the catalogue — the pin overrides `_eligible`'s exclusion of unpriced models. Its estimate reads $0.00 and the spend ledger will under-report: the cost is UNKNOWN, not free.
+20:10:52 INFO    qmine.llm:     ! taxonomy_critic: pinned with NO FALLBACK — nothing reachable meets this role's 128,000-token context need in another lab, so a single provider outage silently removes this role from the run
+20:10:52 INFO    qmine.llm:     ! annotator_b: qwen:qwen3.8-flash publishes NO PRICE in the catalogue — the pin overrides `_eligible`'s exclusion of unpriced models. Its estimate reads $0.00 and the spend ledger will under-report: the cost is UNKNOWN, not free.
+20:10:52 INFO    qmine.llm:     ! referee: zhipu:glm-5.3-flash publishes NO PRICE in the catalogue — the pin overrides `_eligible`'s exclusion of unpriced models. Its estimate reads $0.00 and the spend ledger will under-report: the cost is UNKNOWN, not free.
+20:10:52 INFO    qmine.llm: probing native structured output on 1 model(s) so a real call does not pay for the discovery
+20:10:53 INFO    langchain_openai.chat_models._client_utils: langchain-openai detected HTTP_PROXY, HTTPS_PROXY and no explicit `http_socket_options` / `http_client` / `http_async_client` / `openai_proxy`; skipping the custom `httpx` transport so httpx's env-proxy auto-detection applies. Pass `http_socket_options=[...]` to opt back into kernel-level TCP keepalive tuning on top of the env proxy.
+20:10:54 INFO    httpx2: HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+20:10:55 INFO    qmine.graph: P0 foundation — run soft-pool5, generation 1
+20:10:58 INFO    qmine.graph: gate p0_provider: PASSED — real agents: provider=routed
+20:10:58 INFO    qmine.graph: ✔ p0_foundation completed in 3.3s
+20:10:58 INFO    qmine.graph: P1 audit — profiling corpus
+20:10:58 INFO    qmine.graph:   2 snapshot(s) in this corpus: AI助手=1,924, 搜索=19,996
+20:10:58 INFO    qmine.graph:   ⚠ this corpus carries 2 label-like column(s) that no `--reference-columns` flag declared: source, l2
+20:10:58 INFO    qmine.graph: gate p1_reference_columns_declared: WARNED — the corpus carries source, l2 and the run declared NONE — the gold set and pilot are UNSTRATIFIED by legacy label and the blindness firewall is armed without those values
+20:10:58 INFO    qmine.graph: gate p1_minority_language_risk: PASSED — minority scripts total 7.5%. Test unified-versus-stratified explicitly with the decisive metrics; at this share both are defensible and the data should choose.
+20:10:58 INFO    qmine.graph: gate p1_template_coverage: PASSED — 12 phrasing families cover 8,721 rows (39.8% of the corpus; the share is reported, not gated — it is a property of the corpus)
+20:10:58 INFO    qmine.graph: ✔ p1_audit completed in 0.3s
+20:10:58 INFO    qmine.graph: P3a encoder bake-off — 3 candidates
+20:10:58 INFO    qmine.graph: P2a taxonomy — 5 researchers fanning out
+20:10:58 INFO    sentence_transformers.base.model: No device provided, using mps
+20:10:59 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+20:10:59 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 400 Bad Request"
+20:10:59 INFO    httpx: HTTP Request: HEAD https://huggingface.co/BAAI/bge-small-zh-v1.5/resolve/main/modules.json "HTTP/1.1 307 Temporary Redirect"
+Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+20:10:59 WARNING huggingface_hub.utils._http: Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+20:10:59 INFO    httpx: HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/BAAI/bge-small-zh-v1.5/7999e1d3359715c523056ef9478215996d62a620/modules.json "HTTP/1.1 200 OK"
+20:10:59 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 400 Bad Request"
+20:10:59 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+20:10:59 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+20:11:00 INFO    httpx: HTTP Request: HEAD https://huggingface.co/BAAI/bge-small-zh-v1.5/resolve/main/config_sentence_transformers.json "HTTP/1.1 307 Temporary Redirect"
+20:11:00 INFO    httpx: HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/BAAI/bge-small-zh-v1.5/7999e1d3359715c523056ef9478215996d62a620/config_sentence_transformers.json "HTTP/1.1 200 OK"
+20:11:00 INFO    sentence_transformers.base.model: Loading SentenceTransformer model from BAAI/bge-small-zh-v1.5.
+20:11:00 INFO    httpx2: HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+20:11:00 INFO    httpx: HTTP Request: HEAD https://huggingface.co/BAAI/bge-small-zh-v1.5/resolve/main/config_sentence_transformers.json "HTTP/1.1 307 Temporary Redirect"
+20:11:00 INFO    httpx: HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/BAAI/bge-small-zh-v1.5/7999e1d3359715c523056ef9478215996d62a620/config_sentence_transformers.json "HTTP/1.1 200 OK"
+20:11:01 INFO    httpx: HTTP Request: HEAD https://huggingface.co/BAAI/bge-small-zh-v1.5/resolve/main/README.md "HTTP/1.1 307 Temporary Redirect"
+20:11:01 INFO    httpx: HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/BAAI/bge-small-zh-v1.5/7999e1d3359715c523056ef9478215996d62a620/README.md "HTTP/1.1 200 OK"
+20:11:01 INFO    httpx: HTTP Request: HEAD https://huggingface.co/BAAI/bge-small-zh-v1.5/resolve/main/modules.json "HTTP/1.1 307 Temporary Redirect"
+20:11:01 INFO    httpx: HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/BAAI/bge-small-zh-v1.5/7999e1d3359715c523056ef9478215996d62a620/modules.json "HTTP/1.1 200 OK"
+20:11:01 INFO    httpx: HTTP Request: HEAD https://huggingface.co/BAAI/bge-small-zh-v1.5/resolve/main/sentence_bert_config.json "HTTP/1.1 307 Temporary Redirect"
+20:11:01 INFO    httpx: HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/BAAI/bge-small-zh-v1.5/7999e1d3359715c523056ef9478215996d62a620/sentence_bert_config.json "HTTP/1.1 200 OK"
+20:11:02 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+20:11:02 INFO    httpx: HTTP Request: HEAD https://huggingface.co/BAAI/bge-small-zh-v1.5/resolve/main/adapter_config.json "HTTP/1.1 404 Not Found"
+20:11:02 INFO    httpx: HTTP Request: HEAD https://huggingface.co/BAAI/bge-small-zh-v1.5/resolve/main/config.json "HTTP/1.1 307 Temporary Redirect"
+20:11:02 INFO    httpx: HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/BAAI/bge-small-zh-v1.5/7999e1d3359715c523056ef9478215996d62a620/config.json "HTTP/1.1 200 OK"
+  P0 foundation — run soft-pool5, generation 1
+  gate p0_provider: PASSED — real agents: provider=routed
+  ✔ p0_foundation completed in 3.3s
+  P1 audit — profiling corpus
+    2 snapshot(s) in this corpus: AI助手=1,924, 搜索=19,996
+    ⚠ this corpus carries 2 label-like column(s) that no `--reference-columns` flag declared: source, l2
+  gate p1_reference_columns_declared: WARNED — the corpus carries source, l2 and the run declared NONE — the gold set and pilot are UNSTRATIFIED by legacy label and the blindness firewall is armed without those values
+  gate p1_minority_language_risk: PASSED — minority scripts total 7.5%. Test unified-versus-stratified explicitly with the decisive metrics; at this share both are defensible and the data should choose.
+  gate p1_template_coverage: PASSED — 12 phrasing families cover 8,721 rows (39.8% of the corpus; the share is reported, not gated — it is a property of the corpus)
+  ✔ p1_audit completed in 0.3s
+  P3a encoder bake-off — 3 candidates
+  P2a taxonomy — 5 researchers fanning out
+Loading weights:   0%|          | 0/71 [00:00<?, ?it/s]Loading weights: 100%|██████████| 71/71 [00:00<00:00, 52950.85it/s]
+20:11:03 INFO    httpx: HTTP Request: HEAD https://huggingface.co/BAAI/bge-small-zh-v1.5/resolve/main/processor_config.json "HTTP/1.1 404 Not Found"
+20:11:03 INFO    httpx: HTTP Request: HEAD https://huggingface.co/BAAI/bge-small-zh-v1.5/resolve/main/preprocessor_config.json "HTTP/1.1 404 Not Found"
+20:11:03 INFO    httpx: HTTP Request: HEAD https://huggingface.co/BAAI/bge-small-zh-v1.5/resolve/main/video_preprocessor_config.json "HTTP/1.1 404 Not Found"
+20:11:03 INFO    httpx: HTTP Request: HEAD https://huggingface.co/BAAI/bge-small-zh-v1.5/resolve/main/preprocessor_config.json "HTTP/1.1 404 Not Found"
+20:11:04 INFO    httpx: HTTP Request: HEAD https://huggingface.co/BAAI/bge-small-zh-v1.5/resolve/main/tokenizer_config.json "HTTP/1.1 307 Temporary Redirect"
+20:11:04 INFO    httpx: HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/BAAI/bge-small-zh-v1.5/7999e1d3359715c523056ef9478215996d62a620/tokenizer_config.json "HTTP/1.1 200 OK"
+20:11:04 INFO    httpx: HTTP Request: HEAD https://huggingface.co/BAAI/bge-small-zh-v1.5/resolve/main/config.json "HTTP/1.1 307 Temporary Redirect"
+20:11:04 INFO    httpx: HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/BAAI/bge-small-zh-v1.5/7999e1d3359715c523056ef9478215996d62a620/config.json "HTTP/1.1 200 OK"
+20:11:05 INFO    httpx: HTTP Request: HEAD https://huggingface.co/BAAI/bge-small-zh-v1.5/resolve/main/config.json "HTTP/1.1 307 Temporary Redirect"
+20:11:05 INFO    httpx: HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/BAAI/bge-small-zh-v1.5/7999e1d3359715c523056ef9478215996d62a620/config.json "HTTP/1.1 200 OK"
+20:11:05 INFO    httpx: HTTP Request: HEAD https://huggingface.co/BAAI/bge-small-zh-v1.5/resolve/main/tokenizer_config.json "HTTP/1.1 307 Temporary Redirect"
+20:11:05 INFO    httpx: HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/BAAI/bge-small-zh-v1.5/7999e1d3359715c523056ef9478215996d62a620/tokenizer_config.json "HTTP/1.1 200 OK"
+20:11:05 INFO    httpx: HTTP Request: GET https://huggingface.co/api/models/BAAI/bge-small-zh-v1.5/tree/main/additional_chat_templates?recursive=false&expand=false "HTTP/1.1 404 Not Found"
+20:11:06 INFO    httpx: HTTP Request: GET https://huggingface.co/api/models/BAAI/bge-small-zh-v1.5/tree/main?recursive=true&expand=false "HTTP/1.1 200 OK"
+20:11:06 INFO    httpx: HTTP Request: HEAD https://huggingface.co/BAAI/bge-small-zh-v1.5/resolve/main/1_Pooling/config.json "HTTP/1.1 307 Temporary Redirect"
+20:11:06 INFO    httpx: HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/BAAI/bge-small-zh-v1.5/7999e1d3359715c523056ef9478215996d62a620/1_Pooling%2Fconfig.json "HTTP/1.1 200 OK"
+20:11:06 INFO    httpx: HTTP Request: GET https://huggingface.co/api/models/BAAI/bge-small-zh-v1.5 "HTTP/1.1 200 OK"
+20:11:15 INFO    sentence_transformers.base.model: No device provided, using mps
+20:11:16 INFO    httpx: HTTP Request: HEAD https://huggingface.co/BAAI/bge-base-zh-v1.5/resolve/main/modules.json "HTTP/1.1 307 Temporary Redirect"
+20:11:16 INFO    httpx: HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/BAAI/bge-base-zh-v1.5/f03589ceff5aac7111bd60cfc7d497ca17ecac65/modules.json "HTTP/1.1 200 OK"
+20:11:17 INFO    httpx: HTTP Request: HEAD https://huggingface.co/BAAI/bge-base-zh-v1.5/resolve/main/config_sentence_transformers.json "HTTP/1.1 307 Temporary Redirect"
+20:11:17 INFO    httpx: HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/BAAI/bge-base-zh-v1.5/f03589ceff5aac7111bd60cfc7d497ca17ecac65/config_sentence_transformers.json "HTTP/1.1 200 OK"
+20:11:17 INFO    sentence_transformers.base.model: Loading SentenceTransformer model from BAAI/bge-base-zh-v1.5.
+20:11:18 INFO    httpx: HTTP Request: HEAD https://huggingface.co/BAAI/bge-base-zh-v1.5/resolve/main/config_sentence_transformers.json "HTTP/1.1 307 Temporary Redirect"
+20:11:18 INFO    httpx: HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/BAAI/bge-base-zh-v1.5/f03589ceff5aac7111bd60cfc7d497ca17ecac65/config_sentence_transformers.json "HTTP/1.1 200 OK"
+20:11:18 INFO    httpx: HTTP Request: HEAD https://huggingface.co/BAAI/bge-base-zh-v1.5/resolve/main/README.md "HTTP/1.1 307 Temporary Redirect"
+20:11:19 INFO    httpx: HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/BAAI/bge-base-zh-v1.5/f03589ceff5aac7111bd60cfc7d497ca17ecac65/README.md "HTTP/1.1 200 OK"
+20:11:20 INFO    httpx: HTTP Request: HEAD https://huggingface.co/BAAI/bge-base-zh-v1.5/resolve/main/modules.json "HTTP/1.1 307 Temporary Redirect"
+20:11:20 INFO    httpx: HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/BAAI/bge-base-zh-v1.5/f03589ceff5aac7111bd60cfc7d497ca17ecac65/modules.json "HTTP/1.1 200 OK"
+20:11:21 INFO    httpx: HTTP Request: HEAD https://huggingface.co/BAAI/bge-base-zh-v1.5/resolve/main/sentence_bert_config.json "HTTP/1.1 307 Temporary Redirect"
+20:11:21 INFO    qmine:   ~ researcher_legacy_audit ok 22.3s out 1,581 · deepseek-v4-pro · candidates=0, observations=4, contradictions=1, open_questions=3 · 证据材料明确声明：该语料中不存在 legacy taxonomy。因此没有可继承的结构，也没有可拆解的形式定义桶。
+20:11:21 INFO    qmine.graph:   ⚠ researcher[legacy_audit] returned NO candidates — this angle contributed nothing to the taxonomy
+20:11:21 INFO    qmine.graph:   researcher[legacy_audit] → 0 candidates
+20:11:21 INFO    httpx: HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/BAAI/bge-base-zh-v1.5/f03589ceff5aac7111bd60cfc7d497ca17ecac65/sentence_bert_config.json "HTTP/1.1 200 OK"
+20:11:21 INFO    httpx: HTTP Request: HEAD https://huggingface.co/BAAI/bge-base-zh-v1.5/resolve/main/adapter_config.json "HTTP/1.1 404 Not Found"
+20:11:22 INFO    httpx: HTTP Request: HEAD https://huggingface.co/BAAI/bge-base-zh-v1.5/resolve/main/config.json "HTTP/1.1 307 Temporary Redirect"
+20:11:22 INFO    httpx: HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/BAAI/bge-base-zh-v1.5/f03589ceff5aac7111bd60cfc7d497ca17ecac65/config.json "HTTP/1.1 200 OK"
+20:11:23 INFO    httpx: HTTP Request: HEAD https://huggingface.co/BAAI/bge-base-zh-v1.5/resolve/main/model.safetensors "HTTP/1.1 404 Not Found"
+    ~ researcher_legacy_audit ok 22.3s out 1,581 · deepseek-v4-pro · candidates=0, observations=4, contradictions=1, open_questions=3 · 证据材料明确声明：该语料中不存在 legacy taxonomy。因此没有可继承的结构，也没有可拆解的形式定义桶。
+    ⚠ researcher[legacy_audit] returned NO candidates — this angle contributed nothing to the taxonomy
+    researcher[legacy_audit] → 0 candidates
+Loading weights:   0%|          | 0/199 [00:00<?, ?it/s]Loading weights: 100%|██████████| 199/199 [00:00<00:00, 45073.25it/s]
+20:11:23 INFO    httpx: HTTP Request: GET https://huggingface.co/api/models/BAAI/bge-base-zh-v1.5 "HTTP/1.1 200 OK"
+20:11:23 INFO    httpx: HTTP Request: HEAD https://huggingface.co/BAAI/bge-base-zh-v1.5/resolve/main/processor_config.json "HTTP/1.1 404 Not Found"
+20:11:24 INFO    httpx: HTTP Request: HEAD https://huggingface.co/BAAI/bge-base-zh-v1.5/resolve/main/preprocessor_config.json "HTTP/1.1 404 Not Found"
+20:11:24 INFO    httpx: HTTP Request: GET https://huggingface.co/api/models/BAAI/bge-base-zh-v1.5/commits/main "HTTP/1.1 200 OK"
+20:11:24 INFO    httpx: HTTP Request: HEAD https://huggingface.co/BAAI/bge-base-zh-v1.5/resolve/main/video_preprocessor_config.json "HTTP/1.1 404 Not Found"
+20:11:24 INFO    httpx: HTTP Request: HEAD https://huggingface.co/BAAI/bge-base-zh-v1.5/resolve/main/preprocessor_config.json "HTTP/1.1 404 Not Found"
+20:11:24 INFO    httpx: HTTP Request: GET https://huggingface.co/api/models/BAAI/bge-base-zh-v1.5/discussions?p=0 "HTTP/1.1 200 OK"
+20:11:24 INFO    httpx: HTTP Request: HEAD https://huggingface.co/BAAI/bge-base-zh-v1.5/resolve/main/tokenizer_config.json "HTTP/1.1 307 Temporary Redirect"
+20:11:25 INFO    httpx: HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/BAAI/bge-base-zh-v1.5/f03589ceff5aac7111bd60cfc7d497ca17ecac65/tokenizer_config.json "HTTP/1.1 200 OK"
+20:11:25 INFO    httpx: HTTP Request: GET https://huggingface.co/api/models/BAAI/bge-base-zh-v1.5/commits/refs%2Fpr%2F1 "HTTP/1.1 200 OK"
+20:11:25 INFO    httpx: HTTP Request: HEAD https://huggingface.co/BAAI/bge-base-zh-v1.5/resolve/main/config.json "HTTP/1.1 307 Temporary Redirect"
+20:11:25 INFO    httpx: HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/BAAI/bge-base-zh-v1.5/f03589ceff5aac7111bd60cfc7d497ca17ecac65/config.json "HTTP/1.1 200 OK"
+20:11:25 INFO    httpx: HTTP Request: HEAD https://huggingface.co/BAAI/bge-base-zh-v1.5/resolve/main/config.json "HTTP/1.1 307 Temporary Redirect"
+20:11:25 INFO    httpx: HTTP Request: HEAD https://huggingface.co/BAAI/bge-base-zh-v1.5/resolve/refs%2Fpr%2F1/model.safetensors.index.json "HTTP/1.1 404 Not Found"
+20:11:25 INFO    httpx: HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/BAAI/bge-base-zh-v1.5/f03589ceff5aac7111bd60cfc7d497ca17ecac65/config.json "HTTP/1.1 200 OK"
+20:11:26 INFO    httpx: HTTP Request: HEAD https://huggingface.co/BAAI/bge-base-zh-v1.5/resolve/main/tokenizer_config.json "HTTP/1.1 307 Temporary Redirect"
+20:11:26 INFO    httpx: HTTP Request: HEAD https://huggingface.co/BAAI/bge-base-zh-v1.5/resolve/refs%2Fpr%2F1/model.safetensors "HTTP/1.1 302 Found"
+20:11:26 INFO    httpx: HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/BAAI/bge-base-zh-v1.5/f03589ceff5aac7111bd60cfc7d497ca17ecac65/tokenizer_config.json "HTTP/1.1 200 OK"
+20:11:26 INFO    httpx: HTTP Request: GET https://huggingface.co/api/models/BAAI/bge-base-zh-v1.5/tree/main/additional_chat_templates?recursive=false&expand=false "HTTP/1.1 404 Not Found"
+20:11:27 INFO    httpx: HTTP Request: GET https://huggingface.co/api/models/BAAI/bge-base-zh-v1.5/tree/main?recursive=true&expand=false "HTTP/1.1 200 OK"
+20:11:27 INFO    httpx: HTTP Request: HEAD https://huggingface.co/BAAI/bge-base-zh-v1.5/resolve/main/1_Pooling/config.json "HTTP/1.1 307 Temporary Redirect"
+20:11:28 INFO    httpx: HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/BAAI/bge-base-zh-v1.5/f03589ceff5aac7111bd60cfc7d497ca17ecac65/1_Pooling%2Fconfig.json "HTTP/1.1 200 OK"
+20:11:28 INFO    httpx: HTTP Request: GET https://huggingface.co/api/models/BAAI/bge-base-zh-v1.5 "HTTP/1.1 200 OK"
+20:11:57 INFO    sentence_transformers.base.model: No device provided, using mps
+20:11:58 INFO    httpx: HTTP Request: HEAD https://huggingface.co/intfloat/multilingual-e5-small/resolve/main/modules.json "HTTP/1.1 307 Temporary Redirect"
+20:11:58 INFO    httpx: HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/intfloat/multilingual-e5-small/614241f622f53c4eeff9890bdc4f31cfecc418b3/modules.json "HTTP/1.1 200 OK"
+20:11:58 INFO    httpx: HTTP Request: HEAD https://huggingface.co/intfloat/multilingual-e5-small/resolve/main/config_sentence_transformers.json "HTTP/1.1 404 Not Found"
+20:11:58 INFO    sentence_transformers.base.model: Loading SentenceTransformer model from intfloat/multilingual-e5-small.
+20:11:58 INFO    httpx: HTTP Request: HEAD https://huggingface.co/intfloat/multilingual-e5-small/resolve/main/config_sentence_transformers.json "HTTP/1.1 404 Not Found"
+20:11:59 INFO    httpx: HTTP Request: HEAD https://huggingface.co/intfloat/multilingual-e5-small/resolve/main/README.md "HTTP/1.1 307 Temporary Redirect"
+20:11:59 INFO    httpx: HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/intfloat/multilingual-e5-small/614241f622f53c4eeff9890bdc4f31cfecc418b3/README.md "HTTP/1.1 200 OK"
+20:11:59 INFO    httpx: HTTP Request: HEAD https://huggingface.co/intfloat/multilingual-e5-small/resolve/main/modules.json "HTTP/1.1 307 Temporary Redirect"
+20:11:59 INFO    httpx: HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/intfloat/multilingual-e5-small/614241f622f53c4eeff9890bdc4f31cfecc418b3/modules.json "HTTP/1.1 200 OK"
+20:12:00 INFO    httpx: HTTP Request: HEAD https://huggingface.co/intfloat/multilingual-e5-small/resolve/main/sentence_bert_config.json "HTTP/1.1 307 Temporary Redirect"
+20:12:00 INFO    httpx: HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/intfloat/multilingual-e5-small/614241f622f53c4eeff9890bdc4f31cfecc418b3/sentence_bert_config.json "HTTP/1.1 200 OK"
+20:12:00 INFO    httpx: HTTP Request: HEAD https://huggingface.co/intfloat/multilingual-e5-small/resolve/main/adapter_config.json "HTTP/1.1 404 Not Found"
+20:12:00 INFO    httpx: HTTP Request: HEAD https://huggingface.co/intfloat/multilingual-e5-small/resolve/main/config.json "HTTP/1.1 307 Temporary Redirect"
+20:12:01 INFO    httpx: HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/intfloat/multilingual-e5-small/614241f622f53c4eeff9890bdc4f31cfecc418b3/config.json "HTTP/1.1 200 OK"
+Loading weights:   0%|          | 0/199 [00:00<?, ?it/s]Loading weights: 100%|██████████| 199/199 [00:00<00:00, 10334.38it/s]
+20:12:01 INFO    httpx: HTTP Request: HEAD https://huggingface.co/intfloat/multilingual-e5-small/resolve/main/processor_config.json "HTTP/1.1 404 Not Found"
+20:12:01 INFO    httpx: HTTP Request: HEAD https://huggingface.co/intfloat/multilingual-e5-small/resolve/main/preprocessor_config.json "HTTP/1.1 404 Not Found"
+20:12:02 INFO    httpx: HTTP Request: HEAD https://huggingface.co/intfloat/multilingual-e5-small/resolve/main/video_preprocessor_config.json "HTTP/1.1 404 Not Found"
+20:12:02 INFO    httpx: HTTP Request: HEAD https://huggingface.co/intfloat/multilingual-e5-small/resolve/main/preprocessor_config.json "HTTP/1.1 404 Not Found"
+20:12:02 INFO    httpx: HTTP Request: HEAD https://huggingface.co/intfloat/multilingual-e5-small/resolve/main/tokenizer_config.json "HTTP/1.1 307 Temporary Redirect"
+20:12:02 INFO    httpx: HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/intfloat/multilingual-e5-small/614241f622f53c4eeff9890bdc4f31cfecc418b3/tokenizer_config.json "HTTP/1.1 200 OK"
+20:12:03 INFO    httpx: HTTP Request: HEAD https://huggingface.co/intfloat/multilingual-e5-small/resolve/main/config.json "HTTP/1.1 307 Temporary Redirect"
+20:12:03 INFO    httpx: HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/intfloat/multilingual-e5-small/614241f622f53c4eeff9890bdc4f31cfecc418b3/config.json "HTTP/1.1 200 OK"
+20:12:03 INFO    httpx: HTTP Request: HEAD https://huggingface.co/intfloat/multilingual-e5-small/resolve/main/config.json "HTTP/1.1 307 Temporary Redirect"
+20:12:03 INFO    httpx: HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/intfloat/multilingual-e5-small/614241f622f53c4eeff9890bdc4f31cfecc418b3/config.json "HTTP/1.1 200 OK"
+20:12:03 INFO    httpx: HTTP Request: HEAD https://huggingface.co/intfloat/multilingual-e5-small/resolve/main/tokenizer_config.json "HTTP/1.1 307 Temporary Redirect"
+20:12:03 INFO    httpx: HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/intfloat/multilingual-e5-small/614241f622f53c4eeff9890bdc4f31cfecc418b3/tokenizer_config.json "HTTP/1.1 200 OK"
+20:12:04 INFO    httpx: HTTP Request: HEAD https://huggingface.co/intfloat/multilingual-e5-small/resolve/main/tokenizer_config.json "HTTP/1.1 307 Temporary Redirect"
+20:12:04 INFO    httpx: HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/intfloat/multilingual-e5-small/614241f622f53c4eeff9890bdc4f31cfecc418b3/tokenizer_config.json "HTTP/1.1 200 OK"
+20:12:04 INFO    httpx: HTTP Request: GET https://huggingface.co/api/models/intfloat/multilingual-e5-small/tree/main/additional_chat_templates?recursive=false&expand=false "HTTP/1.1 404 Not Found"
+20:12:04 INFO    httpx: HTTP Request: GET https://huggingface.co/api/models/intfloat/multilingual-e5-small/tree/main?recursive=true&expand=false "HTTP/1.1 200 OK"
+20:12:06 INFO    httpx: HTTP Request: GET https://huggingface.co/api/models/intfloat/multilingual-e5-small "HTTP/1.1 200 OK"
+20:12:07 INFO    httpx: HTTP Request: HEAD https://huggingface.co/intfloat/multilingual-e5-small/resolve/main/1_Pooling/config.json "HTTP/1.1 307 Temporary Redirect"
+20:12:07 INFO    httpx: HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/intfloat/multilingual-e5-small/614241f622f53c4eeff9890bdc4f31cfecc418b3/1_Pooling%2Fconfig.json "HTTP/1.1 200 OK"
+20:12:07 INFO    httpx: HTTP Request: GET https://huggingface.co/api/models/intfloat/multilingual-e5-small "HTTP/1.1 200 OK"
+20:12:19 INFO    qmine.graph:   chose BAAI/bge-small-zh-v1.5 on stability; silhouette would have chosen intfloat/multilingual-e5-small
+20:12:19 INFO    sentence_transformers.base.model: No device provided, using mps
+20:12:20 INFO    httpx: HTTP Request: HEAD https://huggingface.co/BAAI/bge-small-zh-v1.5/resolve/main/modules.json "HTTP/1.1 307 Temporary Redirect"
+20:12:20 INFO    httpx: HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/BAAI/bge-small-zh-v1.5/7999e1d3359715c523056ef9478215996d62a620/modules.json "HTTP/1.1 200 OK"
+20:12:20 INFO    httpx: HTTP Request: HEAD https://huggingface.co/BAAI/bge-small-zh-v1.5/resolve/main/config_sentence_transformers.json "HTTP/1.1 307 Temporary Redirect"
+20:12:20 INFO    httpx: HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/BAAI/bge-small-zh-v1.5/7999e1d3359715c523056ef9478215996d62a620/config_sentence_transformers.json "HTTP/1.1 200 OK"
+20:12:20 INFO    sentence_transformers.base.model: Loading SentenceTransformer model from BAAI/bge-small-zh-v1.5.
+20:12:21 INFO    httpx: HTTP Request: HEAD https://huggingface.co/BAAI/bge-small-zh-v1.5/resolve/main/config_sentence_transformers.json "HTTP/1.1 307 Temporary Redirect"
+20:12:21 INFO    httpx: HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/BAAI/bge-small-zh-v1.5/7999e1d3359715c523056ef9478215996d62a620/config_sentence_transformers.json "HTTP/1.1 200 OK"
+20:12:21 INFO    httpx: HTTP Request: HEAD https://huggingface.co/BAAI/bge-small-zh-v1.5/resolve/main/README.md "HTTP/1.1 307 Temporary Redirect"
+20:12:21 INFO    httpx: HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/BAAI/bge-small-zh-v1.5/7999e1d3359715c523056ef9478215996d62a620/README.md "HTTP/1.1 200 OK"
+20:12:22 INFO    httpx: HTTP Request: HEAD https://huggingface.co/BAAI/bge-small-zh-v1.5/resolve/main/modules.json "HTTP/1.1 307 Temporary Redirect"
+20:12:22 INFO    httpx: HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/BAAI/bge-small-zh-v1.5/7999e1d3359715c523056ef9478215996d62a620/modules.json "HTTP/1.1 200 OK"
+20:12:22 INFO    httpx: HTTP Request: HEAD https://huggingface.co/BAAI/bge-small-zh-v1.5/resolve/main/sentence_bert_config.json "HTTP/1.1 307 Temporary Redirect"
+20:12:22 INFO    httpx: HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/BAAI/bge-small-zh-v1.5/7999e1d3359715c523056ef9478215996d62a620/sentence_bert_config.json "HTTP/1.1 200 OK"
+20:12:22 INFO    httpx: HTTP Request: HEAD https://huggingface.co/BAAI/bge-small-zh-v1.5/resolve/main/adapter_config.json "HTTP/1.1 404 Not Found"
+20:12:23 INFO    httpx: HTTP Request: HEAD https://huggingface.co/BAAI/bge-small-zh-v1.5/resolve/main/config.json "HTTP/1.1 307 Temporary Redirect"
+20:12:23 INFO    httpx: HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/BAAI/bge-small-zh-v1.5/7999e1d3359715c523056ef9478215996d62a620/config.json "HTTP/1.1 200 OK"
+    chose BAAI/bge-small-zh-v1.5 on stability; silhouette would have chosen intfloat/multilingual-e5-small
+Loading weights:   0%|          | 0/71 [00:00<?, ?it/s]Loading weights: 100%|██████████| 71/71 [00:00<00:00, 6879.08it/s]
+20:12:23 INFO    httpx: HTTP Request: HEAD https://huggingface.co/BAAI/bge-small-zh-v1.5/resolve/main/processor_config.json "HTTP/1.1 404 Not Found"
+20:12:23 INFO    httpx: HTTP Request: HEAD https://huggingface.co/BAAI/bge-small-zh-v1.5/resolve/main/preprocessor_config.json "HTTP/1.1 404 Not Found"
+20:12:24 INFO    httpx: HTTP Request: HEAD https://huggingface.co/BAAI/bge-small-zh-v1.5/resolve/main/video_preprocessor_config.json "HTTP/1.1 404 Not Found"
+20:12:24 INFO    httpx: HTTP Request: HEAD https://huggingface.co/BAAI/bge-small-zh-v1.5/resolve/main/preprocessor_config.json "HTTP/1.1 404 Not Found"
+20:12:24 INFO    httpx: HTTP Request: HEAD https://huggingface.co/BAAI/bge-small-zh-v1.5/resolve/main/tokenizer_config.json "HTTP/1.1 307 Temporary Redirect"
+20:12:24 INFO    httpx: HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/BAAI/bge-small-zh-v1.5/7999e1d3359715c523056ef9478215996d62a620/tokenizer_config.json "HTTP/1.1 200 OK"
+20:12:25 INFO    httpx: HTTP Request: HEAD https://huggingface.co/BAAI/bge-small-zh-v1.5/resolve/main/config.json "HTTP/1.1 307 Temporary Redirect"
+20:12:25 INFO    httpx: HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/BAAI/bge-small-zh-v1.5/7999e1d3359715c523056ef9478215996d62a620/config.json "HTTP/1.1 200 OK"
+20:12:25 INFO    httpx: HTTP Request: HEAD https://huggingface.co/BAAI/bge-small-zh-v1.5/resolve/main/config.json "HTTP/1.1 307 Temporary Redirect"
+20:12:25 INFO    httpx: HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/BAAI/bge-small-zh-v1.5/7999e1d3359715c523056ef9478215996d62a620/config.json "HTTP/1.1 200 OK"
+20:12:25 INFO    httpx: HTTP Request: HEAD https://huggingface.co/BAAI/bge-small-zh-v1.5/resolve/main/tokenizer_config.json "HTTP/1.1 307 Temporary Redirect"
+20:12:26 INFO    httpx: HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/BAAI/bge-small-zh-v1.5/7999e1d3359715c523056ef9478215996d62a620/tokenizer_config.json "HTTP/1.1 200 OK"
+20:12:26 INFO    httpx: HTTP Request: GET https://huggingface.co/api/models/BAAI/bge-small-zh-v1.5/tree/main/additional_chat_templates?recursive=false&expand=false "HTTP/1.1 404 Not Found"
+20:12:26 INFO    httpx: HTTP Request: GET https://huggingface.co/api/models/BAAI/bge-small-zh-v1.5/tree/main?recursive=true&expand=false "HTTP/1.1 200 OK"
+20:12:27 INFO    httpx: HTTP Request: HEAD https://huggingface.co/BAAI/bge-small-zh-v1.5/resolve/main/1_Pooling/config.json "HTTP/1.1 307 Temporary Redirect"
+20:12:27 INFO    httpx: HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/BAAI/bge-small-zh-v1.5/7999e1d3359715c523056ef9478215996d62a620/1_Pooling%2Fconfig.json "HTTP/1.1 200 OK"
+20:12:27 INFO    httpx: HTTP Request: GET https://huggingface.co/api/models/BAAI/bge-small-zh-v1.5 "HTTP/1.1 200 OK"
+20:12:32 INFO    primp: response: https://en.wikipedia.org/w/api.php?action=opensearch&profile=fuzzy&limit=1&search=Rose%20Levinson%202004%20Understanding%20user%20goals%20in%20web%20search%20taxonomy 200
+20:12:32 INFO    primp: response: https://en.wikipedia.org/w/api.php?action=opensearch&profile=fuzzy&limit=1&search=e-commerce%20query%20intent%20taxonomy%20search%20queries%20browse%20compare%20purchase 200
+20:12:32 INFO    primp: response: https://en.wikipedia.org/w/api.php?action=opensearch&profile=fuzzy&limit=1&search=question%20intent%20taxonomy%20definition%20procedure%20verification%20comparison%20search%20queries 200
+20:12:32 INFO    primp: response: https://en.wikipedia.org/w/api.php?action=opensearch&profile=fuzzy&limit=1&search=Broder%202002%20taxonomy%20web%20search%20navigational%20informational%20transactional 200
+20:12:34 INFO    qmine.graph:   encoded (21920, 512) (computed)
+20:12:34 INFO    qmine.graph: P3b sparse block — char TF-IDF → SVD
+20:12:36 INFO    ddgs.ddgs: Error in engine grokipedia: TimeoutException(TimeoutError('error sending request for url (https://grokipedia.com/api/typeahead?query=question+intent+taxonomy+definition+procedure+verification+comparison+search+queries&limit=1) > operation timed out'))
+20:12:36 INFO    ddgs.ddgs: Error in engine grokipedia: TimeoutException(TimeoutError('error sending request for url (https://grokipedia.com/api/typeahead?query=Broder+2002+taxonomy+web+search+navigational+informational+transactional&limit=1) > operation timed out'))
+20:12:36 INFO    ddgs.ddgs: Error in engine grokipedia: TimeoutException(TimeoutError('error sending request for url (https://grokipedia.com/api/typeahead?query=Rose+Levinson+2004+Understanding+user+goals+in+web+search+taxonomy&limit=1) > operation timed out'))
+20:12:36 INFO    ddgs.ddgs: Error in engine grokipedia: TimeoutException(TimeoutError('error sending request for url (https://grokipedia.com/api/typeahead?query=e-commerce+query+intent+taxonomy+search+queries+browse+compare+purchase&limit=1) > operation timed out'))
+20:12:37 INFO    httpx: HTTP Request: POST https://html.duckduckgo.com/html/ "HTTP/2 202 Accepted"
+20:12:37 INFO    httpx: HTTP Request: POST https://html.duckduckgo.com/html/ "HTTP/2 202 Accepted"
+20:12:37 INFO    primp: response: https://search.brave.com/search?q=Rose+Levinson+2004+Understanding+user+goals+in+web+search+taxonomy&source=web 200
+20:12:37 INFO    primp: response: https://search.brave.com/search?q=question+intent+taxonomy+definition+procedure+verification+comparison+search+queries&source=web 200
+20:12:37 INFO    primp: response: https://www.mojeek.com/search?q=Broder+2002+taxonomy+web+search+navigational+informational+transactional 200
+20:12:37 INFO    primp: response: https://search.yahoo.com/search;_ylt=0ty5_b3MXI1WlQXkW7V_OK0-;_ylu=GlynUA9fNAbk4n1Xsfrkg5HgpRczm4z9yD8Kiz5uKzYrg5U?p=e-commerce+query+intent+taxonomy+search+queries+browse+compare+purchase 200
+20:12:38 INFO    primp: response: https://search.brave.com/search?q=Broder+2002+taxonomy+web+search+navigational+informational+transactional&source=web 200
+20:12:39 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+20:12:41 INFO    ddgs.ddgs: Error in engine startpage: TimeoutException(TimeoutError('error sending request for url (https://www.startpage.com/) > operation timed out'))
+20:12:43 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+20:12:49 INFO    httpx: HTTP Request: GET https://www.researchgate.net/publication/326133502_A_Taxonomy_of_Queries_for_E-commerce_Search "HTTP/1.1 403 Forbidden"
+20:12:49 INFO    httpx: HTTP Request: GET https://sigir.org/files/forum/F2002/broder.pdf "HTTP/1.1 200 OK"
+20:12:51 INFO    httpx: HTTP Request: GET https://marksanderson.org/files/papers/CHIIR21b.pdf "HTTP/1.1 200 OK"
+20:12:57 INFO    httpx: HTTP Request: GET https://www.ambuehler.ethz.ch/CDstore/www2004/docs/1p13.pdf "HTTP/1.1 200 OK"
+20:13:10 INFO    qmine:   ~ proposer_alpha ok 33.6s out 2,408 · deepseek-v4-pro · add=2, drop=0, corpus_signals=5 · phrasing_group_coverage
+20:13:10 INFO    qmine.graph:   grid proposer[alpha]: +[0.7, 0.85] (0 rejected) — 该语料是软件应用类中文搜索，12 个 phrasing group 覆盖 39.79% 的行，且组名包含“suffix:最新版”“suffix:是什么意思”“suffix:笔怎么打字”“downloa
+20:13:10 INFO    qmine.graph: P3c alpha sweep — [0.0, 0.1, 0.2, 0.3, 0.5, 0.7, 0.85]
+20:13:49 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+20:13:53 INFO    qmine:   ~ researcher_pragmatic_intents ok 174.2s out 14,453 · deepseek-v4-pro · candidates=11, observations=5, contradictions=3, open_questions=3 · 判断产品行为或规则是否成立 → product_behavior_verdict
+20:13:53 INFO    qmine.graph:   researcher[pragmatic_intents] → 11 candidates
+20:13:57 INFO    primp: response: https://en.wikipedia.org/w/api.php?action=opensearch&profile=fuzzy&limit=1&search=Rose%20Levinson%202004%20resource%20category%20download%20entertainment%20interact%20obtain%20links%20subcategories 200
+20:13:57 INFO    primp: response: https://en.wikipedia.org/w/api.php?action=opensearch&profile=fuzzy&limit=1&search=%22A%20Taxonomy%20of%20Queries%20for%20E-commerce%20Search%22%20five%20categories%20shallow%20versus 200
+20:13:57 INFO    qmine:   ~ researcher_log_reading ok 178.4s out 18,540 · moonshotai/kimi-k3 · candidates=12, observations=11, contradictions=3, open_questions=4 · 获取并安装指定软件 → download_install_app
+20:13:57 INFO    qmine.graph:   researcher[log_reading] → 12 candidates
+20:14:01 INFO    ddgs.ddgs: Error in engine grokipedia: TimeoutException(TimeoutError('error sending request for url (https://grokipedia.com/api/typeahead?query=Rose+Levinson+2004+resource+category+download+entertainment+interact+obtain+links+subcategories&limit=1) > operation timed out'))
+20:14:01 INFO    ddgs.ddgs: Error in engine grokipedia: TimeoutException(TimeoutError('error sending request for url (https://grokipedia.com/api/typeahead?query=%22A+Taxonomy+of+Queries+for+E-commerce+Search%22+five+categories+shallow+versus&limit=1) > operation timed out'))
+20:14:02 INFO    primp: response: https://search.yahoo.com/search;_ylt=oKWSj3R4TiRGdQI_oee0wegI;_ylu=REirQIpUnFMXrkJakUjiflefd1qQN87xAmocy9TYuWpoDPk?p=Rose+Levinson+2004+resource+category+download+entertainment+interact+obtain+links+subcategories 200
+20:14:02 INFO    httpx: HTTP Request: POST https://html.duckduckgo.com/html/ "HTTP/2 202 Accepted"
+20:14:03 INFO    primp: response: https://www.mojeek.com/search?q=%22A+Taxonomy+of+Queries+for+E-commerce+Search%22+five+categories+shallow+versus 200
+20:14:04 INFO    primp: response: https://www.startpage.com/ 200
+20:14:05 INFO    primp: response: https://www.mojeek.com/search?q=Rose+Levinson+2004+resource+category+download+entertainment+interact+obtain+links+subcategories 200
+20:14:07 INFO    primp: response: https://www.startpage.com/sp/search 200
+20:14:08 INFO    primp: response: https://search.yahoo.com/search;_ylt=BJGifQmkPHJJS3Z6FWQN1w0j;_ylu=6roJf2hxcRObfXUZqx4yn6urp5SHy8o4A4I80U0EE_f5g3U?p=%22A+Taxonomy+of+Queries+for+E-commerce+Search%22+five+categories+shallow+versus 200
+20:14:09 INFO    httpx: HTTP Request: POST https://html.duckduckgo.com/html/ "HTTP/2 202 Accepted"
+20:14:10 INFO    ddgs.ddgs: Error in engine startpage: TimeoutException(TimeoutError('error sending request for url (https://www.startpage.com/) > operation timed out'))
+20:14:10 INFO    primp: response: https://search.brave.com/search?q=%22A+Taxonomy+of+Queries+for+E-commerce+Search%22+five+categories+shallow+versus&source=web 200
+20:14:13 INFO    primp: response: https://search.brave.com/search?q=Rose+Levinson+2004+resource+category+download+entertainment+interact+obtain+links+subcategories&source=web 200
+20:14:13 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+20:14:15 INFO    httpx: HTTP Request: GET https://psondhiblog.wordpress.com/wp-content/uploads/2018/09/p1245-sondhi1.pdf "HTTP/1.1 200 OK"
+20:14:16 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+20:14:20 INFO    qmine.graph: ✔ p3_represent completed in 201.7s
+20:14:21 INFO    primp: response: https://en.wikipedia.org/w/api.php?action=opensearch&profile=fuzzy&limit=1&search=%22Shallow%20Exploration%22%20%22Targeted%20Purchase%22%20%22Item%20Comparison%22%20Sondhi%20e-commerce%20query%20taxonomy%20five%20categories 200
+20:14:21 INFO    primp: response: https://en.wikipedia.org/w/api.php?action=opensearch&profile=fuzzy&limit=1&search=Sondhi%202018%20taxonomy%20queries%20e-commerce%20%22Deep%20Exploration%22%20%22Targeted%20Purchase%22%20categories 200
+20:14:25 INFO    ddgs.ddgs: Error in engine grokipedia: TimeoutException(TimeoutError('error sending request for url (https://grokipedia.com/api/typeahead?query=Sondhi+2018+taxonomy+queries+e-commerce+%22Deep+Exploration%22+%22Targeted+Purchase%22+categories&limit=1) > operation timed out'))
+20:14:25 INFO    ddgs.ddgs: Error in engine grokipedia: TimeoutException(TimeoutError('error sending request for url (https://grokipedia.com/api/typeahead?query=%22Shallow+Exploration%22+%22Targeted+Purchase%22+%22Item+Comparison%22+Sondhi+e-commerce+query+taxonomy+five+categories&limit=1) > operation timed out'))
+20:14:26 INFO    httpx: HTTP Request: POST https://html.duckduckgo.com/html/ "HTTP/2 202 Accepted"
+20:14:26 INFO    httpx: HTTP Request: POST https://html.duckduckgo.com/html/ "HTTP/2 202 Accepted"
+20:14:27 INFO    primp: response: https://search.yahoo.com/search;_ylt=-INrcIkrCkT9aQsDUEbHmGxy;_ylu=1Vq66v_-8vZo02rr-NHvTQAPSsc5HIbE6ysw5V-dFkLNIgo?p=%22Shallow+Exploration%22+%22Targeted+Purchase%22+%22Item+Comparison%22+Sondhi+e-commerce+query+taxonomy+five+categories 200
+20:14:27 INFO    primp: response: https://search.yahoo.com/search;_ylt=h_omQmK35WRgwjLUH7r648h8;_ylu=sy_wWYftlag0dNAm7OEq2WsHu58aaXvL0JEPbF64WcwWGfs?p=Sondhi+2018+taxonomy+queries+e-commerce+%22Deep+Exploration%22+%22Targeted+Purchase%22+categories 200
+20:14:29 INFO    primp: response: https://www.mojeek.com/search?q=%22Shallow+Exploration%22+%22Targeted+Purchase%22+%22Item+Comparison%22+Sondhi+e-commerce+query+taxonomy+five+categories 403
+20:14:32 INFO    primp: response: https://www.mojeek.com/search?q=Sondhi+2018+taxonomy+queries+e-commerce+%22Deep+Exploration%22+%22Targeted+Purchase%22+categories 200
+20:14:33 INFO    primp: response: https://www.startpage.com/ 200
+20:14:34 INFO    primp: response: https://search.brave.com/search?q=Sondhi+2018+taxonomy+queries+e-commerce+%22Deep+Exploration%22+%22Targeted+Purchase%22+categories&source=web 200
+20:14:34 INFO    ddgs.ddgs: Error in engine startpage: DDGSException("DecodeError: DecodeError('Body collection error: error decoding response body')")
+20:14:36 INFO    primp: response: https://search.brave.com/search?q=%22Shallow+Exploration%22+%22Targeted+Purchase%22+%22Item+Comparison%22+Sondhi+e-commerce+query+taxonomy+five+categories&source=web 200
+20:14:36 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+20:14:38 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+20:14:42 INFO    primp: response: https://en.wikipedia.org/w/api.php?action=opensearch&profile=fuzzy&limit=1&search=%22Rose%22%20%22Levinson%22%20web%20search%20goals%20hierarchy%20%22Download%22%20%22Entertainment%22%20%22Interact%22%20%22Obtain%22%20resource%20informational%20navigational 200
+20:14:46 INFO    ddgs.ddgs: Error in engine grokipedia: TimeoutException(TimeoutError('error sending request for url (https://grokipedia.com/api/typeahead?query=%22Rose%22+%22Levinson%22+web+search+goals+hierarchy+%22Download%22+%22Entertainment%22+%22Interact%22+%22Obtain%22+resource+informational+navigational&limit=1) > operation timed out'))
+20:14:47 INFO    httpx: HTTP Request: POST https://html.duckduckgo.com/html/ "HTTP/2 202 Accepted"
+20:14:47 INFO    primp: response: https://search.yahoo.com/search;_ylt=J63f5nBnMOLZlCrXIfvkZ-Vc;_ylu=ypUPX0AQUTswgzZudjBZgyhz3mPVKU9xI6mflVYelgrSkMg?p=%22Rose%22+%22Levinson%22+web+search+goals+hierarchy+%22Download%22+%22Entertainment%22+%22Interact%22+%22Obtain%22+resource+informational+navigational 200
+20:14:50 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+20:15:54 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+20:16:46 INFO    qmine:   ~ researcher_risk_compliance ok 128.5s out 13,774 · deepseek-v4-pro · candidates=11, observations=15, contradictions=1, open_questions=3 · 获取翻墙工具或境外通讯应用 → get_circumvention_tool_or_
+20:16:46 INFO    qmine:   ~ researcher_risk_compliance ok 347.3s out 20,104 · deepseek-v4-pro · candidates=11, observations=15, contradictions=1, open_questions=3 · 获取翻墙工具或境外通讯应用 → get_circumvention_tool_or_
+20:16:46 WARNING qmine.agents: tool loop for researcher_risk_compliance rejected response_format (Error code: 400 - {'error': {'message': 'Thinking mode does not support this tool_choice',); re-ran WITHOUT it so the tools still run
+20:16:46 INFO    qmine.graph:   researcher[risk_compliance] → 11 candidates (web-researched)
+20:17:25 INFO    qmine:   ~ researcher_literature ok 91.6s out 9,883 · deepseek-v4-pro · candidates=12, observations=9, contradictions=5, open_questions=5 · 下载并安装软件 → download_install
+20:17:25 INFO    qmine:   ~ researcher_literature ok 386.7s out 15,522 · deepseek-v4-pro · candidates=12, observations=9, contradictions=5, open_questions=5 · 下载并安装软件 → download_install
+20:17:25 WARNING qmine.agents: tool loop for researcher_literature rejected response_format (Error code: 400 - {'error': {'message': 'Thinking mode does not support this tool_choice',); re-ran WITHOUT it so the tools still run
+20:17:25 INFO    qmine.graph:   researcher[literature] → 12 candidates (web-researched)
+20:17:26 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+20:23:16 INFO    qmine:   ~ taxonomy_architect ok 350.6s out 34,597 · deepseek-v4-pro · nodes=25, rules=18, dropped_candidates=8 · 下载并安装指定软件 → DOWNLOAD_INSTALL_NAMED_APP
+20:23:16 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+20:26:10 INFO    qmine:   ~ taxonomy_architect ok 174.7s out 17,696 · deepseek-v4-pro · rules=30 · 没有获取安装包的动作词，用户目标是访问而非安装。
+20:26:10 INFO    qmine.graph:   rule writer → 30 rules over 30 class pairs (48 total after merge)
+20:26:11 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+20:30:16 INFO    qmine:   ~ taxonomy_critic ok 245.8s out 21,370 · deepseek-v4-pro · findings=14 · overlap
+20:30:16 INFO    qmine.graph:   critic → 14 findings, verdict reject
+20:30:16 INFO    qmine.graph:   ⚠ rule r_risk_entity_vs_name_only: target `对应的风险类` names no class — rule dropped
+20:30:16 INFO    qmine.graph:   pilot skipped — fast 模式单标注员, 无第二判读可比对
+20:30:16 INFO    qmine.graph: gate p2a_pilot_agreement: SKIPPED — 标注一致性试点未运行 —— fast 模式单标注员 (a), 没有第二判读可比对; kappa、自洽上限与结构性/指南性混淆的拆分本次均未测量
+20:30:16 INFO    qmine.graph: gate p2a_taxonomy_shape: PASSED — 25 L1 intents, 47 adjudication rules the annotator can cite
+20:30:16 INFO    qmine.graph: ✔ p2a_taxonomy completed in 1158.0s
+20:30:16 INFO    qmine.graph: P4 algorithm battery — 3 K values × 6 algorithms
+20:30:16 INFO    qmine.graph: P2b gold — 3000 queries (13.7% of corpus, derived from corpus size), double-blind annotation
+20:30:16 INFO    qmine.graph:   single annotator (a) — no agreement measured
+20:30:17 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+20:30:17 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+20:30:18 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+20:30:18 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+20:30:18 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+20:30:19 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+20:30:19 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+20:30:22 INFO    qmine:   ~ annotator_a ok 5.9s out 1,599 · deepseek-v4-flash · labels=25 · 快影 → NAME_ONLY_DISAMBIGUATION
+20:30:22 INFO    qmine:   ~ annotator_a ok 5.9s out 1,142 · deepseek-v4-flash · labels=25 · 翻墙软件 → CIRCUMVENTION_ACCESS
+20:30:22 INFO    qmine:   ~ annotator_a ok 5.9s out 1,115 · deepseek-v4-flash · labels=25 · 七月说说朋友圈 → GENERATE_SOCIAL_COPY
+20:30:23 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+20:30:23 INFO    qmine:   ~ annotator_a ok 6.6s out 1,616 · deepseek-v4-flash · labels=25 · visual studio → NAME_ONLY_DISAMBIGUATION
+20:30:23 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+20:30:23 INFO    qmine:   ~ annotator_a ok 6.6s out 1,654 · deepseek-v4-flash · labels=25 · 企业微信会话存档 → NAME_ONLY_DISAMBIGUATION
+20:30:23 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+20:30:24 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+20:30:24 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+20:30:24 INFO    qmine:   ~ annotator_a ok 7.3s out 1,656 · deepseek-v4-flash · labels=25 · 小红书网页版 → REACH_OFFICIAL_ENTRY
+20:30:24 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+20:30:25 INFO    qmine:   ~ annotator_a ok 8.1s out 1,165 · deepseek-v4-flash · labels=25 · 主题协作器 → NAME_ONLY_DISAMBIGUATION
+20:30:25 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+20:30:27 INFO    qmine:   ~ annotator_a ok 4.4s out 1,139 · deepseek-v4-flash · labels=25 · 硅基流动官网 → REACH_OFFICIAL_ENTRY
+20:30:27 INFO    qmine:   ~ annotator_a ok 4.7s out 1,096 · deepseek-v4-flash · labels=25 · crm是什么意思 → DEFINE_TERM_OR_COMPARE
+20:30:27 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+20:30:27 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+20:30:27 INFO    qmine:   ~ annotator_a ok 5.2s out 1,173 · deepseek-v4-flash · labels=25 · 可灵 → NAME_ONLY_DISAMBIGUATION
+20:30:28 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+20:30:28 INFO    qmine:   ~ annotator_a ok 5.3s out 1,172 · deepseek-v4-flash · labels=25 · 下载水印相机显示时间地点的位置 → DOWNLOAD_INSTALL_NAMED_APP
+20:30:29 INFO    qmine:   ~ annotator_a ok 5.3s out 1,164 · deepseek-v4-flash · labels=25 · googleplay官网入口 → CIRCUMVENTION_ACCESS
+20:30:29 INFO    qmine.graph:   annotator[a] 12/120 batches · 300 rows
+20:30:29 INFO    qmine:   ~ annotator_a ok 6.2s out 1,212 · deepseek-v4-flash · labels=25 · vmware虚拟机 → NAME_ONLY_DISAMBIGUATION
+20:30:29 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+20:30:29 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+20:30:30 INFO    qmine:   ~ annotator_a ok 5.1s out 1,131 · deepseek-v4-flash · labels=25 · 手机尺子 → NAME_ONLY_DISAMBIGUATION
+20:30:30 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+20:30:30 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+20:30:30 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+20:30:32 INFO    qmine:   ~ annotator_a ok 5.3s out 1,197 · deepseek-v4-flash · labels=25 · speed test → NAME_ONLY_DISAMBIGUATION
+20:30:32 INFO    qmine:   ~ annotator_a ok 5.8s out 1,265 · deepseek-v4-flash · labels=25 · 微信定位怎么设置自己家店铺位置 → COMPLETE_TASK_HOWTO
+20:30:33 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+20:30:33 INFO    qmine:   ~ annotator_a ok 5.8s out 1,644 · deepseek-v4-flash · labels=25 · 倒霉图片适合发朋友圈 → GENERATE_SOCIAL_COPY
+20:30:34 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+20:30:34 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+20:30:34 INFO    qmine:   ~ annotator_a ok 5.3s out 1,218 · deepseek-v4-flash · labels=25 · 全能扫描全能王 → NAME_ONLY_DISAMBIGUATION
+20:30:34 INFO    qmine:   ~ annotator_a ok 6.0s out 1,129 · deepseek-v4-flash · labels=25 · 甘五笔怎么打 → LOOKUP_INPUT_CODE
+20:30:35 INFO    qmine:   ~ annotator_a ok 18.2s out 1,595 · deepseek-v4-flash · labels=25 · qq好友恢复官网 → RECOVER_LOST_DATA
+20:30:35 INFO    qmine:   ~ annotator_a ok 5.6s out 1,149 · deepseek-v4-flash · labels=25 · 矿石收音机论坛 → REACH_NAMED_PAGE_OR_PROFIL
+20:30:35 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+20:30:35 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+20:30:36 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+20:30:36 INFO    qmine:   ~ annotator_a ok 6.3s out 1,728 · deepseek-v4-flash · labels=25 · dps://p?url=https://main.m → REACH_NAMED_PAGE_OR_PROFIL
+20:30:36 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+20:30:37 INFO    qmine:   ~ annotator_a ok 4.8s out 1,109 · deepseek-v4-flash · labels=25 · 社交软件 → NAME_ONLY_DISAMBIGUATION
+20:30:38 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+20:30:38 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+20:30:39 INFO    qmine:   ~ annotator_a ok 7.0s out 1,645 · deepseek-v4-flash · labels=25 · 温网微博 → REACH_NAMED_PAGE_OR_PROFIL
+20:30:39 INFO    qmine.graph:   annotator[a] 24/120 batches · 600 rows
+20:30:39 INFO    qmine:   ~ annotator_a ok 6.1s out 1,280 · deepseek-v4-flash · labels=25 · wf万能锁匙 → GET_WIFI_CREDENTIAL_INTRUS
+20:30:40 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+20:30:40 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+20:30:40 INFO    qmine:   ~ annotator_a ok 5.7s out 1,131 · deepseek-v4-flash · labels=25 · 殷五笔怎么打字 → LOOKUP_INPUT_CODE
+20:30:40 INFO    qmine:   ~ annotator_a ok 5.6s out 1,163 · deepseek-v4-flash · labels=25 · k8s → NAME_ONLY_DISAMBIGUATION
+20:30:41 INFO    qmine:   ~ annotator_a ok 4.9s out 1,158 · deepseek-v4-flash · labels=25 · 天津股侠的微博 新浪微博 → REACH_NAMED_PAGE_OR_PROFIL
+20:30:41 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+20:30:41 INFO    qmine:   ~ annotator_a ok 6.8s out 1,667 · deepseek-v4-flash · labels=25 · 一键root → GET_GREY_UTILITY_TOOL
+20:30:42 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+20:30:42 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+20:30:42 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+20:30:43 INFO    qmine:   ~ annotator_a ok 5.8s out 1,194 · deepseek-v4-flash · labels=25 · wx → NAME_ONLY_DISAMBIGUATION
+20:30:43 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+20:30:44 INFO    qmine:   ~ annotator_a ok 9.7s out 1,655 · deepseek-v4-flash · labels=25 · 消息发出去,被对方拒收是什么意思 → SOCIAL_RELATIONSHIP_STATUS
+20:30:45 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+20:30:45 INFO    qmine:   ~ annotator_a ok 5.7s out 1,225 · deepseek-v4-flash · labels=25 · final cut pro → NAME_ONLY_DISAMBIGUATION
+20:30:45 INFO    qmine:   ~ annotator_a ok 5.8s out 1,140 · deepseek-v4-flash · labels=25 · 12123下载 → DOWNLOAD_INSTALL_NAMED_APP
+20:30:45 INFO    qmine:   ~ annotator_a ok 5.3s out 1,203 · deepseek-v4-flash · labels=25 · 微信附近人被限制怎么解封 → FIX_MALFUNCTION_TROUBLESHO
+20:30:46 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+20:30:46 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+20:30:47 INFO    qmine:   ~ annotator_a ok 6.3s out 1,180 · deepseek-v4-flash · labels=25 · 销售发朋友圈吸引顾客的句子 → GENERATE_SOCIAL_COPY
+20:30:47 INFO    qmine:   ~ annotator_a ok 6.3s out 1,752 · deepseek-v4-flash · labels=25 · 华为家长助手 → NAME_ONLY_DISAMBIGUATION
+20:30:47 INFO    qmine.graph:   annotator[a] 36/120 batches · 900 rows
+20:30:47 INFO    qmine:   ~ annotator_a ok 6.7s out 1,642 · deepseek-v4-flash · labels=25 · 如何建群 → COMPLETE_TASK_HOWTO
+20:30:48 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+20:30:48 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+20:30:48 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+20:30:48 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+20:30:48 INFO    qmine:   ~ annotator_a ok 5.2s out 1,161 · deepseek-v4-flash · labels=25 · 推特下载安卓 → CIRCUMVENTION_ACCESS
+20:30:49 INFO    qmine:   ~ annotator_a ok 4.9s out 1,138 · deepseek-v4-flash · labels=25 · taotao下载软件官方 → DOWNLOAD_INSTALL_NAMED_APP
+20:30:49 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+20:30:50 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+20:30:51 INFO    qmine:   ~ annotator_a ok 5.6s out 1,174 · deepseek-v4-flash · labels=25 · 幼儿园毕业朋友圈文案 → GENERATE_SOCIAL_COPY
+    encoded (21920, 512) (computed)
+  P3b sparse block — char TF-IDF → SVD
+    ~ proposer_alpha ok 33.6s out 2,408 · deepseek-v4-pro · add=2, drop=0, corpus_signals=5 · phrasing_group_coverage
+    grid proposer[alpha]: +[0.7, 0.85] (0 rejected) — 该语料是软件应用类中文搜索，12 个 phrasing group 覆盖 39.79% 的行，且组名包含“suffix:最新版”“suffix:是什么意思”“suffix:笔怎么打字”“downloa
+  P3c alpha sweep — [0.0, 0.1, 0.2, 0.3, 0.5, 0.7, 0.85]
+    ~ researcher_pragmatic_intents ok 174.2s out 14,453 · deepseek-v4-pro · candidates=11, observations=5, contradictions=3, open_questions=3 · 判断产品行为或规则是否成立 → product_behavior_verdict
+    researcher[pragmatic_intents] → 11 candidates
+    ~ researcher_log_reading ok 178.4s out 18,540 · moonshotai/kimi-k3 · candidates=12, observations=11, contradictions=3, open_questions=4 · 获取并安装指定软件 → download_install_app
+    researcher[log_reading] → 12 candidates
+  ✔ p3_represent completed in 201.7s
+    ~ researcher_risk_compliance ok 128.5s out 13,774 · deepseek-v4-pro · candidates=11, observations=15, contradictions=1, open_questions=3 · 获取翻墙工具或境外通讯应用 → get_circumvention_tool_or_
+    ~ researcher_risk_compliance ok 347.3s out 20,104 · deepseek-v4-pro · candidates=11, observations=15, contradictions=1, open_questions=3 · 获取翻墙工具或境外通讯应用 → get_circumvention_tool_or_
+    researcher[risk_compliance] → 11 candidates (web-researched)
+    ~ researcher_literature ok 91.6s out 9,883 · deepseek-v4-pro · candidates=12, observations=9, contradictions=5, open_questions=5 · 下载并安装软件 → download_install
+    ~ researcher_literature ok 386.7s out 15,522 · deepseek-v4-pro · candidates=12, observations=9, contradictions=5, open_questions=5 · 下载并安装软件 → download_install
+    researcher[literature] → 12 candidates (web-researched)
+    ~ taxonomy_architect ok 350.6s out 34,597 · deepseek-v4-pro · nodes=25, rules=18, dropped_candidates=8 · 下载并安装指定软件 → DOWNLOAD_INSTALL_NAMED_APP
+    ~ taxonomy_architect ok 174.7s out 17,696 · deepseek-v4-pro · rules=30 · 没有获取安装包的动作词，用户目标是访问而非安装。
+    rule writer → 30 rules over 30 class pairs (48 total after merge)
+    ~ taxonomy_critic ok 245.8s out 21,370 · deepseek-v4-pro · findings=14 · overlap
+    critic → 14 findings, verdict reject
+    ⚠ rule r_risk_entity_vs_name_only: target `对应的风险类` names no class — rule dropped
+    pilot skipped — fast 模式单标注员, 无第二判读可比对
+  gate p2a_pilot_agreement: SKIPPED — 标注一致性试点未运行 —— fast 模式单标注员 (a), 没有第二判读可比对; kappa、自洽上限与结构性/指南性混淆的拆分本次均未测量
+  gate p2a_taxonomy_shape: PASSED — 25 L1 intents, 47 adjudication rules the annotator can cite
+  ✔ p2a_taxonomy completed in 1158.0s
+  P4 algorithm battery — 3 K values × 6 algorithms
+  P2b gold — 3000 queries (13.7% of corpus, derived from corpus size), double-blind annotation
+    single annotator (a) — no agreement measured
+    ~ annotator_a ok 5.9s out 1,599 · deepseek-v4-flash · labels=25 · 快影 → NAME_ONLY_DISAMBIGUATION
+    ~ annotator_a ok 5.9s out 1,142 · deepseek-v4-flash · labels=25 · 翻墙软件 → CIRCUMVENTION_ACCESS
+    ~ annotator_a ok 5.9s out 1,115 · deepseek-v4-flash · labels=25 · 七月说说朋友圈 → GENERATE_SOCIAL_COPY
+    ~ annotator_a ok 6.6s out 1,616 · deepseek-v4-flash · labels=25 · visual studio → NAME_ONLY_DISAMBIGUATION
+    ~ annotator_a ok 6.6s out 1,654 · deepseek-v4-flash · labels=25 · 企业微信会话存档 → NAME_ONLY_DISAMBIGUATION
+    ~ annotator_a ok 7.3s out 1,656 · deepseek-v4-flash · labels=25 · 小红书网页版 → REACH_OFFICIAL_ENTRY
+    ~ annotator_a ok 8.1s out 1,165 · deepseek-v4-flash · labels=25 · 主题协作器 → NAME_ONLY_DISAMBIGUATION
+    ~ annotator_a ok 4.4s out 1,139 · deepseek-v4-flash · labels=25 · 硅基流动官网 → REACH_OFFICIAL_ENTRY
+    ~ annotator_a ok 4.7s out 1,096 · deepseek-v4-flash · labels=25 · crm是什么意思 → DEFINE_TERM_OR_COMPARE
+    ~ annotator_a ok 5.2s out 1,173 · deepseek-v4-flash · labels=25 · 可灵 → NAME_ONLY_DISAMBIGUATION
+    ~ annotator_a ok 5.3s out 1,172 · deepseek-v4-flash · labels=25 · 下载水印相机显示时间地点的位置 → DOWNLOAD_INSTALL_NAMED_APP
+    ~ annotator_a ok 5.3s out 1,164 · deepseek-v4-flash · labels=25 · googleplay官网入口 → CIRCUMVENTION_ACCESS
+    annotator[a] 12/120 batches · 300 rows
+    ~ annotator_a ok 6.2s out 1,212 · deepseek-v4-flash · labels=25 · vmware虚拟机 → NAME_ONLY_DISAMBIGUATION
+    ~ annotator_a ok 5.1s out 1,131 · deepseek-v4-flash · labels=25 · 手机尺子 → NAME_ONLY_DISAMBIGUATION
+    ~ annotator_a ok 5.3s out 1,197 · deepseek-v4-flash · labels=25 · speed test → NAME_ONLY_DISAMBIGUATION
+    ~ annotator_a ok 5.8s out 1,265 · deepseek-v4-flash · labels=25 · 微信定位怎么设置自己家店铺位置 → COMPLETE_TASK_HOWTO
+    ~ annotator_a ok 5.8s out 1,644 · deepseek-v4-flash · labels=25 · 倒霉图片适合发朋友圈 → GENERATE_SOCIAL_COPY
+    ~ annotator_a ok 5.3s out 1,218 · deepseek-v4-flash · labels=25 · 全能扫描全能王 → NAME_ONLY_DISAMBIGUATION
+    ~ annotator_a ok 6.0s out 1,129 · deepseek-v4-flash · labels=25 · 甘五笔怎么打 → LOOKUP_INPUT_CODE
+    ~ annotator_a ok 18.2s out 1,595 · deepseek-v4-flash · labels=25 · qq好友恢复官网 → RECOVER_LOST_DATA
+    ~ annotator_a ok 5.6s out 1,149 · deepseek-v4-flash · labels=25 · 矿石收音机论坛 → REACH_NAMED_PAGE_OR_PROFIL
+    ~ annotator_a ok 6.3s out 1,728 · deepseek-v4-flash · labels=25 · dps://p?url=https://main.m → REACH_NAMED_PAGE_OR_PROFIL
+    ~ annotator_a ok 4.8s out 1,109 · deepseek-v4-flash · labels=25 · 社交软件 → NAME_ONLY_DISAMBIGUATION
+    ~ annotator_a ok 7.0s out 1,645 · deepseek-v4-flash · labels=25 · 温网微博 → REACH_NAMED_PAGE_OR_PROFIL
+    annotator[a] 24/120 batches · 600 rows
+    ~ annotator_a ok 6.1s out 1,280 · deepseek-v4-flash · labels=25 · wf万能锁匙 → GET_WIFI_CREDENTIAL_INTRUS
+    ~ annotator_a ok 5.7s out 1,131 · deepseek-v4-flash · labels=25 · 殷五笔怎么打字 → LOOKUP_INPUT_CODE
+    ~ annotator_a ok 5.6s out 1,163 · deepseek-v4-flash · labels=25 · k8s → NAME_ONLY_DISAMBIGUATION
+    ~ annotator_a ok 4.9s out 1,158 · deepseek-v4-flash · labels=25 · 天津股侠的微博 新浪微博 → REACH_NAMED_PAGE_OR_PROFIL
+    ~ annotator_a ok 6.8s out 1,667 · deepseek-v4-flash · labels=25 · 一键root → GET_GREY_UTILITY_TOOL
+    ~ annotator_a ok 5.8s out 1,194 · deepseek-v4-flash · labels=25 · wx → NAME_ONLY_DISAMBIGUATION
+    ~ annotator_a ok 9.7s out 1,655 · deepseek-v4-flash · labels=25 · 消息发出去,被对方拒收是什么意思 → SOCIAL_RELATIONSHIP_STATUS
+    ~ annotator_a ok 5.7s out 1,225 · deepseek-v4-flash · labels=25 · final cut pro → NAME_ONLY_DISAMBIGUATION
+    ~ annotator_a ok 5.8s out 1,140 · deepseek-v4-flash · labels=25 · 12123下载 → DOWNLOAD_INSTALL_NAMED_APP
+    ~ annotator_a ok 5.3s out 1,203 · deepseek-v4-flash · labels=25 · 微信附近人被限制怎么解封 → FIX_MALFUNCTION_TROUBLESHO
+    ~ annotator_a ok 6.3s out 1,180 · deepseek-v4-flash · labels=25 · 销售发朋友圈吸引顾客的句子 → GENERATE_SOCIAL_COPY
+    ~ annotator_a ok 6.3s out 1,752 · deepseek-v4-flash · labels=25 · 华为家长助手 → NAME_ONLY_DISAMBIGUATION
+    annotator[a] 36/120 batches · 900 rows
+    ~ annotator_a ok 6.7s out 1,642 · deepseek-v4-flash · labels=25 · 如何建群 → COMPLETE_TASK_HOWTO
+    ~ annotator_a ok 5.2s out 1,161 · deepseek-v4-flash · labels=25 · 推特下载安卓 → CIRCUMVENTION_ACCESS
+    ~ annotator_a ok 4.9s out 1,138 · deepseek-v4-flash · labels=25 · taotao下载软件官方 → DOWNLOAD_INSTALL_NAMED_APP
+    ~ annotator_a ok 5.6s out 1,174 · deepseek-v4-flash · labels=25 · 幼儿园毕业朋友圈文案 → GENERATE_SOCIAL_COPY/Users/mayouxuan/Documents/Claude/Search Query Mining Agent Team/QMine/.venv/lib/python3.12/site-packages/sklearn/mixture/_base.py:293: ConvergenceWarning: Best performing initialization did not converge. Try different init parameters, or increase max_iter, tol, or check for degenerate data.
+  warnings.warn(
+20:30:52 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+20:30:52 INFO    qmine:   ~ annotator_a ok 6.3s out 1,599 · deepseek-v4-flash · labels=25 · 微博兔影视2024年最新电视剧免费观看 → GET_ADULT_CONTENT_OR_APP
+20:30:52 INFO    qmine:   ~ annotator_a ok 4.5s out 1,089 · deepseek-v4-flash · labels=25 · 轻颜 → NAME_ONLY_DISAMBIGUATION
+20:30:53 INFO    qmine:   ~ annotator_a ok 5.4s out 1,204 · deepseek-v4-flash · labels=25 · 微信最多可以加多少好友 → PLATFORM_RULES_VERDICT
+20:30:53 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+20:30:53 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+20:30:53 INFO    qmine:   ~ annotator_a ok 6.7s out 1,635 · deepseek-v4-flash · labels=25 · 微信语音能录音吗 → PLATFORM_RULES_VERDICT
+20:30:53 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+20:30:54 INFO    qmine:   ~ annotator_a ok 9.0s out 1,765 · deepseek-v4-flash · labels=25 · 百度下载app下载安装 → DOWNLOAD_INSTALL_NAMED_APP
+20:30:54 INFO    qmine:   ~ annotator_a ok 5.3s out 1,145 · deepseek-v4-flash · labels=25 · 他趣app → NAME_ONLY_DISAMBIGUATION
+20:30:54 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+20:30:55 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+20:30:55 INFO    qmine:   ~ annotator_a ok 6.6s out 1,673 · deepseek-v4-flash · labels=25 · 微信群怎么设置管理员 → COMPLETE_TASK_HOWTO
+20:30:55 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+20:30:56 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+20:30:58 INFO    qmine:   ~ annotator_a ok 6.8s out 1,682 · deepseek-v4-flash · labels=25 · 彩蝶 → NAME_ONLY_DISAMBIGUATION
+20:30:58 INFO    qmine.graph:   annotator[a] 48/120 batches · 1200 rows
+20:30:58 INFO    qmine:   ~ annotator_a ok 5.8s out 1,237 · deepseek-v4-flash · labels=25 · 通话中断的原因微信 → PLATFORM_RULES_VERDICT
+20:30:58 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+20:30:59 INFO    qmine:   ~ annotator_a ok 5.2s out 1,113 · deepseek-v4-flash · labels=25 · termux下载 → DOWNLOAD_INSTALL_NAMED_APP
+20:30:59 INFO    qmine:   ~ annotator_a ok 5.9s out 1,603 · deepseek-v4-flash · labels=25 · 犬五笔怎么打 → LOOKUP_INPUT_CODE
+20:30:59 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+20:30:59 INFO    qmine:   ~ annotator_a ok 7.2s out 1,700 · deepseek-v4-flash · labels=25 · 扩大内需官方app下载安装 → DOWNLOAD_INSTALL_NAMED_APP
+20:30:59 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+20:30:59 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+20:30:59 INFO    qmine:   ~ annotator_a ok 4.4s out 1,156 · deepseek-v4-flash · labels=25 · vivo应用商店 → NAME_ONLY_DISAMBIGUATION
+20:31:00 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+20:31:01 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+20:31:01 INFO    qmine:   ~ annotator_a ok 6.7s out 1,217 · deepseek-v4-flash · labels=25 · 微信发语音没有声音是怎么回事 → FIX_MALFUNCTION_TROUBLESHO
+20:31:01 INFO    qmine:   ~ annotator_a ok 6.7s out 1,725 · deepseek-v4-flash · labels=25 · ibispaint下载 → DOWNLOAD_INSTALL_NAMED_APP
+20:31:01 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+20:31:02 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+20:31:04 INFO    qmine:   ~ annotator_a ok 5.2s out 1,194 · deepseek-v4-flash · labels=25 · 微信怎么解绑银行卡 → CANCEL_SUBSCRIPTION_OR_AUT
+20:31:04 INFO    qmine:   ~ annotator_a ok 5.3s out 1,123 · deepseek-v4-flash · labels=25 · 小翼管家 → NAME_ONLY_DISAMBIGUATION
+20:31:04 INFO    qmine:   ~ annotator_a ok 6.4s out 1,657 · deepseek-v4-flash · labels=25 · Facebook → NAME_ONLY_DISAMBIGUATION
+20:31:04 INFO    qmine:   ~ annotator_a ok 5.1s out 1,153 · deepseek-v4-flash · labels=25 · glm 5.2 → NAME_ONLY_DISAMBIGUATION
+20:31:04 INFO    qmine:   ~ annotator_a ok 6.6s out 1,583 · deepseek-v4-flash · labels=25 · wps → NAME_ONLY_DISAMBIGUATION
+20:31:04 INFO    qmine.graph:   annotator[a] 60/120 batches · 1500 rows
+20:31:04 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+20:31:04 INFO    qmine:   ~ annotator_a ok 5.0s out 1,118 · deepseek-v4-flash · labels=25 · 微信语音通话怎么录音 → PLATFORM_RULES_VERDICT
+20:31:05 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+20:31:05 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+20:31:05 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+20:31:05 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+20:31:05 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+20:31:06 INFO    qmine:   ~ annotator_a ok 4.7s out 1,111 · deepseek-v4-flash · labels=25 · 追五笔怎么打 → LOOKUP_INPUT_CODE
+20:31:06 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+20:31:07 INFO    qmine:   ~ annotator_a ok 6.7s out 1,203 · deepseek-v4-flash · labels=25 · 喜弟安卓app官网 → REACH_OFFICIAL_ENTRY
+20:31:08 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+20:31:09 INFO    qmine:   ~ annotator_a ok 5.2s out 1,235 · deepseek-v4-flash · labels=25 · jmcomic2安装包1.8.2百度网盘 → GET_ADULT_CONTENT_OR_APP
+20:31:09 INFO    qmine:   ~ annotator_a ok 4.9s out 1,177 · deepseek-v4-flash · labels=25 · oppo互联 → NAME_ONLY_DISAMBIGUATION
+20:31:10 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+20:31:10 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+20:31:10 INFO    qmine:   ~ annotator_a ok 6.1s out 1,631 · deepseek-v4-flash · labels=25 · 小学毕业发朋友圈的文案 → GENERATE_SOCIAL_COPY
+20:31:10 INFO    qmine:   ~ annotator_a ok 6.1s out 1,675 · deepseek-v4-flash · labels=25 · 易加门户空间平台 → NAME_ONLY_DISAMBIGUATION
+20:31:11 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+20:31:11 INFO    qmine:   ~ annotator_a ok 6.5s out 1,237 · deepseek-v4-flash · labels=25 · line下载 → DOWNLOAD_INSTALL_NAMED_APP
+20:31:11 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+20:31:11 INFO    qmine:   ~ annotator_a ok 6.9s out 1,690 · deepseek-v4-flash · labels=25 · 苦力怕论坛网 → REACH_NAMED_PAGE_OR_PROFIL
+20:31:11 INFO    qmine:   ~ annotator_a ok 5.5s out 1,149 · deepseek-v4-flash · labels=25 · 探探下载2026官方正版手机 → DOWNLOAD_INSTALL_NAMED_APP
+20:31:11 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+20:31:12 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+20:31:12 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+20:31:13 INFO    qmine:   ~ annotator_a ok 6.0s out 1,607 · deepseek-v4-flash · labels=25 · 微信怎么设置来电铃声 → COMPLETE_TASK_HOWTO
+20:31:15 INFO    qmine:   ~ annotator_a ok 4.9s out 2,831 · deepseek-v4-flash · labels=25 · DeepSeek版本 → DEFINE_TERM_OR_COMPARE
+20:31:15 INFO    qmine:   ~ annotator_a ok 6.2s out 0 · deepseek-v4-flash · labels=25 · 微信哪年开始使用 → PLATFORM_RULES_VERDICT
+20:31:15 INFO    qmine.graph:   annotator[a] 72/120 batches · 1800 rows
+20:31:15 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+20:31:15 INFO    qmine:   ~ annotator_a ok 6.1s out 1,628 · deepseek-v4-flash · labels=25 · 京家政 → NAME_ONLY_DISAMBIGUATION
+20:31:15 INFO    qmine:   ~ annotator_a ok 5.5s out 1,153 · deepseek-v4-flash · labels=25 · 谷歌三件套一键安装 → CIRCUMVENTION_ACCESS
+20:31:16 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+20:31:16 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+20:31:16 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+20:31:16 INFO    qmine:   ~ annotator_a ok 5.4s out 1,106 · deepseek-v4-flash · labels=25 · Alight motion → NAME_ONLY_DISAMBIGUATION
+20:31:17 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+20:31:17 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+20:31:18 INFO    qmine:   ~ annotator_a ok 7.1s out 1,671 · deepseek-v4-flash · labels=25 · 秘塔ai → NAME_ONLY_DISAMBIGUATION
+20:31:18 INFO    qmine:   ~ annotator_a ok 7.2s out 1,602 · deepseek-v4-flash · labels=25 · 应用包 → NAME_ONLY_DISAMBIGUATION
+20:31:19 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+20:31:19 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+20:31:20 INFO    qmine:   ~ annotator_a ok 4.9s out 1,194 · deepseek-v4-flash · labels=25 · premiere → NAME_ONLY_DISAMBIGUATION
+20:31:20 INFO    qmine:   ~ annotator_a ok 5.2s out 1,175 · deepseek-v4-flash · labels=25 · 狗急加器速 → CIRCUMVENTION_ACCESS
+20:31:21 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+20:31:21 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+20:31:21 INFO    qmine:   ~ annotator_a ok 5.9s out 1,229 · deepseek-v4-flash · labels=25 · 豆包在线回复 → REACH_OFFICIAL_ENTRY
+20:31:21 INFO    qmine:   ~ annotator_a ok 5.8s out 1,168 · deepseek-v4-flash · labels=25 · rar解压软件 → RECOMMEND_SOFTWARE_BY_FUNC
+20:31:22 INFO    qmine:   ~ annotator_a ok 8.4s out 1,708 · deepseek-v4-flash · labels=25 · 外场pro官方下载 → DOWNLOAD_INSTALL_NAMED_APP
+20:31:22 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+20:31:23 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+20:31:23 INFO    qmine:   ~ annotator_a ok 6.9s out 1,671 · deepseek-v4-flash · labels=25 · autodesk → NAME_ONLY_DISAMBIGUATION
+20:31:23 INFO    qmine.graph:   annotator[a] 84/120 batches · 2100 rows
+20:31:24 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+20:31:24 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+20:31:25 INFO    qmine:   ~ annotator_a ok 7.0s out 1,657 · deepseek-v4-flash · labels=25 · 微信的聊天记录删了怎么恢复找回来 → RECOVER_LOST_DATA
+20:31:25 INFO    qmine:   ~ annotator_a ok 6.7s out 1,703 · deepseek-v4-flash · labels=25 · 微信怎么退回转账的钱 → COMPLETE_TASK_HOWTO
+20:31:25 INFO    qmine:   ~ annotator_a ok 5.0s out 1,087 · deepseek-v4-flash · labels=25 · 微信红包提醒怎么设置 → COMPLETE_TASK_HOWTO
+20:31:26 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+20:31:26 INFO    qmine:   ~ annotator_a ok 5.6s out 1,681 · deepseek-v4-flash · labels=25 · blurrr破解版 → GET_CRACKED_UNLOCKED_SOFTW
+20:31:26 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+20:31:26 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+20:31:26 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+20:31:27 INFO    qmine:   ~ annotator_a ok 5.9s out 1,254 · deepseek-v4-flash · labels=25 · 爱山东app下载安装 → DOWNLOAD_INSTALL_NAMED_APP
+20:31:27 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+20:31:28 INFO    qmine:   ~ annotator_a ok 6.7s out 1,668 · deepseek-v4-flash · labels=25 · 交友网站 → RECOMMEND_SOFTWARE_BY_FUNC
+20:31:29 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+20:31:29 INFO    qmine:   ~ annotator_a ok 6.4s out 1,667 · deepseek-v4-flash · labels=25 · 小艺智能语音助手下载安装 → DOWNLOAD_INSTALL_NAMED_APP
+20:31:30 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+20:31:30 INFO    qmine:   ~ annotator_a ok 8.1s out 1,696 · deepseek-v4-flash · labels=25 · yeetalk → NAME_ONLY_DISAMBIGUATION
+20:31:31 INFO    qmine:   ~ annotator_a ok 5.2s out 1,189 · deepseek-v4-flash · labels=25 · 跑满了吗APP → NAME_ONLY_DISAMBIGUATION
+20:31:31 INFO    qmine:   ~ annotator_a ok 5.6s out 1,181 · deepseek-v4-flash · labels=25 · 兔捷云 → NAME_ONLY_DISAMBIGUATION
+20:31:31 INFO    qmine:   ~ annotator_a ok 4.9s out 1,176 · deepseek-v4-flash · labels=25 · dps://p?url=https%3A%2F%2F → REACH_NAMED_PAGE_OR_PROFIL
+20:31:31 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+20:31:31 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+20:31:32 INFO    qmine:   ~ annotator_a ok 4.7s out 1,088 · deepseek-v4-flash · labels=25 · 盒马驾到 → NAME_ONLY_DISAMBIGUATION
+20:31:32 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+20:31:33 INFO    qmine:   ~ annotator_a ok 7.5s out 1,668 · deepseek-v4-flash · labels=25 · 微信收款音响免费申请 → RECOMMEND_SOFTWARE_BY_FUNC
+20:31:33 INFO    qmine.graph:   annotator[a] 96/120 batches · 2400 rows
+20:31:33 INFO    qmine:   ~ annotator_a ok 5.4s out 1,132 · deepseek-v4-flash · labels=25 · pixel beads → NAME_ONLY_DISAMBIGUATION
+20:31:33 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+20:31:34 INFO    qmine.graph:   ⚠ annotator[a] batch lost 25 rows after 3 attempts: ValueError: returned 25/25 labels (1 queries unlabelled)
+20:31:34 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+20:31:34 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+20:31:35 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+20:31:36 INFO    qmine:   ~ annotator_a ok 6.4s out 1,686 · deepseek-v4-flash · labels=25 · 论坛资讯网 → REACH_NAMED_PAGE_OR_PROFIL
+20:31:36 INFO    qmine:   ~ annotator_a ok 5.3s out 1,191 · deepseek-v4-flash · labels=25 · chat gpt人工智能免费版官网 → CIRCUMVENTION_ACCESS
+20:31:37 INFO    qmine:   ~ annotator_a ok 5.9s out 1,158 · deepseek-v4-flash · labels=25 · 微信铃声怎么设置自定义铃声 → COMPLETE_TASK_HOWTO
+20:31:37 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+20:31:37 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+20:31:37 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+20:31:39 INFO    qmine:   ~ annotator_a ok 7.5s out 2,791 · deepseek-v4-flash · labels=25 · 智慧人社app官方下载湖南微信公众号 → DOWNLOAD_INSTALL_NAMED_APP
+20:31:39 INFO    qmine:   ~ annotator_a ok 6.6s out 0 · deepseek-v4-flash · labels=25 · 如何删除微信聊天记录 → COMPLETE_TASK_HOWTO
+20:31:39 INFO    qmine:   ~ annotator_a ok 5.9s out 1,178 · deepseek-v4-flash · labels=25 · 叁五笔怎么打 → LOOKUP_INPUT_CODE
+
+    ~ annotator_a ok 6.3s out 1,599 · deepseek-v4-flash · labels=25 · 微博兔影视2024年最新电视剧免费观看 → GET_ADULT_CONTENT_OR_APP
+    ~ annotator_a ok 4.5s out 1,089 · deepseek-v4-flash · labels=25 · 轻颜 → NAME_ONLY_DISAMBIGUATION
+    ~ annotator_a ok 5.4s out 1,204 · deepseek-v4-flash · labels=25 · 微信最多可以加多少好友 → PLATFORM_RULES_VERDICT
+    ~ annotator_a ok 6.7s out 1,635 · deepseek-v4-flash · labels=25 · 微信语音能录音吗 → PLATFORM_RULES_VERDICT
+    ~ annotator_a ok 9.0s out 1,765 · deepseek-v4-flash · labels=25 · 百度下载app下载安装 → DOWNLOAD_INSTALL_NAMED_APP
+    ~ annotator_a ok 5.3s out 1,145 · deepseek-v4-flash · labels=25 · 他趣app → NAME_ONLY_DISAMBIGUATION
+    ~ annotator_a ok 6.6s out 1,673 · deepseek-v4-flash · labels=25 · 微信群怎么设置管理员 → COMPLETE_TASK_HOWTO
+    ~ annotator_a ok 6.8s out 1,682 · deepseek-v4-flash · labels=25 · 彩蝶 → NAME_ONLY_DISAMBIGUATION
+    annotator[a] 48/120 batches · 1200 rows
+    ~ annotator_a ok 5.8s out 1,237 · deepseek-v4-flash · labels=25 · 通话中断的原因微信 → PLATFORM_RULES_VERDICT
+    ~ annotator_a ok 5.2s out 1,113 · deepseek-v4-flash · labels=25 · termux下载 → DOWNLOAD_INSTALL_NAMED_APP
+    ~ annotator_a ok 5.9s out 1,603 · deepseek-v4-flash · labels=25 · 犬五笔怎么打 → LOOKUP_INPUT_CODE
+    ~ annotator_a ok 7.2s out 1,700 · deepseek-v4-flash · labels=25 · 扩大内需官方app下载安装 → DOWNLOAD_INSTALL_NAMED_APP
+    ~ annotator_a ok 4.4s out 1,156 · deepseek-v4-flash · labels=25 · vivo应用商店 → NAME_ONLY_DISAMBIGUATION
+    ~ annotator_a ok 6.7s out 1,217 · deepseek-v4-flash · labels=25 · 微信发语音没有声音是怎么回事 → FIX_MALFUNCTION_TROUBLESHO
+    ~ annotator_a ok 6.7s out 1,725 · deepseek-v4-flash · labels=25 · ibispaint下载 → DOWNLOAD_INSTALL_NAMED_APP
+    ~ annotator_a ok 5.2s out 1,194 · deepseek-v4-flash · labels=25 · 微信怎么解绑银行卡 → CANCEL_SUBSCRIPTION_OR_AUT
+    ~ annotator_a ok 5.3s out 1,123 · deepseek-v4-flash · labels=25 · 小翼管家 → NAME_ONLY_DISAMBIGUATION
+    ~ annotator_a ok 6.4s out 1,657 · deepseek-v4-flash · labels=25 · Facebook → NAME_ONLY_DISAMBIGUATION
+    ~ annotator_a ok 5.1s out 1,153 · deepseek-v4-flash · labels=25 · glm 5.2 → NAME_ONLY_DISAMBIGUATION
+    ~ annotator_a ok 6.6s out 1,583 · deepseek-v4-flash · labels=25 · wps → NAME_ONLY_DISAMBIGUATION
+    annotator[a] 60/120 batches · 1500 rows
+    ~ annotator_a ok 5.0s out 1,118 · deepseek-v4-flash · labels=25 · 微信语音通话怎么录音 → PLATFORM_RULES_VERDICT
+    ~ annotator_a ok 4.7s out 1,111 · deepseek-v4-flash · labels=25 · 追五笔怎么打 → LOOKUP_INPUT_CODE
+    ~ annotator_a ok 6.7s out 1,203 · deepseek-v4-flash · labels=25 · 喜弟安卓app官网 → REACH_OFFICIAL_ENTRY
+    ~ annotator_a ok 5.2s out 1,235 · deepseek-v4-flash · labels=25 · jmcomic2安装包1.8.2百度网盘 → GET_ADULT_CONTENT_OR_APP
+    ~ annotator_a ok 4.9s out 1,177 · deepseek-v4-flash · labels=25 · oppo互联 → NAME_ONLY_DISAMBIGUATION
+    ~ annotator_a ok 6.1s out 1,631 · deepseek-v4-flash · labels=25 · 小学毕业发朋友圈的文案 → GENERATE_SOCIAL_COPY
+    ~ annotator_a ok 6.1s out 1,675 · deepseek-v4-flash · labels=25 · 易加门户空间平台 → NAME_ONLY_DISAMBIGUATION
+    ~ annotator_a ok 6.5s out 1,237 · deepseek-v4-flash · labels=25 · line下载 → DOWNLOAD_INSTALL_NAMED_APP
+    ~ annotator_a ok 6.9s out 1,690 · deepseek-v4-flash · labels=25 · 苦力怕论坛网 → REACH_NAMED_PAGE_OR_PROFIL
+    ~ annotator_a ok 5.5s out 1,149 · deepseek-v4-flash · labels=25 · 探探下载2026官方正版手机 → DOWNLOAD_INSTALL_NAMED_APP
+    ~ annotator_a ok 6.0s out 1,607 · deepseek-v4-flash · labels=25 · 微信怎么设置来电铃声 → COMPLETE_TASK_HOWTO
+    ~ annotator_a ok 6.2s out 0 · deepseek-v4-flash · labels=25 · 微信哪年开始使用 → PLATFORM_RULES_VERDICT
+    ~ annotator_a ok 4.9s out 2,831 · deepseek-v4-flash · labels=25 · DeepSeek版本 → DEFINE_TERM_OR_COMPARE
+    annotator[a] 72/120 batches · 1800 rows
+    ~ annotator_a ok 6.1s out 1,628 · deepseek-v4-flash · labels=25 · 京家政 → NAME_ONLY_DISAMBIGUATION
+    ~ annotator_a ok 5.5s out 1,153 · deepseek-v4-flash · labels=25 · 谷歌三件套一键安装 → CIRCUMVENTION_ACCESS
+    ~ annotator_a ok 5.4s out 1,106 · deepseek-v4-flash · labels=25 · Alight motion → NAME_ONLY_DISAMBIGUATION
+    ~ annotator_a ok 7.1s out 1,671 · deepseek-v4-flash · labels=25 · 秘塔ai → NAME_ONLY_DISAMBIGUATION
+    ~ annotator_a ok 7.2s out 1,602 · deepseek-v4-flash · labels=25 · 应用包 → NAME_ONLY_DISAMBIGUATION
+    ~ annotator_a ok 4.9s out 1,194 · deepseek-v4-flash · labels=25 · premiere → NAME_ONLY_DISAMBIGUATION
+    ~ annotator_a ok 5.2s out 1,175 · deepseek-v4-flash · labels=25 · 狗急加器速 → CIRCUMVENTION_ACCESS
+    ~ annotator_a ok 5.9s out 1,229 · deepseek-v4-flash · labels=25 · 豆包在线回复 → REACH_OFFICIAL_ENTRY
+    ~ annotator_a ok 5.8s out 1,168 · deepseek-v4-flash · labels=25 · rar解压软件 → RECOMMEND_SOFTWARE_BY_FUNC
+    ~ annotator_a ok 8.4s out 1,708 · deepseek-v4-flash · labels=25 · 外场pro官方下载 → DOWNLOAD_INSTALL_NAMED_APP
+    ~ annotator_a ok 6.9s out 1,671 · deepseek-v4-flash · labels=25 · autodesk → NAME_ONLY_DISAMBIGUATION
+    annotator[a] 84/120 batches · 2100 rows
+    ~ annotator_a ok 7.0s out 1,657 · deepseek-v4-flash · labels=25 · 微信的聊天记录删了怎么恢复找回来 → RECOVER_LOST_DATA
+    ~ annotator_a ok 6.7s out 1,703 · deepseek-v4-flash · labels=25 · 微信怎么退回转账的钱 → COMPLETE_TASK_HOWTO
+    ~ annotator_a ok 5.0s out 1,087 · deepseek-v4-flash · labels=25 · 微信红包提醒怎么设置 → COMPLETE_TASK_HOWTO
+    ~ annotator_a ok 5.6s out 1,681 · deepseek-v4-flash · labels=25 · blurrr破解版 → GET_CRACKED_UNLOCKED_SOFTW
+    ~ annotator_a ok 5.9s out 1,254 · deepseek-v4-flash · labels=25 · 爱山东app下载安装 → DOWNLOAD_INSTALL_NAMED_APP
+    ~ annotator_a ok 6.7s out 1,668 · deepseek-v4-flash · labels=25 · 交友网站 → RECOMMEND_SOFTWARE_BY_FUNC
+    ~ annotator_a ok 6.4s out 1,667 · deepseek-v4-flash · labels=25 · 小艺智能语音助手下载安装 → DOWNLOAD_INSTALL_NAMED_APP
+    ~ annotator_a ok 8.1s out 1,696 · deepseek-v4-flash · labels=25 · yeetalk → NAME_ONLY_DISAMBIGUATION
+    ~ annotator_a ok 5.2s out 1,189 · deepseek-v4-flash · labels=25 · 跑满了吗APP → NAME_ONLY_DISAMBIGUATION
+    ~ annotator_a ok 5.6s out 1,181 · deepseek-v4-flash · labels=25 · 兔捷云 → NAME_ONLY_DISAMBIGUATION
+    ~ annotator_a ok 4.9s out 1,176 · deepseek-v4-flash · labels=25 · dps://p?url=https%3A%2F%2F → REACH_NAMED_PAGE_OR_PROFIL
+    ~ annotator_a ok 4.7s out 1,088 · deepseek-v4-flash · labels=25 · 盒马驾到 → NAME_ONLY_DISAMBIGUATION
+    ~ annotator_a ok 7.5s out 1,668 · deepseek-v4-flash · labels=25 · 微信收款音响免费申请 → RECOMMEND_SOFTWARE_BY_FUNC
+    annotator[a] 96/120 batches · 2400 rows
+    ~ annotator_a ok 5.4s out 1,132 · deepseek-v4-flash · labels=25 · pixel beads → NAME_ONLY_DISAMBIGUATION
+    ⚠ annotator[a] batch lost 25 rows after 3 attempts: ValueError: returned 25/25 labels (1 queries unlabelled)
+    ~ annotator_a ok 6.4s out 1,686 · deepseek-v4-flash · labels=25 · 论坛资讯网 → REACH_NAMED_PAGE_OR_PROFIL
+    ~ annotator_a ok 5.3s out 1,191 · deepseek-v4-flash · labels=25 · chat gpt人工智能免费版官网 → CIRCUMVENTION_ACCESS
+    ~ annotator_a ok 5.9s out 1,158 · deepseek-v4-flash · labels=25 · 微信铃声怎么设置自定义铃声 → COMPLETE_TASK_HOWTO
+    ~ annotator_a ok 6.6s out 0 · deepseek-v4-flash · labels=25 · 如何删除微信聊天记录 → COMPLETE_TASK_HOWTO
+    ~ annotator_a ok 5.9s out 1,178 · deepseek-v4-flash · labels=25 · 叁五笔怎么打 → LOOKUP_INPUT_CODE
+    ~ annotator_a ok 7.5s out 2,791 · deepseek-v4-flash · labels=25 · 智慧人社app官方下载湖南微信公众号 → DOWNLOAD_INSTALL_NAMED_APP20:31:39 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+20:31:39 INFO    qmine:   ~ annotator_a ok 9.7s out 1,618 · deepseek-v4-flash · labels=25 · suplay安装器 → DOWNLOAD_INSTALL_NAMED_APP
+20:31:40 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+20:31:40 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+20:31:40 INFO    qmine:   ~ annotator_a ok 6.0s out 1,187 · deepseek-v4-flash · labels=25 · 熠五笔怎么打 → LOOKUP_INPUT_CODE
+20:31:40 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+20:31:42 INFO    qmine:   ~ annotator_a ok 5.1s out 1,134 · deepseek-v4-flash · labels=25 · 盘五笔怎么打字 → LOOKUP_INPUT_CODE
+20:31:42 INFO    qmine:   ~ annotator_a ok 6.2s out 1,457 · deepseek-v4-flash · labels=25 · ip 代理软件 → RECOMMEND_SOFTWARE_BY_FUNC
+20:31:42 INFO    qmine.graph:   annotator[a] 108/120 batches · 2675 rows
+20:31:42 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+20:31:43 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+20:31:44 INFO    qmine:   ~ annotator_a ok 5.1s out 3,090 · deepseek-v4-flash · labels=25 · deepseek 网页版 → REACH_OFFICIAL_ENTRY
+20:31:44 INFO    qmine:   ~ annotator_a ok 8.3s out 0 · deepseek-v4-flash · labels=25 · teptep下载安装 → DOWNLOAD_INSTALL_NAMED_APP
+20:31:44 INFO    qmine:   ~ annotator_a ok 5.1s out 1,132 · deepseek-v4-flash · labels=25 · 去掉汉字 → EDIT_IMAGE_COMMAND
+20:31:44 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+20:31:45 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+20:31:45 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+20:31:45 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+20:31:45 INFO    qmine:   ~ annotator_a ok 5.4s out 1,189 · deepseek-v4-flash · labels=25 · 换高清图片 → EDIT_IMAGE_COMMAND
+20:31:45 INFO    qmine:   ~ annotator_a ok 6.3s out 1,378 · deepseek-v4-flash · labels=25 · snapchat官方正版 → CIRCUMVENTION_ACCESS
+20:31:47 INFO    qmine:   ~ annotator_a ok 5.5s out 1,073 · deepseek-v4-flash · labels=25 · 画世界pro → NAME_ONLY_DISAMBIGUATION
+20:31:47 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+20:31:50 INFO    qmine:   ~ annotator_a ok 7.7s out 1,761 · deepseek-v4-flash · labels=25 · AI扩充全身图 → EDIT_IMAGE_COMMAND
+20:31:50 INFO    qmine:   ~ annotator_a ok 5.5s out 1,324 · deepseek-v4-flash · labels=25 · 做成三排文字的 → EXTRACT_FROM_IMAGE_DOCUMEN
+20:31:50 INFO    qmine:   ~ annotator_a ok 10.3s out 1,660 · deepseek-v4-flash · labels=25 · 帮我去一下水印，字不去掉 → EDIT_IMAGE_COMMAND
+20:31:50 INFO    qmine.graph:   winner: kmeans_k15 (stability 0.8177)
+20:31:51 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+20:31:51 INFO    qmine:   ~ annotator_a ok 7.1s out 1,710 · deepseek-v4-flash · labels=25 · 把上衣p掉 → NON_CONSENSUAL_EXPLICIT_IM
+20:31:51 INFO    qmine:   ~ annotator_a ok 7.1s out 1,777 · deepseek-v4-flash · labels=25 · 就是别人把我拉黑了，把我拉黑的那个人发消息，我能看到 → SOCIAL_RELATIONSHIP_STATUS
+20:31:54 INFO    qmine:   ~ annotator_a ok 8.6s out 1,762 · deepseek-v4-flash · labels=25 · 灵动岛图片抠图 → EDIT_IMAGE_COMMAND
+20:31:54 INFO    qmine.graph:   annotator[a] labelled 2977/3000  ⚠ 23 rows unlabelled — kappa will be computed on the remainder and the shortfall reported
+20:31:54 INFO    qmine.graph:   2977/3000 rows labelled by one annotator — kappa undefined, no referee, no disagreements  ⚠ 23 row(s) came back unlabelled
+20:31:54 INFO    qmine.graph:   ⚠ 23/3000 rows missing a label from at least one annotator — excluded from the gold set, not counted as agreement
+20:31:56 INFO    qmine.graph:   single annotator (a) — no agreement measured
+20:31:57 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+20:31:57 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+20:31:57 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+20:31:57 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+20:31:58 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+20:31:58 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+20:31:59 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+20:32:00 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+20:32:02 INFO    qmine:   ~ annotator_a ok 5.6s out 1,230 · deepseek-v4-flash · labels=25 · 元宝deepseek下载 → DOWNLOAD_INSTALL_NAMED_APP
+20:32:03 INFO    qmine:   ~ annotator_a ok 6.9s out 1,739 · deepseek-v4-flash · labels=25 · 万能钥匙wifi免费下载2025 → GET_WIFI_CREDENTIAL_INTRUS
+20:32:03 INFO    qmine:   ~ annotator_a ok 7.0s out 1,286 · deepseek-v4-flash · labels=25 · 哪里能买到最新版 → NAME_ONLY_DISAMBIGUATION
+20:32:03 INFO    qmine:   ~ annotator_a ok 7.1s out 1,658 · deepseek-v4-flash · labels=25 · qq群人数上限是多少人 → PLATFORM_RULES_VERDICT
+20:32:04 INFO    qmine:   ~ annotator_a ok 7.6s out 1,242 · deepseek-v4-flash · labels=25 · 朋友验证消息是什么方式添加的 → PLATFORM_RULES_VERDICT
+20:32:05 INFO    qmine:   ~ annotator_a ok 8.6s out 1,704 · deepseek-v4-flash · labels=25 · 文档表格制作 → COMPLETE_TASK_HOWTO
+20:32:05 INFO    qmine:   ~ annotator_a ok 9.0s out 1,162 · deepseek-v4-flash · labels=25 · 篱笆论坛生活闲聊 → REACH_NAMED_PAGE_OR_PROFIL
+20:32:05 INFO    qmine:   ~ annotator_a ok 9.0s out 1,722 · deepseek-v4-flash · labels=25 · 微信经营收款码有什么好处和坏处呢 → PLATFORM_RULES_VERDICT
+20:32:05 INFO    qmine.graph:   annotator[a] labelled 200/200
+20:32:05 INFO    qmine.graph:   active learning added 200 boundary rows
+20:32:05 INFO    qmine.graph: gate p2b_kappa: SKIPPED — 标注一致性未测量 —— fast 模式由单个标注员 (a) 标注 2977 行, 没有第二份独立判读可供比较; 覆盖率 99%
+20:32:05 INFO    qmine.graph:   rule triggers: 0 executable, 47 semantic (30 rejected as unusable)
+20:32:05 INFO    qmine.graph:   annotator balance: UNDECIDABLE — only 0 contested row(s) adjudicated, 20 needed to say anything
+20:32:05 INFO    qmine.graph: gate p2b_annotator_symmetry: SKIPPED — UNDECIDABLE — only 0 contested row(s) were adjudicated, 20 needed. This is NOT a finding that the annotators are comparable; it is an absence of evidence either way
+20:32:05 INFO    qmine.graph: gate p2b_rules_match_their_evidence: SKIPPED — 规则与证据的比对未运行 —— 本次没有任何被裁定的行可供检验 (单标注员时无争议行; 已写入 0 条词面规则 / 47 条语义规则, 但都没有被检验过)
+20:32:05 INFO    qmine.graph:   taxonomy_v2 persisted: 47 rules (0 drafted by the referee), guide unchanged
+20:32:05 INFO    qmine.graph: ✔ p2b_gold completed in 108.9s
+20:33:58 INFO    qmine:   ~ proposer_family_k ok 128.1s out 8,894 · deepseek-v4-pro · add=2, drop=2, corpus_signals=5 · n_rows
+20:33:58 INFO    qmine.graph:   grid proposer[family_k]: +[7, 45] (0 rejected) — 该语料是 software_apps_zh，规模为 21920 行、16639 去重查询。12 个短语组名称中有明显可合并的顶层意图，例如“suffix:朋友圈”“suffix:友圈文案”可归为社交文
+20:33:58 INFO    qmine.graph: P5 granularity — K sweep over 16 values
+20:39:38 INFO    qmine.graph:   参照系 `phrasing_groups`: 触及 83% 的簇 (行覆盖 36%) @ k=30
+20:39:38 INFO    qmine.graph:   K 由 `phrasing_groups` 定位 (触及率最高)
+20:39:48 INFO    qmine.graph:   located K=7 (by intent_alignment_ami); DeepAligned leaf estimate 25; converged=False
+20:39:48 INFO    qmine.graph:   locator scored against 7 phrasing classes covering 0.3565 of rows
+20:39:48 INFO    qmine.graph: P6 hierarchy — 7 families, then local leaf selection
+20:41:19 INFO    qmine.graph:   built 7 families / 40 leaves — 0 个家族无内部结构未再分, 2 个 silhouette 的选择被稳定性否决
+20:41:26 INFO    qmine.graph:   refined to 37 leaves in 5 rounds (converged=False)
+20:41:26 INFO    qmine.graph:   minority-language facet: 1 family(ies) resolved into 6 sub-intents (a column, not leaves — the hybrid space cannot express intent within a minority language)
+20:41:26 INFO    qmine.graph:   held-out structure reproduction 0.987
+20:41:26 INFO    qmine.graph: gate p6_heldout_reproduction: PASSED — held-out rows land in the same cluster 98.7% of the time (95% CI 0.983-0.990, n=4384) — met
+20:41:26 INFO    qmine.graph: ✔ p456_tree completed in 670.0s
+20:41:26 INFO    qmine.graph: P2c classifier — 3177 labelled rows
+20:41:29 INFO    qmine.graph:   CV accuracy 0.833, macro-F1 0.732, ECE 0.036
+20:41:29 INFO    qmine.graph: gate p2c_calibration: WARNED — ECE 0.0357 sits 5.8 sd above the perfectly-calibrated null for this run (0.0137 ± 0.0038)
+20:41:29 INFO    qmine.graph: ✔ p2c_classifier completed in 2.8s
+20:41:29 INFO    qmine.graph: P2d 对抗验证 —— fast 模式跳过 (纯复核, 不改变任何标签)
+20:41:29 INFO    qmine.graph: ✔ p2d_validate completed in 0.0s
+20:41:29 INFO    qmine.graph: P2e sub-intents — auditing 24 L1 classes
+20:41:30 INFO    qmine.graph:   5 class(es) are rule-dependent (kNN agreement below threshold)
+20:42:03 INFO    qmine.graph:   subdivided into 58 sub-intents
+20:42:05 INFO    qmine.graph: ✔ p2e_subintents completed in 35.6s
+20:42:05 INFO    qmine.graph: P7 prepare — building 37 naming cards
+20:42:05 INFO    qmine.graph:   firewall armed with 50 forbidden label terms
+20:42:09 INFO    qmine.graph: ✔ p7_prepare completed in 4.4s
+20:42:09 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+20:42:10 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+20:42:10 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+20:42:11 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+20:42:21 INFO    qmine:   ~ namer_0 ok 11.6s out 789 · deepseek-v4-pro · leaf_id=0 · name_zh=汉字五笔打法查询
+20:42:21 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+20:42:23 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+20:42:24 INFO    qmine:   ~ namer_3 ok 14.4s out 1,028 · deepseek-v4-pro · leaf_id=3 · name_zh=DeepSeek官网与下载查询
+20:42:24 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+20:42:35 INFO    qmine:   ~ namer_2 ok 25.7s out 1,650 · deepseek-v4-pro · leaf_id=2 · name_zh=查询平台官网与登录入口
+20:42:35 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+20:42:44 INFO    qmine:   ~ namer_1 ok 34.8s out 1,314 · deepseek-v4-pro · leaf_id=1 · name_zh=查找AI软件与工具
+20:42:44 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+20:42:45 INFO    qmine:   ~ namer_2 ok 10.5s out 703 · deepseek-v4-pro · leaf_id=7 · name_zh=微信下载与使用支持查询
+20:42:46 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+20:42:51 INFO    qmine:   ~ namer_0 ok 29.9s out 2,094 · deepseek-v4-pro · leaf_id=5 · name_zh=查询软件定义与用途
+20:42:51 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+20:42:59 INFO    qmine:   ~ namer_3 ok 35.5s out 2,627 · deepseek-v4-pro · leaf_id=8 · name_zh=微信账号与支付功能关闭及解限方法查询
+20:42:59 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+20:43:11 INFO    qmine:   ~ namer_4 ok 61.9s out 4,232 · deepseek-v4-pro · leaf_id=4 · name_zh=查找VPN软件与服务
+20:43:11 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+20:43:13 INFO    qmine:   ~ namer_0 ok 22.6s out 1,496 · deepseek-v4-pro · leaf_id=10 · name_zh=微信功能设置与操作查询
+20:43:13 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+20:43:15 INFO    qmine:   ~ namer_3 ok 15.9s out 1,076 · deepseek-v4-pro · leaf_id=13 · name_zh=微信账号注册与手机号绑定查询
+20:43:15 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+20:43:18 INFO    qmine:   ~ namer_2 ok 32.1s out 2,440 · deepseek-v4-pro · leaf_id=12 · name_zh=查询微信好友删除拉黑状态及恢复联系方法
+20:43:18 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+20:43:25 INFO    qmine:   ~ namer_3 ok 10.3s out 691 · deepseek-v4-pro · leaf_id=18 · name_zh=朋友圈文案句子查询
+20:43:26 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+20:43:29 INFO    qmine:   ~ namer_4 ok 18.1s out 1,331 · deepseek-v4-pro · leaf_id=9 · name_zh=微信聊天记录恢复查询
+20:43:29 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+20:43:30 INFO    qmine:   ~ namer_2 ok 13.0s out 933 · deepseek-v4-pro · leaf_id=17 · name_zh=生成生日朋友圈文案
+20:43:31 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+20:43:31 INFO    qmine:   ~ namer_1 ok 46.9s out 3,430 · deepseek-v4-pro · leaf_id=6 · name_zh=查询指定软件应用信息
+20:43:31 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+20:43:47 INFO    qmine:   ~ namer_1 ok 16.1s out 1,171 · deepseek-v4-pro · leaf_id=11 · name_zh=微信语音与声音设置查询
+
+    ~ annotator_a ok 9.7s out 1,618 · deepseek-v4-flash · labels=25 · suplay安装器 → DOWNLOAD_INSTALL_NAMED_APP
+    ~ annotator_a ok 6.0s out 1,187 · deepseek-v4-flash · labels=25 · 熠五笔怎么打 → LOOKUP_INPUT_CODE
+    ~ annotator_a ok 5.1s out 1,134 · deepseek-v4-flash · labels=25 · 盘五笔怎么打字 → LOOKUP_INPUT_CODE
+    ~ annotator_a ok 6.2s out 1,457 · deepseek-v4-flash · labels=25 · ip 代理软件 → RECOMMEND_SOFTWARE_BY_FUNC
+    annotator[a] 108/120 batches · 2675 rows
+    ~ annotator_a ok 5.1s out 3,090 · deepseek-v4-flash · labels=25 · deepseek 网页版 → REACH_OFFICIAL_ENTRY
+    ~ annotator_a ok 8.3s out 0 · deepseek-v4-flash · labels=25 · teptep下载安装 → DOWNLOAD_INSTALL_NAMED_APP
+    ~ annotator_a ok 5.1s out 1,132 · deepseek-v4-flash · labels=25 · 去掉汉字 → EDIT_IMAGE_COMMAND
+    ~ annotator_a ok 5.4s out 1,189 · deepseek-v4-flash · labels=25 · 换高清图片 → EDIT_IMAGE_COMMAND
+    ~ annotator_a ok 6.3s out 1,378 · deepseek-v4-flash · labels=25 · snapchat官方正版 → CIRCUMVENTION_ACCESS
+    ~ annotator_a ok 5.5s out 1,073 · deepseek-v4-flash · labels=25 · 画世界pro → NAME_ONLY_DISAMBIGUATION
+    ~ annotator_a ok 7.7s out 1,761 · deepseek-v4-flash · labels=25 · AI扩充全身图 → EDIT_IMAGE_COMMAND
+    ~ annotator_a ok 5.5s out 1,324 · deepseek-v4-flash · labels=25 · 做成三排文字的 → EXTRACT_FROM_IMAGE_DOCUMEN
+    ~ annotator_a ok 10.3s out 1,660 · deepseek-v4-flash · labels=25 · 帮我去一下水印，字不去掉 → EDIT_IMAGE_COMMAND
+    winner: kmeans_k15 (stability 0.8177)
+    ~ annotator_a ok 7.1s out 1,710 · deepseek-v4-flash · labels=25 · 把上衣p掉 → NON_CONSENSUAL_EXPLICIT_IM
+    ~ annotator_a ok 7.1s out 1,777 · deepseek-v4-flash · labels=25 · 就是别人把我拉黑了，把我拉黑的那个人发消息，我能看到 → SOCIAL_RELATIONSHIP_STATUS
+    ~ annotator_a ok 8.6s out 1,762 · deepseek-v4-flash · labels=25 · 灵动岛图片抠图 → EDIT_IMAGE_COMMAND
+    annotator[a] labelled 2977/3000  ⚠ 23 rows unlabelled — kappa will be computed on the remainder and the shortfall reported
+    2977/3000 rows labelled by one annotator — kappa undefined, no referee, no disagreements  ⚠ 23 row(s) came back unlabelled
+    ⚠ 23/3000 rows missing a label from at least one annotator — excluded from the gold set, not counted as agreement
+    single annotator (a) — no agreement measured
+    ~ annotator_a ok 5.6s out 1,230 · deepseek-v4-flash · labels=25 · 元宝deepseek下载 → DOWNLOAD_INSTALL_NAMED_APP
+    ~ annotator_a ok 6.9s out 1,739 · deepseek-v4-flash · labels=25 · 万能钥匙wifi免费下载2025 → GET_WIFI_CREDENTIAL_INTRUS
+    ~ annotator_a ok 7.0s out 1,286 · deepseek-v4-flash · labels=25 · 哪里能买到最新版 → NAME_ONLY_DISAMBIGUATION
+    ~ annotator_a ok 7.1s out 1,658 · deepseek-v4-flash · labels=25 · qq群人数上限是多少人 → PLATFORM_RULES_VERDICT
+    ~ annotator_a ok 7.6s out 1,242 · deepseek-v4-flash · labels=25 · 朋友验证消息是什么方式添加的 → PLATFORM_RULES_VERDICT
+    ~ annotator_a ok 8.6s out 1,704 · deepseek-v4-flash · labels=25 · 文档表格制作 → COMPLETE_TASK_HOWTO
+    ~ annotator_a ok 9.0s out 1,162 · deepseek-v4-flash · labels=25 · 篱笆论坛生活闲聊 → REACH_NAMED_PAGE_OR_PROFIL
+    ~ annotator_a ok 9.0s out 1,722 · deepseek-v4-flash · labels=25 · 微信经营收款码有什么好处和坏处呢 → PLATFORM_RULES_VERDICT
+    annotator[a] labelled 200/200
+    active learning added 200 boundary rows
+  gate p2b_kappa: SKIPPED — 标注一致性未测量 —— fast 模式由单个标注员 (a) 标注 2977 行, 没有第二份独立判读可供比较; 覆盖率 99%
+    rule triggers: 0 executable, 47 semantic (30 rejected as unusable)
+    annotator balance: UNDECIDABLE — only 0 contested row(s) adjudicated, 20 needed to say anything
+  gate p2b_annotator_symmetry: SKIPPED — UNDECIDABLE — only 0 contested row(s) were adjudicated, 20 needed. This is NOT a finding that the annotators are comparable; it is an absence of evidence either way
+  gate p2b_rules_match_their_evidence: SKIPPED — 规则与证据的比对未运行 —— 本次没有任何被裁定的行可供检验 (单标注员时无争议行; 已写入 0 条词面规则 / 47 条语义规则, 但都没有被检验过)
+    taxonomy_v2 persisted: 47 rules (0 drafted by the referee), guide unchanged
+  ✔ p2b_gold completed in 108.9s
+    ~ proposer_family_k ok 128.1s out 8,894 · deepseek-v4-pro · add=2, drop=2, corpus_signals=5 · n_rows
+    grid proposer[family_k]: +[7, 45] (0 rejected) — 该语料是 software_apps_zh，规模为 21920 行、16639 去重查询。12 个短语组名称中有明显可合并的顶层意图，例如“suffix:朋友圈”“suffix:友圈文案”可归为社交文
+  P5 granularity — K sweep over 16 values
+    参照系 `phrasing_groups`: 触及 83% 的簇 (行覆盖 36%) @ k=30
+    K 由 `phrasing_groups` 定位 (触及率最高)
+    located K=7 (by intent_alignment_ami); DeepAligned leaf estimate 25; converged=False
+    locator scored against 7 phrasing classes covering 0.3565 of rows
+  P6 hierarchy — 7 families, then local leaf selection
+    built 7 families / 40 leaves — 0 个家族无内部结构未再分, 2 个 silhouette 的选择被稳定性否决
+    refined to 37 leaves in 5 rounds (converged=False)
+    minority-language facet: 1 family(ies) resolved into 6 sub-intents (a column, not leaves — the hybrid space cannot express intent within a minority language)
+    held-out structure reproduction 0.987
+  gate p6_heldout_reproduction: PASSED — held-out rows land in the same cluster 98.7% of the time (95% CI 0.983-0.990, n=4384) — met
+  ✔ p456_tree completed in 670.0s
+  P2c classifier — 3177 labelled rows
+    CV accuracy 0.833, macro-F1 0.732, ECE 0.036
+  gate p2c_calibration: WARNED — ECE 0.0357 sits 5.8 sd above the perfectly-calibrated null for this run (0.0137 ± 0.0038)
+  ✔ p2c_classifier completed in 2.8s
+  P2d 对抗验证 —— fast 模式跳过 (纯复核, 不改变任何标签)
+  ✔ p2d_validate completed in 0.0s
+  P2e sub-intents — auditing 24 L1 classes
+    5 class(es) are rule-dependent (kNN agreement below threshold)
+    subdivided into 58 sub-intents
+  ✔ p2e_subintents completed in 35.6s
+  P7 prepare — building 37 naming cards
+    firewall armed with 50 forbidden label terms
+  ✔ p7_prepare completed in 4.4s
+    ~ namer_0 ok 11.6s out 789 · deepseek-v4-pro · leaf_id=0 · name_zh=汉字五笔打法查询
+    ~ namer_3 ok 14.4s out 1,028 · deepseek-v4-pro · leaf_id=3 · name_zh=DeepSeek官网与下载查询
+    ~ namer_2 ok 25.7s out 1,650 · deepseek-v4-pro · leaf_id=2 · name_zh=查询平台官网与登录入口
+    ~ namer_1 ok 34.8s out 1,314 · deepseek-v4-pro · leaf_id=1 · name_zh=查找AI软件与工具
+    ~ namer_2 ok 10.5s out 703 · deepseek-v4-pro · leaf_id=7 · name_zh=微信下载与使用支持查询
+    ~ namer_0 ok 29.9s out 2,094 · deepseek-v4-pro · leaf_id=5 · name_zh=查询软件定义与用途
+    ~ namer_3 ok 35.5s out 2,627 · deepseek-v4-pro · leaf_id=8 · name_zh=微信账号与支付功能关闭及解限方法查询
+    ~ namer_4 ok 61.9s out 4,232 · deepseek-v4-pro · leaf_id=4 · name_zh=查找VPN软件与服务
+    ~ namer_0 ok 22.6s out 1,496 · deepseek-v4-pro · leaf_id=10 · name_zh=微信功能设置与操作查询
+    ~ namer_3 ok 15.9s out 1,076 · deepseek-v4-pro · leaf_id=13 · name_zh=微信账号注册与手机号绑定查询
+    ~ namer_2 ok 32.1s out 2,440 · deepseek-v4-pro · leaf_id=12 · name_zh=查询微信好友删除拉黑状态及恢复联系方法
+    ~ namer_3 ok 10.3s out 691 · deepseek-v4-pro · leaf_id=18 · name_zh=朋友圈文案句子查询
+    ~ namer_4 ok 18.1s out 1,331 · deepseek-v4-pro · leaf_id=9 · name_zh=微信聊天记录恢复查询
+    ~ namer_2 ok 13.0s out 933 · deepseek-v4-pro · leaf_id=17 · name_zh=生成生日朋友圈文案
+    ~ namer_1 ok 46.9s out 3,430 · deepseek-v4-pro · leaf_id=6 · name_zh=查询指定软件应用信息
+    ~ namer_1 ok 16.1s out 1,171 · deepseek-v4-pro · leaf_id=11 · name_zh=微信语音与声音设置查询20:43:47 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+20:43:51 INFO    qmine:   ~ namer_0 ok 37.8s out 2,827 · deepseek-v4-pro · leaf_id=15 · name_zh=查询微信朋友圈与聊天背景图
+20:43:51 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+20:43:56 INFO    qmine:   ~ namer_2 ok 25.0s out 1,831 · deepseek-v4-pro · leaf_id=22 · name_zh=APP下载查询
+20:43:56 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+20:43:58 INFO    qmine:   ~ namer_3 ok 32.8s out 2,370 · deepseek-v4-pro · leaf_id=23 · name_zh=应用商店下载
+20:43:58 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+20:44:02 INFO    qmine:   ~ namer_1 ok 14.9s out 1,040 · deepseek-v4-pro · leaf_id=16 · name_zh=七月朋友圈文案查询
+20:44:02 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+20:44:18 INFO    qmine:   ~ namer_0 ok 27.2s out 1,823 · deepseek-v4-pro · leaf_id=20 · name_zh=建党节朋友圈文案查询
+20:44:18 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+20:44:21 INFO    qmine:   ~ namer_3 ok 23.0s out 1,624 · deepseek-v4-pro · leaf_id=28 · name_zh=豆包App下载及功能查询
+20:44:22 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+20:44:22 INFO    qmine:   ~ namer_4 ok 53.2s out 4,063 · deepseek-v4-pro · leaf_id=14 · name_zh=微信群建群、群管理与群名查询
+20:44:22 INFO    qmine:   ~ namer_1 ok 20.5s out 1,385 · deepseek-v4-pro · leaf_id=21 · name_zh=毕业发朋友圈文案查询
+20:44:23 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+20:44:23 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+20:44:28 INFO    qmine:   ~ namer_2 ok 32.8s out 2,402 · deepseek-v4-pro · leaf_id=27 · name_zh=应用与商店官方下载查询
+20:44:28 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+20:44:48 INFO    qmine:   ~ namer_1 ok 25.4s out 1,834 · deepseek-v4-pro · leaf_id=26 · name_zh=下载安装应用软件
+20:44:48 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+20:44:49 INFO    qmine:   ~ namer_2 ok 21.2s out 1,732 · deepseek-v4-pro · leaf_id=32 · name_zh=去除图片视频水印
+20:44:49 INFO    qmine.graph:   namer[2] named 7 clusters
+20:44:50 INFO    qmine:   ~ namer_3 ok 29.3s out 2,128 · deepseek-v4-pro · leaf_id=33 · name_zh=复制网址并用浏览器打开
+20:44:50 INFO    qmine.graph:   namer[3] named 7 clusters
+20:44:54 INFO    qmine:   ~ namer_4 ok 31.6s out 2,418 · deepseek-v4-pro · leaf_id=19 · name_zh=朋友圈发布方法查询
+20:44:54 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+20:44:55 INFO    qmine:   ~ namer_0 ok 36.5s out 2,738 · deepseek-v4-pro · leaf_id=25 · name_zh=查询软件及工具信息
+20:44:55 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+20:45:31 INFO    qmine:   ~ namer_0 ok 36.6s out 2,904 · deepseek-v4-pro · leaf_id=30 · name_zh=删除或清理不需要的内容
+20:45:32 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+20:45:33 INFO    qmine:   ~ namer_1 ok 44.9s out 3,057 · deepseek-v4-pro · leaf_id=31 · name_zh=按要求编辑处理图片
+20:45:33 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+20:45:35 INFO    qmine:   ~ namer_4 ok 41.5s out 3,217 · deepseek-v4-pro · leaf_id=24 · name_zh=万能遥控器与WiFi万能钥匙下载
+20:45:36 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+20:45:47 INFO    qmine:   ~ namer_0 ok 15.6s out 1,138 · deepseek-v4-pro · leaf_id=35 · name_zh=论坛社区入口查询
+20:45:47 INFO    qmine.graph:   namer[0] named 8 clusters
+20:46:11 INFO    qmine:   ~ namer_4 ok 35.2s out 2,436 · deepseek-v4-pro · leaf_id=29 · name_zh=Excel表格操作与制作查询
+20:46:11 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+20:46:22 INFO    qmine:   ~ namer_1 ok 49.3s out 3,645 · deepseek-v4-pro · leaf_id=36 · name_zh=网络加速器查询下载
+20:46:22 INFO    qmine.graph:   namer[1] named 8 clusters
+20:46:44 INFO    qmine:   ~ namer_4 ok 32.8s out 2,480 · deepseek-v4-pro · leaf_id=34 · name_zh=图片编辑与绘图软件查询
+20:46:44 INFO    qmine.graph:   namer[4] named 7 clusters
+20:46:44 INFO    qmine.graph: P7 audit — 37 namings in
+20:46:45 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+20:50:56 INFO    qmine:   ~ tree_auditor ok 252.8s out 21,148 · deepseek-v4-pro · families=21, cross_family_twins=0, duplicate_leaf_pairs=0, risk_findings=0, incoherent_families=0, prescriptions=12 · 汉字五笔编码查询 → wubi_code_q
+20:50:59 INFO    httpx2: HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 200 OK"
+20:56:06 INFO    qmine:   ~ risk_sentinel ok 309.6s out 8,571 · moonshotai/kimi-k3 · findings=12 · 性图像生成指令（脱衣、透视、去码） → 两个图像编辑聚类中混入明确指令：要求去除人物衣物、把
+20:56:06 INFO    qmine.graph:   auditor: 12 prescriptions; risk sentinel: 12 findings
+20:56:06 INFO    qmine.graph: gate p7_all_leaves_named: PASSED — all 37 leaves named
+20:56:06 INFO    qmine.graph: gate p7_coherence: PASSED — blind coherence: mean 3.65/5, 2/37 leaves (5%) below 3.0
+20:56:06 INFO    qmine.graph: gate p7_risk_independently_found: PASSED — risk content was flagged by an agent that was never told to look for it
+20:56:06 INFO    qmine.graph: ✔ p7_audit completed in 562.4s
+20:56:06 INFO    qmine.graph: P8 governance — executing 24 prescriptions
+20:56:07 INFO    qmine.graph:   4 leaf/leaves changed membership past 20% — their p7 name no longer describes them: [2, 6, 22, 27]
+20:56:07 INFO    qmine.graph:   naming 7 leaf/leaves after governance (3 new, 4 re-named)
+20:56:10 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+20:58:13 INFO    qmine:   ~ namer_postgov ok 123.1s out 8,968 · deepseek-v4-pro · leaf_id=2 · name_zh=QQ官网查询
+20:58:13 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+20:58:48 INFO    qmine:   ~ namer_postgov ok 35.7s out 2,537 · deepseek-v4-pro · leaf_id=6 · name_zh=查询软件应用版本与下载渠道
+20:58:49 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+20:59:10 INFO    qmine:   ~ namer_postgov ok 21.2s out 1,615 · deepseek-v4-pro · leaf_id=22 · name_zh=APP下载获取
+20:59:10 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+20:59:26 INFO    qmine:   ~ namer_postgov ok 16.3s out 1,083 · deepseek-v4-pro · leaf_id=27 · name_zh=软件下载查询
+20:59:27 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+21:00:10 INFO    qmine:   ~ namer_postgov ok 43.8s out 3,045 · deepseek-v4-pro · leaf_id=37 · name_zh=查询软件工具信息
+21:00:10 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+21:01:33 INFO    qmine:   ~ namer_postgov ok 83.6s out 1,481 · deepseek-v4-pro · leaf_id=38 · name_zh=软件与应用下载查询
+21:01:34 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+21:02:58 INFO    qmine:   ~ namer_postgov ok 85.0s out 6,037 · deepseek-v4-pro · leaf_id=39 · name_zh=安卓应用及商店下载查询
+21:02:59 INFO    qmine.graph:   named 7/7 leaves affected by governance
+21:02:59 INFO    qmine.graph: gate p8_leaves_are_distinguishable: PASSED — 每个交付叶都能凭名称与同家族的兄弟叶区分开
+21:02:59 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+21:03:20 INFO    qmine:   ~ namer_family ok 21.8s out 1,268 · deepseek-v4-pro · leaf_ids=0
+21:03:21 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+21:04:00 INFO    qmine:   ~ namer_family ok 40.0s out 2,832 · deepseek-v4-pro · leaf_ids=0
+21:04:01 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+21:04:44 INFO    qmine:   ~ namer_family ok 43.7s out 2,995 · deepseek-v4-pro · leaf_ids=0
+21:04:44 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+21:05:38 INFO    qmine:   ~ namer_family ok 54.0s out 3,865 · deepseek-v4-pro · leaf_ids=0
+21:05:39 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+21:06:15 INFO    qmine:   ~ namer_family ok 36.9s out 2,456 · deepseek-v4-pro · leaf_ids=0
+21:06:15 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+21:06:35 INFO    qmine:   ~ namer_family ok 20.1s out 1,181 · deepseek-v4-pro · leaf_ids=0
+21:06:35 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+21:07:08 INFO    qmine:   ~ namer_family ok 33.0s out 1,976 · deepseek-v4-pro · leaf_ids=0
+21:07:08 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+21:07:34 INFO    qmine:   ~ namer_family ok 26.5s out 1,767 · deepseek-v4-pro · leaf_ids=0
+21:07:35 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+21:07:52 INFO    qmine:   ~ namer_family ok 17.6s out 1,065 · deepseek-v4-pro · leaf_ids=0
+21:07:52 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+21:08:07 INFO    qmine:   ~ namer_family ok 14.9s out 762 · deepseek-v4-pro · leaf_ids=0
+21:08:07 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+21:08:48 INFO    qmine:   ~ namer_family ok 41.3s out 3,068 · deepseek-v4-pro · leaf_ids=0
+21:08:48 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+21:09:09 INFO    qmine:   ~ namer_family ok 21.0s out 1,476 · deepseek-v4-pro · leaf_ids=0
+21:09:10 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+21:09:27 INFO    qmine:   ~ namer_family ok 17.9s out 1,295 · deepseek-v4-pro · leaf_ids=0
+21:09:27 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+21:09:47 INFO    qmine:   ~ namer_family ok 19.9s out 1,439 · deepseek-v4-pro · leaf_ids=0
+21:09:47 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+21:10:17 INFO    qmine:   ~ namer_family ok 29.6s out 2,347 · deepseek-v4-pro · leaf_ids=0
+21:10:17 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+21:10:30 INFO    qmine:   ~ namer_family ok 13.2s out 915 · deepseek-v4-pro · leaf_ids=0
+21:10:30 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+21:10:55 INFO    qmine:   ~ namer_family ok 25.2s out 1,834 · deepseek-v4-pro · leaf_ids=0
+21:10:55 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+21:11:06 INFO    qmine:   ~ namer_family ok 10.5s out 717 · deepseek-v4-pro · leaf_ids=0
+21:11:06 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+21:11:21 INFO    qmine:   ~ namer_family ok 15.6s out 1,100 · deepseek-v4-pro · leaf_ids=0
+21:11:21 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+21:11:43 INFO    qmine:   ~ namer_family ok 22.0s out 1,618 · deepseek-v4-pro · leaf_ids=0
+21:11:43 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+21:12:09 INFO    qmine:   ~ namer_family ok 25.5s out 1,937 · deepseek-v4-pro · leaf_ids=0
+21:12:09 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+21:12:21 INFO    qmine:   ~ namer_family ok 12.2s out 935 · deepseek-v4-pro · leaf_ids=0
+21:12:22 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+21:12:40 INFO    qmine:   ~ namer_family ok 19.0s out 1,334 · deepseek-v4-pro · leaf_ids=0
+21:12:40 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+21:13:00 INFO    qmine:   ~ namer_family ok 20.5s out 1,512 · deepseek-v4-pro · leaf_ids=0
+21:13:01 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+21:13:25 INFO    qmine:   ~ namer_family ok 24.4s out 1,764 · deepseek-v4-pro · leaf_ids=0
+21:13:25 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+21:13:39 INFO    qmine:   ~ namer_family ok 13.8s out 1,079 · deepseek-v4-pro · leaf_ids=0
+21:13:39 INFO    qmine.graph:   named 26/26 delivered families
+21:13:39 INFO    qmine.graph: gate p8_governance_executed: PASSED — 20 executed, 4 explicitly declined
+21:13:39 INFO    qmine.graph: ✔ p8_governance completed in 1052.6s
+21:13:39 INFO    qmine.graph: P9 uniform panel — re-measuring every candidate under one harness
+21:14:21 INFO    qmine.graph: ✔ p9_panel completed in 42.7s
+21:14:21 INFO    qmine.graph: P10 deployment — building the delivered table and centroid model
+21:14:21 INFO    qmine.graph: gate p10_delivered_leaves_named: PASSED — all 39 delivered leaves carry a name
+21:14:21 INFO    qmine.graph:   K 定位参照校验: 参与投票的措辞群单一意图占比中位数 71.7% (随机基线 26.7%)
+21:14:21 INFO    qmine.graph:   路线一致性 (family, 26 簇 vs 24 类): AMI=0.4644, 17/26 单一意图占多数
+21:14:21 INFO    qmine.graph:   路线一致性 (leaf, 39 簇 vs 24 类): AMI=0.4656, 26/39 单一意图占多数
+21:14:21 INFO    qmine.graph:   路线对照: 3/26 个家族与自上而下 L1 高度一致 (≥80% 落在同一类目)
+21:14:21 INFO    qmine.graph: ✔ p10_deploy completed in 0.2s
+21:14:22 INFO    qmine.graph: P10b drift — comparing 2 snapshots: AI助手, 搜索
+21:14:22 INFO    qmine.graph: gate p10b_snapshots_share_one_frame: WARNED — 46 group(s) sit almost entirely in ONE snapshot — read them before trusting any share below; they were separated, not compared
+21:14:22 INFO    qmine.graph: ✔ p10b_drift completed in 0.3s
+21:14:22 INFO    qmine.graph: P11 reporting — assembling deliverables
+/Users/mayouxuan/Documents/Claude/Search Query Mining Agent Team/QMine/.venv/lib/python3.12/site-packages/umap/umap_.py:1952: UserWarning: n_jobs value 1 overridden to 1 by setting random_state. Use no seed for parallelism.
+  warn(
+21:14:34 INFO    qmine.graph:   fast 模式交付: 核心参考文档 (完整中间产物保留)
+21:14:34 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+21:14:40 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+21:14:46 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+21:15:08 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+21:15:11 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+21:15:28 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+21:15:37 INFO    httpx2: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+21:15:57 INFO    qmine.graph:   工作簿: software_apps_zh_query_挖掘结果.xlsx (21,920 行 × 21 列, 10 个 sheet)
+21:15:57 INFO    qmine.graph: ✔ p11_report completed in 95.5s
+21:15:57 INFO    qmine.graph: P12 maintenance — baseline, novelty sentinel, rerun contract
+21:15:57 INFO    qmine.graph: ✔ p12_maintain completed in 0.1s
+
+    ~ namer_0 ok 37.8s out 2,827 · deepseek-v4-pro · leaf_id=15 · name_zh=查询微信朋友圈与聊天背景图
+    ~ namer_2 ok 25.0s out 1,831 · deepseek-v4-pro · leaf_id=22 · name_zh=APP下载查询
+    ~ namer_3 ok 32.8s out 2,370 · deepseek-v4-pro · leaf_id=23 · name_zh=应用商店下载
+    ~ namer_1 ok 14.9s out 1,040 · deepseek-v4-pro · leaf_id=16 · name_zh=七月朋友圈文案查询
+    ~ namer_0 ok 27.2s out 1,823 · deepseek-v4-pro · leaf_id=20 · name_zh=建党节朋友圈文案查询
+    ~ namer_3 ok 23.0s out 1,624 · deepseek-v4-pro · leaf_id=28 · name_zh=豆包App下载及功能查询
+    ~ namer_4 ok 53.2s out 4,063 · deepseek-v4-pro · leaf_id=14 · name_zh=微信群建群、群管理与群名查询
+    ~ namer_1 ok 20.5s out 1,385 · deepseek-v4-pro · leaf_id=21 · name_zh=毕业发朋友圈文案查询
+    ~ namer_2 ok 32.8s out 2,402 · deepseek-v4-pro · leaf_id=27 · name_zh=应用与商店官方下载查询
+    ~ namer_1 ok 25.4s out 1,834 · deepseek-v4-pro · leaf_id=26 · name_zh=下载安装应用软件
+    ~ namer_2 ok 21.2s out 1,732 · deepseek-v4-pro · leaf_id=32 · name_zh=去除图片视频水印
+    namer[2] named 7 clusters
+    ~ namer_3 ok 29.3s out 2,128 · deepseek-v4-pro · leaf_id=33 · name_zh=复制网址并用浏览器打开
+    namer[3] named 7 clusters
+    ~ namer_4 ok 31.6s out 2,418 · deepseek-v4-pro · leaf_id=19 · name_zh=朋友圈发布方法查询
+    ~ namer_0 ok 36.5s out 2,738 · deepseek-v4-pro · leaf_id=25 · name_zh=查询软件及工具信息
+    ~ namer_0 ok 36.6s out 2,904 · deepseek-v4-pro · leaf_id=30 · name_zh=删除或清理不需要的内容
+    ~ namer_1 ok 44.9s out 3,057 · deepseek-v4-pro · leaf_id=31 · name_zh=按要求编辑处理图片
+    ~ namer_4 ok 41.5s out 3,217 · deepseek-v4-pro · leaf_id=24 · name_zh=万能遥控器与WiFi万能钥匙下载
+    ~ namer_0 ok 15.6s out 1,138 · deepseek-v4-pro · leaf_id=35 · name_zh=论坛社区入口查询
+    namer[0] named 8 clusters
+    ~ namer_4 ok 35.2s out 2,436 · deepseek-v4-pro · leaf_id=29 · name_zh=Excel表格操作与制作查询
+    ~ namer_1 ok 49.3s out 3,645 · deepseek-v4-pro · leaf_id=36 · name_zh=网络加速器查询下载
+    namer[1] named 8 clusters
+    ~ namer_4 ok 32.8s out 2,480 · deepseek-v4-pro · leaf_id=34 · name_zh=图片编辑与绘图软件查询
+    namer[4] named 7 clusters
+  P7 audit — 37 namings in
+    ~ tree_auditor ok 252.8s out 21,148 · deepseek-v4-pro · families=21, cross_family_twins=0, duplicate_leaf_pairs=0, risk_findings=0, incoherent_families=0, prescriptions=12 · 汉字五笔编码查询 → wubi_code_q
+    ~ risk_sentinel ok 309.6s out 8,571 · moonshotai/kimi-k3 · findings=12 · 性图像生成指令（脱衣、透视、去码） → 两个图像编辑聚类中混入明确指令：要求去除人物衣物、把
+    auditor: 12 prescriptions; risk sentinel: 12 findings
+  gate p7_all_leaves_named: PASSED — all 37 leaves named
+  gate p7_coherence: PASSED — blind coherence: mean 3.65/5, 2/37 leaves (5%) below 3.0
+  gate p7_risk_independently_found: PASSED — risk content was flagged by an agent that was never told to look for it
+  ✔ p7_audit completed in 562.4s
+  P8 governance — executing 24 prescriptions
+    4 leaf/leaves changed membership past 20% — their p7 name no longer describes them: [2, 6, 22, 27]
+    naming 7 leaf/leaves after governance (3 new, 4 re-named)
+    ~ namer_postgov ok 123.1s out 8,968 · deepseek-v4-pro · leaf_id=2 · name_zh=QQ官网查询
+    ~ namer_postgov ok 35.7s out 2,537 · deepseek-v4-pro · leaf_id=6 · name_zh=查询软件应用版本与下载渠道
+    ~ namer_postgov ok 21.2s out 1,615 · deepseek-v4-pro · leaf_id=22 · name_zh=APP下载获取
+    ~ namer_postgov ok 16.3s out 1,083 · deepseek-v4-pro · leaf_id=27 · name_zh=软件下载查询
+    ~ namer_postgov ok 43.8s out 3,045 · deepseek-v4-pro · leaf_id=37 · name_zh=查询软件工具信息
+    ~ namer_postgov ok 83.6s out 1,481 · deepseek-v4-pro · leaf_id=38 · name_zh=软件与应用下载查询
+    ~ namer_postgov ok 85.0s out 6,037 · deepseek-v4-pro · leaf_id=39 · name_zh=安卓应用及商店下载查询
+    named 7/7 leaves affected by governance
+  gate p8_leaves_are_distinguishable: PASSED — 每个交付叶都能凭名称与同家族的兄弟叶区分开
+    ~ namer_family ok 21.8s out 1,268 · deepseek-v4-pro · leaf_ids=0
+    ~ namer_family ok 40.0s out 2,832 · deepseek-v4-pro · leaf_ids=0
+    ~ namer_family ok 43.7s out 2,995 · deepseek-v4-pro · leaf_ids=0
+    ~ namer_family ok 54.0s out 3,865 · deepseek-v4-pro · leaf_ids=0
+    ~ namer_family ok 36.9s out 2,456 · deepseek-v4-pro · leaf_ids=0
+    ~ namer_family ok 20.1s out 1,181 · deepseek-v4-pro · leaf_ids=0
+    ~ namer_family ok 33.0s out 1,976 · deepseek-v4-pro · leaf_ids=0
+    ~ namer_family ok 26.5s out 1,767 · deepseek-v4-pro · leaf_ids=0
+    ~ namer_family ok 17.6s out 1,065 · deepseek-v4-pro · leaf_ids=0
+    ~ namer_family ok 14.9s out 762 · deepseek-v4-pro · leaf_ids=0
+    ~ namer_family ok 41.3s out 3,068 · deepseek-v4-pro · leaf_ids=0
+    ~ namer_family ok 21.0s out 1,476 · deepseek-v4-pro · leaf_ids=0
+    ~ namer_family ok 17.9s out 1,295 · deepseek-v4-pro · leaf_ids=0
+    ~ namer_family ok 19.9s out 1,439 · deepseek-v4-pro · leaf_ids=0
+    ~ namer_family ok 29.6s out 2,347 · deepseek-v4-pro · leaf_ids=0
+    ~ namer_family ok 13.2s out 915 · deepseek-v4-pro · leaf_ids=0
+    ~ namer_family ok 25.2s out 1,834 · deepseek-v4-pro · leaf_ids=0
+    ~ namer_family ok 10.5s out 717 · deepseek-v4-pro · leaf_ids=0
+    ~ namer_family ok 15.6s out 1,100 · deepseek-v4-pro · leaf_ids=0
+    ~ namer_family ok 22.0s out 1,618 · deepseek-v4-pro · leaf_ids=0
+    ~ namer_family ok 25.5s out 1,937 · deepseek-v4-pro · leaf_ids=0
+    ~ namer_family ok 12.2s out 935 · deepseek-v4-pro · leaf_ids=0
+    ~ namer_family ok 19.0s out 1,334 · deepseek-v4-pro · leaf_ids=0
+    ~ namer_family ok 20.5s out 1,512 · deepseek-v4-pro · leaf_ids=0
+    ~ namer_family ok 24.4s out 1,764 · deepseek-v4-pro · leaf_ids=0
+    ~ namer_family ok 13.8s out 1,079 · deepseek-v4-pro · leaf_ids=0
+    named 26/26 delivered families
+  gate p8_governance_executed: PASSED — 20 executed, 4 explicitly declined
+  ✔ p8_governance completed in 1052.6s
+  P9 uniform panel — re-measuring every candidate under one harness
+  ✔ p9_panel completed in 42.7s
+  P10 deployment — building the delivered table and centroid model
+  gate p10_delivered_leaves_named: PASSED — all 39 delivered leaves carry a name
+    K 定位参照校验: 参与投票的措辞群单一意图占比中位数 71.7% (随机基线 26.7%)
+    路线一致性 (family, 26 簇 vs 24 类): AMI=0.4644, 17/26 单一意图占多数
+    路线一致性 (leaf, 39 簇 vs 24 类): AMI=0.4656, 26/39 单一意图占多数
+    路线对照: 3/26 个家族与自上而下 L1 高度一致 (≥80% 落在同一类目)
+  ✔ p10_deploy completed in 0.2s
+  P10b drift — comparing 2 snapshots: AI助手, 搜索
+  gate p10b_snapshots_share_one_frame: WARNED — 46 group(s) sit almost entirely in ONE snapshot — read them before trusting any share below; they were separated, not compared
+  ✔ p10b_drift completed in 0.3s
+  P11 reporting — assembling deliverables
+    fast 模式交付: 核心参考文档 (完整中间产物保留)
+    工作簿: software_apps_zh_query_挖掘结果.xlsx (21,920 行 × 21 列, 10 个 sheet)
+  ✔ p11_report completed in 95.5s
+  P12 maintenance — baseline, novelty sentinel, rerun contract
+  ✔ p12_maintain completed in 0.1s
+───────────────────────────────── run summary ──────────────────────────────────
+┏━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃ field           ┃ value                                                      ┃
+┡━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┩
+│ run_id          │ soft-pool5                                                 │
+│ generation      │ 1                                                          │
+│ elapsed_s       │ 3902.6                                                     │
+│ halted          │ False                                                      │
+│ n_decisions     │ 7                                                          │
+│ n_prescriptions │ 24                                                         │
+│ phases          │ p0, p1, p2a, p3, p2b, p4, p5, p6, p2c, p2d, p2e, p7, p8,   │
+│                 │ p9, p10, p10b, p11, p12                                    │
+│ artifacts       │ 51                                                         │
+│ llm             │ routed · 214 calls · 2 cached · $3.85                      │
+│ output          │ /Users/mayouxuan/Documents/Claude/Search Query Mining      │
+│                 │ Agent Team/QMine/runs/soft-pool5/gen01                     │
+└─────────────────┴────────────────────────────────────────────────────────────┘
+┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃ gate                           ┃ status  ┃ message                           ┃
+┡━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┩
+│ p1_template_coverage           │ passed  │ 12 phrasing families cover 8,721  │
+│                                │         │ rows (39.8% of the corpus; the    │
+│                                │         │ share                             │
+│ p1_minority_language_risk      │ passed  │ minority scripts total 7.5%. Test │
+│                                │         │ unified-versus-stratified         │
+│                                │         │ explicitly                        │
+│ p1_reference_columns_declared  │ warned  │ the corpus carries source, l2 and │
+│                                │         │ the run declared NONE — the gold  │
+│                                │         │ set                               │
+│ p2a_taxonomy_shape             │ passed  │ 25 L1 intents, 47 adjudication    │
+│                                │         │ rules the annotator can cite      │
+│ p2a_pilot_agreement            │ skipped │ 标注一致性试点未运行 —— fast      │
+│                                │         │ 模式单标注员 (a),                 │
+│                                │         │ 没有第二判读可比对;               │
+│                                │         │ kappa、自洽上限与结构性/指南性混… │
+│ p2b_kappa                      │ skipped │ 标注一致性未测量 —— fast          │
+│                                │         │ 模式由单个标注员 (a) 标注 2977    │
+│                                │         │ 行, 没有第二份独立判读可供比较;   │
+│                                │         │ 覆盖率 99%                        │
+│ p2b_rules_match_their_evidence │ skipped │ 规则与证据的比对未运行 ——         │
+│                                │         │ 本次没有任何被裁定的行可供检验    │
+│                                │         │ (单标注员时无争议行; 已写入 0     │
+│                                │         │ 条词面规则 / 47 条语义规则,       │
+│                                │         │ 但都没                            │
+│ p2b_annotator_symmetry         │ skipped │ UNDECIDABLE — only 0 contested    │
+│                                │         │ row(s) were adjudicated, 20       │
+│                                │         │ needed. Thi                       │
+│ p6_heldout_reproduction        │ passed  │ held-out rows land in the same    │
+│                                │         │ cluster 98.7% of the time (95% CI │
+│                                │         │ 0.983                             │
+│ p7_all_leaves_named            │ passed  │ all 37 leaves named               │
+│ p7_coherence                   │ passed  │ blind coherence: mean 3.65/5,     │
+│                                │         │ 2/37 leaves (5%) below 3.0        │
+│ p7_risk_independently_found    │ passed  │ risk content was flagged by an    │
+│                                │         │ agent that was never told to look │
+│                                │         │ for i                             │
+│ p8_governance_executed         │ passed  │ 20 executed, 4 explicitly         │
+│                                │         │ declined                          │
+│ p8_leaves_are_distinguishable  │ passed  │ 每个交付叶都能凭名称与同家族的兄… │
+│ p10_delivered_leaves_named     │ passed  │ all 39 delivered leaves carry a   │
+│                                │         │ name                              │
+│ p10b_snapshots_share_one_frame │ warned  │ 46 group(s) sit almost entirely   │
+│                                │         │ in ONE snapshot — read them       │
+│                                │         │ before tru                        │
+└────────────────────────────────┴─────────┴───────────────────────────────────┘

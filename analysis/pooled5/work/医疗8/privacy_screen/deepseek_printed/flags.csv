@@ -1,0 +1,30 @@
+﻿batch,sid,code,confidence,reason,query,sources,quotable_any,in_report
+6,Mba401de77c4,MINOR_SEX,中,疑似未成年人男性称呼+性行为与怀孕询问,臭小子快拔出会怀孕吗怎么调理,assistant_voice_top,True,True
+0,M7f76b9d04de,MINOR_SEX,高,年龄线索（14岁初中生）+ 取精,14岁初中生取精最简单方法,2025search_rand,True,True
+0,M89261f44b7c,EXPLICIT_SEX,中,多人性行为与HPV传播,两个女人一个男人会传染hpv吗,assistant_voice_top,True,True
+0,M0e4b8d1c341,NAMED_PERSON,高,具体医生姓名询问水平,中日友好医院花瞻水平怎么样,2026search_rand,True,False
+0,M73aae3f05f7,NAMED_PRIVATE_FACILITY,中,点名民营医疗机构,中美仁和,assistant_voice,True,True
+0,Mc5c0093cf5a,SELF_HARM_CRISIS,高,未成年人过量误服后求救,五岁小女孩喝了十二瓶五维赖怎办?,2025search_rand,False,False
+7,M975ce6f3152,NAMED_PRIVATE_FACILITY,中,点名一家医院，名称无法确认为公立，按标准标记,苏州苏城医院,assistant_top,True,True
+7,Mba8cf3cd73c,ILLEGAL_REPRO,高,非医学需要的胎儿性别选择，询问试管男孩费用,试管男孩多少钱,assistant_top,True,True
+7,M5254def82f9,SELF_HARM_CRISIS,高,误食后的求救咨询,误食屎怎么办,2025search_rand,False,False
+4,Mf94504a38fb,EXPLICIT_SEX,高,含色情标题式写法，虚构病院与取精行为，带编号,榨精病院1～7的临床表现与预防措施评估评价,2026search,False,False
+4,Mf2b225a2362,NAMED_PERSON,中,查询中出现疑似私人全名,洪泽雄的自小儿针眼吗,assistant_voice,True,True
+4,Md336324bdaf,NAMED_PERSON,高,出现具体医院医生全名,甘肃省中心医院陈清彬,2026search_rand,True,False
+5,M9093c1cba9c,EXPLICIT_SEX,中,涉及脚底挠痒结合电动牙刷，可能属于恋物或性化猎奇,用电动牙刷刷脚底十分钟痒痒,assistant_voice,True,True
+5,M46619f91af0,EXPLICIT_SEX,中,涉及子宫和排尿行为的猎奇描述,男人往子宫里撒尿是不是有病,assistant_voice_top,True,True
+5,M16ee55c8b12,NAMED_PERSON,高,医院名称+医生全名，可识别具体个人,积水潭李莹,2025search_rand,True,False
+3,Mffc23a638f5,MINOR_SEX,高,年龄线索+怀孕咨询,已满十八岁未满十八岁会怀孕吗?,"2026search,assistant_voice_top",True,True
+3,Mce8093e2d07,NAMED_PERSON,高,出现具体人名与医院,徐州二院郑伟,2025search,True,True
+3,Mee3fc1a5d11,SELF_HARM_CRISIS,高,提及自杀意念,抑郁症患者总想死怎办,2025search_rand,False,False
+3,Md07e39aa332,EXPLICIT_SEX,中,职业角色+涉性行为询问感染风险,按摩女用舌头舔会得hpv吗,"2026search,assistant_voice_top",True,True
+3,M344e8abd10b,EXPLICIT_SEX,高,按摩+私处，异物进入,按摩精油进入女性私处会伤肾吗,"2026search,assistant_voice_top",True,True
+1,Mee51858cf57,SELF_HARM_CRISIS,高,涉及自伤行为并询问后续处理,割手腕太深咋办,2025search_rand,False,False
+1,Mc91d9cbcbf8,SELF_HARM_CRISIS,高,涉及自杀方式与痛苦程度询问,割腕自杀痛苦吗,2025search_rand,False,False
+1,M924a98fd944,NAMED_PERSON,高,包含可识别个人的姓名,十八数藏 柏松,2026search_rand,True,False
+1,M4283d5dc5f2,SELF_HARM_CRISIS,中,误吞后寻求应对方法,口香糖不小心咽下去怎么办,2025search,False,False
+2,M6d84f94410f,EXPLICIT_SEX,中,女孩与脚心痒组合，可能涉及恋物性化猎奇题材,女孩脚心痒痒,assistant_top,True,True
+2,Mcc1820111d2,EXPLICIT_SEX,高,女生脚心挠痒，明确符合以女生为对象的挠痒脚心恋物题材,女生脚心痒痒挠,assistant_random,True,True
+2,M86ae3ae8201,SELF_HARM_CRISIS,高,主动求致病方法,如何让自己患上胃病,2025search_rand,False,False
+2,Mdb44d9be906,SELF_HARM_CRISIS,高,询问自杀方法的痛苦程度,安眠药自杀很痛吗,2025search_rand,False,False
+2,M8aeac9a903a,EXPLICIT_SEX,高,异物进入私处，猎奇写法,子宫内被塞进了一条鱼怎么办,assistant_voice_top,True,True

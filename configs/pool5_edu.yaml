@@ -1,0 +1,32 @@
+# POOLED-5 corpus for the 教育 domain: 2025 search + 2026 search + AI-assistant head + tail.
+#
+# Built by `analysis/pooled5/build_pooled5_corpus.py` — its docstring carries the reasoning for
+# every column below. One run, one taxonomy, five sources, because two runs over the same rows
+# shared 0 of 35 class codes.
+#
+# `extends: live.yaml` because `--config` REPLACES the default rather than merging it; without
+# this line the whole provider policy is silently dropped.
+extends: live.yaml
+
+data:
+  input_path: data/raw/pooled5/教育_pooled5.parquet
+  text_column: query
+
+  # Normalised WITHIN source to 10,000 (see the builder). Search PV, assistant PV and a voice
+  # export with no PV at all are three different instruments; raw PV pooled over them would
+  # make every weighted metric a statement about search.
+  weight_column: pv_norm
+
+  # `ops/drift.label_drift` compares EXACTLY two groups, so p10b is pointed at the two-level
+  # surface column; the five-level `source` column rides along for the post-run analysis and is
+  # re-joined positionally (`labels_full.csv` preserves input order).
+  snapshot_column: surface
+
+  # The groups differ by SURFACE, not by date: the time branch's prose would be false here and
+  # one of its caveats inverts (.claude/rules/multi-snapshot.md).
+  comparison_axis: stratum
+
+  # Deliberately empty. `l2` exists for assistant rows only (13% coverage) — declared as a
+  # reference it would ask the K locator to find a partition that separates the assistant from
+  # search, which is the comparison, not the frame.
+  reference_label_columns: []

@@ -1,0 +1,190 @@
+# Chinese consumer health: one week (2026-09-04 .. 09-10) of health SEARCH and of a specialised
+# HEALTH AI assistant (健康AI管家), aggregated and cleaned by
+# `analysis/pooled5/build_health_corpus.py` into `data/raw/pooled5/健康_pooled5.parquet`.
+#
+# WHY A NEW PROFILE AND NOT `medical_zh.yaml`. `medical_zh` is the profile the delivered
+# `med-pool5` run used; leaving it untouched keeps that run reproducible from the repo. This file
+# starts from it and changes only what was measured to differ on THIS corpus.
+#
+# WHAT WAS MEASURED ON THE FINAL 2,461-ROW CORPUS BEFORE WRITING THIS FILE
+#   - The 8 medical template seeds transfer: union coverage 30.8% (search 33.5%, AI 4.4%), worst
+#     pairwise overlap 0.09. They are copied verbatim below.
+#   - The 9 medical risk categories fire on almost nothing here: search self_diagnosis 30,
+#     reproductive_and_sensitive 53, drug_interaction 5 (mostly false positives), everything else
+#     0 or 1; on the AI side 3 hits in total. Health risk in this week sits elsewhere:
+#       private-hospital lead generation   60 search strings, 6.57% of search PV
+#       folk remedies / fast-cure claims   15 search + 3 AI strings (1.04% / 1.23% PV)
+#       minors + sexual / private content  a handful of strings, never to be quoted
+#     Those three are added. `minors_and_sexual_content` does NOT use `(1[0-7]|[1-9])岁`: measured,
+#     that matched the `7岁` inside `47岁` and flagged an adult fertility question.
+#   - The AI export is almost entirely product-authored. Of 1,887 distinct AI strings, 1,662 (95.2%
+#     of AI PV) are intake-answer chips, feature/facet buttons, pushed campaign questions, wrappers
+#     or doctor cards; 225 are kept, and 184 of those are bare symptom / disease / drug / test names
+#     whose origin (typed, or tapped from a picker) cannot be settled from the export.
+#
+# NOT medical, legal or compliance advice. A screening floor for a query taxonomy; a deployed health
+# surface needs clinical and legal review.
+key: health_zh
+display_name: "中文健康 Query（同一周：健康搜索周榜 + 专科健康 AI 管家周榜，按 query 合并、已清洗）"
+
+language: zh
+tokenizer: jieba
+char_ngram_range: [1, 3]
+word_ngram_range: [1, 2]
+
+embedding_candidates:
+  - BAAI/bge-small-zh-v1.5
+  - BAAI/bge-base-zh-v1.5
+  - BAAI/bge-large-zh-v1.5
+  - shibing624/text2vec-base-chinese
+
+# Copied verbatim from medical_zh.yaml (the reasoning for each, including the `(?<!图)片` lookbehind
+# and the partitioning negative lookahead, is written there). Measured coverage on this corpus is
+# above; no seed was added, because a seed that only matches this one week's phrasing would import
+# it into every later health corpus.
+template_seeds:
+  - name: drug_efficacy
+    pattern: "((?<!图)片|丸|胶囊|颗粒|口服液|注射液|软膏|滴眼液|冲剂|糖浆).{0,14}(功效|主治|用途|(?<!副)作用)"
+    intent_hint: "求某个药品制剂（片/丸/胶囊/颗粒…）的功效与适应症"
+  - name: substance_efficacy
+    pattern: "^(?!.*((?<!图)片|丸|胶囊|颗粒|口服液|注射液|软膏|滴眼液|冲剂|糖浆)).*(功效|主治|用途|(?<!副)作用)"
+    intent_hint: "求某味中药材/食材/保健成分的功效、作用与主治"
+  - name: symptom_cause
+    pattern: "(怎么回事|什么原因|引起的|是什么引起|的原因)"
+    intent_hint: "求某个身体现象的成因"
+  - name: symptom_list
+    pattern: "(症状|前兆|征兆|临床表现)"
+    intent_hint: "求某个疾病对应的症状清单"
+  - name: treatment_howto
+    pattern: "(怎么治|如何治疗|吃什么药|用什么药|怎么办|能治好)"
+    intent_hint: "求治疗或用药方案"
+  - name: term_definition
+    pattern: "(是什么意思|是什么东西|是什么病|是指什么|什么是)"
+    intent_hint: "求医学名词/缩写/指标的释义"
+  - name: normal_range
+    pattern: "(正常值|正常范围|正常是多少|多少正常|标准值|参考值|正常标准)"
+    intent_hint: "求某项检验指标的正常区间与分级标准"
+  - name: dosage_and_administration
+    pattern: "(一天吃几|一次吃几|用法用量|服用方法|怎么吃|饭前|饭后|空腹)"
+    intent_hint: "求药品/补充剂的用法、用量与服用时机"
+
+risk_categories:
+  # ---- the nine medical_zh categories, unchanged (their false-positive notes live in medical_zh.yaml)
+  - name: self_medication_and_dosage
+    policy: "Never state a dose. Route to a pharmacist or the package insert."
+    patterns:
+      - '(吃多少|服用多少|一次几片|一天几次|剂量|加量|减量|停药|自己吃|自行服用)'
+  - name: self_diagnosis
+    policy: "Never diagnose. Describe what the symptom can indicate and route to care."
+    patterns:
+      - '(我这是不是|是什么病|什么原因引起|症状对照|自测|测一测|严重吗|要紧吗)'
+  - name: unproven_or_dangerous_remedy
+    policy: "Do not present as effective. Say what the evidence is."
+    patterns:
+      - '(偏方|秘方|祖传|根治|特效药|包治|不用去医院|自己在家治|排毒|以毒攻毒)'
+  - name: vulnerable_population_dosing
+    policy: "Highest-caution routing: pregnancy, infants, elderly, chronic conditions."
+    patterns:
+      - '(孕妇能|哺乳期能|怀孕能|小孩能|儿童能|婴儿能|老人能|宝宝能)(不能)?(吃|喝|用)'
+  - name: drug_interaction
+    policy: "Never assert safety of a combination."
+    patterns:
+      - '(能一起吃吗|同服|一起服用|冲突吗|相克|忌口|禁忌)'
+  - name: prescription_and_controlled
+    policy: "Do not explain how to obtain without a prescription."
+    patterns:
+      - '(处方药|不用处方|怎么开到|哪里能买到.*药|抗生素|安眠药|止痛药|激素(?:药|类药|针|软膏|治疗)|打激素|用激素)'
+  - name: self_harm_and_crisis
+    policy: "Crisis routing takes precedence over every other intent."
+    patterns:
+      - '(自杀|不想活了|怎么死|自残|安乐死|一次吃多少片能)'
+  - name: reproductive_and_sensitive
+    policy: "Age-appropriate and jurisdiction-aware routing."
+    patterns:
+      - '(打胎|流产|避孕|人流|性病|艾滋|hiv|梅毒|阳痿|早泄)'
+  - name: personal_data_exposure
+    policy: "Never surface identifiable patient or record data."
+    patterns:
+      - '(病历|检查报告|化验单|身份证号|就诊记录)'
+
+  # ---- added for this corpus, each measured on the final 2,461 rows
+  - name: private_hospital_leadgen
+    # 60 search strings, 6.57% of search PV; 0 on the AI side. The classic lead-generation keyword
+    # set of private specialty hospitals (男科 / 妇科 / 人流 / 不孕不育 / 白癜风 / 腋臭 / 痔疮),
+    # several asking the user to leave a phone number. Medical advertising needs prior review and
+    # may not guarantee efficacy or cite cure rates (《广告法》2021 Art. 16 and 46; 《医疗广告管理办法》
+    # Art. 3), and a platform that knows or should know of an illegal ad must stop it (Art. 45).
+    policy: "Neutral care routing only: never rank or endorse a private provider, never relay a cure rate."
+    patterns:
+      - '(哪家医院好|医院哪家好|哪个医院好|医院排名|专科医院|十大.{0,4}医院|在线咨询|免费咨询|留(?:手机|电话)|24小时.{0,4}(?:咨询|在线)|预约留)'
+  - name: folk_remedy_and_cure_claims
+    # 15 search + 3 AI strings. "断根 / 土方法 / 最快止痛" asks for exactly the cure or speed claim an
+    # answer must not make. `unproven_or_dangerous_remedy` above caught 1 of them.
+    policy: "Do not promise a cure or a speed of relief; state the evidence and when to see a doctor."
+    patterns:
+      - '(土方法|土方子|断根|除根|一招|秘方|偏方|神药|特效|快速止痛|最快|几天就好)'
+  - name: minors_and_sexual_content
+    # A handful of strings. Screened for review AND excluded from every quotation in the reports.
+    # The age alternation is anchored on a non-digit so that `47岁` cannot match as `7岁`.
+    policy: "Age-appropriate, non-explicit routing; never quote."
+    patterns:
+      - '(?:^|[^0-9])(?:1[0-7]|[1-9])岁.{0,10}(?:私处|私密|处女|破处|射精|发育|胸|怀孕|内裤)'
+      - '(?:初中|高中|中学生|小学生|青春期|未成年|少女|少男|小女孩|小男孩).{0,10}(?:私处|私密|处女|破处|射精|性|发育|怀孕)'
+
+# The corpus is ten times smaller than the pooled medical corpus that delivered 20 L1 intents, and
+# a large share of search is institution / lead-generation traffic. Left generous: the K locator
+# decides, this only bounds the search.
+expected_l1_range: [10, 25]
+expected_family_range: [8, 25]
+
+pragmatic_intents_hint:
+  # medical_zh's six, unchanged
+  - "A drug-efficacy query (X的功效与作用) is an information lookup, not a request to take X."
+  - "A normal-range query (X正常值) is self-assessment: the user is comparing their own number."
+  - "A symptom query may be about the asker, someone they care for, or pure curiosity, and the wording rarely says which."
+  - "TCM (中药材, 方剂, 穴位) and biomedicine (西药, 检查, 手术) are different answer surfaces even when the intent verb is identical."
+  - "'能不能' and '可以吗' on a health topic are permission-seeking, which is where advice risk concentrates."
+  - "A cost or institution query (多少钱, 哪家医院, 挂什么科) is navigational/transactional, not informational."
+  # added for this corpus, each measured
+  - >
+    Private-hospital lead generation is its own shape here (60 search strings, 6.6% of search PV):
+    看男科性功能哪家医院好 / 无痛人流预约留手机号 / 24小时免费男科在线咨询. The user is looking for a
+    provider and is frequently answering an advertisement; it is not the same as neutral routing
+    (挂什么科), and an answer that ranks a private provider or relays a cure rate is the harm.
+  - >
+    Folk-remedy and fast-cure asks (高血压断根最好的土方法 / 牙疼最快止疼法) request a claim an answer must
+    not make. They are remedy-seeking with risk, not ordinary treatment seeking.
+  - >
+    On the AI side most kept rows (184 of 225) are a bare symptom / disease / drug / test name
+    (头晕 / 糖尿病 / 阿司匹林 / 血常规). The export cannot tell whether a person typed it or tapped it
+    from the assistant's symptom list, so do not build an intent whose definition depends on the
+    assistant's bare terms having been typed; a bare term is an entity lookup whichever way it arrived.
+  - >
+    Sexual-health and reproductive care is a large, legitimate share of search (sexual function /
+    STD 50 strings, 4.8% of search PV; pregnancy termination 27 strings, 3.0%). Treat it as
+    care-seeking with sensitivity, not as noise and not as a single catch-all.
+
+domain_notes: >
+  Two exports from the same week, 2026-09-04 to 09-10: health search, and a specialised health AI
+  assistant that runs a guided symptom intake. Both were "top 10,000 (query x day)" lists with the
+  platform's own category on every row; each is aggregated to one row per query, with weekly PV
+  exact for strings present all seven days and a lower bound otherwise.
+
+  The AI export was cleaned hard, and the reason is measured, not assumed: three blind readings of
+  all 1,887 distinct AI strings (Fleiss kappa 0.945) found that intake-answer chips (都没有, 1周内,
+  男/女, 无发热), feature buttons (报告单解读, BMI计算器, 皮肤病检测), pushed campaign questions and
+  templates carry 95% of its traffic. What is left on the AI side is small (225 rows) and dominated
+  by bare terms of uncertain origin, so the pooled taxonomy is shaped mostly by search, and any AI
+  share has wide intervals. Search was cleaned only of 16 doctor-profile strings whose traffic was
+  near-identical across sixteen different named doctors, and of 8 tapped health-news headlines.
+
+  The platform categories are a department x content-type TOPIC taxonomy (内科-症状, 皮肤科-科普),
+  declared as reference columns (level 2 and content type) — reference only, never supervision, and
+  not an intent taxonomy: 科普 and 症状 describe the topic, not what the user wants done with it.
+
+  Risk here is carried by what a correct-looking answer would DO — a dose, a diagnosis, a cure claim,
+  a ranked private provider — more than by taboo vocabulary. China's internet-diagnosis rules forbid
+  AI software from replacing the physician and from generating prescriptions (《互联网诊疗监管细则
+  （试行）》2022, Art. 13 and 21), while national guidance endorses AI triage, consultation and
+  pre-consultation (2024 AI application-scenario guide; 2025 "AI+医疗卫生" opinion). This profile is a
+  screening floor for taxonomy work, not clinical, legal or compliance guidance.

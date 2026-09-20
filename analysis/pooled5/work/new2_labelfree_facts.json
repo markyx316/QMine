@@ -1,0 +1,98 @@
+{
+ "书籍文档": {
+  "year_intersection": 5076,
+  "year_churn_pct_of_2026": 49.21,
+  "assistant_strings_also_in_search_pct": 4.22,
+  "search_strings_also_in_assistant_pct": 0.51,
+  "by_source": {
+   "2025search": {
+    "n": 9988,
+    "distinct": 9988,
+    "len_p50": 7,
+    "len_p90": 13,
+    "len_p99": 22,
+    "len_max": 36,
+    "over_200": 0,
+    "over_1000": 0
+   },
+   "2026search": {
+    "n": 9995,
+    "distinct": 9995,
+    "len_p50": 7,
+    "len_p90": 14,
+    "len_p99": 22,
+    "len_max": 49,
+    "over_200": 0,
+    "over_1000": 0
+   },
+   "assistant_top": {
+    "n": 850,
+    "distinct": 850,
+    "len_p50": 5,
+    "len_p90": 12,
+    "len_p99": 66,
+    "len_max": 684,
+    "over_200": 5,
+    "over_1000": 0
+   },
+   "assistant_random": {
+    "n": 953,
+    "distinct": 953,
+    "len_p50": 14,
+    "len_p90": 66,
+    "len_p99": 529,
+    "len_max": 11640,
+    "over_200": 24,
+    "over_1000": 2
+   }
+  }
+ },
+ "软件": {
+  "year_intersection": 5103,
+  "year_churn_pct_of_2026": 48.96,
+  "assistant_strings_also_in_search_pct": 8.87,
+  "search_strings_also_in_assistant_pct": 1.14,
+  "by_source": {
+   "2025search": {
+    "n": 9997,
+    "distinct": 9997,
+    "len_p50": 8,
+    "len_p90": 14,
+    "len_p99": 26,
+    "len_max": 72,
+    "over_200": 0,
+    "over_1000": 0
+   },
+   "2026search": {
+    "n": 9999,
+    "distinct": 9998,
+    "len_p50": 8,
+    "len_p90": 14,
+    "len_p99": 28,
+    "len_max": 72,
+    "over_200": 0,
+    "over_1000": 0
+   },
+   "assistant_top": {
+    "n": 940,
+    "distinct": 935,
+    "len_p50": 6,
+    "len_p90": 13,
+    "len_p99": 53,
+    "len_max": 275,
+    "over_200": 3,
+    "over_1000": 0
+   },
+   "assistant_random": {
+    "n": 984,
+    "distinct": 984,
+    "len_p50": 13,
+    "len_p90": 26,
+    "len_p99": 64,
+    "len_max": 391,
+    "over_200": 1,
+    "over_1000": 0
+   }
+  }
+ }
+}

@@ -1,0 +1,148 @@
+﻿claim,value,source_table,how_computed
+语料总行数,21934,work/影视/summary.json: n_rows,run film-pool5/gen01 交付语料；四来源行数 9998/9999/955/982 之和
+搜索行占语料比例,91.17%,analysis/pooled5/deliverables/影视_pooled5_labeled.parquet,df.source.str.contains('search').mean()*100 = 19997/21934
+助手行占语料比例,8.83%,analysis/pooled5/deliverables/影视_pooled5_labeled.parquet,1937/21934；assistant_top 955 + assistant_random 982
+L1 意图类目数,17,work/影视/summary.json: n_classes_td_l1_name；run_summary.json: gates.p2a_taxonomy_shape,"gate 文本 '17 L1 intents, 54 adjudication rules'"
+裁决规则总数,54,runs/film-pool5/gen01/taxonomy_v2.json: rule_conflicts.n_rules,同 gates.p2a_taxonomy_shape
+有可执行触发条件的规则数,42,runs/film-pool5/gen01/taxonomy_v2.json: rule_conflicts.n_with_executable_trigger,54-42=12 条无可执行触发
+then 不是类目的规则,5 条: R_ENDING_PLAY_VS_SPOILER / R_FACTS_VS_PLAYBACK / R_IDENTIFY_VS_LORE / R_PERSON_VS_WORK_CAST / R_PLOT_VS_LORE,runs/film-pool5/gen01/taxonomy_v2.json: rule_conflicts.rules_in_compared_pairs_whose_then_is_not_a_class,字段直接列出
+规则-证据比对未运行,status=skipped; n_triggers_rejected=0 是0条被裁定行而非0条不合格规则,runs/film-pool5/gen01/run_summary.json: gates.p2b_rules_match_their_evidence; taxonomy_v2.json: rules_vs_evidence.n_triggers_rejected,gate message: 本次没有任何被裁定的行可供检验
+kappa 未测量,"status=skipped, n_annotators=1, n=3000",runs/film-pool5/gen01/run_summary.json: gates.p2b_kappa; gold_agreement.json: agreement,fast 模式单标注员 a；kappa=null 不是 1.0
+交付叶数,19,work/影视/summary.json: n_classes_bu_leaf_name; run_summary.json: gates.p10_delivered_leaves_named,metrics_panel.json subject=leaves n_clusters=19.0
+交付家族数,16,work/影视/summary.json: n_classes_bu_family_final; metrics_panel.json: subject=families_final n_clusters=16,治理前 families_pre_governance n_clusters=6
+交付叶的盲评连贯度,3.882/5,runs/film-pool5/gen01/metrics_panel.json: table.rows[subject=leaves].coherence,交付面板；p7 闸门的 3.88/5 量的是 p8 之前的 17 个叶
+交付叶的留出复现率,0.943,runs/film-pool5/gen01/metrics_panel.json: table.rows[subject=leaves].heldout_reproduction,p6 闸门的 96.7% (n=4387) 是 p8 改写前的划分
+交付叶的模糊率,21.71%,runs/film-pool5/gen01/metrics_panel.json: table.rows[subject=leaves].ambiguous_rate=0.2171,
+交付叶 stability_ari / distill_accuracy / silhouette,0.9404 / 0.9352 / 0.0376,runs/film-pool5/gen01/metrics_panel.json: table.rows[subject=leaves],
+16 个家族里只含 1 个叶的家族数,14,analysis/pooled5/deliverables/影视_pooled5_labeled.parquet,"df.groupby(['bu_family_final','bu_leaf']) 后每家族的叶数；只有 family 4 (3叶) 与 family 5 (2叶) 多叶"
+家族 K 定位值与定位器,"6, intent_alignment_ami",runs/film-pool5/gen01/granularity.json: triangulation.chosen_family_k / locator,领域先验期望 10-24 (expert_range)
+定位 K 的参照系触及范围,"60% 的簇 (15/25), 24.4% 的行","runs/film-pool5/gen01/granularity.json: triangulation.locator_reach.phrasing_groups.reach=0.6, row_coverage=0.244",gates.p5_locator_reaches_the_corpus.status=warned
+K=6 是网格提议者的候选并且胜出,"proposed_kept=[6,7], chosen=6, a_proposed_value_won=true",runs/film-pool5/gen01/granularity.json: grid_proposal,ops/select.py 的 challenger_beats_incumbent 折价按其模块文档是 documented rather than quietly wired，即未被调用
+治理处方数与结果,"23 条, 18 执行 / 5 否决",runs/film-pool5/gen01/governance.json: settled.n_total/n_executed/n_declined; run_summary.json: gates.p8_governance_executed,
+被否决的四条合并,P001/P003/P005/P007 merge_leaves declined (配对叶被判为风险隔离对象),runs/film-pool5/gen01/governance.json: ledger + settled.declined_reasons,
+带（合并后目标）后缀的交付叶名,5 个（其中 4 个对应的 merge_leaves 被否决，1 个 CCTV5直播观看（合并后目标） 对应的 P009 已执行但未改名）,analysis/pooled5/deliverables/影视_pooled5_labeled.parquet / runs/film-pool5/gen01/leaf_relabels.json,sum('合并后目标' in n for n in df.bu_leaf_name.unique())；P001/P003/P005/P007 declined，P009 executed
+5 条 relabel 处方规定的新名落到处方目标叶上的个数,"0（4 个字符串在 bu_leaf_name 中完全不存在；免费电视剧全集在线观看查询 存在但属 leaf 3 / 3,401 行，不是 P004 的目标 leaf 2）",analysis/pooled5/deliverables/影视_pooled5_labeled.parquet / runs/film-pool5/gen01/governance.json: ledger P002/P004/P006/P008/P010,逐一检查 动漫资源与在线观看 / 影视文学动漫作品名称与资源查询 / 电影与影视免费在线观看查询 / 电视直播观看 均不在 df.bu_leaf_name.unique()；免费电视剧全集在线观看查询 存在但属 leaf 3 而非处方目标 leaf 2
+助手占比 >50% 的类目数,2,work/taxonomy_delta_summary.csv: classes_majority_assistant=2.0,
+剧情设定讨论与同人假设问答 的助手占比,85.75% (379/442),work/影视/taxonomy_delta_newclass_mix.csv: assistant_share/n_assistant/n_total,
+凭情节片段反查片名 的助手占比,61.32% (65/106),work/影视/taxonomy_delta_newclass_mix.csv,
+获取片段台词或混剪等衍生内容 的助手占比,41.59% (220/529),work/影视/taxonomy_delta_newclass_mix.csv,
+获取作品的在线播放入口 的助手占比,3.05% (226/7407),work/影视/taxonomy_delta_newclass_mix.csv,
+裸片名 的助手占比,6.56% (608/9263),work/影视/taxonomy_delta_newclass_mix.csv,
+匹配的搜索行数,19992,work/taxonomy_delta_summary.csv: matched_search_rows,"film-pool (旧, 15类) 与 film-pool5 (新, 17类) 按 (query, source) 1:1 join"
+AMI(td) 影视 vs 对照,0.5897 vs 0.7742,work/taxonomy_delta_summary.csv: AMI_td,对照行 domain=对照·同数据两次运行(fin02/fin03)
+AMI(bu) 影视 vs 对照,0.4247 vs 0.6873,work/taxonomy_delta_summary.csv: AMI_bu,
+NMI(td) / ARI(td),0.5911 / 0.6875,work/taxonomy_delta_summary.csv: NMI_td / ARI_td,
+旧类 寻找成人或情色内容 的搜索行数,944,work/影视/taxonomy_delta_crosstab.csv: 列 寻找成人或情色内容 求和,
+其中仍带成人标签的行数与比例,75 行 / 7.9%,work/影视/taxonomy_delta_crosstab.csv: 行 获取成人或限制级内容 × 列 寻找成人或情色内容,75/944
+旧成人类的最大三个去向,裸片名 440 (46.6%) / 在线播放入口 260 (27.5%) / 衍生内容 78 (8.3%),work/影视/taxonomy_delta_crosstab.csv,
+新类 获取成人或限制级内容 的搜索行数与来源,"192 行, 39% 来自旧成人类",work/影视/taxonomy_delta_crosstab.csv 行求和; taxonomy_delta_newclass_mix.csv: main_old_share=0.3906,
+旧类 按条件浏览或求推荐片单 的规模与去向,"793 行 / 1,162,407 PV；324→裸片名, 300→在线播放入口, 61→站点导航, 40→App",work/影视/taxonomy_delta_crosstab.csv 列求和; PV 自算于 analysis/pooled5/deliverables/影视_pooled5_labeled.parquet,新框架无对应类目
+该旧类 PV 前列是纯品类词,电影 35532 / 韩国电影在线观看电影完整版高清免费观看 34805 / 电视剧 27658 / 韩国电影 22650 / 动漫 20742,analysis/pooled5/deliverables/影视_pooled5_labeled.parquet + runs/film-pool/gen01/labels_full.csv,"按 (query,source) join 旧标签后取该旧类 nlargest(pv_raw)"
+旧类 非影视垂类或噪声 的规模,"601 行, 散入 9 个以上新类 (衍生内容 23% / 裸片名 19% / 站点导航 16%)",work/影视/taxonomy_delta_crosstab.csv 列求和与列内占比,
+旧类 由描述或别名定位标准片名 的规模与去向,"273 行；裸片名 49% / 在线播放入口 11% / 剧情设定讨论 10% / 按演职人员反查作品列表 7% (20 行, 7.33%) / 凭片段反查 6% (5.86%)",work/影视/taxonomy_delta_crosstab.csv,
+未动的映射,返回裸片名枢纽页→裸片名 96%；获取播放页→在线播放入口 96%；观看电视直播→电视直播 97%；网盘→网盘 97%；演员表→演员表 95%,work/影视/taxonomy_delta_crosstab.csv 列内占比,
+四条线的 TVD,时间 0.0739 / 界面 0.2392 / 深度 0.4449 / 界面+深度 0.6070,work/影视/contrast_summary_td_l1_name.csv: tvd,
+四条线的 Cramér's V,0.1494 / 0.2921 / 0.5094 / 0.6546,work/影视/contrast_summary_td_l1_name.csv: cramers_v,
+四条线的显著类数,10 / 8 / 10 / 13,work/影视/contrast_summary_td_l1_name.csv: n_sig_classes,Newcombe 95% 区间不含 0
+emergent/receded 标记均不显著,"获取未删减或未遮挡版本, 两条 sig=False, 全语料 30 行",work/影视/diffs_td_l1_name.csv: kind!=stable; taxonomy_delta_newclass_mix.csv: n_total=30,
+时间线: 获取作品的在线播放入口,"38.20%→33.62%, -4.57pp [-5.90,-3.25]",work/影视/diffs_td_l1_name.csv: a=2025search b=2026search,唯一超过 4pp 的一条
+时间线: 获取作品的网盘或资源下载渠道,"0.11%→2.97%, +2.86pp [+2.53,+3.21]",work/影视/diffs_td_l1_name.csv,"行数 11→297, PV 8788→371404 (自算)"
+时间线: 收看电视频道直播或查询节目表,"1.64%→3.96%, +2.32pp [+1.87,+2.78]",work/影视/diffs_td_l1_name.csv,
+时间线: 裸片名,"42.41%→44.15%, +1.75pp [+0.37,+3.12]",work/影视/diffs_td_l1_name.csv,
+2025/2026 搜索 PV 总量与门槛,"16,451,130→12,497,425 (-24.0%); 中位 686→533; 最小 354→284",analysis/pooled5/deliverables/影视_pooled5_labeled.parquet,分来源 pv_raw.sum()/median()/min()
+等 PV 门槛对照 (2026 取 pv>=354),"剩 7886 行, TVD 0.0746",analysis/pooled5/deliverables/影视_pooled5_labeled.parquet,TVD = 0.5*sum|p_a-p_b| on td_l1_name
+等秩对照 (两边各取 PV 前 7886),TVD 0.0753,analysis/pooled5/deliverables/影视_pooled5_labeled.parquet,"nlargest(7886,'pv_raw') 各取后算 TVD；与全量 0.0739 一致"
+2025→2026 逐字重合 (不同串口径),28.42%,work/影视/overlap.csv: 行 2025search 列 2026search = 0.2842,
+2026 新进串数量与 PV 占比,"7155 行 (71.6%), 带 63.3% 的 2026 PV",analysis/pooled5/deliverables/影视_pooled5_labeled.parquet,2026 行中 query 不在 2025 query 集合内者
+新进串的类目构成,在线播放入口 42.9% / 裸片名 33.9% / 网盘 4.2% / 电视直播 3.8%,analysis/pooled5/deliverables/影视_pooled5_labeled.parquet,新进子集的 td_l1_name 归一化计数
+续存串的类目构成,"2844 行, 裸片名 69.9%",analysis/pooled5/deliverables/影视_pooled5_labeled.parquet,2026 行中 query 也出现在 2025 者
+2026 搜索 PV 前十里 CCTV5 直播的条数,8 条,analysis/pooled5/deliverables/影视_pooled5_labeled.parquet,"s26.nlargest(10,'pv_raw')：cctv5在线直播 328769 / cctv5 97325 / 中央五台cctv5在线直播 86641 / cctv5节目直播 65951 / cctv5 在线直播观看正在直播 62717 / CCTV5 61120 / 央视CCTV5直播 60847 / cctv5-正在直播 58375；非 CCTV5 的两条是 爱情有烟火的电视剧免费观看 88055 与 千香 77021"
+收看电视直播类的 PV 占来源比,2025 1.75% → 2026 12.69%,work/影视/shares_td_l1_name.csv: pv_share,
+该类内 CCTV5 占该类 PV 的比例,2025 55.9% → 2026 84.6%,analysis/pooled5/deliverables/影视_pooled5_labeled.parquet,query.str.lower().str.contains('cctv5') 的 pv_raw 求和 / 该类 pv_raw 求和
+该类 PV 集中度 (2026),"top1 20.72%, top5 40.43%",work/影视/concentration_td_l1_name.csv: source=2026search label=收看电视频道直播或查询节目表,
+含 世界杯 的行数,2026搜索 17 行 / 2025搜索 0 行 / 助手两层 0 行,analysis/pooled5/deliverables/影视_pooled5_labeled.parquet,query.str.contains('世界杯')
+界面线: 获取作品的在线播放入口,"33.62%→17.17%, -16.45pp [-18.89,-13.77]",work/影视/diffs_td_l1_name.csv: a=2026search b=assistant_top,
+界面线: 获取片段台词或混剪等衍生内容,"1.23%→10.26%, +9.03pp [+7.25,+11.13]",work/影视/diffs_td_l1_name.csv,
+界面线: 查询剧情梗概或结局剧透,"0.76%→6.28%, +5.52pp [+4.14,+7.25]",work/影视/diffs_td_l1_name.csv,标注为当期剧混淆
+界面线: 查询作品演员表与角色信息,"1.27%→4.19%, +2.92pp [+1.79,+4.40]",work/影视/diffs_td_l1_name.csv,标注为当期剧混淆
+界面线: 收看电视频道直播或查询节目表,"3.96%→1.15%, -2.81pp [-3.45,-1.84]",work/影视/diffs_td_l1_name.csv,标注为赛事窗口混淆
+界面线: 凭情节片段反查片名 / 剧情设定讨论 / 直达指定集数,"+2.40pp [+1.55,+3.62] / +2.21pp [+1.38,+3.42] / -1.72pp [-2.21,-0.89]",work/影视/diffs_td_l1_name.csv,
+裸片名在两界面占比无显著差,"2026搜索 44.15% → 助手头部 42.41%, Δ -1.75pp, Newcombe 95% [-4.99, +1.56], 不在显著列表内","work/影视/diffs_td_l1_name.csv: a=2026search b=assistant_top, sig=False","diff_table(D,'td_l1_name','2026search','assistant_top')；区间宽 6.5pp——只能说没测出差别，不能说一样"
+裸片名类在统一13类下判为裸实体的比例,2026搜索 86.0% / 助手头部 64.7% / 助手随机 34.0%,"work/影视/vs_unified_crosstab_by_source.csv: td_l1_name=裸片名或仅带实体类型词的作品查询, U02",行总数 4415/405/203
+同类判为无法判定的比例,1.9% / 15.1% / 29.1%,work/影视/vs_unified_crosstab_by_source.csv: U13,
+同类判为清单与推荐 / 获取现成内容 / 解释与介绍,"3.8%,2.4%,0.8% / 7.7%,4.9%,1.5% / 9.9%,8.4%,7.4%",work/影视/vs_unified_crosstab_by_source.csv: U08/U09/U04,
+衍生内容类含生成动词的比例,2025搜索 0.0% / 2026搜索 0.0% / 助手头部 32.7% (32/98) / 助手随机 26.2% (32/122),analysis/pooled5/deliverables/影视_pooled5_labeled.parquet,正则 生成|帮我做|帮我画|画一|画下|画出|做一个视频|做个视频|制作
+衍生内容类含片段/台词词的比例,24.2% / 26.0% / 9.2% / 2.5%,analysis/pooled5/deliverables/影视_pooled5_labeled.parquet,正则 吻戏|片段|台词|混剪|剪辑|花絮|预告|MV|mv|高能|名场面|截取|亲嘴|激吻|床戏|激情戏
+全来源含生成动词的行占比,2025搜索 0.01% / 2026搜索 0.02% / 助手头部 3.87% / 助手随机 4.07%,analysis/pooled5/deliverables/影视_pooled5_labeled.parquet,同上生成动词正则，分母为来源行数
+助手头部衍生内容类里既非生成也非片段词的行,"57 行, 其中 50.9% 长度<=6 字",analysis/pooled5/deliverables/影视_pooled5_labeled.parquet,两条正则取补集后算 query.str.len()<=6 的比例
+助手头部含「AI视频」前缀的行,"4 行 (0.42%), 全落在衍生内容类, 清洗未剔除",analysis/pooled5/deliverables/影视_pooled5_labeled.parquet / work/影视/cleaning_removed.csv,query.str.contains('AI视频|「AI')；cleaning_removed 里 assistant_top S4_suggested_chip 仅 2 行
+助手头部 查询剧情梗概或结局剧透 的 PV 集中度,"top1 8.08%, top5 30.62%, n=60",work/影视/concentration_td_l1_name.csv: source=assistant_top,top4 为同一部剧
+助手头部 查询作品演员表与角色信息 的 PV 集中度,"top1 15.00%, top5 45.44%, n=40",work/影视/concentration_td_l1_name.csv: source=assistant_top,
+深度线: 剧情设定讨论与同人假设问答,"2.51%→36.15%, +33.64pp [+30.46,+36.80]",work/影视/diffs_td_l1_name.csv: a=assistant_top b=assistant_random,
+深度线: 裸片名 / 在线播放入口 / 站点导航 / 剧情梗概,"-21.74pp [-25.71,-17.66] / -10.86pp [-13.72,-8.03] / -4.01pp [-5.70,-2.48] / -3.64pp [-5.55,-1.81]",work/影视/diffs_td_l1_name.csv,
+深度线: 处理平台账号或客服问题 / 核实播出信息与集数,"+2.85pp [+1.84,+4.11] / +2.81pp [+1.31,+4.40]",work/影视/diffs_td_l1_name.csv,
+LORE 类在助手随机的统一13类分布,12 个非零类；解释与介绍 87 (24.5%) / 无法判定 83 (23.4%) / 清单与推荐 38 (10.7%) / 事实与数值 33 (9.3%) / 核实与动态 27 (7.6%) / 生成与编辑 25 (7.0%) / 个案判断与建议 23 (6.5%) / 会话与系统指令 18 (5.1%) / 获取现成内容 14 (3.9%) / 办事与操作 4 / 违规或灰色内容 2 / 裸实体 1,"work/影视/vs_unified_crosstab_by_source.csv: source=assistant_random, td_l1_name=剧情设定讨论与同人假设问答",行总数 355；占比 <3% 的三类合计 7 行
+LORE 类在助手随机的行长与置信度,"行长均值 56.2 字, td_confidence 均值 0.656 (该来源其余行 0.650)",analysis/pooled5/deliverables/影视_pooled5_labeled.parquet,该类子集的 query.str.len().mean() 与 td_confidence.mean()
+各来源 td_confidence 均值,2025搜索 0.871 / 2026搜索 0.863 / 助手头部 0.794 / 助手随机 0.652,work/影视/fit.csv: td_confidence_mean,
+叶 影视动漫剧情信息查询 的来源内行占比,2026搜索 1.76% / 助手头部 12.77% / 助手随机 37.37%,work/影视/shares_bu_leaf_name.csv: row_share,
+叶 视频内容查询与生成 的来源内行占比,2026搜索 2.85% / 助手头部 12.15% / 助手随机 12.42%,work/影视/shares_bu_leaf_name.csv: row_share,
+界面+深度线前四位,"剧情设定讨论 +35.85pp [+32.90,+38.91] / 在线播放入口 -27.31pp [-28.96,-25.38] / 裸片名 -23.48pp [-26.09,-20.67] / 衍生内容 +11.19pp [+9.26,+13.41]",work/影视/diffs_td_l1_name.csv: a=2026search b=assistant_random,
+长度中位/p90/均值,9/15/9.19 · 9/16/9.29 · 8/15/9.95 · 14/45/30.23,work/影视/form.csv: len_median/len_p90/len_mean,顺序 2025搜索/2026搜索/助手头部/助手随机
+<=3 字行占比,9.51% / 8.54% / 15.71% / 0.92%,analysis/pooled5/deliverables/影视_pooled5_labeled.parquet,query.str.len()<=3 的均值
+>=20 字 / >=40 字行占比,>=20: 1.56/2.47/3.87/25.76%; >=40: 0.01/0.00/1.36/11.51%,analysis/pooled5/deliverables/影视_pooled5_labeled.parquet,同上；2026搜索 >=40 字为 0 行
+资源词行占比,38.80% / 36.41% / 16.34% / 5.40%,work/影视/form.csv: 资源词 (0.3880/0.3641/0.1634/0.0540),
+导航词行占比,2.93% / 4.46% / 1.57% / 1.63%,work/影视/form.csv: 导航词,
+疑问句/祈使/第一人称行占比,疑问 1.59/1.12/10.79/34.52; 祈使 0.11/0.07/3.98/5.09; 第一人称 2.95/3.01/7.33/14.46 (%),work/影视/form.csv,
+是非核实/方法怎么办/选择清单/定义/输出约束/多问句,"0.19,0.09,0.46,0.11,0.00,0.00 · 0.13,0.04,0.48,0.12,0.01,0.00 · 0.94,0.31,3.14,4.19,1.68,0.00 · 9.27,3.67,8.15,3.46,2.24,1.83 (%)",work/影视/form.csv,
+回指上文 (流水线词表),0.01% / 0.02% / 0.00% / 0.71%,work/影视/form.csv: 回指上文,助手头部为 0 行
+回指/指代 (自算更宽词表),2026搜索 0.35% / 助手头部 3.25% / 助手随机 10.08%,analysis/pooled5/deliverables/影视_pooled5_labeled.parquet,正则 ^(这|那|它|他|她|上面|刚才|继续|还有|再|然后|接着) 或 含 这部|这是什么|这个|那个|刚刚
+助手头部 <=3 字行带走的 search_num 份额,18.49%,analysis/pooled5/deliverables/影视_pooled5_labeled.parquet,至该来源 pv_raw 求和的比例；<=2 字为 9.21% 行 / 11.28% PV
+语义近邻中位相似度,对照(2026前1000→其余) 0.922 / 2025搜索 0.876 / 助手头部 0.728 / 助手随机 0.556,work/semantic_nn_controls.parquet + work/semantic_nn.parquet (domain=影视),bge-base-zh 余弦，最近邻取自 2026 搜索全量
+<0.70 的行占比,对照 4.5% / 2025搜索 21.5% / 助手头部 44.3% / 助手随机 88.5%,work/semantic_nn.parquet + controls,分档阈值与 digest [9] 一致
+>=0.999 档与字符串重合几乎相同,2025搜索 28.83% vs 28.42%; 助手头部 22.41% vs 22.07%; 助手随机 0.10% vs 0.10%,"work/semantic_nn.parquet (余弦) + work/影视/overlap.csv (字符串, 不同串口径)",差值 0.41pp / 0.34pp / 0.00pp
+助手随机在 0.90-0.999 档的行数,"16 行；13 条为书名号/语序/修饰词差异, 3 条最近邻指向另一个对象",work/semantic_nn.parquet: domain=影视 source=assistant_random 0.90<=sim<0.999,格式差异例: 98年版水浒传→水浒传98版 0.950; 《入戏》→入戏 0.911。指向不同对象: 一起来看流星雨2→一起来看流星雨 0.901 (续集vs原作); 我的前半生第二部42集免费观看→我的前半生2视频观看全集免费 0.912 (第42集vs全集); 聊斋惊艳奇谭电影→聊斋艳谭电影 0.909 (两部不同片)
+包装对: 意图不变率,"助手头部 59.6% (250 对, 中位加 6 字) / 助手随机 26.5% (264 对, 中位加 10.5 字)",work/wrap_summary_金融_影视.csv: domain=影视,
+包装对: 助手随机变意图的 194 对里核心串是裸片名的比例,87.6% (170/194),work/wrap_pairs_金融_影视.csv: domain=影视 source=assistant_random same_intent=False 的 core_td 计数,
+包装对: 这 194 对落进 LORE 类的比例,54.1% (105/194),work/wrap_pairs_金融_影视.csv: 同上的 wrap_td 计数,
+本领域无语音来源,"composition.csv 只有 4 个来源, 无 assistant_voice",work/影视/composition.csv,voice_profile/voice_repeats 中无影视
+机检命中总数与占比,960 行 / 4.377%,work/影视/risk_screen.json: total_flagged/total_share; summary.json: risk_total=960,
+五个风险类别的命中数,未授权站点导航 259 / 网盘离线渠道 252 / 未删减规避 233 / 淫秽违法 191 / 无国内授权供给 107,work/影视/risk_screen.json: categories[].n_hits,"policy: 前三与第五为 isolate_and_flag, 淫秽违法为 drop"
+按来源千行命中率,2026搜索 53.21 > 2025搜索 39.61 > 助手头部 28.27 > 助手随机 5.09,work/影视/risk_by_source.csv: per_1k,
+命中行带走的来源 PV 比例,2025搜索 4.97% / 2026搜索 5.10%,analysis/pooled5/deliverables/影视_pooled5_labeled.parquet + work/影视/risk_rows.csv,命中行 pv_raw 求和 / 来源 pv_raw 求和
+命中的 928 行搜索行被两套成人类接住的数量,新框架 13 行 (1.4%) / 旧框架 111 行 (12.0%),work/影视/risk_rows.csv + analysis/pooled5/deliverables/影视_pooled5_labeled.parquet + runs/film-pool/gen01/labels_full.csv,"按 (query,source) join 新旧标签后计数"
+命中行在新框架下的落点,在线播放入口 282 / 网盘渠道 213 / 站点导航 147 / 裸片名 116 / 衍生内容 57 / App 41,work/影视/risk_rows.csv 的 td_l1_name 计数 (搜索行),
+旧成人类 944 行中被机检命中的比例,11.8% (111/944),同上 join,旧类装的大部分不是机检认为的风险内容
+带 risk_flag 的命名叶数,13 / 20,runs/film-pool5/gen01/tree_naming.json: namings[].risk_flag,
+盲命名者与哨兵同时标中的叶,"9 个 (leaf 0,1,3,4,6,7,8,9,10)",runs/film-pool5/gen01/tree_naming.json: independent_risk_discovery.both_agree_on,gates.p7_risk_independently_found=passed
+执行的风险隔离处方数,"9 条 (P015-P023), executed_column=family_final",runs/film-pool5/gen01/governance.json: ledger,家族数由 6 涨到 16 的原因
+policy=drop 的 191 行仍在交付语料里,191/191 行全部在交付 parquet 中命中,configs/domains/film_tv_zh.yaml: risk_categories + analysis/pooled5/deliverables/影视_pooled5_labeled.parquet,按 risk_categories 经 qmine.ops.audit._noncapturing 重跑掩码后逐行比对，191/191 命中（原稿只验了 1 条 exemplar）
+清洗实际剔除的行数,"全语料 66 行, 其中助手头部 45 行",work/影视/cleaning_removed.csv,各 tier 行数求和
+性相关词面命中行数,2025搜索 28 (0.28%) / 2026搜索 12 (0.12%) / 助手头部 12 (1.26%) / 助手随机 5 (0.51%),analysis/pooled5/deliverables/影视_pooled5_labeled.parquet,正则 性感|裤子慢慢|脱衣|内衣|比基尼|泳衣|丝袜|白丝|黑丝|诱惑|情趣|不穿|裸|孕肚|孕夫|胸|色情|黄片|三级
+性相关词面同时含生成动词的行数,助手头部 8 / 搜索两年合计 0 / 助手随机 0,analysis/pooled5/deliverables/影视_pooled5_labeled.parquet,上两条正则取交集；这 8 行不在 获取成人或限制级内容 类里
+未成年词面与性相关词面同现的行数,"全语料 2 行 (2025搜索 1, 助手随机 1)",analysis/pooled5/deliverables/影视_pooled5_labeled.parquet,未成年正则 未成年|小学生|初中生|高中生|儿童|萝莉|幼女|童|学生妹|小孩 与性相关正则取交集；不引原文
+未授权获取两类合计,并集 493 行 / 2.2477%（不是 511/2.33%）,configs/domains/film_tv_zh.yaml: risk_categories（掩码重跑）,两类各 259 与 252 行，交集 18 行，并集 493；493/21934=2.25%。五类为互相独立的正则掩码，不能相加
+2026 站点导航类的行占比与 PV 占比,5.00% / 5.59%,work/影视/shares_td_l1_name.csv: source=2026search label=导航到指定影视站点或平台,
+助手头部清洗剔除的行与 PV,"剔 45 行 (4.5%), 带走 78.33% 的原始 PV","work/影视/composition.csv: assistant_top drop_%=4.5, pv_drop_%=78.33",
+助手随机的流量口径,"91.4% 的行 pv_raw=1, 总和 1244, 最大 81",analysis/pooled5/deliverables/影视_pooled5_labeled.parquet,ar.pv_raw 分布；因此该来源的 PV 集中度不可读
+助手两层共享字符串数,0,work/影视/overlap.csv: assistant_top×assistant_random=0.0,助手头部 955 行仅 929 个不同串 (自算)
+p10b 单快照组的助手占比区间,"1.6%-4.9%, 共 18 组 (td 3 + leaf 8 + family 7)",runs/film-pool5/gen01/drift_analysis.json: purity; run_summary.json: gates.p10b_snapshots_share_one_frame,助手在全语料占 8.83%，故多为样本量产物
+运行的 comparison_axis 设置,"snapshot_column=surface, comparison_axis=stratum",runs/film-pool5/gen01/config.resolved.yaml,故交付的是 分层对比_头尾结构差异.md
+分层对比文档中越界的免责声明,2.2 节写 '两层来自同一时间段，差别只在抽样口径',runs/film-pool5/gen01/分层对比_头尾结构差异.md,搜索层本身跨 2025-07-01 与 2026-07-01；助手层约 8 月下旬
+模型调用错误,"3 次: researcher_pragmatic_intents 1/2, annotator_a 1/129, namer_0 1/5",runs/film-pool5/gen01/run_summary.json: llm_usage.errors / by_role,
+运行使用真实模型,"llm_usage.provider=routed, calls=184, estimated_cost_usd=4.32",runs/film-pool5/gen01/run_summary.json: llm_usage,非 offline 替身
+fast 模式跳过的环节,"dual_annotation, kappa_agreement, pilot_ceiling, kappa_repair, taxonomy_redraw, phase_observers, adversarial_validation, narrative_report, delivery_audit, result_interpretation",runs/film-pool5/gen01/run_summary.json: fast_skipped,
+助手头部风险命中里含网盘/百度类渠道词的行数,10 / 27,work/影视/risk_rows.csv: source=assistant_top,query.str.contains('百度|网盘|夸克|迅雷|磁力')
+新类 获取成人或限制级内容 的搜索行来源拆解,旧成人类 75 (39.1%) / 非影视噪声 37 / 返回裸片名 24 / 获取播放页 21 / 站点导航 15 / 由描述定位 13 / 按条件浏览 4 / 定位集数 2 / 网盘 1 = 192,work/影视/taxonomy_delta_crosstab.csv 行 获取成人或限制级内容,行内各列求和=192
+剧情设定讨论与同人假设问答 的四来源行数,2025搜索 33 / 2026搜索 30 / 助手头部 24 / 助手随机 355 = 442,work/影视/shares_td_l1_name.csv: k；taxonomy_delta_newclass_mix.csv: n_total=442,四来源 k 求和等于 n_total
+②③④ 三条线上 Δ 全为正的类,5 个：获取片段台词或混剪等衍生内容 +9.03/+2.16/+11.19 · 凭情节片段反查片名 +2.40/+1.46/+3.85 · 剧情设定讨论与同人假设问答 +2.21/+33.64/+35.85 · 核实播出信息与集数 +0.62/+2.81/+3.43 · 按演职人员反查作品列表 +0.45/+0.38/+0.83,work/影视/diffs_td_l1_name.csv（三条线合并）,衍生内容是其中涨幅最大的一类，不是唯一一类；若把①时间线也算进去，四条线全涨的只有 凭情节片段反查片名
+P009 merge_leaves 已执行,"leaf 15 → leaf 13；n_rows_moved=187, n_leaves_removed=1；leaf 13 由 285 行涨到 472 行",runs/film-pool5/gen01/governance.json: execution.leaf_merges.map + leaf_labels.npy / leaf_labels_final.npy,leaf_labels.npy 17 叶(0-16)、leaf_labels_final.npy 19 叶且 leaf 15 消失；P010 规定的新名 电视直播观看 未写入
+五个风险类别的掩码可重叠,"五类 n_hits 相加 1,042；去重后 total_flagged 960；82 行落在 >=2 个类别",configs/domains/film_tv_zh.yaml: risk_categories + work/影视/risk_screen.json,ops/audit.py 逐类各算一遍 mask 后 flagged_any |= mask；表里的数不能相加
+CCTV5 串占 2026 搜索来源 PV 的比例,10.75%（185 行）,analysis/pooled5/deliverables/影视_pooled5_labeled.parquet,区别于 收看电视频道直播或查询节目表 占 2026 搜索 PV 的 12.69%（shares_td_l1_name.csv: pv_share=0.126938）与 CCTV5 占该类 PV 的 84.6%
+性相关词面 x 生成动词 8 行的类目归属,获取片段台词或混剪等衍生内容 7 行 / 剧情设定讨论与同人假设问答 1 行；叶层 视频内容查询与生成 5 行 / 影视视频资源查询（合并后目标） 3 行；落在 获取成人或限制级内容 的 0 行,analysis/pooled5/deliverables/影视_pooled5_labeled.parquet,原稿写作 衍生内容(多数) 与 裸片名，实测没有一行在 裸片名
+助手头部 12 行性相关词面命中的整体类目分布,衍生内容 7 / 裸片名 2 / 剧情设定讨论 1 / 网盘 1 / 获取成人或限制级内容 1,analysis/pooled5/deliverables/影视_pooled5_labeled.parquet,即 12 行里只有 1 行被判进成人类
+policy=drop 的 191 行的来源分布,2025搜索 102 / 2026搜索 85 / 助手头部 4 / 助手随机 0,configs/domains/film_tv_zh.yaml: risk_categories + analysis/pooled5/deliverables/影视_pooled5_labeled.parquet,掩码重跑后按 source 计数；drop 策略针对的几乎全是搜索侧流量
+助手头部 凭情节片段反查片名 自带片段的行数,25 行中至少 8 行自带片段,analysis/pooled5/deliverables/影视_pooled5_labeled.parquet,例: 曲江河买冰棍救人质是哪一集(240) / 韩剧《上女司的秘密》女主是谁(193) / 孟子义亲吻李昀锐是哪一集(111)；即 没有片段 只对 PV 前五成立
+助手随机语义相似度升序第 2-6 位,0.385 比奇堡中的凯伦的反应 / 0.386 请帮我生成一个视频：河里… / 0.390 特芮丝恨卡罗尔吗 / 0.394 请帮我生成一个视频：夕阳中散步，比例为原比例。 / 0.400 如果队员强行检查手镯会怎样,work/semantic_nn.parquet: domain=影视 source=assistant_random,原稿跳过了第 5 位（0.394，邻居《黄昏失焦》）
+包装对 镇魂街 一例的实际字符串,“镇魂街讲的什么故事？（全角左引号 U+201C）,work/wrap_pairs_金融_影视.csv 第 1221 行 query 字段,wrap_td=查询剧情梗概或结局剧透；按半角引号写法在 parquet 中查不到
+助手导出时间不在任何运行产物里,语料无时间字段；8 月下旬 的唯一出处是任务书,work/agent_brief.md:42（外部）；config.resolved.yaml / data_audit.json / data/raw/ai_assistant_pooled.parquet 均无时间列,ai_assistant_pooled.parquet 列只有 query/l1/l2/stratum/search_num/pv_norm/…；界面与日历混淆 的框架建立在外部说法上
+类目边界拥挤度未被测量,measured_overlaps = [] ; crowded_class_pairs = [],runs/film-pool5/gen01/taxonomy_v2.json: rule_conflicts,所以 哪条边界最吃紧 没有读数，只能说这五条是体系自己写出来的对照边界

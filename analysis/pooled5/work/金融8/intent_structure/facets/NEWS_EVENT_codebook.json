@@ -1,0 +1,131 @@
+{
+ "codes": [
+  {
+   "code": "LATEST_NEWS",
+   "name_zh": "浏览最新消息",
+   "definition": "The user wants a feed of whatever is new about an entity, event or market. They name no single fact to be answered, and the answer is a list or summary of recent news items.",
+   "include_rules": "(a) Explicit feed wording with no narrower question word: 最新消息 / 今天最新消息 / 最新公告 / 最新动态 / 最新情况 / 最新状况 / 重大消息 / 利好消息 / 好消息, including when attached to an event topic (X重组最新消息, 泰安股份停牌最新消息). (b) Asking whether any news of a polarity exists, or what news there is: 有什么利好 / 有哪些重大利好消息 / 出什么利空了吗 / 有好消息吗 / 有重大利好吗 on a date, with no future marker. (c) A statement or announcement whose type is not given (X声明, X官宣), or a news outlet joined to an entity. (d) A declarative news-headline string, read as a whole. Question words inside a quoted remark do not count (董明珠:家电不换成格力凭什么分红; 英伟达即将发布业绩).",
+   "exclude_rules": "Feed wording on the same row as a progress, status or timing question (进度 / 进展 / 了吗 / 什么时候 / 休市吗) goes to STATUS_TIMING (合利宝退市了吗最新消息). Feed wording joined to a single quantity or result noun (牌价 / 价格 / 中签 / 中奖信息) goes to FACT_DETAIL (中国银行外汇牌价今日最新消息). Feed wording joined to 预测 goes to FORECAST. Feed wording joined to an explicit analysis request goes to ASSESS_JUDGE (今天股市最新消息新股市行情分析). A bare entity plus an event or document noun with no feed wording (交通银行二季度财报) goes to FACT_DETAIL. Rows with 下周 / 明天 plus 有无利好 go to FORECAST.",
+   "examples": [
+    "宝武镁业今天最新消息",
+    "杭电股份目前有哪些重大利好消息",
+    "华建重组最新消息",
+    "迅游科技最新公告今天",
+    "京东发布关于稳定币的声明"
+   ]
+  },
+  {
+   "code": "STATUS_TIMING",
+   "name_zh": "事件进度与时点",
+   "definition": "The user wants to know where one specific event or process instance stands on its timeline: whether it has happened, what stage it is at, whether it is finished, or on what date or time it happens, happened or is scheduled.",
+   "include_rules": "Specific entity or instance plus: 什么时候 / 何时 / 哪天 / 啥时候 / 哪年 / 时间 / 日期 / 时间表 / 登记日 / 解禁日 / 除权除息日 / 开放日, including a date phrased as 日期是多少. Also 进度 / 进展 / 审核得怎么样了 / 完成了吗 / 上市了没有 / 退市了吗 / 有复牌吗 / 休市吗 / 可否进入了 / 有上市计划吗 / 有没有在正常生产. 预计 attached to a schedule stays here: 长鑫存储预计上市时间, 中国广电增持歌华有线预计何时启动. A 什么时候 question about an uncertain future event also stays here unless an explicit prediction marker is present (ST新动力2025年什么时候摘掉帽子). A calendar of dates across many entities belongs here when the ask is the dates (近期上市公司开股东大会时间).",
+   "exclude_rules": "No specific entity or instance, only a generic class or a general norm (上市公司披露中报日期, 半年报一般什么时间公布, 多久能上市): RULE_CONCEPT. An explicit 预测 / 预估 / 概率 / 可能性 / 能…吗 on the timing: FORECAST (华润新能源上市时间预测). 'When should I buy or add to a position' is about the user's own action, not an event: ASSESS_JUDGE (西部超导什么时候补仓). Asking which entities are upcoming, not when: FACT_DETAIL (2026年7月即将上市新股). A status word appears only as part of feed wording (停牌最新消息): LATEST_NEWS.",
+   "examples": [
+    "长鑫存储什么时候上市",
+    "ST亿晶的重整进度如何",
+    "韩建河山收购兴福新材完成了吗",
+    "招商银行分红登记日",
+    "08297今天有复牌吗"
+   ]
+  },
+  {
+   "code": "FACT_DETAIL",
+   "name_zh": "事件内容与数据",
+   "definition": "The user wants the content of a specific disclosed item or a checkable fact: a figure, a document or its contents, a list of items or entities, or an attribute. Any date or time attribute is excluded.",
+   "include_rules": "(a) A bare entity, optionally with a period, plus an event or document noun and no feed wording: 交通银行二季度财报, 宜化激励性配股公告, 拓普集团半年业绩预告, 中国石化分红, 中科飞测上市. (b) Quantities: 多少 / 金额 / 净利润 / 营收 / 市值 / 估值有多少 (with no estimate marker) / 中签率 / 发行价 / 融资额 / 股东人数 / 负债率 / 主力资金 / 融券余额. (c) Lists and profiles: 有哪些 + entity noun / 一览 / 名单 / 是谁 / 简介 / 全部资料 / 详细数据 / 全文 / pdf, including 最新中报预增股一览. (d) 情况 or 怎么样 attached to a disclosed quantity: 航天发展2026分红情况, 潍柴重机2026年一季度业绩怎么样. (e) Numeric comparisons computable from facts: …净利润是…的多少倍. (f) Entity-specific frequency or policy: 中国电键一年每年分红几次. (g) Feed wording attached to one datum noun: 中国银行外汇牌价今日最新消息, 宇树科技最新中奖信息. Note that 业绩预告, 预增 and 预披露 are names of disclosure documents, not forecasts.",
+   "exclude_rules": "The requested attribute is a date or time: STATUS_TIMING. The quantity is a projection (预测 / 预估 / 估计 / 预期 / 目标价 / 会有多少 / 预计 + value): FORECAST. A list screened by likelihood (很可能大增的…股票): FORECAST. A comparison asking which is better or more worth it, or a request for 对比分析: ASSESS_JUDGE. A general rule or norm with no specific entity: RULE_CONCEPT. Generic feed wording (最新消息, 利好消息) with no datum noun: LATEST_NEWS.",
+   "examples": [
+    "交通银行二季度财报",
+    "长鑫科技申购中签率",
+    "欧伦电气十大股东是谁",
+    "稳定币次新股有哪些",
+    "安森美年销售收了多少总股本多少"
+   ]
+  },
+  {
+   "code": "RULE_CONCEPT",
+   "name_zh": "规则与一般机制",
+   "definition": "The user wants general knowledge about how something works: a standing or newly issued regulation, a disclosure norm, a typical procedure or timeline, or a concept. The object is the rule, not one occurrence.",
+   "include_rules": "规定 / 要求 / 规则 / 新规 / 新规定 / 一般 / 最迟 / 最晚 / 多久 / 几次 / 模式 / 流程, when no specific entity instance is the subject, or the entity only illustrates the rule. This includes a generic class plus a disclosure date (上市公司披露中报日期, 中报什么时候披露). Also hypothetical questions about what the rules require or allow, even when an entity is named: ST易购如有重大利好会提前公布吗?如Q2营收大超预期. A request for a regulation document (…规定条款pdf) also belongs here.",
+   "exclude_rules": "A specific named entity's own schedule, status or policy: STATUS_TIMING or FACT_DETAIL (中国电键一年每年分红几次 goes to FACT_DETAIL). A new policy written as a declarative headline: LATEST_NEWS. 为什么 about a rule: EXPLAIN_CAUSE. 概率 / 可能性 questions, even generic ones (重组成功概率大吗): FORECAST. A bare concept or product name with no question word and no rule noun (上市未盈利, 中汽转债): UNSURE.",
+   "examples": [
+    "半年报一般什么时间公布",
+    "赴美上市递交招股书后多久能上市",
+    "主板st新规定",
+    "股票一年出几次季报",
+    "7月1号存款新规"
+   ]
+  },
+  {
+   "code": "EXPLAIN_CAUSE",
+   "name_zh": "原因解释",
+   "definition": "The user wants the reasons behind an event, result, state or price move that has already happened or already exists.",
+   "include_rules": "Explicit reason markers: 为什么 / 为何 / 原因 / 怎么回事 / 怎么变(少/多) / 凭什么 (outside a quoted headline). Applies to a company event (退市原因, 为何不上市), a result (业绩大增原因), a regulatory state (为什么没ST) or a price move (为什么涨停). Price-move 'why' rows sit under NEWS_EVENT only because of upstream routing; code their function here anyway. When a why-question is joined to a factual comparison, the why decides: 中际旭创和寒武纪估值谁高，为什么寒武纪涨不了源杰那么高.",
+   "exclude_rules": "Surprise with no reason marker (五粮液改财报竟然没事) or a bare statement (九目化学从上市就没有交易): UNSURE, because the function is implied rather than asked. A why joined to an explicit estimate request (…大概预估是多少为什么…): FORECAST. A why joined to an explicit analysis or advice request: ASSESS_JUDGE. A headline 'Name: quote' whose quote contains 凭什么: LATEST_NEWS. Asking the effect of an event rather than its cause: ASSESS_JUDGE.",
+   "examples": [
+    "海科新源今年业绩大增原因？？",
+    "TCL科技业绩预增的原因是什么?",
+    "世优科技为何不上市",
+    "中百集团连续几年亏损为什么没ST",
+    "上海沪工今天为什么涨停板"
+   ]
+  },
+  {
+   "code": "ASSESS_JUDGE",
+   "name_zh": "评估判断与建议",
+   "definition": "The user wants an evaluative judgement about a given event, result or entity: whether it is good or bad, what its effect or significance is, an interpretation or analysis, a which-is-better comparison, or advice on what to do.",
+   "include_rules": "(a) Polarity of a given item: 公告利好吗 / 利好还是利空 / 是利好吗. (b) Effect of a named event, even when the effect lies in the future: 影响多大 / 有伤害吗 / 有关联吗 / 如果成功会怎么样 / 对…是利好还是利空 (Q2汇兑损失对下半年利润影响多大, 新粉上市对价格影响有多大). (c) An explicit analysis or interpretation request: 分析 / 解读 / 形态分析 / 对比分析 / 优势 / 处于第几浪. (d) Advice: 建议 / 策略 / 什么时候补仓 / 给个投资建议. (e) An evaluative characterization: 过热了吗 / 是老登股吗 / 趋势如何 with no future marker. (f) A screen defined by a judgement criterion (未启动的军工股).",
+   "exclude_rules": "怎么样 or 如何 attached to a disclosed quantity or state is a lookup: FACT_DETAIL (业绩怎么样, 分红情况怎么样) or STATUS_TIMING (审核得怎么样了). Existence of news (有重大利好吗 / 有什么利好) rather than the polarity of a given item: LATEST_NEWS. 分析 joined to 预测, or any explicit projection of a value, direction or likelihood: FORECAST (海光信息周四走势预测分析). A projected number without effect wording goes to FORECAST even after a named event (重组完成后节能铁汉的资产负债率能降到多少). Numeric 多少倍 or 谁高 comparisons of facts: FACT_DETAIL.",
+   "examples": [
+    "海兰信昨天公告利好吗",
+    "Q2汇兑损失对下半年利润影响多大",
+    "鞍钢股份2026年上半年财务报告详细解读",
+    "建邦股份和常青科技业务对比分析",
+    "同宇新材申购建议"
+   ]
+  },
+  {
+   "code": "FORECAST",
+   "name_zh": "预测与可能性",
+   "definition": "The user wants a projection: whether a future or undecided event will happen and how likely it is, its prospects, or the future or estimated value or direction of a quantity (price, target price, earnings, valuation, market move, IPO subscription outcome). This holds whether the answerer produces the projection or a named institution published it.",
+   "include_rules": "预测 / 预估 / 估计 / 预期 / 概率 / 可能性 / 有可能…吗 / 会不会 / 能…吗 about a specific or generic event (能上市吗, 会重组吗, 重组成功概率大吗) / 有机会 / 前景 / 未来 / 有望 / 还能继续 / 目标价, including one attributed to a named source (高盛给京东方A目标价). 预计 attached to a value, gain or evaluation (上市后股价预计是多少, 上市预计涨幅, 二季报预计怎么样). 申购预测. Market-direction questions (下周一股市最新预测, 创新药今天能涨吗). Rows with 下周 / 明天 plus 有无利好或利空. Screens by likelihood (2026年中报业绩很可能大增的创新药股票).",
+   "exclude_rules": "预计 attached to a schedule (预计上市时间, 预计何时启动) or a plain when-question about a future event: STATUS_TIMING. Only an explicit 预测 on the timing keeps a row here. Effect of a named event phrased as 影响 / 利好利空 / 伤害 / 关联 / 会怎么样: ASSESS_JUDGE. Disclosure documents with 预 in the name (业绩预告, 预增, 预披露): FACT_DETAIL or RULE_CONCEPT. What a rule requires or allows (会提前公布吗 as a disclosure obligation; 多久能上市 as a procedure): RULE_CONCEPT. A valuation or market cap asked with no estimate marker: FACT_DETAIL.",
+   "examples": [
+    "嘉泰激光北交所IPO上市概率多大",
+    "国电南自有可能被并购重组吗",
+    "2026年润泽科技股价预测目标是多少",
+    "下周一股市最新预测",
+    "华润新能源上市预计涨幅"
+   ]
+  },
+  {
+   "code": "SERVICE_HELP",
+   "name_zh": "个人业务求助",
+   "definition": "The user wants help with their own account, application, payment or transaction, or is complaining about a service. The answer is operational help, not information about a public event.",
+   "include_rules": "A personal state or failure: 支付失败 / 到账了吗 (about a payment made to the user) / 一直审核中 / 额度关闭 / 合同生成 / 转人工难. Complaints about reaching customer service. Applies when the row describes the user's own case, even though no first-person pronoun appears.",
+   "exclude_rules": "A public campaign's or product's schedule or attribute with no sign of the user's own case (…红包何时过期, 模拟炒股大赛有奖金吗): STATUS_TIMING or FACT_DETAIL. How a lending or approval process works in general: RULE_CONCEPT. A platform notice or recruitment title whose purpose might be to take part or to read news: UNSURE.",
+   "examples": [
+    "chatgpt支付失败",
+    "兰州银行打入的2026年华裔慰问金都到账了吗",
+    "公积金贷款显示合同生成"
+   ]
+  },
+  {
+   "code": "UNSURE",
+   "name_zh": "功能无法判定",
+   "definition": "The text alone does not show what the user wants from the answer. Typical cases are a bare entity, product or concept name with no event noun, feed wording or question word; a garbled or fragmentary string; or a statement whose request is only implied.",
+   "include_rules": "A bare name (institution, index, bond, fund or insurance product) with no event noun or question marker. Fragments and garbled strings. Statements of surprise or observation with no explicit ask (竟然没事, 从上市就没有交易). Notice titles where information-seeking and participation cannot be told apart. Product advertising copy.",
+   "exclude_rules": "A bare entity with an event or document noun (X分红, X上市, X年报): FACT_DETAIL. A bare entity with feed wording: LATEST_NEWS. A declarative event headline (subject + 宣布 / 发布 / 拟 / 获受理 / 出炉 / 筹划 / 已成功 / 新增): LATEST_NEWS. Use UNSURE only when no rule for another code fires. Do not use it to settle a two-code conflict; the tie-break order settles those.",
+   "examples": [
+    "1989年银行使用电脑",
+    "GTC泽汇资本",
+    "道琼斯美国石油开发与生产指数",
+    "中汽转债",
+    "九目化学从上市就没有交易"
+   ]
+  }
+ ],
+ "tie_break_order": "First apply each code's own exclusion carve-outs; they settle marker collisions by definition. Examples: 预计 + a schedule goes to STATUS_TIMING; effect wording goes to ASSESS_JUDGE, not FORECAST; 怎么样 on a disclosed quantity is a lookup; feed wording on a single datum noun goes to FACT_DETAIL. Only when a row genuinely asks two functions does the first matching code in this order win: SERVICE_HELP > FORECAST > ASSESS_JUDGE > EXPLAIN_CAUSE > RULE_CONCEPT > STATUS_TIMING > FACT_DETAIL > LATEST_NEWS > UNSURE. The order runs from the most demanding function to the least, so a lookup word such as 最新消息 or 时间 never hides an explicit request to predict, judge or explain. For reporting, roll codes into families: consulting = FORECAST + ASSESS_JUDGE + EXPLAIN_CAUSE; lookup = LATEST_NEWS + STATUS_TIMING + FACT_DETAIL; knowledge = RULE_CONCEPT; other = SERVICE_HELP. Compute shares with UNSURE removed from the denominator, and report the UNSURE count next to them.",
+ "unsure_code": "UNSURE",
+ "pilot_note": "Pilot: 60 rows, taken every 9th row starting at position 4 across all 542 rows. Hand-coded twice, once with draft v1 and once after revision. Files: /private/tmp/claude-501/-Users-mayouxuan-Documents-Claude-Search-Query-Mining-Agent-Team/3deba04e-73b1-4747-b7b7-4d1a40520650/scratchpad/fin8facet_news_pilot60_coded.csv (columns v1, v2). 12 of 60 rows (20%) changed code. Changes: (1) LATEST_NEWS narrowed. In v1 it also held a bare entity + event/document noun, but a period report or a typed announcement asks for that one item, not a feed, so those moved to FACT_DETAIL (交通银行二季度财报, 宜化激励性配股公告, 航天发展2026分红情况). LATEST_NEWS now needs explicit feed wording or a declarative headline. (2) Feed wording joined to a single datum noun now goes to FACT_DETAIL (外汇牌价今日最新消息, 最新中奖信息). (3) STATUS_TIMING now needs a specific entity or instance, so a generic class plus a disclosure date moved to RULE_CONCEPT (上市公司披露中报日期). For the same reason, entity-specific frequency (中国电键一年每年分红几次) moved from RULE_CONCEPT to FACT_DETAIL. (4) A when-question about an uncertain future event had been FORECAST in v1 and now stays STATUS_TIMING unless an explicit prediction marker appears (ST新动力…什么时候摘掉帽子). An explicit 预计 rule was added: 预计 + schedule goes to STATUS_TIMING, 预计 + value/gain/怎么样 goes to FORECAST; the file has 11 预计 rows. (5) Numeric 多少倍 comparisons moved from ASSESS_JUDGE to FACT_DETAIL; which-is-better comparisons stay in ASSESS_JUDGE. (6) Likelihood and prospects (前景, 很可能大增的…股票) now sit inside FORECAST, and FORECAST beats a list lookup. ASSESS_JUDGE is limited to judging a given event, its effect, an explicit analysis, or advice. (7) A loan-platform notice title moved to UNSURE, because information-seeking and participation cannot be told apart. (8) The 60-row pilot drew zero ASSESS_JUDGE rows; a marker scan suggests about 15-20 of 542. So I checked every 分析/建议/影响/利好吗/怎么样 hit across the whole file. That check added two rules: 怎么样 is not an ASSESS marker (业绩怎么样 goes to FACT_DETAIL, 审核得怎么样了 to STATUS_TIMING), and existence of news (有重大利好吗) goes to LATEST_NEWS while polarity of a given item (公告利好吗) goes to ASSESS_JUDGE. All 78 example strings used in the codebook were checked to be verbatim rows. v2 pilot counts: STATUS_TIMING 16, FACT_DETAIL 15, FORECAST 10, LATEST_NEWS 10, RULE_CONCEPT 4, EXPLAIN_CAUSE 2, UNSURE 2, SERVICE_HELP 1, ASSESS_JUDGE 0. Caveats for the lead's source comparison: (a) this pilot had one coder, so no agreement figure exists; get a second coder before reporting any share. (b) ASSESS_JUDGE and EXPLAIN_CAUSE will have small n in a 542-row sample, so compare the consulting family, not single codes. (c) The codes fire on explicit phrasing, and longer, more conversational queries carry more explicit markers. A source gap in consulting share could therefore partly reflect query length rather than intent, so run the comparison within query-length bands as well."
+}

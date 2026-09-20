@@ -1,0 +1,7 @@
+a,b,人物,医疗,影视,教育,金融
+2025search,2026search,16,8,10,15,13
+2026search,assistant_random,16,14,13,15,14
+2026search,assistant_top,15,10,8,14,10
+assistant_random,assistant_voice,0,8,0,0,12
+assistant_top,assistant_random,9,12,10,8,12
+assistant_top,assistant_voice,0,11,0,0,12

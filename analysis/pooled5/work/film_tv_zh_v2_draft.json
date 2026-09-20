@@ -1,0 +1,315 @@
+{
+ "key": "film_tv_zh_v2",
+ "display_name": "影视动漫搜索 Query",
+ "language": "zh",
+ "tokenizer": "jieba",
+ "char_ngram_range": [
+  1,
+  3
+ ],
+ "word_ngram_range": [
+  1,
+  2
+ ],
+ "embedding_candidates": [
+  "BAAI/bge-small-zh-v1.5",
+  "BAAI/bge-base-zh-v1.5",
+  "shibing624/text2vec-base-chinese"
+ ],
+ "instruction_prefix": null,
+ "template_seeds": [
+  {
+   "name": "availability_lookup",
+   "pattern": "(哪里看|哪里能看|在哪看|在哪儿看|在哪能看|哪个平台|哪个台|哪个软件|什么时候播|什么时候上映|什么时候更新|几点更新|更新时间|播出时间|上映时间|定档)",
+   "intent_hint": "求作品的合法可看渠道或播出时间 — the licensed counterpart of the free-streaming intent"
+  },
+  {
+   "name": "cast_crew",
+   "pattern": "(演员表|主演|导演是谁|阵容|扮演者|饰演者|谁演的)",
+   "intent_hint": "求某作品的演职人员事实",
+   "expected_min_share": 0.012
+  },
+  {
+   "name": "episode_locator",
+   "pattern": "(第.{1,4}集|多少集|更新到第几集|共几集)",
+   "intent_hint": "定位到某一集或问总集数/更新进度",
+   "expected_min_share": 0.01
+  },
+  {
+   "name": "plot_synopsis",
+   "pattern": "(剧情介绍|剧情简介|分集剧情|大结局|结局是什么|讲的什么)",
+   "intent_hint": "求剧情梗概或结局，不求观看",
+   "expected_min_share": 0.008
+  },
+  {
+   "name": "recommendation",
+   "pattern": "(推荐|排行榜|片单|好看的.{0,4}(剧|电影|电视剧))",
+   "intent_hint": "无具体片名，求片单/榜单"
+  },
+  {
+   "name": "free_access",
+   "pattern": "(免费观看|免费播放|免费看)",
+   "intent_hint": "求以免费条件观看某部作品 — 语料的支配意图，合法与否取决于该片的授权状态，不取决于这个词",
+   "expected_min_share": 0.15
+  },
+  {
+   "name": "platform_account_service",
+   "pattern": "(抖音|快手|哔哩哔哩|b站|B站|爱奇艺|优酷|腾讯视频|芒果tv|芒果TV|西瓜视频|咪咕|红果|喜马拉雅|番茄|酷狗|视频号).{0,12}(怎么|如何|为什么|设置|账号|登录|注销|解绑|充值|会员|退款|续费|等级|音浪|播放量|限流|提现|实名|绑定|开通|客服|恢复|投诉|举报|收费|多少钱|入口|官网)",
+   "intent_hint": "平台账号与服务问题：把平台当对象，而不是把作品当对象"
+  },
+  {
+   "name": "title_unknown_lookup",
+   "pattern": "(是什么电影|是什么电视剧|是什么剧|是什么动漫|是哪部电影|是哪部剧|是哪部电视剧|哪个电视剧|哪部电视剧|哪部电影|叫什么名字|叫什么电影|叫什么电视剧|片名叫什么|叫啥名字)",
+   "intent_hint": "反向找片：给情节/画面求片名，与「已知片名求资源」方向相反"
+  },
+  {
+   "name": "scene_episode_locator",
+   "pattern": "(第几集|哪一集|哪一期|第几期|是第.{1,3}期|第几分钟|哪几集)",
+   "intent_hint": "定位到集/期/分钟；v1 的 episode_locator 只覆盖集"
+  },
+  {
+   "name": "person_to_works",
+   "pattern": "((演过|演的|主演的|拍过|出演|参演|参加|导演的).{0,6}(电影|电视剧|剧|综艺|节目|作品)|(的电影|的电视剧|的综艺|的作品)有哪些|作品有哪些|演过哪些|参加过哪些)",
+   "intent_hint": "人→作品反查；v1 的 cast_crew 是作品→人"
+  },
+  {
+   "name": "plot_outcome_qa",
+   "pattern": "(和谁在一起|跟谁在一起|最后怎么|后来怎么|最终结局|结局是什么|结局如何|怎么死的|为什么会|为什么要|为什么不|是好是坏|有没有在一起)",
+   "intent_hint": "剧情结局追问；三个「为什么X」臂是承重的——删掉就只剩 158 行、低于地板"
+  },
+  {
+   "name": "open_why_how",
+   "pattern": "(怎么办|怎么弄|怎么设置|怎么回事|为什么|是什么意思|什么意思|如何解决)",
+   "intent_hint": "开放式怎么办/为什么：**句式族而非意图族**，组内混平台求助与剧内追问，fragmentation 预期会碎"
+  },
+  {
+   "name": "short_drama",
+   "pattern": "短剧",
+   "intent_hint": "短剧：一个在旧四层几乎不存在的新品类"
+  },
+  {
+   "name": "channel_number_nav",
+   "pattern": "(cctv|CCTV|央视|中央.{0,3}(台|套|频道)|卫视)",
+   "intent_hint": "频道与台号导航；**取代 v1 的 channel_live_tv**（含它 86.0%，同时提交会被 85% 规则静默丢弃）"
+  },
+  {
+   "name": "language_version",
+   "pattern": "(国语版|粤语版|中文版|普通话版|中字|中文字幕|字幕版|国语配音|配音版|韩语版|泰语|原声版|国语高清|国语在线)",
+   "intent_hint": "语种与版本轴；裸词 字幕|配音 会碰到音乐视频与生成指令，已锚定"
+  },
+  {
+   "name": "variety_show",
+   "pattern": "(综艺|真人秀|跑男|奔跑吧|极限挑战|歌手|好声音|春晚|晚会|颁奖典礼|脱口秀|相声|小品)",
+   "intent_hint": "综艺与晚会：与剧集的检索行为不同"
+  },
+  {
+   "name": "nonfilm_ugc_video",
+   "pattern": "((搞笑|舞蹈|广场舞|吃播|助眠|整蛊|开箱|教学|解说|游戏|化妆|美食|萌宠|减肥|健身|手工|钓鱼|修车|拆解|施工|旅游)视频|广场舞|小视频|短视频|直播回放)",
+   "intent_hint": "非影视的 UGC 视频（广场舞、吃播、解说）——类目边界外溢"
+  },
+  {
+   "name": "season_progress",
+   "pattern": "(第[一二三四五六七八九十0-9]{1,3}季|年番|剧场版|新番|番剧|OVA|更新至|完结没|有没有第)",
+   "intent_hint": "季/番/更新进度：追更行为，全域最大的新种子"
+  },
+  {
+   "name": "foreign_title_access",
+   "pattern": "(韩剧|泰剧|日剧|美剧|台剧|港剧).{0,12}(在线观看|免费观看|免费播放|免费看|全集|完整版|高清|资源|网盘|百度云|夸克|下载|在哪看|哪里看|在线播放|无删减|未删减|中字|字幕)|(在线观看|免费观看|免费播放|免费看|全集|完整版|高清|资源|网盘|百度云|夸克|下载|在哪看|哪里看|在线播放|无删减|未删减|中字|字幕).{0,12}(韩剧|泰剧|日剧|美剧|台剧|港剧)",
+   "intent_hint": "外语剧集的资源获取（韩剧/泰剧/日剧 + 观看/网盘词）"
+  },
+  {
+   "name": "uncut_version_request",
+   "pattern": "(未删减|无删减|未删节|无删节)",
+   "intent_hint": "未删减版本请求"
+  },
+  {
+   "name": "offline_channel_delivery",
+   "pattern": "(网盘|百度云|百度网盘|阿里云盘|夸克|迅雷|磁力|提取码|种子下载)",
+   "intent_hint": "网盘/磁力等离线渠道"
+  }
+ ],
+ "risk_categories": [
+  {
+   "name": "obscene_and_criminal_content",
+   "patterns": [
+    "(人兽|人与动物|人狗大战|人犬|狗配|马配|猪马狗)",
+    "(做aj|小头头|幸福宝|芭乐视|大象传媒|麻花传剧|隐藏入口|无需付费|7{3,5}影院)",
+    "(丝瓜视频|樱桃视频|向日葵视频|香蕉视频|草莓视频|榴莲视频)",
+    "(李宗瑞|偷拍|迷奸|强奸)"
+   ],
+   "keywords": [
+    "缘之空",
+    "无颜之月",
+    "姐孕",
+    "亲吻姐姐",
+    "黑兽",
+    "灯草和尚",
+    "金瓶梅",
+    "妻子的姐姐",
+    "鸭王",
+    "农民伯伯乡下妹"
+   ],
+   "rationale": "Obscene material under 刑法 363/364, whose 两高 interpretation sets conviction thresholds by click count. Serving a normal result — a working player link — is the distribution act itself, and 快播 (2016) forecloses the \"we only provide the technology\" defence. This is the one category here where the exposure is criminal rather than civil, and the one where a false negative is unrecoverable. Measured 0.94% of rows / 1.07% of PV (250701) and 0.75% / 0.95% (260701).\n",
+   "policy": "drop"
+  },
+  {
+   "name": "uncensored_cut_and_filter_evasion",
+   "patterns": [
+    "(未删减|无删减)",
+    "(三年级|三年.{0,3}(大片|在线|免费|高清|经典|中文|观看|全集|片段))",
+    "(伦理片|伦理电影|^伦理$)",
+    "(床戏|吻戏|激情戏)"
+   ],
+   "keywords": [],
+   "rationale": "Requests for the pre-censorship cut of a work, or for the 擦边 fragment. 《网络视听节目内容审核通则》 requires the reviewed version, and a 未删减 cut has by definition no 公映许可证 / 网络剧片发行许可证 for that version, so any source holding one is unlicensed. The 三年/三年级 arm is deliberate filter evasion, which is why it must be isolated rather than merely ranked down. Measured 0.88% of rows / 0.77% of PV (250701), 1.37% / 1.16% (260701).\n",
+   "policy": "isolate_and_flag"
+  },
+  {
+   "name": "unlicensed_source_navigation",
+   "patterns": [
+    "(樱花动漫|风车动漫|囧次元|泰剧兔|freeok|FreeOK|大师兄影视|小小影视|策驰|星辰影院|奇优影院|茶杯狐|cupfox|人人影视|麻花影视|西瓜影院|大地资源|大地影视|大地影院|荐片|悟空浏览器|7{3,5}影院)",
+    "(免费追剧|追剧app|追剧软件)",
+    "(免费.{0,2}入口|隐藏入口|官方入门网站)"
+   ],
+   "keywords": [],
+   "rationale": "Navigational queries whose destination is a named unlicensed AV site or app. 《互联网视听节目服务管理规定》(56号令) Art. 17 prohibits 转播/链接/聚合 非法视听节目网站 outright — the predicate is the destination's licence, not the copyright status of any one title — and Art. 7 requires the 《信息网络传播视听节目许可证》 to provide AV service at all. Answering these well is the prohibited act, and 剑网2025/2026 name 搜索引擎、浏览器、网盘 as the enforcement target. 中消协 (2025-11) adds a consumer-safety limb: these apps bait with 「免费看热播剧」 and harvest location/contacts/camera. Measured 1.30% of rows / 1.58% of PV (250701), 1.15% / 1.07% (260701).\n",
+   "policy": "isolate_and_flag"
+  },
+  {
+   "name": "offline_acquisition_channel",
+   "patterns": [
+    "(网盘|百度云|百度网盘|阿里云盘|夸克|迅雷|磁力|提取码|种子下载)",
+    "(电影下载|电视剧下载|全集下载|资源)"
+   ],
+   "keywords": [],
+   "rationale": "Names a delivery mechanism no licensed Chinese OTT uses — 优酷/爱奇艺/腾讯/ 芒果/咪咕/红果 all deliver in-app. Unlike 免费观看, this vocabulary has no lawful instance to be confused with, which makes it the one query-text signal in this vertical that is a channel judgement rather than a guess about intent. Serving it means linking to 非法视听节目网站 (56号令 Art. 17) and forfeits the Art. 23 safe harbour of the 信息网络传播权保护条例, since the 应知 test (法释〔2012〕20号 Art. 9, 12) is met by exactly the act of mining, ranking and surfacing such a template. Volatile between logs and therefore never to be sized from one: 0.19% of rows (250701) but 2.10% (260701), where 百度云/百度网盘 alone carry most of it.\n",
+   "policy": "isolate_and_flag"
+  },
+  {
+   "name": "no_domestic_licence_supply",
+   "patterns": [
+    "(双男主|耽美|腐剧|BL剧)",
+    "((台|泰|韩)剧.{0,6}(双男主|腐))"
+   ],
+   "keywords": [],
+   "rationale": "A proxy for the axis clustering cannot see: works with no licensed mainland distribution. Where no licensed source exists, every relevance-optimal answer is by construction an unlicensed one, so the query is served correctly only by declining to rank sources at all and routing to availability information. THIS IS A PROXY AND MUST BE VALIDATED — the risk object is the answer, not the query, so a flagged pattern's precision has to be checked against what its result set actually contains before any of it is treated as a finding. Measured 0.80% of rows / 1.51% of PV (250701), 0.39% / 0.50% (260701).\n",
+   "policy": "isolate_and_flag"
+  },
+  {
+   "name": "restraint_and_tickle_fetish",
+   "patterns": [
+    "(挠痒痒|挠脚心|挠脚底|挠.{0,4}脚)",
+    "(打屁股|捆绑|绑起来|踩踏|绞杀|舔脚)",
+    "(脚心|丝袜.{0,3}脚)"
+   ],
+   "rationale": "以束缚/挠痒/体罚为主题的癖好向视频需求，v1 的四条 obscene 正则与十个 keyword 对它命中为 0（与 v1 风险并集重叠 = 0 行）。它不使用任何标准色情词，因此 v1「标准词命中零行」的判断在这里以另一种方式成立：这一类根本不在色情词表的语义邻域里，而是靠一组中性动词。其中 7 行（6%）带明确未成年标记（小女生/小女孩/小朋友/初二/初中/儿童），例如「挠跳芭蕾小女孩脚心全集」「初二女孩脚板心被挠痒痒」——涉未成年的一支不能与其余同等处理。",
+   "policy": "isolate_and_flag"
+  },
+  {
+   "name": "foreign_unlicensed_access",
+   "patterns": [
+    "(韩剧|泰剧|日剧|美剧|台剧|港剧).{0,12}(在线观看|免费观看|免费播放|免费看|全集|完整版|高清|资源|网盘|百度云|夸克|下载|在哪看|哪里看|在线播放|无删减|未删减|中字|字幕)",
+    "(在线观看|免费观看|免费播放|免费看|全集|完整版|高清|资源|网盘|百度云|夸克|下载|在哪看|哪里看|在线播放|无删减|未删减|中字|字幕).{0,12}(韩剧|泰剧|日剧|美剧|台剧|港剧)"
+   ],
+   "rationale": "这是 v1 `no_domestic_licence_supply` 想指的那个轴，但用可测的方式表达。v1 用「双男主|耽美|腐剧|BL剧」当代理，实测 141 行（0.321%）；本类 845 行（1.923%），两者只重叠 17 行。风险机理与 v1 写的一致：境外剧集在境内绝大多数没有引进批文与《网络剧片发行许可证》，所以「鬼怪韩剧在线观看完整版免费」的相关性最优答案按构造就是一个无证来源，回答得越好越违反 56 号令第 17 条（禁止转播/链接/聚合非法视听节目网站）。这仍然是一个代理：授权状态是 TITLE 的属性，必须用 title × availability join 验证，正则只负责把需要验证的那一堆圈出来。附带发现：韩剧支线里有相当一股是韩国情色片（人间中毒/美景之屋/霜花店/下女/妻子N/女生宿舍N），与下面的 kr_hk_adult_title_family 重叠 44 行，风险是叠加的，不是二选一。",
+   "policy": "isolate_and_flag"
+  },
+  {
+   "name": "explicit_nudity_and_scale",
+   "patterns": [
+    "(大尺度|尺度大|尺度很大|露点|全裸|赤裸|裸(体|戏|露|舞|播|身))"
+   ],
+   "rationale": "这一类存在的理由不是它的量（53 行 / 0.121%），而是它的分布：s25r 0.25%、s26r 0.15%，对上 s25t 0.05%、s26t 0.06% —— 随机侧是头部侧的 4 倍，53 行里 40 行来自两个随机搜索快照。v1 的四快照语料在搜索侧只有按 PV 的头部一万行，所以这个需求面在结构上不可见，不是 v1 判断失误。风险机理：这是不带片名、只带露骨程度修饰的检索（求「大尺度电影」而不是求某部电影），相关性最优的答案就是把过审边缘或未过审内容排上来；《网络视听节目内容审核通则》要求提供过审版本，而这类 query 明确要求的是被审掉的那部分。它是 v1 「免费观看不是盗版信号」那条论证的反面：这里的词本身就是内容判断，不依赖片名的授权状态。",
+   "policy": "isolate_and_flag"
+  },
+  {
+   "name": "ncii_leak_aggregator",
+   "patterns": [
+    "(吃瓜网|吃瓜视频|吃瓜观影|[0-9]{2}吃瓜|每日大赛|今日大瓜|黑料网|黑料不打烊|反差婊|暗黑爆料)"
+   ],
+   "rationale": "v1 对这一类的覆盖是 0 行 —— 我实测本类与 v1 五个风险类的重叠为 0。这是「吃瓜/黑料」系聚合站：51吃瓜、每日大赛、今日大瓜、黑料网、吃瓜观影站、暗黑爆料。它们与前面几类的不同点在于风险对象不是作品而是人：主体内容是私密影像与他人隐私的非自愿传播（NCII），落的是《民法典》1032/1033 条隐私权、《个人信息保护法》以及刑法 364 条传播淫秽物品，而不只是 56 号令的无证视听。对影视搜索面的意义是：这些站把自己包装成影视站（「吃瓜观影站」「51吃瓜抢先上映」），会被任何按站点形态做的聚合识别当成普通影视源收进来。量很小但性质是这批类别里最重的一个 —— 不可恢复的是被拍摄者，不是平台。",
+   "policy": "drop"
+  },
+  {
+   "name": "kr_hk_adult_title_family",
+   "patterns": [
+    "(人间中毒|美景之屋|霜花店|下女|秘密爱|密爱(在线|电影|完整|免费|全|系列|[0-9])|娜塔莉|妻子[0-9]|女生宿舍[0-9]|善良的(小姨子|嫂子|阿姨)|年轻的母亲)",
+    "(蜜桃成熟|美丽的?小?(水)?蜜桃|小蜜桃|蜜桃[0-9]|蜜桃来偷欢|赤裸羔羊|赤裸特工|赤裸迷情)"
+   ],
+   "rationale": "与 v1 的 obscene_and_criminal_content 同一条依据（刑法 363/364，两高解释按点击数定罪；快播 2016 案排除「只提供技术」抗辩），只是 v1 的片名清单是日系里番 + 港产旧片十条，漏掉了本语料里量最大的两支：韩国情色片系列（人间中毒、美景之屋、霜花店、下女、密爱/秘密爱、娜塔莉、妻子N、女生宿舍N、善良的小姨子、年轻的母亲）和港产三级片系列（蜜桃成熟时、美丽小蜜桃、赤裸羔羊、赤裸特工、赤裸迷情）。这两支都没有公映许可证，境内任何可播放来源都是无证的；韩国这一支同时落在 foreign_unlicensed_access（重叠 44 行），是版权 + 淫秽双重暴露。和 v1 一样，这是一份从实测长出来的人工维护黑名单，不是可学习的叶子 —— 单个片名 n 在 2–63 之间，拟合不了也评估不了。",
+   "policy": "drop"
+  },
+  {
+   "name": "euro_softcore_codeword",
+   "patterns": [
+    "(满天星|法国空姐|法国空乘|不雅空乘|高压监狱|迪拜女孩)"
+   ],
+   "rationale": "这是与 v1 的「三年级=三级片」同构、但 v1 完全没发现的第二套规避拼写。「满天星」在本语料里不是花名，也不是「群星荟萃」的意思，而是盗版站给欧洲软色情/未删减版打的检索标签：它固定和一批片名同现（法国空姐/法国空乘系列、高压监狱系列、迪拜女孩、爱恋2015、农场主的女儿们、红雀、小姐），并且几乎总是拼在「在线观看完整免费高清原声满天星+一个无关尾巴（美剧/悬疑片/奔跑吧ep）」这种 SEO 串里。机理与 v1 对 三年级 的判断完全一致 —— 标准词（三级/色情/情色/禁片）在本语料上分别只有 1/1/1/0 行，流量全部绕着过滤器拼写；对标准词布防的筛查在这个语料上等于什么都没测。依据同 uncensored_cut：未删减/未过审版本按定义没有该版本的许可证，来源必然无证。",
+   "policy": "isolate_and_flag"
+  },
+  {
+   "name": "adult_anime_blocklist_v2",
+   "patterns": [
+    "(甜蜜惩罚|鬼父|枫与铃|初恋时间|巨人族的新娘|幸福花园|播种欧吉桑|不雅之举|出包王女|邻居的妻子)"
+   ],
+   "rationale": "v1 的 obscene 关键词表是在旧四快照上写的，它列的十条在八快照上合计 168 行；本条列的十条合计 162 行，是完全不重叠的另一批成人向动画，而且单条量更大：甜蜜惩罚 63 行（超过 v1 最大的 金瓶梅 36 行）、鬼父 24、枫与铃 23、初恋时间 13、巨人族的新娘 11。法律定性与 v1 同类一致（刑法 363/364 项下的淫秽物品，境内无任何合法发行版本），且这一支带一个 v1 没点破的特征：它是本垂类里增长最快的淫秽支线，s25t 0.49% → s26t 0.81%。其中若干作品的角色设定涉及未成年人，这也是本语料里未成年人×性风险唯一真实存在的形态 —— 承载它的是片名黑名单，不是任何词法筛查（见下）。",
+   "policy": "drop"
+  },
+  {
+   "name": "unlicensed_aggregator",
+   "patterns": [
+    "([一-龥]{1,2}[^电]影院|[0-9]{2,4}影院)",
+    "([一-龥]{2,3}影视[^剧]|[一-龥]{2,3}影视$|[0-9]{3,4}影视|影视大全)",
+    "(yy[0-9]{3,4}|YY[0-9]{3,4}|新视觉|达达兔|飘雪影|青苹果|老牛影|成全影视|神马影|低端影视|追剧网|八度影)",
+    "(成全(影视|视频|影院|在线|高清|免费|观看|全集|完整版|电影|大全|看))",
+    "(神马影院|星空影院|飘雪影(院|视)|金牌影院|老牛影(院|视)|青柠影院|青苹果影院|蜂鸟影院|青丝影院|河马剧场|人人剧场|88影视|八戒影视|可可影视|悟空影视|菠萝视频|蘑菇视频|小蓝视频|橘子视频|琪琪(在线)?影院|age动漫|火狼动漫|专注动漫|星辰影视|南枝视汇|桃子影视|夕云影视|玄月视频|拾光视频|看剧吧|天天影视|555dy)",
+    "(韩剧TV|韩剧tv|韩剧网|泰剧网|美剧网)"
+   ],
+   "rationale": "与 v1 的 unlicensed_source_navigation 同一法条基础（56号令 Art. 17 禁止转播/链接/聚合非法视听节目网站，Art. 7 要求《信息网络传播视听节目许可证》），但改用形状而不是名单。v1 的 19 个具名站点在本语料只命中 301 行；本形状命中 665 行，其中 592 行是 v1 名单碰不到的，两者并集 873 行。逐名实测证明名单已被时间侵蚀：泰剧兔 5 行、奇优影院 4 行、大地影视 3 行、悟空浏览器 2 行，而且 19 个名字在 assistant_voice_top / assistant_voice_random 两个快照里全部为 0 命中。新层里真正出现的是一条可生成的构词式——黑蚂蚁影视、小毛驴影视、南瓜影视、苍龙影视、桔子影视、八戒影院、春夜影院、苍苍影院、光棍影院、努努影视、喝茶影视、宾利影视、世影影视——名单永远追不上它。 与 v1 的 unlicensed_source_navigation 同一条法律依据（56 号令第 7、17 条：无《信息网络传播视听节目许可证》不得提供服务，且禁止转播/链接非法视听站点），只是站名清单老了。v1 的站名臂在八快照上仍有 301 行、依然有效，但语料里另有一整批它没写：神马影院、星空影院、飘雪影院、金牌影院、老牛影院、青柠影院、青苹果影院、蜂鸟影院、青丝影院、河马剧场、人人剧场、88影视、八戒影视、可可影视、悟空影视、菠萝/蘑菇/小蓝/橘子视频、age动漫、火狼动漫、琪琪影院，以及三类新形态：(a) 「成全影视/成全视频」系的 SEO 门页——大量查询根本没有片名，只有「成全在线观看免费高清全集」这种纯模板串，指向的是站点的收录页；(b) 「韩剧TV/韩剧网/泰剧网/美剧网」这类按语种做的聚合 App；(c) 「樱花动漫专注动漫的门户网站」这种把站点 slogan 整段搜进来的导航串。中消协 2025-11 对这类 App 的消费安全指摘（以「免费看热播剧」诱导、索取定位/通讯录/摄像头）同样适用。",
+   "policy": "isolate_and_flag"
+  },
+  {
+   "name": "numbered_euphemistic_serial",
+   "patterns": [
+    "((妻子|姐妹|姐姐|妹妹|邻居|老师|阿姨|奶奶|姑娘|少女|美容院|妈妈|嫂子|女儿|人妻|寡妇|老板娘|女友|同学|保姆|继母|小姨|舅妈)[0-9]{1,2}([^0-9]|$))"
+   ],
+   "rationale": "「泛称亲属/职业名 + 序号」构成的擦边软色情伪剧集家族：妻子4/妻子6/妻子9、好姑娘5/9/11、《美容院5:特殊待遇》/《美容院8:特殊待遇》、《年轻漂亮的老师》7、姐妹2/姐妹4、女老师2、老板娘2/3、中国老奶奶03集/09集/12集。序号既不是季也不是集，而是同一模板批量生产的编号；配套的第二支是「45/60/90/120 分钟 + 观看」的时长限定式（免费观看45分钟高清电视剧全集、90分钟韩剧高清在线看），同属这一片源家族的检索惯例。与 v1 的 uncensored_cut_and_filter_evasion 同类（都是设计成看起来像普通影视 query 的规避拼写），但 v1 的四条正则对它只命中 5 行。",
+   "policy": "isolate_and_flag"
+  },
+  {
+   "name": "adult_explicit_marker",
+   "patterns": [
+    "(成人版|成人动漫|成人电影|一脱成名)",
+    "(18r|18R|R18|里番|无修|无码)",
+    "(情色|限制级)",
+    "(裸体|裸露|脱衣|脱光)"
+   ],
+   "rationale": "v1 的 obscene_and_criminal_content 注释断言「三级/禁片/情色/色情/福利 全部命中零行」并据此只保留规避拼写。本语料实测：这些词已经不是零了——`成人版|成人动漫|成人电影|18r|R18|里番|无修|无码|三级片|情色|限制级|禁片|禁播|裸体|裸露|脱衣|脱光` 合计 37 行，且 27 行（73%）落在两个搜索随机层。样例：人猿泰山成人版、株萝纪公园成人版、白雪公主和七个小矮人成人版电影、小马宝莉18r、武装少女无修改版在线观看、女子裸体卖身视频、1993年的成人动漫女神物语。",
+   "policy": "isolate_and_flag"
+  }
+ ],
+ "expected_l1_range": [
+  8,
+  16
+ ],
+ "expected_family_range": [
+  10,
+  24
+ ],
+ "pragmatic_intents_hint": [
+  "裸片名导航（以法之名 365k PV、逆爱 303k PV）：no modifier at all, matched by no regex, the largest class by PV. Lexically it is just a proper noun, so clustering groups it by title similarity and genre — the intent (watch / look up / disambiguate) is simply not in the string.",
+  "授权状态：「逆爱2025全集免费观看」与「以法之名免费观看」逐字同构，合规结论相反。Licence status is a property of the TITLE, resolvable only by a title × availability join. No representation of the query text can recover it.",
+  "同一串字符既是作品名也是导航目标：抖音、樱花动漫、cctv5、囧次元 look exactly like titles and are destinations. Serving them as titles is the misclassification, and for the unlicensed ones it is also the compliance event.",
+  "规避拼写：三年级=三级片、做aj、隐藏入口。Designed to look like an ordinary film query and to embed harmlessly among them; the standard words (三级/禁片/色情) match zero rows in this corpus.",
+  "追更 vs 首次观看：「逆爱第8集什么时候更新」求档期，「逆爱免费观看」求播放器 — near-identical phrasing, different answer surface.",
+  "演员反查 vs 作品演员表：「张凌赫主演的电视剧」是 person→works，「以法之名演员表」是 work→people。Both carry 主演/演员; the lookup runs in opposite directions and clustering will merge them.",
+  "平台账号与客服（爱奇艺怎么取消自动续费、抖音充值入口）：a service/account question wearing a platform name, not a content query.",
+  "二创/解说消费 vs 正片消费: consuming a derivative is a different intent AND a different rights position. Measured at 2 rows here — do not seed it on this corpus, but expect it wherever short-video traffic is included.",
+  "形状不是意图：《》包裹 2,300 行、全串 ≤3 字 2,349 行（语音头部 24.0% 的串 ≤3 字）。两者都**没有**做成种子——它们把裸片名导航按书写习惯切开，而不是按意图切开；v1 hint 里「裸片名导航是最大的类、正则抓不到」在新四层同样成立。",
+  "channel_number_nav 包含 v1 channel_live_tv 的 86.0%，已**取代**它。两条同时写进档案时，排在后面的会被 85% 规则静默丢弃；要保留两条就必须写死顺序（窄的在前）。",
+  "短剧（841 行）与季/番更新进度（2,076 行）是旧四层几乎不存在的新品类，后者是本域最大的新种子。",
+  "外语剧集的资源获取（韩剧/泰剧/日剧 + 观看/网盘词，845 行）与盗版聚合站名单互补：名单抓站名，构词式抓形状，两者并集 829 行，单靠任一方都会漏掉一半。",
+  "「未成年人 × 性」用宽词表（含 童|少女）做共现会被噪声灌满（命中里绝大多数是人名与正常片名）；收紧词表后共现只剩 1 行，而那 1 行是真阳性。所以档案里不写「这类筛查建不起来」——它建得起来，只是必须用收紧的词表，并主要靠片名黑名单与癖好类承载。"
+ ],
+ "domain_notes": "影视动漫 query log. Median length 9 characters against 3-6-character drama titles, so the typical query is [片名] + [一个修饰词] and the corpus is template-structured. That makes the modifier the intent signal and the title the noise — the opposite of most verticals — and it is why jieba will return unsegmentable garbage for the title half (these are drama names coined in the last year) while the char n-gram block carries the modifier.\nTHE DOMINANT INTENT IS THE COMPLIANCE-SENSITIVE ONE, and that is the single fact a taxonomy for this vertical must be built around. Measured on 250701 (10,000 rows / 16,451,909 PV): the access vocabulary (免费观看|在线观看|完整版|全集|高清|免费播放|资源|网盘|百度云|夸克) matches 39.3% of rows and 46.1% of PV. Its parts: 免费观看 20.8% of rows / 25.5% PV, 在线观看 13.8% / 17.2%, 完整版 12.3% / 14.6%, 全集 12.1% / 14.9%, 高清 8.2% / 10.7%. Every other measured intent is two orders of magnitude smaller — 演员表 1.5%, 剧情/结局 1.3%, 第N集/多少集 1.8%, 哪里看/什么时候播 0.5%.\n免费观看 IS NOT A PIRACY SIGNAL. It names a viewing condition that licensed supply also satisfies, and it does so on this corpus's own top titles: 以法之名 (365k + 358k + 87k PV) premiered on CCTV-8 黄金档 and 优酷 the same night; 锦绣芳华 (140k PV) on 芒果TV + 湖南卫视 金鹰独播剧场; 红果免费短剧 is free-with-ads by design. Lawfulness is a property of the TITLE's availability, not of the phrase, so any risk assignment on this axis must be a title × availability join and never a regex. The query is not the risk object — the answer is, and a risk label on a query pattern is a proxy that has to be validated against what that pattern's result set actually contains.\nTwo axes, not one, and flattening them is the main structural failure mode here. 电视剧 (19.0% of rows) / 电影 (7.8%) / 动漫 (4.5%) / 短剧 (1.6%) / 综艺 (0.3%) are ENTITY-TYPE disambiguators; 演员表 / 剧情 are ATTRIBUTE requests; 免费观看 / 在线观看 are ACCESS requests. One level cannot hold all three.\nThe legitimate counterpart intent exists and is tiny: 哪里看/哪个平台/什么时候播 is 0.5% of rows against the access class's 39.3%. That ratio is itself a headline result — the demand is for a player, not for a licensing answer — and the where-to-watch surface is the natural safe destination for redirected free-streaming demand (cf. Google's Watch tab, and the search-engine practice documented by EUIPO 2024 and the UK IPO 2017 code, all of which key on the DESTINATION, never on per-query intent).\nLive linear TV is present and is a separate answer surface: cctv5在线直播 36,814 PV, cctv5节目表 26,960 PV. Relaying or linking an unlicensed 广播电视 频道 is prohibited by the same 56号令 Art. 17 as pirate on-demand, so a live branch inherits the risk axis rather than escaping it.\nTwo measurement traps that cost real time here: (1) 下载 is NOT an acquisition -channel signal — 132 rows on 250701, dominated by app installs (抖音下载, 泰剧兔app官方下载); the channel signal is 网盘/百度云/夸克/迅雷/磁力/资源. (2) The channel class is wildly unstable between logs — 0.19% of rows on 250701 and 2.10% on 260701 — so never size it, or the piracy axis generally, from a single day's log.\nFinally, the 动漫 half of the vertical is real (动漫/动画/番剧 4.5% of rows) and it is where the unlicensed-destination traffic concentrates: 囧次元 (44k PV) and 樱花动漫 (19k PV) are among the largest single queries in the corpus and are both unlicensed aggregators, not titles.\n\n## v2（8 快照，43,933 行）新增了什么，以及每条的实测\n\n- 种子地板：`build_groups` 要求命中/行数 >= 0.004，本域即 **>= 176 行**；低于地板的候选会被**静默**丢弃。\n- 本档案的 21 个种子在真 `build_groups` 下全部存活，合计覆盖 **32.68%** 的行；逐快照：2025search 36.19%、2025search_rand 32.59%、2026search 34.65%、2026search_rand 29.8%、assistant_random 24.34%、assistant_top 29.95%、assistant_voice_random 22.4%、assistant_voice_top 28.83%。\n- plot_outcome_qa 的三个「为什么X」臂是承重的：删掉它们只剩 158 行、低于地板，整条种子会消失；代价是组内混入平台/审查类问句（实测 18/20）。\n- open_why_how 是**句式族不是意图族**（平台求助与剧内追问各半），在 fragmentation 的解读里应当预期它碎。\n- v1 点名的 `三级片` / `禁片` 在本语料仍然是 **0 行**：漏掉的不是采样，而是词表少了 成人版/无修/无码/里番 这一族（37 行里 27 行落在两个搜索随机层）。`禁播` 的 5 行全部不是内容请求，已从词表删除。\n- numbered_euphemistic_serial 只保留「泛称+序号」一臂；`[0-9]{2,3}分钟` 那一臂 37 行里有 8 行是健身操、课间、歌舞视频，已删。\n- kr_hk_adult_title_family 删掉了 `甜性涩爱`（0 行）；`下女`、`秘密爱` 两个词仍会碰到无关内容，policy 采用前需按片名核对。\n- ncii_leak_aggregator 的风险对象是**答案页**不是 query 文本，与 v1 的 no_domestic_licence_supply 同属代理判断，落 drop 之前必须对命中集的实际结果页验证。\n"
+}

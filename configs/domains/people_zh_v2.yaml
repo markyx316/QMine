@@ -1,0 +1,292 @@
+# 人物垂类领域档案 v2 — 为 8 快照语料（`人物8`，43,802 行）重写。v1（people_zh）是 4 快照时写的，保持不变。
+#
+# 生成方式：`analysis/pooled5/build_pool8_profiles.py`。每一条新增都由两名研究员在本语料上量出来、再由一名怀疑者
+# 逐条重算（复算发现的问题已全部应用：删死词、合并重复提议、收紧精度不足的正则、把实体族与低于地板的候选降级成 hints）。
+# 种子 19 条、风险类 15 条，种子合计覆盖 27.95%；地板 = 176 行。
+# 注意：`expected_min_share` / `expected_l1_range` 没有任何代码读取；风险类的样例会原文进入研究员提示词与 fast 工作簿。
+key: people_zh_v2
+display_name: People / public-figure query log
+language: zh
+tokenizer: jieba
+char_ngram_range:
+- 2
+- 4
+word_ngram_range:
+- 1
+- 2
+embedding_candidates:
+- BAAI/bge-small-zh-v1.5
+- BAAI/bge-base-zh-v1.5
+- shibing624/text2vec-base-chinese
+- intfloat/multilingual-e5-small
+instruction_prefix: null
+template_seeds:
+- name: bio_intro_suffix
+  pattern: (简介|介绍)$
+  intent_hint: 求人物生平简介（已公开档案）；语料中多为「X简介」「X个人资料简介」
+  expected_min_share: 0.045
+- name: bio_profile_data_suffix
+  pattern: 资料$
+  intent_hint: 求人物个人资料卡（与简介同一意图的另一种说法）
+  expected_min_share: 0.022
+- name: bio_resume_suffix
+  pattern: (简历|履历)$
+  intent_hint: 求人物履历（官员为组织部门/新华社公开简历，艺人为自述档案）
+  expected_min_share: 0.017
+- name: party_post_holder
+  pattern: 书记$
+  intent_hint: 由地域/机构反查党委书记人选，如「新疆党委书记」「太原市委书记」；多数不带疑问词
+  expected_min_share: 0.012
+- name: state_post_holder
+  pattern: (主席|部长|省长|市长|总理|厅长|局长)$
+  intent_hint: 由机构/地域反查行政职务的任职者，如「南京市长」「统战部部长」
+  expected_min_share: 0.009
+- name: portrait_image_request
+  pattern: (图片|照片)$
+  intent_hint: 求人物图像素材
+  expected_min_share: 0.008
+- name: slot_holder_who_is
+  pattern: 是谁$
+  intent_hint: 反向人物解析：由作品/关系/职务定位到具体人物，如「水浒传的作者是谁」「宋佳老公是谁」「新疆党委书记是谁」
+  expected_min_share: 0.006
+- name: family_relation_lookup
+  pattern: (老婆|妻子|老公|丈夫|前妻|家世)
+  intent_hint: 求人物的配偶/家世关系（答案不在权威档案里，与生平简介是不同的检索任务）
+  expected_min_share: 0.005
+- name: single_attribute_lookup
+  pattern: (年龄|多大|身高|生日|哪里人|籍贯|出生地)
+  intent_hint: 求单项属性事实（年龄/身高/生日/籍贯），一条 infobox 字段即可回答
+  expected_min_share: 0.0045
+- name: yes_no_verification
+  pattern: (吗|嘛)[?？]?$
+  intent_hint: 是非核实：把一个断言拿来求证，长尾独有的问法
+- name: incumbency_tenure
+  pattern: (现任|历任|新任)
+  intent_hint: 任期与任免：新任 的多数来自「最新任命/最新任免」的子串，读的时候要知道
+- name: relation_lookup_extended
+  pattern: (的关系|什么关系|的儿子|的女儿|的爸爸|的妈妈|的父亲|的母亲|的哥哥|的弟弟|的姐姐|的妹妹|的孙子|的后代|的师傅|的徒弟|的搭档|的助理|的经纪人)
+  intent_hint: 人际关系反查：亲属、师承、搭档；会碰到作品名（的女儿）约 1/20
+- name: causal_explanation
+  pattern: (为什么|为何|为啥|原因|怎么回事)
+  intent_hint: 求解释：为什么某人做了某事、出了什么事
+- name: person_to_post_lookup
+  pattern: (担任什么职务|什么职务|任什么职|现任什么|任职|职务是什么|是什么官|什么级别|什么职位)
+  intent_hint: 人→职反查；v1 的两条职务种子只覆盖职→人方向，与它零重叠
+- name: attribute_lookup_spoken
+  pattern: (几岁|多高|哪年出生|什么时候出生|出生年月|属什么|生肖|星座|身价|身家|老家|多少岁|哪一年出生|哪年生)
+  intent_hint: 口语化的属性问法（几岁、多高、属什么），语音与随机层的写法
+- name: achievement_record
+  pattern: (成就|贡献|事迹|荣誉|获奖|奖项)
+  intent_hint: 成就与荣誉；v1 的 bio 种子锚了 $，抓不到「X个人简历和成就」这种复合尾
+- name: evaluation_comparison
+  pattern: (如何评价|评价|厉害|谁更|更强|哪个强|对比|相比|算不算|口碑)
+  intent_hint: 评价与比较。原提议含 怎么样，把「后来怎么样了」这一族近况问法也吞进来，实测精度 0.60；去掉 怎么样 后 203 行、仍高于地板，残留的是「张雪峰评价<学校>」式的机构评价（31 行 ≈ 15%），读组内样例时要知道
+- name: institution_roster_suffix
+  pattern: 名单$
+  intent_hint: 机构花名册：名单$ 与 v1 九个种子零重叠，精度 19/20
+- name: grassroots_school_post_holder
+  pattern: (校长|班主任|教导主任|任课老师)
+  intent_hint: 基层校内职务持有人（校长/班主任）；地板余量仅 26 行
+risk_categories:
+- name: political_personnel_speculation
+  patterns:
+  - (另有任用|履新|调任|任免|免职|新任|接任)
+  - (被查|落马|双开|接受审查调查|停职)
+  keywords:
+  - 另有任用
+  - 任免
+  - 调任
+  - 履新
+  rationale: 'Measured at 16 rows (0.16%) but 0.46% of PV — severity is inverted against row frequency. 另有任用 has no legal definition; it is an organization-department euphemism for "post to be decided later",
+    covering promotion, lateral move or a pending problem alike. On the 2025-07-01 snapshot no onward appointment for the subject of the 28k-PV query 马兴瑞另有任用 had been announced, so ANY served result is
+    by construction non-authoritative political speculation — 散布谣言 under 网络信息内容生态治理规定 Art. 6, and outside the 时政类新闻信息 whitelist because no whitelisted announcement exists to reproduce. The 被查/落马 slice is
+    doubly loaded: defamation of a named individual AND political rumour, reaching the 2013 两高 interpretation''s public-prosecution triggers. Isolate so the answer path can return "no authoritative announcement
+    exists" instead of ranking speculation.
+
+    '
+  policy: isolate_and_flag
+- name: political_figure_source_provenance
+  patterns:
+  - (书记|省长|市长|主席|部长|总理|厅长|委员)
+  - (中央政治局|国务院|自治区党委|省委|市委|总书记)
+  keywords:
+  - 党委书记
+  - 省委书记
+  - 市委书记
+  - 国家主席
+  - 领导班子
+  rationale: '391 rows (3.91%) / 3.15% of PV. The violation here is provenance, not topic: personnel and office information about serving officials is 时政类新闻信息, which may only be reproduced from the CAC
+    互联网新闻信息稿源单位名单 whitelist and may not be distorted (互联网新闻信息服务管理规定). Serving a plausible non-whitelist page is a licensing breach independent of whether the content is true, and the authoritative record
+    (人民网地方领导资料库 / 新华社简历) is a different source from the one an entertainer biography resolves to. Must never be blended into a generic biography family, or the whole family inherits the wrong source policy.
+
+    '
+  policy: isolate_and_flag
+- name: death_and_survival_status
+  patterns:
+  - (去世|逝世|死了|死亡|病逝|遗体|死因|还活着|走了吗)
+  keywords:
+  - 去世了吗
+  - 死了吗
+  - 死了没有
+  rationale: '17 rows (0.17%). The class is NOT homogeneous and that is the whole point: it contains true, fresh, authoritative deaths (蔡澜 died six days before this snapshot; 何柱国, 董文华) and false death rumours
+    about living people (赵本山去世了吗, 马云死了吗, 赵薇死了吗, 刘晓庆死了没有). Serving a normal ranked result for the second kind republishes a defamatory falsehood about a living person — 民法典 1024/1025 with a 合理核实义务, criminal
+    exposure at 5,000 views / 500 forwards under the 2013 两高 interpretation, and an affirmative detect-and-stop duty under 网络暴力信息治理规定 Arts. 13/15. Blanket-blocking the pattern is equally wrong: it would
+    suppress true, high-demand news. Isolate for an authoritative-source gate plus 辟谣标签 routing.
+
+    '
+  policy: isolate_and_flag
+- name: defamation_and_scandal
+  patterns:
+  - (出轨|塌房|黑料|绯闻|丑闻|私生活|劈腿|人设崩|艳照)
+  keywords:
+  - 黑料
+  - 塌房
+  - 爆料
+  rationale: 'Only 3 rows in this file (网红黑料, 扒哥黑料), but the highest severity per row in the corpus and a lower bound rather than a size — unverified allegations mostly travel through the bare-name channel
+    with no marker. A routine result is directly the legal event: 违法信息 (侮辱诽谤, 生态治理规定 Art. 6(十)) if false, and 不良信息 (炒作绯闻丑闻, Art. 7(二)) even if true, which Art. 11 bars from 首页首屏/热搜/榜单/ 推荐 surfaces. The
+    2021 娱乐明星网上信息规范通知 puts the same constraint on ranking surfaces specifically. Isolate so no scandal item can be promoted by a family that is otherwise safe to amplify.
+
+    '
+  policy: isolate_and_flag
+- name: sexualised_and_non_person_browse
+  patterns:
+  - (美女|帅哥|性感|写真|比基尼|泳装|丝袜|黑丝|白丝|大胸|胸大|裸|艳照|套图|尺度|福利)
+  - (做爱|做爰|裸体|裸照|裸聊|无码|三级片|情色|色情|福利姬|下海|自慰|艳门照|不雅照|不雅视频|走光|爆乳|翘臀|丝袜美腿|媚黑|一级片|成人片|性生活|性爱)
+  keywords:
+  - 美女图片
+  - 性感美女
+  - 美女写真
+  rationale: '60 rows (0.60%) but 0.99% of PV — it over-indexes 2x on traffic against rows. 淫秽色情 is 违法信息 (生态治理规定 Art. 6(九); 互联网信息服务管理办法 Art. 15) and 性暗示/性挑逗 is 不良信息 (Art. 7(四)) barred from 首页首屏/热搜/榜单/推荐
+    (Art. 11), so a family containing these rows can never be safely promoted. It is simultaneously a taxonomy artifact: 美女 alone carries 32k PV and is a class-level browse term, not a person query at all.
+    Isolate as a rejection class; merging it into any person family contaminates that family''s ranking eligibility.
+
+    '
+  policy: isolate_and_flag
+- name: unpublished_private_life
+  patterns:
+  - (老婆|妻子|老公|丈夫|前妻|情人|家世|家庭背景|子女|后代|父亲|母亲|爷爷)
+  - (住址|家庭住址|行程|航班|定位|手机号|身份证|微信号)
+  keywords:
+  - 家世
+  - 前妻
+  - 私生活
+  rationale: '99 rows (0.99%) / 0.62% of PV for the relational patterns; the locator patterns scored 0 in this file and are carried as a lexicon, not as a measurement. The risk is conditional on the SUBJECT,
+    which the query string does not reveal: for entertainers (宋佳老公, 刘宇宁老婆) this is self-disclosed and benign, but for serving officials (习近平前妻 appears in this file) 婚姻变化、配偶子女从业、房产 are reported INTERNALLY
+    under 《领导干部报告个人有关事项规定》 and are not published, so no lawful public source exists and any served result is unverified aggregation — SPC 网络侵权 解释 Art. 12, and 侵犯公民个人信息罪 / 人肉搜索 under the 2023 网络暴力指导意见 Art.
+    4 once contact or whereabouts are involved. Isolate so the population-conditioned path can apply; do not suppress the entertainer slice, which is ordinary lawful demand.
+
+    '
+  policy: isolate_and_flag
+- name: judicial_attribution
+  patterns:
+  - (判刑|判了几年|判几年|判多少年|获刑|入狱|坐牢|服刑|犯什么罪|犯罪记录|犯罪历史|罪名|被抓|被捕|通缉|失信人员|老赖|诈骗|贪污|受贿|行贿|涉黑|吸毒|嫖娼|洗钱|判决书|改判|起诉|被冤枉|什么罪)
+  rationale: 实测 56 行（0.128%），其中 50 行未被 v1 任何风险类命中。集中度极端：两个搜索头部合计 1 行，两个搜索随机层合计 48 行。v1 的 defamation_and_scandal 词表（出轨|塌房|黑料|绯闻|丑闻|私生活|劈腿|人设崩|艳照）是娱乐向的，一个司法词都没有；v1 的 political_personnel_speculation 有 被查|落马|双开|停职，覆盖的是官员纪检口径，不覆盖普通人。实际命中的是对具名普通人的定罪式提问：「重庆市渝中区老师易克建是老赖吗?」「嘉兴沈老师嫖娼」「九寨沟县王杰犯罪记录公示」「丰台四合庄派出所所长王雪莹贪污腐败」「东海集团杨春判了几年」「潜山林汪节是失信人员吗?」「徐峥老婆陶红吸毒」。这些绝大多数没有可核实的公开判决，服一条正常排序结果就等于对具名个人发布未经司法确认的犯罪归因。
+  policy: isolate_and_flag
+- name: personal_wealth_and_assets
+  patterns:
+  - (身价|身家|财产|资产|年收入|片酬|工资多少|存款|房产|豪宅|遗产|多少钱一(平尺|尺|幅))
+  rationale: 实测 93 行（0.212%、0.283% PV），88 行未被 v1 任何风险类命中。搜索随机层 60 行 vs 搜索头部 15 行 = 4.0 倍。v1 的 unpublished_private_life 明确把《领导干部报告个人有关事项规定》里的「房产」写进了 rationale，却没有把任何财产词放进 patterns——所以这一整条论证在代码里没有执行体。实际命中横跨三类主体，处置完全不同：公众人物自述/公开榜单（「马云身价总资产多少亿」「足球身价排行榜最新」）、官员财产（「习近平现在一个月工资」「习近平一个月工资多少钱,补贴又多少钱,为什么不敢公布」）、普通人财产（「徐水巨力集团杨建国身价」「华商创投蔡承宇身价」「邵根伙在北京有豪宅吗」「陈祖军在天长秦栏有房产吗」）。官员与普通人这两支没有合法公开来源，任何排序结果都是未经核实的聚合。
+  policy: isolate_and_flag
+- name: non_person_generic_browse
+  patterns:
+  - ^(老师|演员|歌手|画家|医生|校长|董事长|工程师|裁判|皇帝|丞相|富豪|伟人|粉丝|大哥|大姐|作家|主持人|明星|网红|模特|球星|院士|教授|将军|司机|警察|护士|厨师|农民|工人|学生|老板|经理|科学家|诗人|美女|帅哥|富婆|领导|专家|大师|冠军|状元|皇后|太后|贵妃|公主|王子|总裁|导演|偶像|先生|女士|小姐|妹子|女孩子|小妹|老头|老太太|怪兽|神兽|阎王|和尚|道士|司令|元帅|贪官|公爵|男人|女人|儿子|女儿|爸爸|妈妈|爷爷|奶奶|哥哥|姐姐|弟弟|妹妹|叔叔|阿姨|同学|朋友|歌星|影星|球员|主播|作者|摄影师|设计师|飞行员|宇航员|运动员|舞蹈家|音乐家|企业家|慈善家|政治家|外交家|哲学家|历史学家|数学家|物理学家|化学家|生物学家|天文学家|经济学家|文学家|书法家|雕塑家|配音演员|领袖|元首|首长|高官|干部|公务员|军人|士兵|战士|英雄|烈士|名人|巨星|天王|天后|影帝|影后)$
+  rationale: 实测 88 行（0.201% 行、1.200% PV，PV 对行数 6.0 倍超配），80 行未被 v1 任何风险类命中。分布是全语料最干净的头部/随机二分：四个随机层合计 1 行，assistant_voice_top 独占 41 行。以 assistant_voice_top 这一个快照内部算，它占该快照 4.10% 的行、6.75% 的 PV；v1 的 sexualised_and_non_person_browse
+    在同一快照另占 1.90% 行 / 4.32% PV（搜索头部只有 0.63% / 1.02%）。两类合计，语音头部约 6% 的行、约 11% 的 PV 根本不是人物 query，而是被送进人物垂类的类目级浏览词与语音识别残留。v1 已经识别出这个失败模式（hints 第 8 条：类目级浏览伪装成人物 query），但它的 patterns 只有 美女|帅哥 两个能落到通称上，实测漏掉 80
+    行。
+  policy: reject_class
+- name: grassroots_named_individual_lookup
+  patterns:
+  - ((小学|中学|初中|高中|幼儿园|中心校|职校|技校|技师学院)[^ ]{0,12}(老师|教师|校长|班主任|教导主任|学生|同学|副校长))
+  - ((派出所|村委会|居委会|社区|卫生院|信用社|支行|镇政府|街道办)[^ ]{0,12}(所长|主任|书记|行长|院长|干部|民警|名单))
+  rationale: 本域最大的一块新风险面，也是 v1 结构上不可能看见的一块：两个搜索头部快照各 0 行，171 行全部来自两个随机尾部（154 行）与 AI 助手（17 行）。形态是「机构 + 岗位（+ 姓名）」——某镇某小学的校长、某中学某位老师、某派出所所长、某村委书记、某农信社支行书记、某社区主任。这些人不是公众人物，也不是《互联网新闻信息服务管理规定》意义上的时政新闻主体：他们的任职信息可能在某份公示里出现过一次，但把「机构×岗位×姓名」组合成一条可检索的人物档案，就是
+    PIPL 第 13 条之外的处理，并且直接构成对一个可识别的普通自然人的画像。其中一部分主体是未成年人（出现过按「学校+班级+姓名」定位在读学生的查询），一部分请求还附带照片。与 v1 的 political_figure_source_provenance 只重叠 12 行——那一类管的是省市级以上的时政稿源合规，和基层普通职工的个人信息保护是两套完全不同的法域，绝不能合并。
+  policy: isolate_and_downgrade：不拒答岗位事实本身（「某某镇中心小学现任校长是谁」在很多地方确有公示），但禁止把姓名、照片、联系方式、任职经历聚合成一张人物卡；禁止进入任何推荐/榜单面；对带姓名或带「名单」「照片」的子集（与 institutional_roster_disclosure 交叉 15 行）按 private_individual_contact_locator
+    的拒答规则处理。主体若为在读学生，一律拒答。
+- name: liveness_verification_probe
+  patterns:
+  - ((去世|逝世|死了|死亡|病逝|没了)[^ ]{0,4}(了吗|了嘛|吗|了没|没有|是真的吗|是假的吗))
+  - (还活着|还在世|健在吗|辟谣)
+  rationale: 这不是新风险面，而是把 v1 的 death_and_survival_status（110 行）里真正需要辟谣闸门的那一半切出来。v1 的 rationale 说得对——该类不同质，一半是权威讣闻、一半是对活人的死亡谣言——但它没有给出把两半分开的算子，于是整类 110 行只能共用一个处置。这条疑问式正则就是那个算子：28 行里 27 行是明确的「某人是否还活着」核实型提问，其中包含对在世艺人的重复谣言核实（同一位女演员的三种问法、另一位男演员两种问法）和对国家领导人生死的探询（在世与已故的都有）。对活人返回一条常规排序结果即等于复制发布关于在世自然人的不实陈述，《民法典》1024/1025
+    条的合理核实义务、2013 两高解释的 5000 次浏览/500 次转发入罪线、以及《网络暴力信息治理规定》第 13/15 条的主动发现—制止义务在这里同时适用；对领导人一项还叠加时政稿源白名单。
+  policy: isolate_and_verify：命中即强制走权威源核验分支——主体在世则返回辟谣标签与权威来源，不返回任何排序结果；主体已故则只复述白名单稿源的讣告。保留 v1 的 death_and_survival_status 作为父类（讣闻/死因/遗体等陈述式查询走常规新闻源），本类作为其中必须加闸的子集。
+- name: institutional_roster_disclosure
+  patterns:
+  - ((教师|老师|员工|人员|学生|干部|职工|成员|警员|民警)名单)
+  rationale: 「一次性索取一个机构的全体人员名册」是一种独立的风险形态：单条职务信息可能是公示过的，把整份名单拼出来则是批量个人信息处理。131 行（0.299% 行 / 0.095% pv），头部 20 行 vs 随机尾部 107 行——又一次头部低估。命中里既有省市级党政机关班子名单（这部分与 v1 的 political_figure_source_provenance 重叠 32
+    行，走时政稿源白名单），也有 99 行是它捞不到的：税务局/公安分局/派出所人员名单、镇村干部名单、企业管理人员名单、学校教师名单（与 grassroots_named_individual_lookup 交叉 15 行），以及「受审人员名单」「留置人员名单」这种把尚未定案的当事人成批列出的请求。后者同时是个人信息批量处理（PIPL 第 13 条）与对未决案件当事人的名誉风险。pv 占比（0.095%）低于行占比（0.299%）——是一个典型的「按流量排序会完全看不见」的类。
+  policy: isolate_and_scope：白名单稿源已发布的领导班子名单可复述并注明来源与发布日期；其余机构人员名册一律不聚合、不生成，返回「请查询该单位官方公示」；含「受审/留置/被查」等未决状态的名册直接拒答。
+- name: leader_kinship_and_private_relations
+  patterns:
+  - (习明泽|彭丽媛|习仲勋|习远平|李讷|王光美|毛新宇|江绵恒)
+  - ((习近平|毛泽东|邓小平|江泽民|胡锦涛|李强|王沪宁)[^ ]{0,4}(女儿|儿子|妻子|夫人|前妻|父亲|弟弟|家人|后代|子女|孙子))
+  rationale: 89 行（0.203% 行 / 0.381% pv，1.9 倍流量over-index），而且与其他新增类正相反，它是头部现象：两个搜索头部 55 行、assistant_top 8 行、assistant_voice_top 4 行，随机尾部只有 17 行。v1 在 unpublished_private_life 的 rationale 里提到过「习近平前妻 appears
+    in this file」，但从没给它一条正则，于是它只能被 (前妻|父亲|妻子) 这类通用亲属词捞到并与「宋佳老公」混在同一类里——两者的处置完全相反。国家领导人的亲属信息是《领导干部报告个人有关事项规定》下内部报告、不对外公布的事项，同时又是境外政治谣言的主要载体；对在任领导人亲属关系的推测性问答既落在生态治理规定第 6 条第（十一）项，也落在时政类新闻信息的稿源白名单约束内。已故领导人亲属（王光美、李讷、毛新宇）与在任领导人亲属（习明泽）在合规基线上又不同，必须由同一个类承载再按主体分流，不能散落在通用亲属类里。
+  policy: isolate_and_whitelist_source：只允许复述 CAC 互联网新闻信息稿源单位名单内已公开发布的内容（如公开简历、官方报道），其余一律返回「无权威公开信息」；禁止任何推测、关系评论与聚合成卡；不得进入热搜/榜单/推荐面。与 unpublished_private_life 的「按主体人群分流」策略共用机制，但白名单比艺人侧严格一档。
+- name: private_individual_locator
+  patterns:
+  - ([0-9]{17}[0-9Xx]|1[3-9][0-9]{9})
+  - (住哪|现居|老家在哪|家在哪|家庭住址|户口|户籍|家庭地址|哪个小区)
+  - (手机号|电话号码|联系电话|联系方式|微信号|QQ号|身份证号)
+  - (联系方式|联系电话|手机号|手机号码|电话号码|微信号|QQ号|qq号|邮箱|具体地址|住址|家庭住址|现居|住哪|家住|行程|定位|身份证号|身份证|工号|学号)
+  rationale: 实测 45 行（0.103%），其中 34 行未被 v1 任何风险类命中。逐 source 最关键的一个数：两个搜索头部各 0 行——v1 在 unpublished_private_life 的 rationale 里亲口写了「the locator patterns scored 0 in this file and are carried as a lexicon, not
+    as a measurement」，那是真话，但只对头部为真。新层一来，它变成了一个有 45 行实测的类。第二个分正则抓的是 query 里直接携带的身份证号/手机号：实测 8 行，全部在 2025search_rand(5) 与 2026search_rand(3)，头部与助手层 0 行，样例包括「350221197210120014黄永诚」「汤伟 320823196802096834」「sqxz#张红燕#371425197003140347」「1432561863476125696,贾富正,1,51343720020801131X」「陈育飞19928112337」——姓名与
+    18 位公民身份号码同串出现。v1 的 身份证 是一个词，捕不到号码本身；这 8 行任何按词面工作的管线都看不见。命中里大量是普通自然人被单位+姓名定位后再索要联系方式：「西工大唐斌教授联系方式」「江苏省六合高级中学石玉宏电话号码」「阜阳技师学院杜中华手机号」「山西应用科技学院大健康学院曲玉明教授的联系方式」。这一类落在人肉搜索/侵犯公民个人信息的口子上，与「白鹿微博」那种公众人物导航在词面上完全同族、在处置上相反，主体人群是唯一的判别依据而它不在
+    query 串里。 v1 把这条定位词表当「lexicon, not a measurement」收着，因为在旧的头部快照上它是 0 行。在 8 快照上它是 34 行（0.078% 行 / 0.129% pv_norm），而且分布本身就是结论：两个搜索头部快照各 0 行，24 行全在两个随机尾部，10 行在 AI 助手侧。v1 之所以测出 0，不是因为这个风险不存在，而是因
+  policy: isolate_and_refuse：与 unpublished_private_life 的处置不同。后者对艺人是合法需求、只需按主体人群分流；这一条无论主体是谁都没有合法公开来源，服务层应直接拒答并返回「该信息不属于可公开检索范围」，而不是降权或换源。命中行不得进入任何召回、榜单或「猜你想搜」，也不得作为 query 改写的种子。
+- name: minor_as_subject
+  patterns:
+  - (小女孩|小男孩|未成年|萝莉|幼女|童星|女童|男童|初中生|小学生)
+  - (幼女|萝莉|女童|男童|小女孩|小男孩|未成年|小学生|初中生|中学生|高中生|初[一二三]班|高[一二三]班|[0-9]年级)
+  rationale: 实测 20 行（0.046%、0.124% PV），18 行未被 v1 任何风险类命中。行数极小但每行严重度最高，且它不是随机层独有——八个 source 里有七个有命中，assistant_top 3 行、assistant_voice_top 2 行，即在两个头部导出里也在。命中包括「小学生性感照」「未成年比基尼美女」「抖音里最漂亮的小女孩」「七岁苗条小女孩」「十岁苗条小女孩」「十岁小女孩」「18萝莉」「狗头萝莉」。v1
+    的 sexualised_and_non_person_browse 词表（美女|帅哥|性感|写真|比基尼|…）只捕成年向词面，与本类只重叠 2 行——也就是说 v1 那一类在处置上把「比基尼美女」和「未成年比基尼美女」当同一件事。这两件事的法律性质不同，不能同类处置。 v1 完全没有未成年人类别，本语料上它是可测的：19 行（0.043% 行 / 0.124% pv）。分布是这一类最该被看见的地方——搜索四个快照合计
+    10 行（0.025%），AI 助手四个快照合计 9 行，而助手只有 3,838 行，命中率 0.23%，是搜索侧的 9.4 倍；更要紧的是 5 行落在 assistant_top 与 assistant_voice_top，也就是 AI 流量的头部而不是长尾。其中 2 行同时命中性化词表（与 sexualised_and_non_person_browse ∪ sexualised_depiction_of_named_person
+    的交集 = 2 行，均在 2025search_rand），还有数条是「年龄 + 体型形容」的图像生成式请求。《未成年人保护法》第 72、77 条与《未成年人网络保护条例》第 47 条要求对涉未成年人信息从严处理，涉性内容触及《刑法》363/364 条与生态治理规定第 6 条第（九）项，属于零容忍面。19 行在行频上是尾部噪声，在严重度上是本语料的最高档——这正是 v1 domain_notes
+    第 7 条「行数与流量背离」的极端版本。
+  policy: isolate_and_refuse：整类拒答并触发人工审核队列，不进入任何召回、改写、榜单或工作簿样例。与性化词表的交集行必须在任何管线上游（含研究员提示词与 fast 模式工作簿的样例抽取）就被剔除，不得以任何形式原文外传。
+expected_l1_range:
+- 8
+- 14
+expected_family_range:
+- 10
+- 20
+pragmatic_intents_hint:
+- 突发人事/新闻状态查询：同一个裸名字，在事件当天是「最新动态」，平日是「生平档案」。头部三条 陈小江/马兴瑞/韦韬 合计占全库 16.4% PV，全部来自 2025-07-01 当天的新疆、广西人事发布，词面上完全没有痕迹，只有 (人名 × 日期 × 新闻索引) 才能分开
+- 讣闻核实 vs 谣言核实：「蔡澜」（快照前 6 天去世，30k PV）以裸名字进入，与「赵本山去世了吗」「马云死了吗」词面同族但处置相反——一个要权威新闻，一个要辟谣标签
+- 反向人物解析：实测 是谁$ 74 条中绝大多数是「作品/关系/职务 → 人物」（水浒传的作者是谁、宋佳老公是谁、新疆党委书记是谁），检索方向与「这个人是谁」相反，聚类只看得到共同的「是谁」
+- 裸名字的身份消歧：同一字符串可能指向多个真实人物、也可能指向文艺形象（白鹿、哪吒、财神爷、李白），是人物垂类的核心失败模式，纯文本聚类结构上不可见
+- 导航型意图：求某人的微博/主页/账号（微博$ 37 条，0.37%），与信息型查询词面无差别，但满足条件是跳转而不是答案
+- 人事异动的委婉语：「另有任用」无法律定义，实际意图是「这个人的职位发生了什么」，且正确答案可能是「尚无权威公告」；仅 16 行却占 0.46% PV
+- 主体人群决定答案来源：官员 / 艺人 / 文史虚构人物（约 1.0% 行：孙悟空、李白、诸葛亮、杨贵妃、水浒传的作者）三类，同一意图的权威来源与合规基线完全不同，而人群在 query 串里不可见——应作为每个叶子的必备属性，而不是并列分支
+- 类目级浏览伪装成人物 query：美女/帅哥/明星等（0.60% 行、0.99% PV）根本不是人物查询，应进拒识类而非意图类
+- 行数与流量背离：色情向 0.60% 行 / 0.99% PV，人事异动 0.16% 行 / 0.46% PV——按行频排序会把这两类判成尾部噪声
+- 机构范围内找人（大学/中学/医院/集团 + 人名或职务）：搜索随机层 1,333 行对头部 34 行（39.2 倍），v1 九个种子一条都碰不到。**没有做成种子**——这 1,455 行里 66.7% 不含任何意图标记，与全库平均（69.5%）几乎一样裸，它抓的是实体不是措辞；当成 template group 会直接主导 fragmentation 指标。
+- 平台账号与主页导航（微博/抖音/快手/小红书/公众号/主页/账号）单独只有 170 行，低于 176 行的地板，机械上做不成种子；微博$ 本身只有 90 行。「联系方式」那一支由 private_individual_locator 风险类承载，不要再做种子重复。
+- 花名册意图同源三用：种子只留 名单$（509 行、与 v1 九种子零重叠、精度 19/20），风险侧留 institutional_roster_disclosure（131 行）；宽式（领导班子|班子成员|名单|一览表，1,035 行）若同时提交，窄式会被 build_groups 的 85% 规则**静默**丢弃。
+- 是非核实（吗|嘛 收尾）658 行，几乎只在随机层与助手侧；v1 没有任何种子覆盖它。
+- 人→职方向：v1 的 party_post_holder / state_post_holder 只覆盖职→人，与 person_to_post_lookup 重叠 0 行。时效线（现任|历任|新任）与方向线在「现任什么职务」上必然交叉（117 行），下游不要把同一族当两个意图的证据。
+domain_notes: "All figures measured on data/raw/人物query-250701.xlsx: 10,000 rows, 9,966,159 PV,\nno duplicate queries.\n\n1. THIS IS A BARE-NAME LOG. Median query length is 3 characters; 61.8% of rows and\n\
+  \   74.7% of PV are <=3 chars, 70.6% / 80.5% at <=4 chars. Against a generous marker\n   lexicon (简介|资料|简历|书记|主席|是谁|图片|年龄|老婆|去世|另有任用|个人|...), 81.2% of\n   rows and 87.0% of PV match NOTHING. Intent is\
+  \ a prior over the PERSON, not a\n   property of the string, so any taxonomy read off query text describes under 20% of\n   rows and near-zero of the head traffic. Say so explicitly rather than reporting\
+  \ the\n   marked minority as if it were the corpus.\n\n2. THE HEAD IS NEWS, NOT EVERGREEN. 陈小江 (961,536 PV), 马兴瑞 (502,916), 韦韬 (170,243)\n   are 16.4% of all PV and are one single-day political-personnel\
+  \ event (the 2025-07-01\n   Xinjiang party-secretary change and the Guangxi appointment); 蔡澜 (30k) had died six\n   days earlier. The largest intent in the corpus is \"what just happened to this person\"\
+  \n   and it is lexically invisible. Do not model this vertical as a stable evergreen\n   biography log.\n\n3. THREE SUBJECT POPULATIONS, NOT TWO. Serving officials (习近平, 省委书记, 另有任用),\n   entertainers\
+  \ (鹿晗, 肖战, 白鹿, 刘宇宁, 王安宇), and fictional/historical/literary\n   figures (~1.0% of rows: 孙悟空, 哪吒, 李白, 诸葛亮, 杨贵妃, 财神爷, 水浒传的作者). The same\n   intent resolves to a different authoritative source and a different\
+  \ lawful basis per\n   population — 人民网地方领导资料库 / 新华社 for officials, self-disclosed profiles for\n   entertainers, reference works for the third. The population is invisible in the query\n   string: carry\
+  \ it as a required attribute on every leaf, never as a sibling branch.\n\n4. 是谁 DOES NOT MEAN \"who is this person\" HERE. Of 74 是谁$ rows, the dominant shape is\n   「X的作者/老公/书记/主人公是谁」 — reverse resolution\
+  \ from a work, relation or post to a\n   person. The bare-name identity intent, which is the corpus's implicit majority, takes\n   no marker at all. A naming agent that reads 是谁 as identity lookup will\
+  \ mislabel the\n   class.\n\n5. THE BIOGRAPHY SUFFIX BLOCK IS THE CORE LAWFUL INTENT, NOT A HAZARD. 简介/介绍 5.64%,\n   资料 2.75%, 简历/履历 2.14%. This is lawfully published record (PIPL Art. 27; SPC\n   网络侵权解释\
+  \ Art. 12(四) exempts 自行或已合法公开的信息). Labelling the whole ~11% bio-PII\n   regex as risk is a false-positive class, not a safety win. The genuinely risky tail is\n   the relational slice (老婆/妻子/家世/前妻, 0.71%)\
+  \ and only when the subject is an official.\n\n6. SERVING IS NOT AMPLIFYING. 违法信息 may not be transmitted at all; 不良信息 (炒作绯闻丑闻;\n   性暗示) is merely barred from 首页首屏/热搜/榜单/推荐 (生态治理规定 Art. 11), and the 2021\n\
+  \   娱乐明星网上信息规范通知 lands on the same ranking surfaces. Risk labels in this vertical\n   should drive source routing and ranking-surface eligibility, not blanket suppression.\n\n7. PV AND ROW FREQUENCY DISAGREE,\
+  \ IN BOTH DIRECTIONS. Adult-adjacent: 0.60% of rows,\n   0.99% of PV. Personnel change: 0.16% of rows, 0.46% of PV. Bio suffixes go the other\n   way (5.64% of rows, 3.39% of PV). Report both; a row-weighted\
+  \ taxonomy will call the\n   high-traffic classes tail noise.\n\n8. SCRIPT MINORITY. 1.91% of rows contain Latin characters, 1.37% are pure Latin (aespa,\n   treasure, beyond, rose, liam gallagher) —\
+  \ K-pop and band names. A ~2% script minority\n   is exactly the size that collapses into a single junk cluster on a Chinese-only\n   encoder; check explicitly whether this slice became its own leaf,\
+  \ and do not accept\n   such a leaf as an intent.\n\n9. ENTITY DOMINANCE IS THE FAILURE MODE. With 81% of rows carrying no intent marker,\n   clustering will organise by person and by topic (all 陈小江 rows\
+  \ together) rather than\n   by intent. A high L1 count is a symptom of that, not a richer taxonomy.\n\n10. TEMPLATE COVERAGE WILL READ \"too_low\" AND THAT IS CORRECT. The nine seeds above plus\n   the\
+  \ mined affixes cover 17.1% of rows on this file, because 81% of it is bare names.\n   Do not loosen the seeds to chase the coverage window — a loose seed sweeps two intents\n   into one group and corrupts\
+  \ the alpha sweep it is supposed to judge. Note also what the\n   affix miner discovers here: the surviving discovered groups are 前缀「陈小」and 前缀「新疆」\n   — person and place prefixes, i.e. ENTITIES, not phrasings.\
+  \ They must not be read as\n   phrasing families.\n\n## v2（8 快照，43,802 行）新增了什么，以及每条的实测\n\n- 种子地板：`build_groups` 要求命中/行数 >= 0.004，本域即 **>= 176 行**；低于地板的候选会被**静默**丢弃，不报错。\n- 本档案的 19 个种子在真 `build_groups`\
+  \ 下全部存活，合计覆盖 **27.95%** 的行；逐快照：2025search 18.44%、2025search_rand 32.12%、2026search 33.3%、2026search_rand 30.36%、assistant_random 32.11%、assistant_top 17.55%、assistant_voice_random 28.2%、assistant_voice_top\
+  \ 8.51%。\n- evaluation_comparison 的原提议含 `怎么样`，把「后来怎么样了」这一族近况问法一起吞进来（实测精度 0.60）；去掉 `怎么样` 后 203 行、仍在地板之上，残留的是「张雪峰评价<学校>」式机构评价（31 行 ≈ 15%）。\n- incumbency_tenure 删掉了 `原任`（全库 0 行）；`新任` 的 92 行里 59 行来自「最新任命/最新任免」的子串碰撞。\n\
+  - v1 的 bio 三个种子都锚 `$`，抓不到「X个人简历和成就」这种复合尾：实测 1,013 行因此漏掉（其中 2026search 640 行）。\n- v1 domain_notes 第 1 条的「无标记比例」随词表定义在 74.8%–78.9% 之间浮动，逐快照跨度约 28 个百分点——这个结论稳，但**不要抄单一数字**，词表不同结果就不同。\n- v1 的旗舰案例「另有任用」在本语料只剩\
+  \ 3 行且全在 2025search；另有 13 个 v1 词表词在本语料命中为 0。\n- 语音两层里有 35 行是识别残留（同音串、断词），不是用户意图。\n"

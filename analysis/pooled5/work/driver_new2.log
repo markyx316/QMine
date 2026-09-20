@@ -1,0 +1,5 @@
+20:07:48 launching book-pool5 (domain books_docs_zh, corpus 书籍文档)
+20:10:48 launching soft-pool5 (domain software_apps_zh, corpus 软件)
+21:11:15 book-pool5 exited 0
+21:15:59 soft-pool5 exited 0
+21:15:59 driver_new2 done

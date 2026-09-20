@@ -1,0 +1,9 @@
+﻿domain,source,rows,kept,dropped,drop_%,pv_dropped_%
+影视8,2025search,10000,9998,2,0.02,0.0
+影视8,2025search_rand,10000,10000,0,0.0,0.0
+影视8,2026search,10000,9999,1,0.01,0.01
+影视8,2026search_rand,10000,10000,0,0.0,0.0
+影视8,assistant_top,1000,955,45,4.5,78.33
+影视8,assistant_random,1000,982,18,1.8,1.66
+影视8,assistant_voice_top,1000,999,1,0.1,1.42
+影视8,assistant_voice_random,1000,1000,0,0.0,0.0

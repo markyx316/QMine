@@ -1,0 +1,160 @@
+﻿claim,value,source_table,how_computed
+教育语料总行数（清洗后）,21799,analysis/pooled5/work/教育/summary.json,summary.json 的 n_rows；等于 sources 四项之和 9989+9981+859+970
+各来源行数,2025search=9989 / 2026search=9981 / assistant_top=859 / assistant_random=970,analysis/pooled5/work/教育/summary.json,summary.json['sources']；与 parquet 的 df.source.value_counts() 一致
+助手行占语料比例,8.39%（1829/21799）,analysis/pooled5/work/教育/summary.json,(859+970)/21799
+搜索行占语料比例,91.61%（19970/21799）,analysis/pooled5/work/教育/summary.json,(9989+9981)/21799=0.9161。任务书说的 87% 是五领域合计口径：全 pooled5 语料搜索行 99925/111423=89.68%（分母含 2000 行语音），教育单领域为 91.61%
+L1 意图类数,20,analysis/pooled5/work/教育/summary.json,summary.json 的 n_classes_td_l1_name；亦可 df.td_l1_name.nunique()
+交付叶数 / 家族数,38 / 21,analysis/pooled5/work/教育/summary.json,n_classes_bu_leaf_name=38、n_classes_bu_family_final=21
+裁决规则条数 / 可执行触发条数,57 / 56,runs/edu-pool5/gen01/taxonomy_v2.json,taxonomy_v2.json['rule_conflicts']['n_rules']=57、['n_with_executable_trigger']=56；run_summary.json gates.p2a_taxonomy_shape.message 同样写 57
+被判定不可执行的触发条件数,17,runs/edu-pool5/gen01/taxonomy_v2.json,taxonomy_v2.json['rules_vs_evidence']['n_triggers_rejected']=17。其中 rejected_triggers 只具名列出 12 条，另有 rejected_triggers_truncated=5 未具名。具名 12 条为 R_BARE_NAME_VS_PORTAL / R_GOV_PORTAL_VS_PROCESS / R_CAMPUS_VS_GOV_PORTAL / R_TIER_VS_DELIBERATION / R_SCORE_VS_RESULT / R_PRONUNCIATION_VS_OTHERS / R_STROKE_VS_OTHERS / R_GROUP_VS_STRUCTURE / R_CLASSICAL_VS_MEANING / R_IDIOM_MEANING_VS_ZODIAC / R_TRANSLATION_TOOL_VS_LOOKUP / R_TRANSLATION_LOOKUP_VS_NOISE。后两条是翻译类的边界规则，正文 §2(b) 与 §7⑤ 的立论建立在翻译类划法上，必须连带报出
+词面规则 / 语义规则条数,39 / 18,runs/edu-pool5/gen01/taxonomy_v2.json,rules_vs_evidence.n_lexical_rules=39、n_semantic_rules=18
+运行模式与提供方,mode=fast；llm_usage.provider=routed,runs/edu-pool5/gen01/run_summary.json,run_summary.json 顶层 mode 字段与 llm_usage.provider 字段
+kappa 状态,未测量（skipped，非 1.0）,runs/edu-pool5/gen01/run_summary.json,gates.p2b_kappa.status=skipped；message 说明 fast 模式单标注员 a 标注 3000 行、覆盖率 100%、无第二份独立判读
+叶层留出复现率,0.9516,runs/edu-pool5/gen01/metrics_panel.json,metrics_panel.json['table']['rows'] 中 subject=leaves 的 heldout_reproduction。注意 gates.p6_heldout_reproduction 报的是 99.0%（n=4360），量的不是同一个对象，两个数不要混用
+叶层盲评连贯度均值 / 低于3.0的叶数,3.769 / 4 个（52 叶中 8%）,runs/edu-pool5/gen01/metrics_panel.json,subject=leaves 的 coherence=3.769；低于3.0的计数见 run_summary.json gates.p7_coherence.message
+定位K的参照系触及簇比例 / 行覆盖,reach=0.60 / row_coverage=0.4222,runs/edu-pool5/gen01/granularity.json,granularity.json['triangulation']['locator_reach']['phrasing_groups']；对应 gates.p5_locator_reaches_the_corpus.status=warned
+家族层定案 K,12（由 intent_alignment_ami 定位，稳定性下限0.55，无候选被否决）,runs/edu-pool5/gen01/granularity.json,triangulation.chosen_family_k=12、locator=intent_alignment_ami、n_rejected_as_unstable=0
+少数文种占比告警,16.7%,runs/edu-pool5/gen01/run_summary.json,gates.p1_minority_language_risk.message
+researcher_pragmatic_intents 角色失败,3 次调用 / 3 次报错 / 0 token,runs/edu-pool5/gen01/run_summary.json,"llm_usage.by_role.researcher_pragmatic_intents: calls=3, errors=3, input_tokens=0, output_tokens=0"
+唯一以助手行为主的类（但非助手独有）,"完成中小学学科作业与写作任务，assistant_share=0.5294（342/646）；但该类另有 304 行（47.1%）来自搜索（2025 174 + 2026 130），只能说""重心在助手""，不能说""由助手行造出来""",analysis/pooled5/work/教育/taxonomy_delta_newclass_mix.csv,该表 new_class=完成中小学学科作业与写作任务 行的 n_assistant/n_total=342/646=0.5294；taxonomy_delta_summary.csv 的 classes_majority_assistant=1.0 亦为同一事实
+作业类主要由哪个老类转来,获取教材与学习辅助材料 52.3%，共 8 个老类汇入,analysis/pooled5/work/教育/taxonomy_delta_newclass_mix.csv,同行 main_old_class / main_old_share=0.523 / n_old_classes_feeding=8
+残余类的助手占比,0.294（920/3129）,analysis/pooled5/work/教育/taxonomy_delta_newclass_mix.csv,new_class=无意图或上下文依赖的残余查询 行
+助手占比排 3-6 位的类,查询职业资格与成人学历提升 0.1696 / 按结构约束列举字词 0.125 / 查询官方教务与考试办事流程 0.1143 / 进行升学与择校志愿决策咨询 0.1097,analysis/pooled5/work/教育/taxonomy_delta_newclass_mix.csv,按 assistant_share 降序第 3–6 行
+助手占比为 0 的类,查询考试成绩与出分动态，assistant_share=0.0（207 行全部来自搜索）,analysis/pooled5/work/教育/taxonomy_delta_newclass_mix.csv,该表最后一行；与 diffs_td_l1_name.csv 中该类在两个 assistant 来源上 k_b=0 一致
+加助手行前后同批搜索行的 AMI(td),0.7437（匹配 19969 行）,analysis/pooled5/work/教育/../taxonomy_delta_summary.csv,analysis/pooled5/work/taxonomy_delta_summary.csv，domain=教育 行的 AMI_td 与 matched_search_rows
+AMI(bu) / NMI / ARI,0.7126 / 0.7447 / 0.6991,analysis/pooled5/work/taxonomy_delta_summary.csv,同上行 AMI_bu / NMI_td / ARI_td
+参照对照（单点，非带宽）：同数据两次运行,"AMI_td=0.7742、AMI_bu=0.6873（fin02 vs fin03，金融域 9999 行、类数 19→16）。仅一个数据点，无离散度，且与教育（19969 行、类数 20→20）不同域不同类数；AMI 对类数不对称敏感，故不构成""带宽""",analysis/pooled5/work/taxonomy_delta_summary.csv,该表第二行 domain=对照·同数据两次运行(fin02/fin03)；由 p5_taxonomy_delta.py 的 reproducibility_baseline() 在 runs/fin02、runs/fin03 的 labels_full.csv 上按 query 内联后计算
+结论（已降级）：AMI 与唯一的重跑对照同量级，但本数据不足以判定划分是否被助手行改变,"AMI_td 0.744 略低于对照 0.774；AMI_bu 0.713 高于对照 0.687。参照系不是 1.0，故 0.74 不读作""变了很多""；但单点对照不能支持""效果小到无法与重跑噪声区分""。要判定需教育域多次重跑的 AMI 噪声分布",analysis/pooled5/work/taxonomy_delta_summary.csv,两行直接比较，无额外计算
+老类被拆成三类,查询汉字书写与词语运用 n=822 → 笔顺 46% / 组词 39% / 结构列举 8%,analysis/pooled5/work/教育/taxonomy_delta_crosstab.csv,该表列 查询汉字书写与词语运用 的列和=822；377/822=45.9%、317/822=38.6%、68/822=8.3%
+老残余桶被重读为翻译,其他或意图不可辨 n=4808 → 启动翻译工具 59%（2828 行）/ 残余 33%（1585 行）,analysis/pooled5/work/教育/taxonomy_delta_crosstab.csv,该列列和 4808；2828/4808=58.8%、1585/4808=33.0%
+新翻译类的来源构成,3936 行 ← 其他或意图不可辨 72% / 查询词语成语概念含义 20%,analysis/pooled5/work/教育/taxonomy_delta_crosstab.csv,行 启动翻译工具或查询英汉词句 的行和=3936；2828/3936=71.9%、791/3936=20.1%
+老类被拆散重分,获取教材与学习辅助材料 n=423 → 残余40%/作业38%/古诗文9%；查询升学与考试时间节点 n=228 → 升学决策52%/出分动态31%,analysis/pooled5/work/教育/taxonomy_delta_crosstab.csv,对应两列的列和与占比：170/423、159/423、39/423；119/228、71/228
+未变动的骨架,裸校名→按裸校名 97%（4493/4635）、院校层次→判定层次 98%（393/403）、猜生肖→求生肖 97%（423/435）、读音拼音→读音 96%（2329/2422）、政府平台→招考门户 86%（682/793）,analysis/pooled5/work/教育/taxonomy_delta_crosstab.csv,每列取最大单元格 / 该列列和
+TVD 时间线 2025→2026,0.0953（Cramér V=0.1161，15 个显著类）,analysis/pooled5/work/教育/contrast_summary_td_l1_name.csv,a=2025search b=2026search 行的 tvd/cramers_v/n_sig_classes
+TVD 界面线 2026搜索→助手头部,0.6426（V=0.4501，14 个显著类，3 个 receded）,analysis/pooled5/work/教育/contrast_summary_td_l1_name.csv,a=2026search b=assistant_top 行
+TVD 深度线 助手头部→助手随机,0.2598（V=0.3019，8 个显著类，2 个 emergent）,analysis/pooled5/work/教育/contrast_summary_td_l1_name.csv,a=assistant_top b=assistant_random 行
+TVD 界面+深度线,0.5994（V=0.4760，15 个显著类）,analysis/pooled5/work/教育/contrast_summary_td_l1_name.csv,a=2026search b=assistant_random 行
+界面差异是时间差异的倍数,6.74 倍（0.6426/0.0953）,analysis/pooled5/work/教育/contrast_summary_td_l1_name.csv,两行 tvd 相除
+时间线·查询汉字或词语读音,"10.07%→13.42%，Δ=+3.34pp [+2.45,+4.24]",analysis/pooled5/work/教育/diffs_td_l1_name.csv,筛 a=2025search & b=2026search & label=查询汉字或词语读音 & sig=True，读 share_a/share_b/diff_pp/lo_pp/hi_pp（share 乘 100）
+时间线·启动翻译工具或查询英汉词句,"21.01%→18.4%，Δ=-2.61pp [-3.71,-1.50]",analysis/pooled5/work/教育/diffs_td_l1_name.csv,筛 a=2025search & b=2026search & label=启动翻译工具或查询英汉词句 & sig=True，读 share_a/share_b/diff_pp/lo_pp/hi_pp（share 乘 100）
+时间线·按裸校名检索院校信息,"23.8%→21.48%，Δ=-2.32pp [-3.48,-1.15]",analysis/pooled5/work/教育/diffs_td_l1_name.csv,筛 a=2025search & b=2026search & label=按裸校名检索院校信息 & sig=True，读 share_a/share_b/diff_pp/lo_pp/hi_pp（share 乘 100）
+时间线·查询录取分数线与录取数据,"4.16%→2.34%，Δ=-1.82pp [-2.32,-1.33]",analysis/pooled5/work/教育/diffs_td_l1_name.csv,筛 a=2025search & b=2026search & label=查询录取分数线与录取数据 & sig=True，读 share_a/share_b/diff_pp/lo_pp/hi_pp（share 乘 100）
+时间线·无意图或上下文依赖的残余查询,"10.35%→11.77%，Δ=+1.42pp [+0.55,+2.29]",analysis/pooled5/work/教育/diffs_td_l1_name.csv,筛 a=2025search & b=2026search & label=无意图或上下文依赖的残余查询 & sig=True，读 share_a/share_b/diff_pp/lo_pp/hi_pp（share 乘 100）
+时间线·导航至官方招考政务门户与登录入口,"3.02%→4.25%，Δ=+1.22pp [+0.71,+1.75]",analysis/pooled5/work/教育/diffs_td_l1_name.csv,筛 a=2025search & b=2026search & label=导航至官方招考政务门户与登录入口 & sig=True，读 share_a/share_b/diff_pp/lo_pp/hi_pp（share 乘 100）
+时间线·查询汉字笔顺写法,"1.3%→2.49%，Δ=+1.19pp [+0.82,+1.58]",analysis/pooled5/work/教育/diffs_td_l1_name.csv,筛 a=2025search & b=2026search & label=查询汉字笔顺写法 & sig=True，读 share_a/share_b/diff_pp/lo_pp/hi_pp（share 乘 100）
+时间线·求生肖谜语博彩谜底,"1.76%→2.71%，Δ=+0.94pp [+0.53,+1.36]",analysis/pooled5/work/教育/diffs_td_l1_name.csv,筛 a=2025search & b=2026search & label=求生肖谜语博彩谜底 & sig=True，读 share_a/share_b/diff_pp/lo_pp/hi_pp（share 乘 100）
+时间线所有显著差异均 <4pp,最大 +3.34pp（查询汉字或词语读音）,analysis/pooled5/work/教育/diffs_td_l1_name.csv,对 a=2025search&b=2026search&sig=True 的 15 行取 |diff_pp| 最大值 = 3.3437
+2026 搜索 PV 总量较 2025 腰斩,"28,482,018 → 14,782,400（−48.1%）",analysis/pooled5/deliverables/教育_pooled5_labeled.parquet,df[df.source=='2025search'].pv_raw.sum() 与 2026search 同法；(14782400-28482018)/28482018=-0.481
+PV 中位与第一万名门槛同步减半,中位 1544→776；最小值（第1万名）910→477,analysis/pooled5/deliverables/教育_pooled5_labeled.parquet,按 source 取 pv_raw.median() 与 pv_raw.min()
+对照·等 PV 门槛（≥910）下的 TVD,0.2000（2026 仅剩 3970 行，属深度差不可用）,analysis/pooled5/deliverables/教育_pooled5_labeled.parquet,a=df[(source==2025search)]、b=df[(source==2026search)&(pv_raw>=910)]；各自 td_l1_name.value_counts(normalize=True)，TVD=0.5*Σ|pa-pb|
+对照·等秩（各取 PV 前 3970 名）下的 TVD,0.1005（对比全量 0.0953）,analysis/pooled5/deliverables/教育_pooled5_labeled.parquet,"a3=a.nlargest(3970,'pv_raw')、b3=b.nlargest(3970,'pv_raw')，同法算 TVD"
+等秩对照下主要变动方向一致,读音 +3.45pp、翻译 −3.78pp、裸校名 −2.70pp、分数线 −1.16pp,analysis/pooled5/deliverables/教育_pooled5_labeled.parquet,在上一条的 a3/b3 上按 td_l1_name 求 value_counts(normalize=True)*100 后相减
+2025 头部串在 2026 仍出现的比例,67.09%（6702/9989 个不同串）,analysis/pooled5/work/教育/overlap.csv,overlap.csv 行=2025search 列=2026search 值 0.6709；自算：len(set25&set26)/len(set25)=6702/9989
+2026 新进行数及其构成,3278 行（32.8%）；读音16.5%/残余15.0%/翻译8.5%/生肖8.1%/招考门户6.6%,analysis/pooled5/deliverables/教育_pooled5_labeled.parquet,new=df[(source=='2026search') & ~query.isin(set(2025search.query))]；len(new)=3278；new.td_l1_name.value_counts(normalize=True)
+界面线·无意图或上下文依赖的残余查询,"11.77%→61.93%，Δ=+50.16pp [+46.80,+53.41]，kind=stable",analysis/pooled5/work/教育/diffs_td_l1_name.csv,筛 a=2026search & b=assistant_top & label=无意图或上下文依赖的残余查询 & sig=True
+界面线·按裸校名检索院校信息,"21.48%→0.35%，Δ=-21.13pp [-21.98,-20.09]，kind=stable",analysis/pooled5/work/教育/diffs_td_l1_name.csv,筛 a=2026search & b=assistant_top & label=按裸校名检索院校信息 & sig=True
+界面线·启动翻译工具或查询英汉词句,"18.4%→5.59%，Δ=-12.82pp [-14.37,-10.92]，kind=stable",analysis/pooled5/work/教育/diffs_td_l1_name.csv,筛 a=2026search & b=assistant_top & label=启动翻译工具或查询英汉词句 & sig=True
+界面线·查询汉字或词语读音,"13.42%→1.4%，Δ=-12.02pp [-12.92,-10.80]，kind=stable",analysis/pooled5/work/教育/diffs_td_l1_name.csv,筛 a=2026search & b=assistant_top & label=查询汉字或词语读音 & sig=True
+界面线·完成中小学学科作业与写作任务,"1.3%→12.22%，Δ=+10.92pp [+8.88,+13.29]，kind=stable",analysis/pooled5/work/教育/diffs_td_l1_name.csv,筛 a=2026search & b=assistant_top & label=完成中小学学科作业与写作任务 & sig=True
+界面线·导航至官方招考政务门户与登录入口,"4.25%→0.12%，Δ=-4.13pp [-4.56,-3.47]，kind=stable",analysis/pooled5/work/教育/diffs_td_l1_name.csv,筛 a=2026search & b=assistant_top & label=导航至官方招考政务门户与登录入口 & sig=True
+界面线·了解专业培养内容与就业前景,"2.96%→0.23%，Δ=-2.72pp [-3.11,-2.03]，kind=stable",analysis/pooled5/work/教育/diffs_td_l1_name.csv,筛 a=2026search & b=assistant_top & label=了解专业培养内容与就业前景 & sig=True
+界面线·查询汉字笔顺写法,"2.49%→0.0%，Δ=-2.49pp [-2.82,-1.96]，kind=receded",analysis/pooled5/work/教育/diffs_td_l1_name.csv,筛 a=2026search & b=assistant_top & label=查询汉字笔顺写法 & sig=True
+界面线·进入高校官网及校内业务平台,"2.19%→0.12%，Δ=-2.08pp [-2.40,-1.47]，kind=stable",analysis/pooled5/work/教育/diffs_td_l1_name.csv,筛 a=2026search & b=assistant_top & label=进入高校官网及校内业务平台 & sig=True
+界面线·查询录取分数线与录取数据,"2.34%→0.47%，Δ=-1.88pp [-2.30,-1.10]，kind=stable",analysis/pooled5/work/教育/diffs_td_l1_name.csv,筛 a=2026search & b=assistant_top & label=查询录取分数线与录取数据 & sig=True
+界面线·判定高校办学层次与标签,"1.86%→0.12%，Δ=-1.75pp [-2.05,-1.15]，kind=stable",analysis/pooled5/work/教育/diffs_td_l1_name.csv,筛 a=2026search & b=assistant_top & label=判定高校办学层次与标签 & sig=True
+界面线·生成生字组词,"1.64%→3.26%，Δ=+1.62pp [+0.59,+3.05]，kind=stable",analysis/pooled5/work/教育/diffs_td_l1_name.csv,筛 a=2026search & b=assistant_top & label=生成生字组词 & sig=True
+界面线·查询考试成绩与出分动态,"1.03%→0.0%，Δ=-1.03pp [-1.25,-0.55]，kind=receded",analysis/pooled5/work/教育/diffs_td_l1_name.csv,筛 a=2026search & b=assistant_top & label=查询考试成绩与出分动态 & sig=True
+界面线·查询词语或成语释义,"2.07%→1.05%，Δ=-1.03pp [-1.60,-0.06]，kind=stable",analysis/pooled5/work/教育/diffs_td_l1_name.csv,筛 a=2026search & b=assistant_top & label=查询词语或成语释义 & sig=True
+界面线里与日历混淆的类合计占 2026 搜索,14.64%（招考门户+专业前景+校内平台+分数线+层次判定+出分动态 6 类）,analysis/pooled5/deliverables/教育_pooled5_labeled.parquet,"t=df[df.source=='2026search']；t.td_l1_name.isin([导航至官方招考政务门户与登录入口,了解专业培养内容与就业前景,进入高校官网及校内业务平台,查询录取分数线与录取数据,判定高校办学层次与标签,查询考试成绩与出分动态]).mean()"
+升学季敏感类合计占 2026 搜索,39.66%（上述 6 类 + 按裸校名检索院校信息 + 进行升学与择校志愿决策咨询）,analysis/pooled5/deliverables/教育_pooled5_labeled.parquet,同法，8 个 label 的 isin().mean()
+中小学字词族合计占 2026 搜索,24.82%（读音+古诗文+笔顺+词义+组词+结构列举）,analysis/pooled5/deliverables/教育_pooled5_labeled.parquet,同法，6 个 label 的 isin().mean()
+助手头部 ≤2 字行的行占比与流量占比,39.2%（337/859）行；53.5% 的 search_num,analysis/pooled5/deliverables/教育_pooled5_labeled.parquet,t=df[df.source=='assistant_top']；L=query.str.len()；(L<=2).mean()=0.3923；t.pv_raw[L<=2].sum()/t.pv_raw.sum()=0.5350
+助手头部残余类里 search_num 最高的 20 条串（真实前 20）,价格24821/我24102/答案19353/这是谁13558/你11103/这个10162/I don't know10033/拼音9099/怎么写7938/换6455/一5134/有4597/批注4007/那个3838/简写3733/解答3711/怎么写？3605/简化3604/缩短3549/人生感悟的句子3461。21-25 名：不要3420/不知道3208/简洁3134/拼豆图纸3076/简单3026,analysis/pooled5/deliverables/教育_pooled5_labeled.parquet,"df[(source=='assistant_top')&(td_l1_name=='无意图或上下文依赖的残余查询')].nlargest(25,'pv_raw')[['query','pv_raw']]，前 20 名原样列出、21-25 名附后。旧稿此处写 nlargest(20) 但实际是筛选过的列表：跳过了第 7 名 I don't know、第 17 名 怎么写？、第 20 名 人生感悟的句子、第 22 名 不知道、第 24 名 拼豆图纸，用第 21/23/25 名补位。其中 人生感悟的句子 与 拼豆图纸 是实质内容请求而非续轮指令，故结论只能写成'以续轮指令为主'"
+助手头部残余在统一13类下的分布,无法判定53.6%(285)/裸实体16.9%(90)/会话与系统指令13.5%(72)/获取现成内容3.9%(21)/导航直达3.6%(19)/清单与推荐3.0%(16)/生成与编辑2.8%(15)，合计532,analysis/pooled5/work/教育/vs_unified_crosstab_by_source.csv,筛 source=assistant_top & td_l1_name=无意图或上下文依赖的残余查询，各 U 列除以该行合计 532。U 码对应名见 analysis/pooled5/p5_vs_unified.py 的 UNAME 字典（U01导航直达…U13无法判定），并已用 2026search 的列和/9981 与 vs_unified_shares.csv 的 share 逐项核对一致
+助手头部残余落进实质类目的比例,32.9%（532−285−72=175）,analysis/pooled5/work/教育/vs_unified_crosstab_by_source.csv,同上行：(532 − U13 285 − U11 72)/532
+助手头部翻译类真实例子,翻译59254 / S26963 / 翻译一下16322 / 翻译成中文7357 / My god2843,analysis/pooled5/deliverables/教育_pooled5_labeled.parquet,"df[(source=='assistant_top')&(td_l1_name=='启动翻译工具或查询英汉词句')].nlargest(5,'pv_raw')"
+助手头部读音类真实例子（全部无宾语）,怎么读10383 / 怎么读？3958 / 读音3389 / 这个字怎么读839 / 念什么699（该类仅 12 行）,analysis/pooled5/deliverables/教育_pooled5_labeled.parquet,同法，td_l1_name=='查询汉字或词语读音'，len=12
+2026 搜索读音类真实例子（字在 query 里）,昱怎么读音7129 / 煜怎么读音6207 / 夯怎么读音5183 / 於怎么读音5053 / 笃怎么读音4785,analysis/pooled5/deliverables/教育_pooled5_labeled.parquet,"df[(source=='2026search')&(td_l1_name=='查询汉字或词语读音')].nlargest(5,'pv_raw')"
+深度线·无意图或上下文依赖的残余查询,"61.93%→40.0%，Δ=-21.93pp [-26.34,-17.40]",analysis/pooled5/work/教育/diffs_td_l1_name.csv,筛 a=assistant_top & b=assistant_random & label=无意图或上下文依赖的残余查询 & sig=True
+深度线·完成中小学学科作业与写作任务,"12.22%→24.43%，Δ=+12.21pp [+8.70,+15.67]",analysis/pooled5/work/教育/diffs_td_l1_name.csv,筛 a=assistant_top & b=assistant_random & label=完成中小学学科作业与写作任务 & sig=True
+深度线·进行升学与择校志愿决策咨询,"3.14%→7.32%，Δ=+4.18pp [+2.15,+6.23]",analysis/pooled5/work/教育/diffs_td_l1_name.csv,筛 a=assistant_top & b=assistant_random & label=进行升学与择校志愿决策咨询 & sig=True
+深度线·查询职业资格与成人学历提升,"0.58%→3.51%，Δ=+2.92pp [+1.67,+4.32]",analysis/pooled5/work/教育/diffs_td_l1_name.csv,筛 a=assistant_top & b=assistant_random & label=查询职业资格与成人学历提升 & sig=True
+深度线·生成生字组词,"3.26%→0.62%，Δ=-2.64pp [-4.09,-1.41]",analysis/pooled5/work/教育/diffs_td_l1_name.csv,筛 a=assistant_top & b=assistant_random & label=生成生字组词 & sig=True
+深度线·了解专业培养内容与就业前景,"0.23%→2.27%，Δ=+2.04pp [+1.06,+3.19]",analysis/pooled5/work/教育/diffs_td_l1_name.csv,筛 a=assistant_top & b=assistant_random & label=了解专业培养内容与就业前景 & sig=True
+深度线·查询词语或成语释义,"1.05%→2.37%，Δ=+1.32pp [+0.10,+2.59]",analysis/pooled5/work/教育/diffs_td_l1_name.csv,筛 a=assistant_top & b=assistant_random & label=查询词语或成语释义 & sig=True
+深度线·按结构约束列举字词,"0.47%→1.44%，Δ=+0.98pp [+0.05,+1.98]",analysis/pooled5/work/教育/diffs_td_l1_name.csv,筛 a=assistant_top & b=assistant_random & label=按结构约束列举字词 & sig=True
+助手头部作业类真实例子（只有约束没有题目）,直接给我答案3457/直接出答案3232/脱式计算3189/竖式计算2667/这道题有没有更简单的解法2308/解答题目2213/有没有其他方法解这道题1998/不用方程1973,analysis/pooled5/deliverables/教育_pooled5_labeled.parquet,"df[(source=='assistant_top')&(td_l1_name=='完成中小学学科作业与写作任务')].nlargest(8,'pv_raw')"
+助手随机作业类真实例子（任务说全）,关于暑假的作文600字 / 有没有初一英语自我介绍的范文 / 《目送》龙应台读书笔记600字 / 写一篇四年级上册作文学写读后感350字。以《小王子》感悟为选材，字数要求是300-400，作文体裁是读后感 / 我想对作文《那一次，我长大了》进行个性化编辑,analysis/pooled5/deliverables/教育_pooled5_labeled.parquet,"df[(source=='assistant_random')&(td_l1_name=='完成中小学学科作业与写作任务')].nlargest(10,'pv_raw') 中取 5 条原文，未改写"
+助手随机残余在统一13类下的分布,无法判定22.4%(87)/生成与编辑15.5%(60)/事实与数值11.6%(45)/解释与介绍9.3%(36)/会话与系统指令9.3%(36)/清单与推荐7.2%(28)/获取现成内容7.2%(28)/办事与操作5.9%(23)/个案判断与建议5.9%(23)/核实与动态3.4%(13)/裸实体2.1%(8)/违规或灰色内容0.26%(1)/导航直达0.0%(0)，合计388（13 类齐全）,analysis/pooled5/work/教育/vs_unified_crosstab_by_source.csv,筛 source=assistant_random & td_l1_name=无意图或上下文依赖的残余查询，各 U 列除以 388
+助手随机残余落进实质类目的比例,68.3%（388−87−36=265），对比助手头部 32.9%,analysis/pooled5/work/教育/vs_unified_crosstab_by_source.csv,(388 − U13 87 − U11 36)/388
+"残余里""家长/学业处境""真实例子",分班考核成绩会影响孩子分班吗 / 一年级阳光分班，哪个班级更好 / 小学每个学期都在更换老师和班主任怎么解决 / 如何判断孩子是否被孤立或欺凌 / 孩子觉得压力大，家长该如何开导 / 3+2和特色班哪个更适合我,analysis/pooled5/deliverables/教育_pooled5_labeled.parquet + analysis/sva2026/work,"按 p5_vs_unified.py 的 umap() 把 U 码回贴到逐行 parquet（label_full/unique_labels.parquet 与 label_search10k/labels.parquet 按 query 去重合并取 u_ds），再筛 source=assistant_random & td_l1_name=残余 & u∈{U07,U06}"
+"残余里""校历与学校事务性事实""真实例子",定州市中小学2026放假时间表 / 2027年长沙市小学初中报名时间表 / 乐陵一中高二2026年秋季学期开学日期是多少 / 2026年华中科技大学临床医学专业什么时候放寒假 / 猿辅导直播课怎么收费,analysis/pooled5/deliverables/教育_pooled5_labeled.parquet + analysis/sva2026/work,同上，筛 u==U03
+"残余里""文本创作与改写""真实例子","能再给我几个童真的唯美句子吗 / 我爱什么因为它什么仿写句子 / 用简短唯美短句描述楼兰博物馆外景景色 / 乌云翻滚城市上空的短文，50字 / 你我隔着山川遥望的漫天星迹 后来尽凝眼底,只剩默契把第一句修改一下（39 字，带原文的改写请求）。旧稿第 5 条写作""把第一句修改一下""，该串在 parquet 里不存在，是上述真实行的结尾 7 字",analysis/pooled5/deliverables/教育_pooled5_labeled.parquet + analysis/sva2026/work,同上，筛 u==U10
+残余里跨域漏入的真实例子,海钓用什么钩最不容易跑鱼 / 翻新的床铺材质对承重有影响吗 / 做基础碰到地下水位高，旁边又是建筑物基础怎么办,analysis/pooled5/deliverables/教育_pooled5_labeled.parquet + analysis/sva2026/work,"同上，筛 u∈{U06,U07} 后人工挑出与教育无关的行"
+界面+深度线·无意图或上下文依赖的残余查询,"11.77%→40.0%，Δ=+28.23pp [+25.12,+31.40]",analysis/pooled5/work/教育/diffs_td_l1_name.csv,筛 a=2026search & b=assistant_random & label=无意图或上下文依赖的残余查询 & sig=True
+界面+深度线·完成中小学学科作业与写作任务,"1.3%→24.43%，Δ=+23.13pp [+20.52,+25.94]",analysis/pooled5/work/教育/diffs_td_l1_name.csv,筛 a=2026search & b=assistant_random & label=完成中小学学科作业与写作任务 & sig=True
+界面+深度线·按裸校名检索院校信息,"21.48%→1.03%，Δ=-20.45pp [-21.39,-19.28]",analysis/pooled5/work/教育/diffs_td_l1_name.csv,筛 a=2026search & b=assistant_random & label=按裸校名检索院校信息 & sig=True
+界面+深度线·启动翻译工具或查询英汉词句,"18.4%→5.88%，Δ=-12.53pp [-14.05,-10.71]",analysis/pooled5/work/教育/diffs_td_l1_name.csv,筛 a=2026search & b=assistant_random & label=启动翻译工具或查询英汉词句 & sig=True
+界面+深度线·查询汉字或词语读音,"13.42%→1.24%，Δ=-12.18pp [-13.04,-11.06]",analysis/pooled5/work/教育/diffs_td_l1_name.csv,筛 a=2026search & b=assistant_random & label=查询汉字或词语读音 & sig=True
+界面+深度线·导航至官方招考政务门户与登录入口,"4.25%→0.1%，Δ=-4.14pp [-4.57,-3.53]",analysis/pooled5/work/教育/diffs_td_l1_name.csv,筛 a=2026search & b=assistant_random & label=导航至官方招考政务门户与登录入口 & sig=True
+界面+深度线·进行升学与择校志愿决策咨询,"3.54%→7.32%，Δ=+3.78pp [+2.26,+5.63]",analysis/pooled5/work/教育/diffs_td_l1_name.csv,筛 a=2026search & b=assistant_random & label=进行升学与择校志愿决策咨询 & sig=True
+界面+深度线·查询职业资格与成人学历提升,"1.16%→3.51%，Δ=+2.34pp [+1.33,+3.71]",analysis/pooled5/work/教育/diffs_td_l1_name.csv,筛 a=2026search & b=assistant_random & label=查询职业资格与成人学历提升 & sig=True
+升学决策类在两条线上的方向（并非唯一如此的类）,"界面线 3.54%→3.14%（不显著）；深度线 3.14%→7.32%（+4.18pp 显著）；界面+深度 3.54%→7.32%（+3.78pp 显著）。在深度线与界面+深度线上同时显著为正的共 4 类：作业(+12.21/+23.13)、升学决策(+4.18/+3.78)、职业资格(+2.92/+2.34)、结构列举(+0.98/+0.95)；其中后三类形态完全相同（界面线不显著为负）。故""唯一""不成立",analysis/pooled5/work/教育/diffs_td_l1_name.csv,三对 a/b 下 label=进行升学与择校志愿决策咨询 的行；界面线该行 sig=False
+长度中位 / p90 / 均值,2025搜索 6/12/7.06；2026搜索 6/12/6.80；助手头部 3/10/4.92；助手随机 14/34/25.32,analysis/pooled5/work/教育/form.csv,form.csv 的 len_median / len_p90 / len_mean 四行
+≤3 字行占比,2025 11.0% / 2026 12.4% / 助手头部 51.9% / 助手随机 1.6%,analysis/pooled5/deliverables/教育_pooled5_labeled.parquet,按 source 分组，(df['query'].str.len()<=3).mean()
+≥20 字 / ≥40 字行占比,2026搜索 0.5% / 0.01%（9981 行中 1 行）；2025搜索 0.5% / 0.01%（1 行）；助手随机 23.4% / 8.1%；助手头部 2.0% / 0.7%,analysis/pooled5/deliverables/教育_pooled5_labeled.parquet,同法，(L>=20).mean() 与 (L>=40).mean()。两个搜索来源的 ≥40 字均为 1 行，不是 0 行
+疑问句标记,2025 15.0% / 2026 16.6% / 助手头部 12.2% / 助手随机 42.6%,analysis/pooled5/work/教育/form.csv,form.csv 的「疑问句」列，值为 0–1 小数，乘 100
+祈使/委托标记,0.1% / 0.2% / 5.4% / 10.8%,analysis/pooled5/work/教育/form.csv,「祈使/委托」列
+第一人称标记,0.2% / 0.2% / 4.3% / 14.7%,analysis/pooled5/work/教育/form.csv,「第一人称」列
+输出约束标记,0.1% / 0.1% / 3.4% / 7.3%,analysis/pooled5/work/教育/form.csv,「输出约束」列
+回指上文标记,2025 0.01% / 2026 0.01% / 助手头部 2.8% / 助手随机 3.4%,analysis/pooled5/work/教育/form.csv,「回指上文」列；搜索两行的原值 1.0011e-4 与 1.0019e-4 即 9989 行中 1 行、9981 行中 1 行
+导航词标记,2025 2.5% / 2026 3.7% / 助手头部 0.0% / 助手随机 0.2%,analysis/pooled5/work/教育/form.csv,「导航词」列；助手头部原值 0.0，即 859 行中 0 行
+多问句（一行≥2问）,搜索两行均 0.0%；助手头部 0.0%；助手随机 1.5%,analysis/pooled5/work/教育/form.csv,「多问句(一行≥2问)」列
+对 2026 搜索的最近邻·中位相似度,2025搜索 1.000 / 助手头部 0.709 / 助手随机 0.567,analysis/pooled5/work/semantic_nn.parquet,nn=read_parquet(semantic_nn.parquet)；e=nn[nn.domain=='教育']；按 source 取 e.sim.median()。该表每行已是该 query 的 top-1 邻居（nn_rank 是邻居在 2026 池中的下标，不是名次，不要用它过滤）
+对照·2026搜索前1000→其余的中位与分档,中位 0.858；≥0.999 0.2% / 0.90–0.999 29.0% / 0.80–0.90 47.3% / 0.70–0.80 20.4% / <0.70 3.1%,analysis/pooled5/work/semantic_nn_controls.parquet,筛 domain=教育 & kind=对照·2026搜索前1000→其余（n=1000），按 p5_semantic_nn.py 的 BANDS 分档
+近邻分档·2025搜索,≥0.999 67.4% / 0.90–0.999 6.7% / 0.80–0.90 9.7% / 0.70–0.80 8.1% / <0.70 8.1%（n=9989）,analysis/pooled5/work/semantic_nn.parquet,同上分档口径
+近邻分档·助手头部,≥0.999 18.7%(161) / 0.90–0.999 1.2% / 0.80–0.90 7.6% / 0.70–0.80 25.3% / <0.70 47.3%（n=859）,analysis/pooled5/work/semantic_nn.parquet,同上
+近邻分档·助手随机,≥0.999 0.1%(1 行) / 0.90–0.999 0.4%(4 行) / 0.80–0.90 1.5% / 0.70–0.80 7.4% / <0.70 90.5%（n=970）,analysis/pooled5/work/semantic_nn.parquet,同上
+"余弦""完全相同""与字符串重合几乎一致",2025搜索 67.4% vs 67.1%；助手头部 18.7% vs 18.3%；助手随机 0.1% vs 0.10%,analysis/pooled5/work/semantic_nn.parquet + analysis/pooled5/work/教育/overlap.csv,"左列取自上面三条的 ≥0.999 分档；右列取自 overlap.csv 行=该来源、列=2026search 的值（0.6709 / 0.1827 / 0.0010）——注意 0.6715 是转置格（行=2026search、列=2025search），不可误取。差值分别 0.3pp / 0.4pp / 0.00pp；差额成因见""余弦 ≥0.999 中非逐字重合的行""一条"
+助手随机 0.90–0.999 档的全部 4 行,opc是啥意思→opc是什么意思(0.997) / 劲拼音→劲的拼音(0.963) / 论语原文十二章→论语十二章(0.935) / 湖南的分数线→湖南高考分数线(0.933),analysis/pooled5/work/semantic_nn.parquet,"e[(e.source=='assistant_random')&(e.sim>=0.90)&(e.sim<0.999)][['query','nn_query','sim']]"
+助手随机相似度最低的真实行（按序不跳号）,最低 7 行按序：鹦鹉螺号在南极海域遭遇冰盖封冻时…(0.338，邻居 章鱼是特马打一动物) / 奥特曼舞台剧特效怎么做(0.345，邻居 efficient) / 翻新的床铺材质对承重有影响吗(0.377) / 火柴人皇帝怎么画？(0.381) / 如何直观感受tree3有多大(0.383，邻居 庭中有奇树) / 这种性格在悉尼读书时容易遇到什么挑战(0.404，邻居 学历类别有几种) / 王道强化课没有配套资料书的话，用什么配比较合适(0.412，邻居 没组词),analysis/pooled5/work/semantic_nn.parquet,"e[e.source=='assistant_random'].nsmallest(7,'sim')。旧稿列的 5 条实为第 1、2、5、6、7 名，跳过了第 3（0.377）与第 4（0.381）"
+余弦 ≥0.999 中真正非逐字重合的行（0.3-0.4pp 差额的成因）,助手头部 ≥0.999 共 161 行，其中非逐字重合仅 4 行：D→d / T→t / What→what / You→you。2025 搜索侧 ≥0.999 共 6733 行，非逐字重合 31 行，成因含大小写、空格差（所见古诗→所见 古诗、money是什么意思→money 是什么意思）与生僻字在编码器里塌缩（緌怎么读→赟怎么读、苧字怎么读→簟字怎么读、18🈲→赟）。旧稿称 S(助手)/s(搜索) 是唯一例外，错：S 本身存在于 2026search（PV 718），逐字比对算重合,analysis/pooled5/work/semantic_nn.parquet,e[(e.source==src)&(e.sim>=0.999)] 与 overlap 的逐字集合求差集，逐条人工判读成因。生僻字塌缩是'≥0.999=逐字相同'这条读法的已知失真来源
+本领域无包装对文件,analysis/pooled5/work/ 下只有 wrap_pairs_医疗.csv / wrap_summary_医疗.csv,analysis/pooled5/work/,ls analysis/pooled5/work/ | grep wrap → 仅医疗两个文件，无教育版本
+本领域无语音来源,assistant_voice 不在 sources 中,analysis/pooled5/work/教育/summary.json,summary.json 的 sources 只有 4 个键；form.csv / fit.csv 均只有 4 行
+助手头部的两个短词叶合计占比,短词模糊查询处理 21.30% + 查询极短词条 13.62% = 34.92%；2026搜索同两叶 1.97%+1.82%=3.79%,analysis/pooled5/work/教育/shares_bu_leaf_name.csv,按 source/label 透视 row_share，取这两个 label 的两行相加
+助手随机的两个生成叶合计占比,按需求生成与改写文本 26.91% + 生成作业与学习内容 21.24% = 48.15%；2026搜索同两叶 1.55%+1.66%=3.21%,analysis/pooled5/work/教育/shares_bu_leaf_name.csv,同法
+叶层界面差最大的一叶,查询高校与职业院校信息 2026搜索 24.13% → 助手头部 1.63%（−22.50pp）,analysis/pooled5/work/教育/shares_bu_leaf_name.csv,两 source 的 row_share 相减；与 contrast_summary_bu_leaf_name.csv 的 top_movers 首项一致
+体系适配度·td 置信度均值,2025搜索 0.896 / 2026搜索 0.897 / 助手头部 0.781 / 助手随机 0.620,analysis/pooled5/work/教育/fit.csv,fit.csv 的 td_confidence_mean 列
+体系适配度·td 置信度 p10,0.629 / 0.635 / 0.491 / 0.342,analysis/pooled5/work/教育/fit.csv,td_confidence_p10 列
+体系适配度·td 模糊率,0.51% / 0.57% / 1.51% / 3.92%,analysis/pooled5/work/教育/fit.csv,td_ambiguous_% 列
+体系适配度·bu 模糊率,7.81% / 8.25% / 23.75% / 26.80%,analysis/pooled5/work/教育/fit.csv,bu_ambiguous_% 列
+体系适配度·td margin 均值,0.840 / 0.841 / 0.654 / 0.443,analysis/pooled5/work/教育/fit.csv,td_margin_mean 列
+用到的类目数,搜索两来源各 20 类；助手头部 17 类；助手随机 19 类,analysis/pooled5/work/教育/fit.csv,distinct_td_l1 列
+纯 ASCII 行占比,2025搜索 19.41% / 2026搜索 16.85% / 助手头部 5.47% / 助手随机 1.96%,analysis/pooled5/deliverables/教育_pooled5_labeled.parquet,"按 source 分组，re.fullmatch(r'[\x00-\x7f]+', query) 为真的行占比"
+2026 搜索纯 ASCII 行中落在翻译类的比例,94.6%（1591/1682）,analysis/pooled5/deliverables/教育_pooled5_labeled.parquet,t=df[df.source=='2026search']；(t.ascii & (t.td_l1_name=='启动翻译工具或查询英汉词句')).sum()/t.ascii.sum()
+2026 搜索翻译类中纯 ASCII 的比例,86.6%（1591/1837）,analysis/pooled5/deliverables/教育_pooled5_labeled.parquet,t2=df[(source=='2026search')&(td_l1_name=='启动翻译工具或查询英汉词句')]；t2.ascii.mean()
+2026 搜索翻译类裸英文词真实例子,shine7674 / silk4625 / tap2867 / knot2567 / Dropout2456 / present2231 / clash2057,analysis/pooled5/deliverables/教育_pooled5_labeled.parquet,t2[t2.ascii] 按 pv_raw 降序取样。注意 nlargest(7) 的实际前三是 welcome(2411) / Welcome(2283) / token(2254)；正文列的 present(2231)、clash(2057) 存在但排名更后，此处是举例而非严格 top-7
+学段词行占比,2026搜索 1.18%(118行) / 助手头部 2.91%(25行) / 助手随机 10.00%(97行)。注意：该 97 行用的是含 考研|专升本|大[一二三四] 的完整学段词正则；与家庭称谓求并集为 108 行（11.1%），并非 97 行,analysis/pooled5/deliverables/教育_pooled5_labeled.parquet,正则 [一二三四五六]年级|初[一二三]|高[一二三]|小学|初中|高中|幼儿园|考研|专升本|大[一二三四] 的 str.contains().mean()。pandas 3 走 RE2，该正则不含 \w/\s 与反向引用，安全
+家庭称谓行占比,2026搜索 0.08%(8行) / 助手头部 0.58%(5行) / 助手随机 1.44%(14行),analysis/pooled5/deliverables/教育_pooled5_labeled.parquet,正则 孩子|儿子|女儿|我家|娃|小孩|家长|宝宝 的 str.contains() 按 source 计数。流水线自带的 form.csv「家庭成员」列用另一套词表，给出 0.08%/0.70%/1.75%，方向一致但不是同一个数
+画像反证测试（家长推断未通过，并集口径 108 行）,"按正文正则求并集为 108 行（11.1%）。剔除后助手随机的 U07 个案判断与建议 由 6.29% 仅降至 5.68%（2026搜索 0.11%）；U06 办事与操作 由 4.95% 降至 4.76%（搜索 0.74%）；U10 生成与编辑 由 20.52% 反而升至 20.77%。旧稿的 97 行用的是去掉 考研|专升本|大[一二三四] 的窄掩码（结果 5.96 / 4.70 / 20.50），与""学段词 97 行""数字相同纯属巧合，是两个不同的行集合",analysis/pooled5/deliverables/教育_pooled5_labeled.parquet + analysis/sva2026/work,mk = str.contains('[一二三四五六]年级|初[一二三]|高[一二三]|小学|初中|高中|幼儿园|考研|专升本|大[一二三四]') | str.contains('孩子|儿子|女儿|我家|娃|小孩|家长|宝宝')，在 assistant_random 上 mk.sum()=108；随后比较 (t.u=='U07').mean() 与 (t[~mk].u=='U07').mean()。pandas 3 走 RE2，该正则不含 \w/\s 与反向引用，安全
+生肖类在四个来源的行占比接近,2025搜索 1.76% / 2026搜索 2.71% / 助手头部 3.03% / 助手随机 2.06%,analysis/pooled5/work/教育/class_profile.csv,class_profile.csv 行 求生肖谜语博彩谜底 的四个 share%_ 列
+风险机检总命中,924 行 / 4.239%,analysis/pooled5/work/教育/risk_screen.json,risk_screen.json 的 total_flagged=924、total_share=0.04239；与 summary.json 的 risk_total=924 一致
+风险四类的命中数,zodiac_lottery_riddle 463 / official_portal_impersonation 444 / idiom_meaning_as_lottery_probe 18 / credential_and_exam_integrity_fraud 0,analysis/pooled5/work/教育/risk_screen.json,risk_screen.json['categories'] 各项的 n_hits
+按来源的千行命中率,2026搜索 49.69 / 2025搜索 39.14 / 助手头部 26.78 / 助手随机 14.43,analysis/pooled5/work/教育/risk_by_source.csv,per_1k 列；= hits/n*1000
+风险命中行按类目的分布,导航至官方招考政务门户与登录入口 与 求生肖谜语博彩谜底 两类占绝大多数（2026搜索 195+250=445/496）,analysis/pooled5/work/教育/risk_rows.csv,"pd.crosstab(risk_rows.source, risk_rows.td_l1_name)"
+2026 搜索按 PV 的第一名是生肖谜面,斗方名士打一肖 PV=72728，高于 阳光高考网官网 59077 与 翻译 46513,analysis/pooled5/deliverables/教育_pooled5_labeled.parquet,"df[df.source=='2026search'].nlargest(3,'pv_raw')"
+生肖类的流量占比一年内近翻倍,2025搜索 行1.76%/PV1.91% → 2026搜索 行2.71%/PV3.64%,analysis/pooled5/work/教育/shares_td_l1_name.csv,label=求生肖谜语博彩谜底 的 row_share 与 pv_share 两行
+生肖类的流量高度集中,2026搜索该类 top1 占类内 PV 13.50%、top5 占 28.29%（270 行全部不同串）,analysis/pooled5/work/教育/concentration_td_l1_name.csv,source=2026search & label=求生肖谜语博彩谜底 行的 top1_pv_share / top5_pv_share / distinct
+生肖边界漏检,全语料含生肖词面 480 行，其中 13 行（2.7%）被判进别类，但携带 65907 PV,analysis/pooled5/deliverables/教育_pooled5_labeled.parquet,m=query.str.contains('生肖|打一肖|何肖|打一动物|打一数字|猜一肖')；m.sum()=480；out=df[m & (td_l1_name!='求生肖谜语博彩谜底')]；len(out)=13；out.pv_raw.sum()=65907
+漏检中最大的两条,一枝之栖是何肖 PV34826 与 杜绝言路打一肖 PV11437，均被判为 检索古诗文与课文原文,analysis/pooled5/deliverables/教育_pooled5_labeled.parquet,"out.nlargest(2,'pv_raw')[['query','pv_raw','td_l1_name']]"
+助手上要求批量生成谜面的行,能再给我几个类似的生肖谜语吗(938) / 再给我出一个类似的生肖谜语(517),analysis/pooled5/deliverables/教育_pooled5_labeled.parquet,"df[(source=='assistant_top')&(td_l1_name=='求生肖谜语博彩谜底')].nlargest(8,'pv_raw')"
+招考门户类在 2026 搜索的行/流量占比（类目行数，非风险命中数）,类目行数 424 行 = 行 4.25% / PV 6.24%。三个分母须分开：official_portal_impersonation 全语料命中 444 行；落在该类目且来自 2026 搜索的命中为 195 行；424 是该类目在 2026 搜索的行数，不是命中数,analysis/pooled5/work/教育/shares_td_l1_name.csv,"shares_td_l1_name.csv 中 source=2026search & label=导航至官方招考政务门户与登录入口 行的 row_share / pv_share；命中数 195 来自 risk_rows.csv 的 crosstab(source, td_l1_name)"
+"明确要求""给答案/代写""的行数",助手头部 10 行(1.16%) / 助手随机 8 行(0.82%) / 2026搜索 0 行(0.00%),analysis/pooled5/deliverables/教育_pooled5_labeled.parquet,正则 直接给我答案|直接出答案|给我答案|答案是什么|帮我写|帮我做|代写 的 str.contains() 按 source 计数
+涉性暗示着装的生成请求（只报计数，不引原文）,"全语料词面命中 11 行，来源分布：助手头部 2 行 / 助手随机 2 行 / 搜索两快照 7 行。其中 7 行为 1-2 字短词（裸×2，分别在 2026搜索与助手头部；情趣×2；性感×3），非色情。符合""校园或作业语境下要求生成带性暗示着装的人物图""这一描述的全语料仅 1 行，且只出现在助手随机，被判进 完成中小学学科作业与写作任务；助手随机另 1 行（11 字）无生成或人物特征；助手头部两行均为上述短词，不承载生成请求。旧稿写""7 行是单字裸""与""真正需注意的 3 行、助手头部 1 行""均误",analysis/pooled5/deliverables/教育_pooled5_labeled.parquet,正则 泳衣|比基尼|裸|情趣|丝袜|诱惑|白丝|黑丝|内衣|胸|性感|不穿|脱衣；按 source×td_l1_name 计数，再逐行人工判读长度与是否含生成/人物特征。按任务书第7条不引原文。n=1 只能说明该类请求可以发生并落入作业类，不能用于估计量级
+个人信息词面命中,全语料 1 行（2026搜索）,analysis/pooled5/deliverables/教育_pooled5_labeled.parquet,正则 手机号|身份证|家庭住址|电话号码|微信号|qq号|QQ号 的 str.contains().sum()=1
+助手头部清洗剔除比例,剔除 141/1000 行（14.1%），但带走原始 PV 的 57.81%,analysis/pooled5/work/教育/composition.csv,composition.csv source=assistant_top 行的 drop_%=14.1、pv_drop_%=57.811
+助手头部各剔除层,S1_system_repeated 46 / S4_suggested_chip 40 / C1_content_free 37 / S2_system_template 16 / S5_headline 2,analysis/pooled5/work/教育/cleaning_removed.csv,筛 source=assistant_top，共 141 行
+助手随机无可用流量口径,清洗前 pv_raw 合计 1231，清洗后 970 行合计 1199，逐行中位数为 1,analysis/pooled5/work/教育/composition.csv,composition.csv source=assistant_random 的 pv_raw=1231（原始 1000 行）；parquet 中该来源 970 行 pv_raw.sum()=1199、median()=1.0
+搜索两快照的清洗剔除极小,2025 剔 11 行(0.11%) / 2026 剔 18 行(0.18%)，均为 C1_content_free,analysis/pooled5/work/教育/composition.csv + analysis/pooled5/work/教育/cleaning_removed.csv,composition.csv 的 drop_% 与 cleaning_removed.csv 的 tier 列
+搜索快照已去重,2026搜索 9981 行中 9980 个不同串（1 条重复）；各类的 distinct 等于 n,analysis/pooled5/deliverables/教育_pooled5_labeled.parquet + analysis/pooled5/work/教育/concentration_td_l1_name.csv,df[df.source=='2026search']['query'].nunique()=9980；concentration 表中 2026search 各行 distinct==n
+运行内 drift 文档比的是界面不是时间,"runs/edu-pool5/gen01 的 snapshots=[AI助手, 搜索]，两层共有 query 170 条、Jaccard 0.0114",runs/edu-pool5/gen01/drift_analysis.json,drift_analysis.json['snapshots'] 与 ['query_churn']；因此该文档的「快照」轴是界面，时间对比只能用 pooled5 的 diffs_*/contrast_summary_* 表

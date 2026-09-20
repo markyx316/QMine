@@ -1,0 +1,100 @@
+{
+ "voice_head": {
+  "file_rows": 10000,
+  "top_n": 1000,
+  "cutoff_pv": 11.0,
+  "rows_at_cutoff_pv": 152,
+  "first_row_at_cutoff": 916,
+  "last_row_at_cutoff": 1067,
+  "head_rows": 1067,
+  "rows_not_mined": 8933,
+  "head_pv_share_of_file_%": 38.71
+ },
+ "rows_all": 44067,
+ "rows_mined": 44019,
+ "tiers_by_source": {
+  "2025search": {
+   "user": 9998,
+   "S5_headline": 2
+  },
+  "2025search_rand": {
+   "user": 10000
+  },
+  "2026search": {
+   "user": 9998,
+   "S5_headline": 2
+  },
+  "2026search_rand": {
+   "user": 10000
+  },
+  "assistant_top": {
+   "user": 958,
+   "S1_system_repeated": 25,
+   "S2_system_template": 14,
+   "S5_headline": 1,
+   "S4_suggested_chip": 1,
+   "C1_content_free": 1
+  },
+  "assistant_random": {
+   "user": 998,
+   "S4_suggested_chip": 2
+  },
+  "assistant_voice_top": {
+   "user": 1067
+  },
+  "assistant_voice": {
+   "user": 1000
+  }
+ },
+ "distinct_mined_by_source": {
+  "2025search": 9998,
+  "2025search_rand": 10000,
+  "2026search": 9998,
+  "2026search_rand": 10000,
+  "assistant_top": 952,
+  "assistant_random": 998,
+  "assistant_voice_top": 1067,
+  "assistant_voice": 885
+ },
+ "pv_median_by_source": {
+  "2025search": 604.0,
+  "2025search_rand": 1.0,
+  "2026search": 303.0,
+  "2026search_rand": 1.0,
+  "assistant_top": 174.0,
+  "assistant_random": 1.0,
+  "assistant_voice_top": 16.0,
+  "assistant_voice": null
+ },
+ "overlap_distinct_mined": {
+  "2025search∩2025search_rand": 26,
+  "2025search∩2026search": 6329,
+  "2025search∩2026search_rand": 3,
+  "2025search∩assistant_top": 238,
+  "2025search∩assistant_random": 1,
+  "2025search∩assistant_voice_top": 481,
+  "2025search∩assistant_voice": 6,
+  "2025search_rand∩2026search": 21,
+  "2025search_rand∩2026search_rand": 2,
+  "2025search_rand∩assistant_top": 1,
+  "2025search_rand∩assistant_random": 0,
+  "2025search_rand∩assistant_voice_top": 0,
+  "2025search_rand∩assistant_voice": 0,
+  "2026search∩2026search_rand": 4,
+  "2026search∩assistant_top": 253,
+  "2026search∩assistant_random": 1,
+  "2026search∩assistant_voice_top": 455,
+  "2026search∩assistant_voice": 5,
+  "2026search_rand∩assistant_top": 1,
+  "2026search_rand∩assistant_random": 0,
+  "2026search_rand∩assistant_voice_top": 0,
+  "2026search_rand∩assistant_voice": 0,
+  "assistant_top∩assistant_random": 0,
+  "assistant_top∩assistant_voice_top": 173,
+  "assistant_top∩assistant_voice": 1,
+  "assistant_random∩assistant_voice_top": 0,
+  "assistant_random∩assistant_voice": 0,
+  "assistant_voice_top∩assistant_voice": 1
+ },
+ "empty_dropped": []
+}

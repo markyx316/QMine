@@ -1,0 +1,5 @@
+assistant rows with 0.70≤sim<0.999: 2,418; unique neighbours 1,870; already labelled 481; to label 1,389
+  ds: 20/56 batches, 500 labelled
+  ds: 40/56 batches, 1,000 labelled
+  ds: 56/56 batches, 1,389 labelled
+labelled 1,389/1,389

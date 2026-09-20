@@ -1,0 +1,18 @@
+{
+ "domain": "金融",
+ "n_rows": 22934,
+ "sources": {
+  "2025search": 9998,
+  "2026search": 9999,
+  "assistant_top": 950,
+  "assistant_random": 987,
+  "assistant_voice": 1000
+ },
+ "cramers_v_td_l1_name": 0.2865,
+ "n_classes_td_l1_name": 18,
+ "cramers_v_bu_family_final": 0.292,
+ "n_classes_bu_family_final": 55,
+ "cramers_v_bu_leaf_name": 0.3015,
+ "n_classes_bu_leaf_name": 66,
+ "risk_total": 5
+}

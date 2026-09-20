@@ -1,0 +1,14 @@
+﻿change,search_surface,search_query,assistant_surface,assistant_query,search_rank
+原样照搬,search_top1000,cctv5在线直播,assistant_top1k,cctv5在线直播,1
+加限定：版本/时效,search_top10k,鬼灭之刃第一季,assistant_random1k,鬼灭之刃最新一集,1017
+加限定：平台+最新季,search_top1000,汪汪队立大功全集免费,assistant_random1k,哪个平台有《汪汪队立大功》的最新一季全集,542
+加限定：播出时间,search_top10k,唐朝诡事录之蜀道,assistant_random1k,《唐朝诡事录之蜀道》什么时候播出,8599
+从看到了解：演员/结局,search_top10k,醒来电视剧,assistant_top1k,醒来演员表 / 《醒来》的结局是什么,5381
+从看到了解：原型,search_top1000,悬案,assistant_random1k,悬案原型案件是什么,939
+加入因果追问,search_top1000,熊出没,assistant_random1k,在熊出没第一部光头强为何开枪不打死熊大熊二？,369
+加入比较评判,search_top1000,西游记,assistant_random1k,86版西游记和日版哪个更受欢迎,337
+假设/对战,search_top1000,鬼灭之刃,assistant_random1k,天神古兹的光头强打得过鬼灭之刃的无惨吗？,107
+假设/同人,search_top10k,蜡笔小新电影,assistant_random1k,假如蜡笔小新里的美伢和广智看到原版的邋遢大王奇遇记和修复版的是什么反应？,6470
+从找现成到要生成,search_top10k,舞蹈视频,assistant_top1k,请帮我生成一个视频：跳舞，比例为原比例。,6059
+加受众约束并求推荐,search_top10k,动画片儿童3-6岁免费大全,assistant_random1k,推荐几部适合6岁孩子的教育电影,1504
+文字线索→画面指代,search_top10k,边凤梅和江德才是什么电视剧,assistant_top1k,这是什么电视剧？,7720

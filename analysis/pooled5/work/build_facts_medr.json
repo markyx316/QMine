@@ -1,0 +1,46 @@
+{
+ "ai_audit": {
+  "audited": 1192,
+  "unanimous_product": 305,
+  "unanimous_user": 536,
+  "split_kept_as_user": 351,
+  "rule_only_rows": 9430,
+  "rule_removed_outside_audit": 0,
+  "kept_by_narrowing_rules_outside_audit": 3
+ },
+ "stripped_collisions_merged": 1,
+ "rows_all": 20622,
+ "rows_mined": 20316,
+ "tiers_by_source": {
+  "msearch_2609r": {
+   "user": 10000
+  },
+  "mai_2609r": {
+   "user": 10317,
+   "H1_intake_answer": 294,
+   "H5_doctor_card": 6,
+   "C1_content_free": 2,
+   "H3_pushed_suggestion": 2,
+   "H2_feature_or_facet": 1
+  }
+ },
+ "wrapper_rows": 8014,
+ "overlap_mined": 1,
+ "reference_columns": {
+  "legacy_l2": {
+   "cramers_v": 0.218,
+   "one_sided_classes_over_1%": [],
+   "declare": true
+  },
+  "legacy_dept": {
+   "cramers_v": 0.122,
+   "one_sided_classes_over_1%": [],
+   "declare": true
+  },
+  "legacy_type": {
+   "cramers_v": 0.192,
+   "one_sided_classes_over_1%": [],
+   "declare": true
+  }
+ }
+}

@@ -1,0 +1,24 @@
+﻿batch,sid,code,confidence,reason,query,sources,quotable_any,in_report
+4,Ma916c27027a,EXPLICIT_SEX,中,涉及羽毛挠痒、脚心等恋物/性化猎奇题材,羽毛挠胳肢窝痒痒和脚心,assistant_voice_top,True,False
+6,M34d97308b2e,EXPLICIT_SEX,高,性器官与恋物元素并列，色情文本搜索式写法,阴蒂 羽毛 包皮txt,2025search_rand,True,False
+6,M3f4f9bc7f6d,NAMED_PRIVATE_FACILITY,中,具体地名+肿瘤收费，疑似指向私立医疗机构,金沙洲肿瘤收费价目表,assistant_top,True,False
+6,M133a71c107a,NAMED_PERSON,中,姓氏+教授头衔，可能识别具体个人,高明教授的精血补片,2025search_rand,True,False
+0,M9fc18a8638e,NAMED_PERSON,高,包含医生全名,倪海厦治疗手心发热,2026search_rand,True,False
+2,Mfcd7b9bf52c,NAMED_PERSON,高,出现个人姓名与医院关联，疑似医生信息,尹东芳301医院,2025search_rand,True,False
+2,M6b5bbbc77d8,NAMED_PRIVATE_FACILITY,中,具体医院名，无法确定公立，按拿不准标,廊坊城南医院,2025search_rand,True,False
+2,M996b921b570,EXPLICIT_SEX,中,涉及特定穿着与挠脚心题材，疑似恋物猎奇,挠白丝脚心痒和腋窝痒处理方法,assistant_voice_top,True,False
+2,M6b00c79a873,EXPLICIT_SEX,高,明确以女性为对象的挠痒脚心题材，属恋物性化猎奇,挠闺蜜脚心胳肢窝痒痒,assistant_voice_top,True,False
+1,M96e392dce96,NAMED_PERSON,高,医院名称与个人姓名组合，识别到具体个人,华西医院李春梦简介,2025search_rand,True,False
+1,M16d5ddeebc0,NAMED_PRIVATE_FACILITY,中,点名具体医院名称，性质疑似私立,召陵区双新医院是公立医院吗,2025search_rand,True,False
+1,M6d1cd86feff,NAMED_PRIVATE_FACILITY,中,疑似中医馆名称，点名具体机构,善顺堂,2025search_rand,True,False
+1,M7407a44f6ee,EXPLICIT_SEX,高,涉及性行为过程及出血描写，写法露骨,处见血破膜真实过程,assistant_voice_top,True,False
+1,Mac822083d1b,NAMED_PRIVATE_FACILITY,高,点名私立妇产医院,天津坤如玛丽妇产医院电话,assistant_top,True,False
+1,M555ff371df2,EXPLICIT_SEX,中,针灸场景与女性裸体结合，属色情标题式写法,女性全身光溜溜针灸,assistant_voice_top,True,False
+3,M82171323a13,NAMED_PRIVATE_FACILITY,高,点名具体民营眼科医院名称,普瑞眼科医院,assistant_top,True,False
+3,M5911116f6f2,NAMED_PERSON,高,查询中含专家全名,曲黎敏冬病夏治痰,2026search_rand,True,False
+3,M6363142a0e0,NAMED_PERSON,高,查询中含医生全名,朱天林医生治疗失眠需要几次复诊,assistant_random,True,False
+3,Me9bd4b0a763,NAMED_PRIVATE_FACILITY,中,点名具体医院，公私立性质不明,正兴医院预约,assistant_top,True,False
+3,M7a36bfadea9,NAMED_PERSON,高,查询中含个人全名（疑为医生）,汕头大学附属一医院黄应玲,assistant_voice,True,False
+3,Mb130f046e5b,EXPLICIT_SEX,高,偷拍角度结合私处分泌物描述，露骨猎奇,沟厕仰拍流出白色分泌物是什么原因,assistant_voice_top,True,False
+3,M42131387afe,NAMED_PRIVATE_FACILITY,中,点名具体肿瘤医院，公私立性质不明,济南肿瘤医院电话咨询24小时,assistant_top,True,False
+3,Mf1f0bac308b,EXPLICIT_SEX,高,用表情符号指代性器官及性行为，露骨猎奇,男🍌❌女🍑摸🐻會懷,assistant_voice_top,True,False

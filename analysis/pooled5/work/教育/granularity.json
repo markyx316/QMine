@@ -1,0 +1,224 @@
+{
+  "k_sweep": [
+    {
+      "k": 8,
+      "intent_alignment_ami": 0.7567,
+      "stability_ari": 0.7985,
+      "silhouette": 0.0918,
+      "template_fragmentation": 1.3359
+    },
+    {
+      "k": 10,
+      "intent_alignment_ami": 0.785,
+      "stability_ari": 0.9003,
+      "silhouette": 0.1141,
+      "template_fragmentation": 1.316
+    },
+    {
+      "k": 12,
+      "intent_alignment_ami": 0.8134,
+      "stability_ari": 0.7177,
+      "silhouette": 0.098,
+      "template_fragmentation": 1.4564
+    },
+    {
+      "k": 15,
+      "intent_alignment_ami": 0.78,
+      "stability_ari": 0.7773,
+      "silhouette": 0.1082,
+      "template_fragmentation": 1.4662
+    },
+    {
+      "k": 18,
+      "intent_alignment_ami": 0.7747,
+      "stability_ari": 0.7397,
+      "silhouette": 0.1116,
+      "template_fragmentation": 1.6726
+    },
+    {
+      "k": 20,
+      "intent_alignment_ami": 0.7714,
+      "stability_ari": 0.9028,
+      "silhouette": 0.1129,
+      "template_fragmentation": 1.5901
+    },
+    {
+      "k": 25,
+      "intent_alignment_ami": 0.7247,
+      "stability_ari": 0.6981,
+      "silhouette": 0.1126,
+      "template_fragmentation": 2.0499
+    },
+    {
+      "k": 30,
+      "intent_alignment_ami": 0.6956,
+      "stability_ari": 0.7455,
+      "silhouette": 0.099,
+      "template_fragmentation": 2.1605
+    },
+    {
+      "k": 40,
+      "intent_alignment_ami": 0.6713,
+      "stability_ari": 0.7035,
+      "silhouette": 0.1072,
+      "template_fragmentation": 2.5585
+    },
+    {
+      "k": 50,
+      "intent_alignment_ami": 0.6432,
+      "stability_ari": 0.724,
+      "silhouette": 0.1071,
+      "template_fragmentation": 3.0771
+    },
+    {
+      "k": 65,
+      "intent_alignment_ami": 0.6205,
+      "stability_ari": 0.6771,
+      "silhouette": 0.1071,
+      "template_fragmentation": 3.8513
+    },
+    {
+      "k": 80,
+      "intent_alignment_ami": 0.5914,
+      "stability_ari": 0.5893,
+      "silhouette": 0.1064,
+      "template_fragmentation": 4.7105
+    },
+    {
+      "k": 100,
+      "intent_alignment_ami": 0.5628,
+      "stability_ari": 0.6375,
+      "silhouette": 0.109,
+      "template_fragmentation": 5.9744
+    },
+    {
+      "k": 120,
+      "intent_alignment_ami": 0.5544,
+      "stability_ari": 0.6052,
+      "silhouette": 0.1136,
+      "template_fragmentation": 6.435
+    }
+  ],
+  "deep_aligned": {
+    "k_overcluster": 72,
+    "survival_threshold": 302.8,
+    "k_estimate": 26,
+    "size_distribution": {
+      "max": 992,
+      "median": 244,
+      "min": 61
+    }
+  },
+  "triangulation": {
+    "estimates": {
+      "located_k": 12,
+      "located_by": "intent_alignment_ami",
+      "deep_aligned_leaf_k": 26,
+      "deep_aligned_implied_family_k": 8.7,
+      "expert_range": [
+        18,
+        30
+      ],
+      "silhouette_peak_k": 10
+    },
+    "chosen_family_k": 12,
+    "locator": "intent_alignment_ami",
+    "stability_floor": 0.55,
+    "n_rejected_as_unstable": 0,
+    "tie_set": [
+      {
+        "k": 12,
+        "intent_alignment_ami": 0.8134,
+        "stability_ari": 0.7177,
+        "template_fragmentation": 1.4564
+      }
+    ],
+    "chosen_by": "stability >= 0.55 rejects irreproducible K; among survivors the highest intent_alignment_ami; ties within 0.01908 — 2x measured noise (se=0.00954) — broken toward the simpler tree",
+    "converged": false,
+    "agreement": "measured_only",
+    "measured_estimators_agree": true,
+    "prior_agrees": false,
+    "divergence_note": "两个实测估计都落在 K=12 附近 (定案 12, 过聚类存活推出 8.7), 但领域先验期望 18-30。**对本语料的两个独立测量一致, 胜过从别处带来的先验** — 该修的是先验。值得复核: 这里的意图轴是否真的比预期更粗, 因为承载细分的是叶层而非家族层。",
+    "silhouette_disagrees": true,
+    "reference_sensitivity": {
+      "by_reference": {
+        "phrasing_groups": {
+          "locates_k": 12,
+          "peak_value": 0.8134,
+          "value_at_chosen_k": 0.8134,
+          "decides": true
+        }
+      },
+      "chosen_k": 12,
+      "note_scope": "raw argmax per reference, before the stability veto and the tie band",
+      "located_k_values": {
+        "phrasing_groups": 12
+      },
+      "n_references": 1,
+      "references_agree": null
+    },
+    "locator_reach": {
+      "phrasing_groups": {
+        "reach": 0.6,
+        "mass": 0.508,
+        "n_clusters_reached": 18,
+        "n_clusters": 30,
+        "row_coverage": 0.4222,
+        "min_share": 0.1,
+        "column": "intent_alignment_ami",
+        "discrimination": 27.15
+      }
+    },
+    "deciding_reference": "phrasing_groups"
+  },
+  "locator_reference": {
+    "reference": "phrasing (template) groups",
+    "n_classes": 9,
+    "coverage": 0.4222,
+    "n_rows_scored": 9204,
+    "caveat": "这是**措辞群**参照系的画像, 不一定是最终定位 K 的那个参照系 —— 后者见 `triangulation.deciding_reference`。定位到的 K 跟着参照系**触及到多少簇**走 (不是它的类目数: 固定行集、只改类目数, 6/9/25 类都定位到同一个 K), 参照系没覆盖到的行则完全不计分。换一个参照系, 答案就会变。",
+    "is_the_deciding_reference": true,
+    "deciding_reference": "phrasing_groups"
+  },
+  "grid_proposal": {
+    "incumbent": [
+      8,
+      10,
+      12,
+      15,
+      18,
+      20,
+      25,
+      30,
+      40,
+      50,
+      65,
+      80,
+      100,
+      120
+    ],
+    "proposed_kept": [],
+    "proposed_rejected": [],
+    "n_extra_comparisons": 0,
+    "widened": [
+      8,
+      10,
+      12,
+      15,
+      18,
+      20,
+      25,
+      30,
+      40,
+      50,
+      65,
+      80,
+      100,
+      120
+    ],
+    "skipped": "payload not blind: payload contains 'admission_score_line' — the proposer must not see scores, or its additions stop being pre-registered",
+    "chosen": 12,
+    "a_proposed_value_won": false,
+    "verdict": "the incumbent grid still held the winner — these additions cost comparisons and returned nothing"
+  }
+}

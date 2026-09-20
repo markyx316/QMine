@@ -1,0 +1,5836 @@
+{
+  "snapshots": [
+    "AI助手",
+    "搜索"
+  ],
+  "inventory": [
+    {
+      "snapshot": "AI助手",
+      "rows": 2937,
+      "distinct_queries": 2808,
+      "weight_total": 30000.0
+    },
+    {
+      "snapshot": "搜索",
+      "rows": 19997,
+      "distinct_queries": 14549,
+      "weight_total": 20000.0
+    }
+  ],
+  "query_churn": {
+    "comparable": true,
+    "snapshot_a": "AI助手",
+    "snapshot_b": "搜索",
+    "distinct_a": 2808,
+    "distinct_b": 14549,
+    "shared": 540,
+    "jaccard": 0.0321,
+    "shared_weight_share_a": 0.238,
+    "shared_weight_share_b": 0.449
+  },
+  "by_label": {
+    "td_l1": {
+      "comparable": true,
+      "snapshot_a": "AI助手",
+      "snapshot_b": "搜索",
+      "rows_a": 2937,
+      "rows_b": 19997,
+      "n_classes": 18,
+      "cramers_v": 0.4586,
+      "total_variation_weight": 0.5153,
+      "total_variation_rows": 0.4651,
+      "n_comparisons": 16,
+      "stable": [
+        {
+          "label": "QUOTE_LOOKUP",
+          "rows_a": 760,
+          "rows_b": 11858,
+          "row_share_a": 0.25877,
+          "row_share_b": 0.59299,
+          "row_share_delta_pp": 33.422,
+          "weight_share_a": 0.28655,
+          "weight_share_b": 0.7538,
+          "weight_share_delta_pp": 46.725,
+          "z_row_share": 34.0,
+          "delta_concentration": {
+            "n_distinct_queries": 8435,
+            "top1_share_of_delta": 0.0404,
+            "top5_share_of_delta": 0.1184,
+            "hhi_of_delta": 0.0043,
+            "top_queries": [
+              {
+                "query": "今日金价",
+                "delta": 640.94
+              },
+              {
+                "query": "上证指数",
+                "delta": 531.1
+              },
+              {
+                "query": "黄金价格",
+                "delta": 324.29
+              },
+              {
+                "query": "金价",
+                "delta": 241.1
+              },
+              {
+                "query": "今日大盘价黄金多少",
+                "delta": -142.34
+              }
+            ]
+          }
+        },
+        {
+          "label": "INVESTMENT_DECISION_ADVICE",
+          "rows_a": 453,
+          "rows_b": 195,
+          "row_share_a": 0.15424,
+          "row_share_b": 0.00975,
+          "row_share_delta_pp": -14.449,
+          "weight_share_a": 0.14042,
+          "weight_share_b": 0.00472,
+          "weight_share_delta_pp": -13.57,
+          "z_row_share": -44.13,
+          "delta_concentration": {
+            "n_distinct_queries": 621,
+            "top1_share_of_delta": 0.0341,
+            "top5_share_of_delta": 0.0881,
+            "hhi_of_delta": 0.0042,
+            "top_queries": [
+              {
+                "query": "券商最好的10只股",
+                "delta": -146.8
+              },
+              {
+                "query": "2026年交强险最低保费是多少",
+                "delta": -103.63
+              },
+              {
+                "query": "天原股份未来有上涨空间吗",
+                "delta": -51.81
+              },
+              {
+                "query": "下周一股市最新预测",
+                "delta": -40.0
+              },
+              {
+                "query": "这些股票中哪只最有潜力",
+                "delta": -37.18
+              }
+            ]
+          }
+        },
+        {
+          "label": "ACCOUNT_OPERATION_HOWTO",
+          "rows_a": 228,
+          "rows_b": 291,
+          "row_share_a": 0.07763,
+          "row_share_b": 0.01455,
+          "row_share_delta_pp": -6.308,
+          "weight_share_a": 0.07594,
+          "weight_share_b": 0.00552,
+          "weight_share_delta_pp": -7.042,
+          "z_row_share": -21.46,
+          "delta_concentration": {
+            "n_distinct_queries": 445,
+            "top1_share_of_delta": 0.047,
+            "top5_share_of_delta": 0.1233,
+            "hhi_of_delta": 0.0073,
+            "top_queries": [
+              {
+                "query": "免密支付怎么关",
+                "delta": -112.26
+              },
+              {
+                "query": "工商银行95588短信提醒怎么开通",
+                "delta": -59.61
+              },
+              {
+                "query": "如何关闭花呗",
+                "delta": -49.22
+              },
+              {
+                "query": "怎样取消免密支付功能",
+                "delta": -43.18
+              },
+              {
+                "query": "华安证券里面的投顾签订的投顾怎么签怎么退签",
+                "delta": -30.0
+              }
+            ]
+          }
+        },
+        {
+          "label": "OTHER_OR_NOISE",
+          "rows_a": 376,
+          "rows_b": 1507,
+          "row_share_a": 0.12802,
+          "row_share_b": 0.07536,
+          "row_share_delta_pp": -5.266,
+          "weight_share_a": 0.12017,
+          "weight_share_b": 0.0504,
+          "weight_share_delta_pp": -6.977,
+          "z_row_share": -9.71,
+          "delta_concentration": {
+            "n_distinct_queries": 1414,
+            "top1_share_of_delta": 0.0293,
+            "top5_share_of_delta": 0.0976,
+            "hhi_of_delta": 0.0039,
+            "top_queries": [
+              {
+                "query": "paypal",
+                "delta": -125.14
+              },
+              {
+                "query": "拍拍贷",
+                "delta": -99.75
+              },
+              {
+                "query": "近三年AI创业公司在国内融资情况如何",
+                "delta": -73.25
+              },
+              {
+                "query": "新浪财经",
+                "delta": 72.24
+              },
+              {
+                "query": "预选行",
+                "delta": -46.21
+              }
+            ]
+          }
+        },
+        {
+          "label": "FINANCE_TERM_EXPLANATION",
+          "rows_a": 217,
+          "rows_b": 508,
+          "row_share_a": 0.07388,
+          "row_share_b": 0.0254,
+          "row_share_delta_pp": -4.848,
+          "weight_share_a": 0.06981,
+          "weight_share_b": 0.0115,
+          "weight_share_delta_pp": -5.831,
+          "z_row_share": -14.02,
+          "delta_concentration": {
+            "n_distinct_queries": 609,
+            "top1_share_of_delta": 0.0374,
+            "top5_share_of_delta": 0.0782,
+            "hhi_of_delta": 0.0055,
+            "top_queries": [
+              {
+                "query": "平安保险雇主责任险",
+                "delta": -86.71
+              },
+              {
+                "query": "商业养老保险",
+                "delta": -34.54
+              },
+              {
+                "query": "两年多少钱利息",
+                "delta": -20.0
+              },
+              {
+                "query": "伊顿属于什么板块",
+                "delta": -20.0
+              },
+              {
+                "query": "银行36个月存单法是什什么回事",
+                "delta": -20.0
+              }
+            ]
+          }
+        },
+        {
+          "label": "ACCOUNT_INCIDENT_RESOLUTION",
+          "rows_a": 125,
+          "rows_b": 59,
+          "row_share_a": 0.04256,
+          "row_share_b": 0.00295,
+          "row_share_delta_pp": -3.961,
+          "weight_share_a": 0.05226,
+          "weight_share_b": 0.00113,
+          "weight_share_delta_pp": -5.113,
+          "z_row_share": -22.47,
+          "delta_concentration": {
+            "n_distinct_queries": 173,
+            "top1_share_of_delta": 0.0605,
+            "top5_share_of_delta": 0.2004,
+            "hhi_of_delta": 0.0165,
+            "top_queries": [
+              {
+                "query": "农业银行账户余额200可用余额0是什么",
+                "delta": -96.23
+              },
+              {
+                "query": "易宝支付北海云华扣29.9",
+                "delta": -59.91
+              },
+              {
+                "query": "工商银行9920只收不付",
+                "delta": -57.52
+              },
+              {
+                "query": "农业银行卡自动扣80是扣什么",
+                "delta": -55.74
+              },
+              {
+                "query": "农业银行卡uc批扣240是怎么回事",
+                "delta": -49.28
+              }
+            ]
+          }
+        },
+        {
+          "label": "AMOUNT_CALCULATION",
+          "rows_a": 175,
+          "rows_b": 561,
+          "row_share_a": 0.05958,
+          "row_share_b": 0.02805,
+          "row_share_delta_pp": -3.153,
+          "weight_share_a": 0.05612,
+          "weight_share_b": 0.01534,
+          "weight_share_delta_pp": -4.078,
+          "z_row_share": -9.05,
+          "delta_concentration": {
+            "n_distinct_queries": 600,
+            "top1_share_of_delta": 0.0363,
+            "top5_share_of_delta": 0.0814,
+            "hhi_of_delta": 0.0062,
+            "top_queries": [
+              {
+                "query": "2026贷款利息表",
+                "delta": -69.08
+              },
+              {
+                "query": "5000万美金等于多少人民币？",
+                "delta": -25.91
+              },
+              {
+                "query": "一美元顶人民币多少钱",
+                "delta": -20.0
+              },
+              {
+                "query": "一欧元相当于多少人民币",
+                "delta": -20.0
+              },
+              {
+                "query": "1欧元=多少人民币",
+                "delta": -20.0
+              }
+            ]
+          }
+        },
+        {
+          "label": "CREDIT_PRODUCT_RULE_CHECK",
+          "rows_a": 101,
+          "rows_b": 81,
+          "row_share_a": 0.03439,
+          "row_share_b": 0.00405,
+          "row_share_delta_pp": -3.034,
+          "weight_share_a": 0.03165,
+          "weight_share_b": 0.00144,
+          "weight_share_delta_pp": -3.021,
+          "z_row_share": -17.3,
+          "delta_concentration": {
+            "n_distinct_queries": 167,
+            "top1_share_of_delta": 0.0307,
+            "top5_share_of_delta": 0.1148,
+            "hhi_of_delta": 0.0111,
+            "top_queries": [
+              {
+                "query": "零钱通3大忌",
+                "delta": -30.0
+              },
+              {
+                "query": "这种是不是分期不能用了",
+                "delta": -25.91
+              },
+              {
+                "query": "美团月付一旦开通了就取消吗",
+                "delta": -20.0
+              },
+              {
+                "query": "工商银行动不动就信使费支出",
+                "delta": -19.11
+              },
+              {
+                "query": "招贷分多少可以申请闪电贷",
+                "delta": -17.27
+              }
+            ]
+          }
+        },
+        {
+          "label": "MARKET_NEWS_EVENT",
+          "rows_a": 88,
+          "rows_b": 120,
+          "row_share_a": 0.02996,
+          "row_share_b": 0.006,
+          "row_share_delta_pp": -2.396,
+          "weight_share_a": 0.0282,
+          "weight_share_b": 0.00335,
+          "weight_share_delta_pp": -2.485,
+          "z_row_share": -12.79,
+          "delta_concentration": {
+            "n_distinct_queries": 195,
+            "top1_share_of_delta": 0.0567,
+            "top5_share_of_delta": 0.1369,
+            "hhi_of_delta": 0.013,
+            "top_queries": [
+              {
+                "query": "重组期间股票还能正常交易吗",
+                "delta": -51.81
+              },
+              {
+                "query": "2026年8月1号起实施的个人贷款新规",
+                "delta": -20.0
+              },
+              {
+                "query": "房地产信贷迎来重磅新政策",
+                "delta": -18.68
+              },
+              {
+                "query": "京投发展重组",
+                "delta": -17.27
+              },
+              {
+                "query": "深康佳退市后股票如何交易",
+                "delta": -17.27
+              }
+            ]
+          }
+        },
+        {
+          "label": "PRODUCT_COMPARISON",
+          "rows_a": 66,
+          "rows_b": 28,
+          "row_share_a": 0.02247,
+          "row_share_b": 0.0014,
+          "row_share_delta_pp": -2.107,
+          "weight_share_a": 0.02264,
+          "weight_share_b": 0.00069,
+          "weight_share_delta_pp": -2.195,
+          "z_row_share": -16.69,
+          "delta_concentration": {
+            "n_distinct_queries": 86,
+            "top1_share_of_delta": 0.1251,
+            "top5_share_of_delta": 0.2898,
+            "hhi_of_delta": 0.034,
+            "top_queries": [
+              {
+                "query": "国债逆回购哪个品种收益最高",
+                "delta": -86.36
+              },
+              {
+                "query": "等额本息和等额本金哪个划算",
+                "delta": -59.9
+              },
+              {
+                "query": "100万存银行一年，哪个银行最划算",
+                "delta": -25.91
+              },
+              {
+                "query": "等额本息和等额本金哪个更划算",
+                "delta": -17.51
+              },
+              {
+                "query": "等额本金和等额本息哪个更划算",
+                "delta": -10.32
+              }
+            ]
+          }
+        },
+        {
+          "label": "PLATFORM_LEGITIMACY_CHECK",
+          "rows_a": 41,
+          "rows_b": 260,
+          "row_share_a": 0.01396,
+          "row_share_b": 0.013,
+          "row_share_delta_pp": -0.096,
+          "weight_share_a": 0.01528,
+          "weight_share_b": 0.00724,
+          "weight_share_delta_pp": -0.805,
+          "z_row_share": -0.43,
+          "delta_concentration": {
+            "n_distinct_queries": 244,
+            "top1_share_of_delta": 0.1464,
+            "top5_share_of_delta": 0.3757,
+            "hhi_of_delta": 0.0508,
+            "top_queries": [
+              {
+                "query": "元保保险",
+                "delta": -79.91
+              },
+              {
+                "query": "安盛天平车险有哪些缺点",
+                "delta": -77.72
+              },
+              {
+                "query": "期货哪个平台最正规",
+                "delta": -23.23
+              },
+              {
+                "query": "现货黄金交易正规平台",
+                "delta": -14.2
+              },
+              {
+                "query": "金葵花IC卡跟金葵卡",
+                "delta": -10.0
+              }
+            ]
+          }
+        },
+        {
+          "label": "PHONE_NUMBER_IDENTIFICATION",
+          "rows_a": 14,
+          "rows_b": 230,
+          "row_share_a": 0.00477,
+          "row_share_b": 0.0115,
+          "row_share_delta_pp": 0.673,
+          "weight_share_a": 0.0041,
+          "weight_share_b": 0.00776,
+          "weight_share_delta_pp": 0.367,
+          "z_row_share": 3.32,
+          "delta_concentration": {
+            "n_distinct_queries": 196,
+            "top1_share_of_delta": 0.0561,
+            "top5_share_of_delta": 0.2291,
+            "hhi_of_delta": 0.0228,
+            "top_queries": [
+              {
+                "query": "95588可以协商还本金吗",
+                "delta": -15.24
+              },
+              {
+                "query": "95566来电不接没事吧",
+                "delta": -13.4
+              },
+              {
+                "query": "工商逾期后95588催收",
+                "delta": -11.74
+              },
+              {
+                "query": "95126一般打过来干嘛的",
+                "delta": -11.12
+              },
+              {
+                "query": "95588",
+                "delta": 10.77
+              }
+            ]
+          }
+        },
+        {
+          "label": "CHART_LOOKUP",
+          "rows_a": 36,
+          "rows_b": 302,
+          "row_share_a": 0.01226,
+          "row_share_b": 0.0151,
+          "row_share_delta_pp": 0.284,
+          "weight_share_a": 0.00841,
+          "weight_share_b": 0.01078,
+          "weight_share_delta_pp": 0.237,
+          "z_row_share": 1.19,
+          "delta_concentration": {
+            "n_distinct_queries": 257,
+            "top1_share_of_delta": 0.0498,
+            "top5_share_of_delta": 0.1971,
+            "hhi_of_delta": 0.0177,
+            "top_queries": [
+              {
+                "query": "分析大盘走势",
+                "delta": -17.27
+              },
+              {
+                "query": "海正药业的股价走势如何",
+                "delta": -17.27
+              },
+              {
+                "query": "美元兑人民币走势",
+                "delta": -12.38
+              },
+              {
+                "query": "黄金价格走势图",
+                "delta": 11.5
+              },
+              {
+                "query": "2003年日元涨势",
+                "delta": -10.0
+              }
+            ]
+          }
+        },
+        {
+          "label": "DAILY_QUIZ_ANSWER",
+          "rows_a": 47,
+          "rows_b": 167,
+          "row_share_a": 0.016,
+          "row_share_b": 0.00835,
+          "row_share_delta_pp": -0.765,
+          "weight_share_a": 0.01077,
+          "weight_share_b": 0.00852,
+          "weight_share_delta_pp": -0.225,
+          "z_row_share": -4.03,
+          "delta_concentration": {
+            "n_distinct_queries": 166,
+            "top1_share_of_delta": 0.0952,
+            "top5_share_of_delta": 0.3058,
+            "hhi_of_delta": 0.031,
+            "top_queries": [
+              {
+                "query": "黄色信号灯蚂蚁庄园",
+                "delta": -40.0
+              },
+              {
+                "query": "蚂蚁庄园今日答案",
+                "delta": 38.44
+              },
+              {
+                "query": "为什么黄色交通信号灯蚂蚁庄园",
+                "delta": -20.0
+              },
+              {
+                "query": "低血糖表现蚂蚁庄园",
+                "delta": -20.0
+              },
+              {
+                "query": "今日蚂蚁庄园黄色信号灯",
+                "delta": -10.0
+              }
+            ]
+          }
+        },
+        {
+          "label": "OFFICIAL_CHANNEL_LOOKUP",
+          "rows_a": 178,
+          "rows_b": 1240,
+          "row_share_a": 0.06061,
+          "row_share_b": 0.06201,
+          "row_share_delta_pp": 0.14,
+          "weight_share_a": 0.06488,
+          "weight_share_b": 0.06662,
+          "weight_share_delta_pp": 0.174,
+          "z_row_share": 0.29,
+          "delta_concentration": {
+            "n_distinct_queries": 1067,
+            "top1_share_of_delta": 0.0582,
+            "top5_share_of_delta": 0.139,
+            "hhi_of_delta": 0.0082,
+            "top_queries": [
+              {
+                "query": "东方财富网",
+                "delta": 181.5
+              },
+              {
+                "query": "买保险留电话入口",
+                "delta": -84.92
+              },
+              {
+                "query": "指南针炒股软件手机版官方下载",
+                "delta": -75.34
+              },
+              {
+                "query": "东方财富网首页",
+                "delta": 47.05
+              },
+              {
+                "query": "广发证券官网",
+                "delta": -44.21
+              }
+            ]
+          }
+        },
+        {
+          "label": "SCHEDULE_AND_MARKET_STATUS_LOOKUP",
+          "rows_a": 13,
+          "rows_b": 80,
+          "row_share_a": 0.00443,
+          "row_share_b": 0.004,
+          "row_share_delta_pp": -0.043,
+          "weight_share_a": 0.00411,
+          "weight_share_b": 0.00346,
+          "weight_share_delta_pp": -0.064,
+          "z_row_share": -0.34,
+          "delta_concentration": {
+            "n_distinct_queries": 75,
+            "top1_share_of_delta": 0.1345,
+            "top5_share_of_delta": 0.3757,
+            "hhi_of_delta": 0.0518,
+            "top_queries": [
+              {
+                "query": "港股通交易时间",
+                "delta": -25.91
+              },
+              {
+                "query": "港股今日休市吗",
+                "delta": 16.44
+              },
+              {
+                "query": "周五美国股市大跌吗",
+                "delta": -10.0
+              },
+              {
+                "query": "400201什么时候可以发中报",
+                "delta": -10.0
+              },
+              {
+                "query": "8月1号美股交易是低开高走了吗",
+                "delta": -10.0
+              }
+            ]
+          }
+        }
+      ],
+      "emergent": [
+        {
+          "label": "STOCK_FORUM_VISIT",
+          "rows_a": 13,
+          "rows_b": 2486,
+          "row_share_a": 0.00443,
+          "row_share_b": 0.12432,
+          "row_share_delta_pp": 11.989,
+          "weight_share_a": 0.00667,
+          "weight_share_b": 0.04697,
+          "weight_share_delta_pp": 4.029,
+          "z_row_share": 19.47,
+          "delta_concentration": {
+            "n_distinct_queries": 2042,
+            "top1_share_of_delta": 0.0646,
+            "top5_share_of_delta": 0.1154,
+            "hhi_of_delta": 0.0061,
+            "top_queries": [
+              {
+                "query": "股市信息上百度",
+                "delta": -73.43
+              },
+              {
+                "query": "永辉超市股吧",
+                "delta": -19.61
+              },
+              {
+                "query": "10转10送10股派10元",
+                "delta": -18.13
+              },
+              {
+                "query": "300144股吧",
+                "delta": -10.0
+              },
+              {
+                "query": "药明康德股吧里怎么评论",
+                "delta": -10.0
+              }
+            ]
+          }
+        }
+      ],
+      "receded": [],
+      "too_thin_to_compare": [
+        {
+          "label": "BORROWING_CHANNEL_SEEK",
+          "rows_a": 6,
+          "rows_b": 24,
+          "row_share_a": 0.00204,
+          "row_share_b": 0.0012,
+          "row_share_delta_pp": -0.084,
+          "weight_share_a": 0.00201,
+          "weight_share_b": 0.00075,
+          "weight_share_delta_pp": -0.126,
+          "z_row_share": -1.18,
+          "delta_concentration": {
+            "n_distinct_queries": 25,
+            "top1_share_of_delta": 0.3977,
+            "top5_share_of_delta": 0.9012,
+            "hhi_of_delta": 0.2407,
+            "top_queries": [
+              {
+                "query": "借款5000元马上放款微信",
+                "delta": -30.0
+              },
+              {
+                "query": "征信烂急用钱5000有哪些平台",
+                "delta": -17.27
+              },
+              {
+                "query": "哪个平台不看征信可以贷点款",
+                "delta": -10.0
+              },
+              {
+                "query": "卡农社区",
+                "delta": 7.64
+              },
+              {
+                "query": "苹果手机借钱小额1000到3000",
+                "delta": -3.07
+              }
+            ]
+          }
+        }
+      ]
+    },
+    "bu_leaf_name": {
+      "comparable": true,
+      "snapshot_a": "AI助手",
+      "snapshot_b": "搜索",
+      "rows_a": 2937,
+      "rows_b": 19997,
+      "n_classes": 66,
+      "cramers_v": 0.461,
+      "total_variation_weight": 0.4821,
+      "total_variation_rows": 0.4487,
+      "n_comparisons": 50,
+      "stable": [
+        {
+          "label": "股票信息查询",
+          "rows_a": 242,
+          "rows_b": 4122,
+          "row_share_a": 0.0824,
+          "row_share_b": 0.20613,
+          "row_share_delta_pp": 12.373,
+          "weight_share_a": 0.0659,
+          "weight_share_b": 0.20124,
+          "weight_share_delta_pp": 13.534,
+          "z_row_share": 15.95,
+          "delta_concentration": {
+            "n_distinct_queries": 2831,
+            "top1_share_of_delta": 0.0174,
+            "top5_share_of_delta": 0.0665,
+            "hhi_of_delta": 0.0023,
+            "top_queries": [
+              {
+                "query": "思维列控股票",
+                "delta": -80.0
+              },
+              {
+                "query": "金荣中国",
+                "delta": -79.4
+              },
+              {
+                "query": "特斯拉股票",
+                "delta": 60.41
+              },
+              {
+                "query": "海欧住工股票",
+                "delta": -43.18
+              },
+              {
+                "query": "星宇股份",
+                "delta": -42.82
+              }
+            ]
+          }
+        },
+        {
+          "label": "A股个股推荐与走势预测",
+          "rows_a": 413,
+          "rows_b": 97,
+          "row_share_a": 0.14062,
+          "row_share_b": 0.00485,
+          "row_share_delta_pp": -13.577,
+          "weight_share_a": 0.12904,
+          "weight_share_b": 0.00188,
+          "weight_share_delta_pp": -12.716,
+          "z_row_share": -46.59,
+          "delta_concentration": {
+            "n_distinct_queries": 489,
+            "top1_share_of_delta": 0.0221,
+            "top5_share_of_delta": 0.0769,
+            "hhi_of_delta": 0.0036,
+            "top_queries": [
+              {
+                "query": "国债逆回购哪个品种收益最高",
+                "delta": -86.36
+              },
+              {
+                "query": "近三年AI创业公司在国内融资情况如何",
+                "delta": -73.25
+              },
+              {
+                "query": "重组期间股票还能正常交易吗",
+                "delta": -51.81
+              },
+              {
+                "query": "天原股份未来有上涨空间吗",
+                "delta": -51.81
+              },
+              {
+                "query": "这些股票中哪只最有潜力",
+                "delta": -37.18
+              }
+            ]
+          }
+        },
+        {
+          "label": "今日金价查询",
+          "rows_a": 30,
+          "rows_b": 197,
+          "row_share_a": 0.01021,
+          "row_share_b": 0.00985,
+          "row_share_delta_pp": -0.036,
+          "weight_share_a": 0.03165,
+          "weight_share_b": 0.07749,
+          "weight_share_delta_pp": 4.584,
+          "z_row_share": -0.19,
+          "delta_concentration": {
+            "n_distinct_queries": 161,
+            "top1_share_of_delta": 0.6477,
+            "top5_share_of_delta": 0.7465,
+            "hhi_of_delta": 0.4242,
+            "top_queries": [
+              {
+                "query": "今日金价",
+                "delta": 640.94
+              },
+              {
+                "query": "今天金价",
+                "delta": -47.4
+              },
+              {
+                "query": "2026年成都梨花街今日金价",
+                "delta": -20.0
+              },
+              {
+                "query": "融通金今日报价",
+                "delta": -18.97
+              },
+              {
+                "query": "金价今天什么价格",
+                "delta": 11.35
+              }
+            ]
+          }
+        },
+        {
+          "label": "查询资金产品安全性及存取借贷规则",
+          "rows_a": 145,
+          "rows_b": 122,
+          "row_share_a": 0.04937,
+          "row_share_b": 0.0061,
+          "row_share_delta_pp": -4.327,
+          "weight_share_a": 0.04405,
+          "weight_share_b": 0.00241,
+          "weight_share_delta_pp": -4.165,
+          "z_row_share": -20.41,
+          "delta_concentration": {
+            "n_distinct_queries": 239,
+            "top1_share_of_delta": 0.0219,
+            "top5_share_of_delta": 0.0919,
+            "hhi_of_delta": 0.0078,
+            "top_queries": [
+              {
+                "query": "零钱通3大忌",
+                "delta": -30.0
+              },
+              {
+                "query": "借款5000元马上放款微信",
+                "delta": -30.0
+              },
+              {
+                "query": "这种是不是分期不能用了",
+                "delta": -25.91
+              },
+              {
+                "query": "银联POS机第1笔钱刷的是民生银行的是到账了第2笔钱刷的是嗯第2笔钱刷的是另外",
+                "delta": -20.0
+              },
+              {
+                "query": "美团月付一旦开通了就取消吗",
+                "delta": -20.0
+              }
+            ]
+          }
+        },
+        {
+          "label": "查询上证指数行情",
+          "rows_a": 7,
+          "rows_b": 103,
+          "row_share_a": 0.00238,
+          "row_share_b": 0.00515,
+          "row_share_delta_pp": 0.277,
+          "weight_share_a": 0.0042,
+          "weight_share_b": 0.03985,
+          "weight_share_delta_pp": 3.565,
+          "z_row_share": 2.03,
+          "delta_concentration": {
+            "n_distinct_queries": 67,
+            "top1_share_of_delta": 0.7471,
+            "top5_share_of_delta": 0.8804,
+            "hhi_of_delta": 0.5651,
+            "top_queries": [
+              {
+                "query": "上证指数",
+                "delta": 531.1
+              },
+              {
+                "query": "深证指数",
+                "delta": 49.31
+              },
+              {
+                "query": "000001上证指数",
+                "delta": 21.21
+              },
+              {
+                "query": "上证指数最新行情",
+                "delta": 15.6
+              },
+              {
+                "query": "今年上证指数最低是什么时间",
+                "delta": -8.64
+              }
+            ]
+          }
+        },
+        {
+          "label": "查询车险险种与保费理赔范围",
+          "rows_a": 97,
+          "rows_b": 73,
+          "row_share_a": 0.03303,
+          "row_share_b": 0.00365,
+          "row_share_delta_pp": -2.938,
+          "weight_share_a": 0.03527,
+          "weight_share_b": 0.00153,
+          "weight_share_delta_pp": -3.374,
+          "z_row_share": -17.33,
+          "delta_concentration": {
+            "n_distinct_queries": 153,
+            "top1_share_of_delta": 0.0952,
+            "top5_share_of_delta": 0.2216,
+            "hhi_of_delta": 0.0217,
+            "top_queries": [
+              {
+                "query": "2026年交强险最低保费是多少",
+                "delta": -103.63
+              },
+              {
+                "query": "安盛天平车险有哪些缺点",
+                "delta": -77.72
+              },
+              {
+                "query": "特种车的交强险和一般货车交强险是不是不一样",
+                "delta": -20.0
+              },
+              {
+                "query": "摩托车买什么保险",
+                "delta": -20.0
+              },
+              {
+                "query": "车损险有没有必要买",
+                "delta": -19.84
+              }
+            ]
+          }
+        },
+        {
+          "label": "汇率换算查询",
+          "rows_a": 191,
+          "rows_b": 1364,
+          "row_share_a": 0.06503,
+          "row_share_b": 0.06821,
+          "row_share_delta_pp": 0.318,
+          "weight_share_a": 0.05653,
+          "weight_share_b": 0.09013,
+          "weight_share_delta_pp": 3.36,
+          "z_row_share": 0.64,
+          "delta_concentration": {
+            "n_distinct_queries": 1060,
+            "top1_share_of_delta": 0.0323,
+            "top5_share_of_delta": 0.102,
+            "hhi_of_delta": 0.0058,
+            "top_queries": [
+              {
+                "query": "日元对人民币汇率",
+                "delta": 95.69
+              },
+              {
+                "query": "美元兑人民币汇率",
+                "delta": 82.69
+              },
+              {
+                "query": "汇率",
+                "delta": 41.74
+              },
+              {
+                "query": "港币对人民币汇率",
+                "delta": 41.12
+              },
+              {
+                "query": "美元兑换人民币汇率",
+                "delta": 40.84
+              }
+            ]
+          }
+        },
+        {
+          "label": "银行服务信息查询",
+          "rows_a": 79,
+          "rows_b": 78,
+          "row_share_a": 0.0269,
+          "row_share_b": 0.0039,
+          "row_share_delta_pp": -2.3,
+          "weight_share_a": 0.03021,
+          "weight_share_b": 0.00507,
+          "weight_share_delta_pp": -2.514,
+          "z_row_share": -14.11,
+          "delta_concentration": {
+            "n_distinct_queries": 133,
+            "top1_share_of_delta": 0.0619,
+            "top5_share_of_delta": 0.239,
+            "hhi_of_delta": 0.0218,
+            "top_queries": [
+              {
+                "query": "工商银行95588短信提醒怎么开通",
+                "delta": -59.61
+              },
+              {
+                "query": "工商银行9920只收不付",
+                "delta": -57.52
+              },
+              {
+                "query": "工商银行卡扣费 30 元余额不足会怎样",
+                "delta": -45.9
+              },
+              {
+                "query": "工商银行9920能自动解冻吗",
+                "delta": -36.75
+              },
+              {
+                "query": "工商银行客户电话",
+                "delta": 30.43
+              }
+            ]
+          }
+        },
+        {
+          "label": "银行存贷款利率与利息查询",
+          "rows_a": 88,
+          "rows_b": 234,
+          "row_share_a": 0.02996,
+          "row_share_b": 0.0117,
+          "row_share_delta_pp": -1.826,
+          "weight_share_a": 0.03036,
+          "weight_share_b": 0.00565,
+          "weight_share_delta_pp": -2.472,
+          "z_row_share": -7.85,
+          "delta_concentration": {
+            "n_distinct_queries": 278,
+            "top1_share_of_delta": 0.0676,
+            "top5_share_of_delta": 0.1849,
+            "hhi_of_delta": 0.0159,
+            "top_queries": [
+              {
+                "query": "2026贷款利息表",
+                "delta": -69.08
+              },
+              {
+                "query": "等额本息和等额本金哪个划算",
+                "delta": -59.9
+              },
+              {
+                "query": "两年多少钱利息",
+                "delta": -20.0
+              },
+              {
+                "query": "五年的存款利息定期有没有什么手续",
+                "delta": -20.0
+              },
+              {
+                "query": "今年春节开门红银行一万元定期存款利率是多少呢",
+                "delta": -20.0
+              }
+            ]
+          }
+        },
+        {
+          "label": "实时国际金价查询",
+          "rows_a": 18,
+          "rows_b": 146,
+          "row_share_a": 0.00613,
+          "row_share_b": 0.0073,
+          "row_share_delta_pp": 0.117,
+          "weight_share_a": 0.012,
+          "weight_share_b": 0.036,
+          "weight_share_delta_pp": 2.4,
+          "z_row_share": 0.7,
+          "delta_concentration": {
+            "n_distinct_queries": 115,
+            "top1_share_of_delta": 0.4292,
+            "top5_share_of_delta": 0.7487,
+            "hhi_of_delta": 0.2417,
+            "top_queries": [
+              {
+                "query": "金价",
+                "delta": 241.1
+              },
+              {
+                "query": "国际金价",
+                "delta": 128.71
+              },
+              {
+                "query": "实时金价行情",
+                "delta": -23.75
+              },
+              {
+                "query": "实时金价",
+                "delta": 15.37
+              },
+              {
+                "query": "金价还会继续下跌吗",
+                "delta": -11.61
+              }
+            ]
+          }
+        },
+        {
+          "label": "查询银行及业务信息",
+          "rows_a": 105,
+          "rows_b": 242,
+          "row_share_a": 0.03575,
+          "row_share_b": 0.0121,
+          "row_share_delta_pp": -2.365,
+          "weight_share_a": 0.03292,
+          "weight_share_b": 0.00901,
+          "weight_share_delta_pp": -2.391,
+          "z_row_share": -9.8,
+          "delta_concentration": {
+            "n_distinct_queries": 260,
+            "top1_share_of_delta": 0.0416,
+            "top5_share_of_delta": 0.1106,
+            "hhi_of_delta": 0.0097,
+            "top_queries": [
+              {
+                "query": "预选行",
+                "delta": -46.21
+              },
+              {
+                "query": "100万存银行一年，哪个银行最划算",
+                "delta": -25.91
+              },
+              {
+                "query": "中国银行6个月内无呃资金往来需到柜台呃解封需要拿什么手续",
+                "delta": -20.0
+              },
+              {
+                "query": "银行最害怕三个投诉",
+                "delta": -20.0
+              },
+              {
+                "query": "邮政储蓄银行扣除短信费30元",
+                "delta": -10.57
+              }
+            ]
+          }
+        },
+        {
+          "label": "金融术语与行情原因查询",
+          "rows_a": 90,
+          "rows_b": 136,
+          "row_share_a": 0.03064,
+          "row_share_b": 0.0068,
+          "row_share_delta_pp": -2.384,
+          "weight_share_a": 0.02669,
+          "weight_share_b": 0.00304,
+          "weight_share_delta_pp": -2.365,
+          "z_row_share": -12.21,
+          "delta_concentration": {
+            "n_distinct_queries": 200,
+            "top1_share_of_delta": 0.0232,
+            "top5_share_of_delta": 0.1161,
+            "hhi_of_delta": 0.0115,
+            "top_queries": [
+              {
+                "query": "爱美客有什么利空",
+                "delta": -20.0
+              },
+              {
+                "query": "伊顿属于什么板块",
+                "delta": -20.0
+              },
+              {
+                "query": "什么叫数字人民币",
+                "delta": -20.0
+              },
+              {
+                "query": "上市公司西部矿业主要是做什么业务为什么业绩相对好",
+                "delta": -20.0
+              },
+              {
+                "query": "银行36个月存单法是什什么回事",
+                "delta": -20.0
+              }
+            ]
+          }
+        },
+        {
+          "label": "查询农业银行及农村金融机构信息",
+          "rows_a": 64,
+          "rows_b": 67,
+          "row_share_a": 0.02179,
+          "row_share_b": 0.00335,
+          "row_share_delta_pp": -1.844,
+          "weight_share_a": 0.0266,
+          "weight_share_b": 0.00314,
+          "weight_share_delta_pp": -2.345,
+          "z_row_share": -12.38,
+          "delta_concentration": {
+            "n_distinct_queries": 111,
+            "top1_share_of_delta": 0.1166,
+            "top5_share_of_delta": 0.3283,
+            "hhi_of_delta": 0.0337,
+            "top_queries": [
+              {
+                "query": "农业银行账户余额200可用余额0是什么",
+                "delta": -96.23
+              },
+              {
+                "query": "农业银行卡自动扣80是扣什么",
+                "delta": -55.74
+              },
+              {
+                "query": "农业银行卡uc批扣240是怎么回事",
+                "delta": -49.28
+              },
+              {
+                "query": "农业银行账户被冻结账户余额为0",
+                "delta": -40.43
+              },
+              {
+                "query": "农业银行凌晨自动扣钱3001元",
+                "delta": -29.25
+              }
+            ]
+          }
+        },
+        {
+          "label": "电子支付工具使用查询",
+          "rows_a": 66,
+          "rows_b": 146,
+          "row_share_a": 0.02247,
+          "row_share_b": 0.0073,
+          "row_share_delta_pp": -1.517,
+          "weight_share_a": 0.02655,
+          "weight_share_b": 0.00523,
+          "weight_share_delta_pp": -2.132,
+          "z_row_share": -8.02,
+          "delta_concentration": {
+            "n_distinct_queries": 165,
+            "top1_share_of_delta": 0.1316,
+            "top5_share_of_delta": 0.2993,
+            "hhi_of_delta": 0.0334,
+            "top_queries": [
+              {
+                "query": "免密支付怎么关",
+                "delta": -112.26
+              },
+              {
+                "query": "易宝支付北海云华扣29.9",
+                "delta": -59.91
+              },
+              {
+                "query": "怎样取消免密支付功能",
+                "delta": -43.18
+              },
+              {
+                "query": "宝付支付下载安装",
+                "delta": -20.0
+              },
+              {
+                "query": "支付成功的钱还能退回来吗",
+                "delta": -20.0
+              }
+            ]
+          }
+        },
+        {
+          "label": "银行卡业务办理与异常处理",
+          "rows_a": 79,
+          "rows_b": 120,
+          "row_share_a": 0.0269,
+          "row_share_b": 0.006,
+          "row_share_delta_pp": -2.09,
+          "weight_share_a": 0.02356,
+          "weight_share_b": 0.00243,
+          "weight_share_delta_pp": -2.114,
+          "z_row_share": -11.4,
+          "delta_concentration": {
+            "n_distinct_queries": 175,
+            "top1_share_of_delta": 0.0265,
+            "top5_share_of_delta": 0.0951,
+            "hhi_of_delta": 0.0124,
+            "top_queries": [
+              {
+                "query": "卡APP显示正常但是就是转账显示银行卡状态不正确是什么原因",
+                "delta": -20.0
+              },
+              {
+                "query": "为什么我的银行卡上取钱信息就旁人发到旁人身上",
+                "delta": -20.0
+              },
+              {
+                "query": "工商银行卡余额不足扣不了管理费怎么办",
+                "delta": -11.8
+              },
+              {
+                "query": "微信银行卡在哪里删除银行卡",
+                "delta": -10.0
+              },
+              {
+                "query": "小朋友搞银行卡的目的是",
+                "delta": -10.0
+              }
+            ]
+          }
+        },
+        {
+          "label": "贷款信息查询与办理",
+          "rows_a": 73,
+          "rows_b": 140,
+          "row_share_a": 0.02486,
+          "row_share_b": 0.007,
+          "row_share_delta_pp": -1.785,
+          "weight_share_a": 0.02606,
+          "weight_share_b": 0.00555,
+          "weight_share_delta_pp": -2.051,
+          "z_row_share": -9.42,
+          "delta_concentration": {
+            "n_distinct_queries": 176,
+            "top1_share_of_delta": 0.1215,
+            "top5_share_of_delta": 0.2108,
+            "hhi_of_delta": 0.0248,
+            "top_queries": [
+              {
+                "query": "拍拍贷",
+                "delta": -99.75
+              },
+              {
+                "query": "2026年8月1号起实施的个人贷款新规",
+                "delta": -20.0
+              },
+              {
+                "query": "房地产信贷迎来重磅新政策",
+                "delta": -18.68
+              },
+              {
+                "query": "招贷分多少可以申请闪电贷",
+                "delta": -17.27
+              },
+              {
+                "query": "生源地助学贷款指定账户",
+                "delta": -17.27
+              }
+            ]
+          }
+        },
+        {
+          "label": "黄金价格查询",
+          "rows_a": 21,
+          "rows_b": 105,
+          "row_share_a": 0.00715,
+          "row_share_b": 0.00525,
+          "row_share_delta_pp": -0.19,
+          "weight_share_a": 0.01422,
+          "weight_share_b": 0.03463,
+          "weight_share_delta_pp": 2.041,
+          "z_row_share": -1.3,
+          "delta_concentration": {
+            "n_distinct_queries": 89,
+            "top1_share_of_delta": 0.6315,
+            "top5_share_of_delta": 0.778,
+            "hhi_of_delta": 0.4066,
+            "top_queries": [
+              {
+                "query": "黄金价格",
+                "delta": 324.29
+              },
+              {
+                "query": "市场价格",
+                "delta": -27.28
+              },
+              {
+                "query": "黄金价格落吗",
+                "delta": -20.0
+              },
+              {
+                "query": "今日黄金价格",
+                "delta": 18.0
+              },
+              {
+                "query": "今日中国黄金价格",
+                "delta": -10.0
+              }
+            ]
+          }
+        },
+        {
+          "label": "查询金融业务办理与资金问题处理方法",
+          "rows_a": 69,
+          "rows_b": 92,
+          "row_share_a": 0.02349,
+          "row_share_b": 0.0046,
+          "row_share_delta_pp": -1.889,
+          "weight_share_a": 0.02156,
+          "weight_share_b": 0.00151,
+          "weight_share_delta_pp": -2.005,
+          "z_row_share": -11.45,
+          "delta_concentration": {
+            "n_distinct_queries": 142,
+            "top1_share_of_delta": 0.0617,
+            "top5_share_of_delta": 0.1715,
+            "hhi_of_delta": 0.0179,
+            "top_queries": [
+              {
+                "query": "工行转账出现9078是怎么回事",
+                "delta": -41.73
+              },
+              {
+                "query": "华安证券里面的投顾签订的投顾怎么签怎么退签",
+                "delta": -30.0
+              },
+              {
+                "query": "周线怎么看周线",
+                "delta": -20.0
+              },
+              {
+                "query": "交银信托转1000元怎么还",
+                "delta": -14.32
+              },
+              {
+                "query": "豆包的免费额度怎么算啊",
+                "delta": -10.0
+              }
+            ]
+          }
+        },
+        {
+          "label": "查询科技类股票行情",
+          "rows_a": 43,
+          "rows_b": 592,
+          "row_share_a": 0.01464,
+          "row_share_b": 0.0296,
+          "row_share_delta_pp": 1.496,
+          "weight_share_a": 0.01353,
+          "weight_share_b": 0.02969,
+          "weight_share_delta_pp": 1.616,
+          "z_row_share": 4.62,
+          "delta_concentration": {
+            "n_distinct_queries": 441,
+            "top1_share_of_delta": 0.0437,
+            "top5_share_of_delta": 0.1821,
+            "hhi_of_delta": 0.0131,
+            "top_queries": [
+              {
+                "query": "光迅科技股票值得买入吗",
+                "delta": -34.54
+              },
+              {
+                "query": "长鑫科技股票",
+                "delta": -31.88
+              },
+              {
+                "query": "美光科技股票",
+                "delta": 26.47
+              },
+              {
+                "query": "宇树科技股票今日行情",
+                "delta": -25.69
+              },
+              {
+                "query": "长电科技股票",
+                "delta": 25.24
+              }
+            ]
+          }
+        },
+        {
+          "label": "指数行情查询",
+          "rows_a": 40,
+          "rows_b": 215,
+          "row_share_a": 0.01362,
+          "row_share_b": 0.01075,
+          "row_share_delta_pp": -0.287,
+          "weight_share_a": 0.0108,
+          "weight_share_b": 0.02377,
+          "weight_share_delta_pp": 1.297,
+          "z_row_share": -1.38,
+          "delta_concentration": {
+            "n_distinct_queries": 163,
+            "top1_share_of_delta": 0.0829,
+            "top5_share_of_delta": 0.2895,
+            "hhi_of_delta": 0.03,
+            "top_queries": [
+              {
+                "query": "纳斯达克指数",
+                "delta": 51.13
+              },
+              {
+                "query": "创业板指",
+                "delta": 40.83
+              },
+              {
+                "query": "道琼斯指数",
+                "delta": 35.88
+              },
+              {
+                "query": "美元指数",
+                "delta": 26.92
+              },
+              {
+                "query": "纳斯达克",
+                "delta": 23.75
+              }
+            ]
+          }
+        },
+        {
+          "label": "保险信息查询",
+          "rows_a": 40,
+          "rows_b": 193,
+          "row_share_a": 0.01362,
+          "row_share_b": 0.00965,
+          "row_share_delta_pp": -0.397,
+          "weight_share_a": 0.01819,
+          "weight_share_b": 0.00564,
+          "weight_share_delta_pp": -1.255,
+          "z_row_share": -2.0,
+          "delta_concentration": {
+            "n_distinct_queries": 180,
+            "top1_share_of_delta": 0.1383,
+            "top5_share_of_delta": 0.4577,
+            "hhi_of_delta": 0.0541,
+            "top_queries": [
+              {
+                "query": "平安保险雇主责任险",
+                "delta": -86.71
+              },
+              {
+                "query": "元保保险",
+                "delta": -79.91
+              },
+              {
+                "query": "中国平安雇主责任险",
+                "delta": -44.0
+              },
+              {
+                "query": "中国人寿雇主责任险",
+                "delta": -41.85
+              },
+              {
+                "query": "商业养老保险",
+                "delta": -34.54
+              }
+            ]
+          }
+        },
+        {
+          "label": "查询股票行情",
+          "rows_a": 142,
+          "rows_b": 642,
+          "row_share_a": 0.04835,
+          "row_share_b": 0.0321,
+          "row_share_delta_pp": -1.624,
+          "weight_share_a": 0.0586,
+          "weight_share_b": 0.04713,
+          "weight_share_delta_pp": -1.147,
+          "z_row_share": -4.52,
+          "delta_concentration": {
+            "n_distinct_queries": 548,
+            "top1_share_of_delta": 0.0641,
+            "top5_share_of_delta": 0.1929,
+            "hhi_of_delta": 0.0135,
+            "top_queries": [
+              {
+                "query": "美国股市行情",
+                "delta": -106.82
+              },
+              {
+                "query": "股市信息上百度",
+                "delta": -73.43
+              },
+              {
+                "query": "美股实时行情",
+                "delta": -61.56
+              },
+              {
+                "query": "下周一股市最新预测",
+                "delta": -40.0
+              },
+              {
+                "query": "今日股市行情",
+                "delta": 39.81
+              }
+            ]
+          }
+        },
+        {
+          "label": "金融类App下载",
+          "rows_a": 30,
+          "rows_b": 194,
+          "row_share_a": 0.01021,
+          "row_share_b": 0.0097,
+          "row_share_delta_pp": -0.051,
+          "weight_share_a": 0.01442,
+          "weight_share_b": 0.0048,
+          "weight_share_delta_pp": -0.962,
+          "z_row_share": -0.26,
+          "delta_concentration": {
+            "n_distinct_queries": 170,
+            "top1_share_of_delta": 0.2418,
+            "top5_share_of_delta": 0.4406,
+            "hhi_of_delta": 0.0764,
+            "top_queries": [
+              {
+                "query": "paypal",
+                "delta": -125.14
+              },
+              {
+                "query": "通达信app手机版下载",
+                "delta": -32.27
+              },
+              {
+                "query": "金融中国app官方正版下载",
+                "delta": -31.65
+              },
+              {
+                "query": "中国邮政银行手机APP我失了怎样自己解挂解",
+                "delta": -20.0
+              },
+              {
+                "query": "度小满金融app下载",
+                "delta": -19.0
+              }
+            ]
+          }
+        },
+        {
+          "label": "基金净值查询",
+          "rows_a": 26,
+          "rows_b": 114,
+          "row_share_a": 0.00885,
+          "row_share_b": 0.0057,
+          "row_share_delta_pp": -0.315,
+          "weight_share_a": 0.0078,
+          "weight_share_b": 0.00162,
+          "weight_share_delta_pp": -0.618,
+          "z_row_share": -2.05,
+          "delta_concentration": {
+            "n_distinct_queries": 121,
+            "top1_share_of_delta": 0.075,
+            "top5_share_of_delta": 0.225,
+            "hhi_of_delta": 0.0336,
+            "top_queries": [
+              {
+                "query": "512400基金含哪些股票",
+                "delta": -20.0
+              },
+              {
+                "query": "场内天虹恒生科技ETF基金对应的场内基金",
+                "delta": -10.0
+              },
+              {
+                "query": "长期投资红利低波100基金需要选择红利低波基金跌下去净值较低的时候买还是尽",
+                "delta": -10.0
+              },
+              {
+                "query": "166301基金",
+                "delta": -10.0
+              },
+              {
+                "query": "沪深300的基金走势",
+                "delta": -10.0
+              }
+            ]
+          }
+        },
+        {
+          "label": "查询美股行情",
+          "rows_a": 26,
+          "rows_b": 133,
+          "row_share_a": 0.00885,
+          "row_share_b": 0.00665,
+          "row_share_delta_pp": -0.22,
+          "weight_share_a": 0.01628,
+          "weight_share_b": 0.01159,
+          "weight_share_delta_pp": -0.469,
+          "z_row_share": -1.34,
+          "delta_concentration": {
+            "n_distinct_queries": 103,
+            "top1_share_of_delta": 0.2662,
+            "top5_share_of_delta": 0.5332,
+            "hhi_of_delta": 0.0978,
+            "top_queries": [
+              {
+                "query": "美股",
+                "delta": -94.92
+              },
+              {
+                "query": "美股股市",
+                "delta": -29.92
+              },
+              {
+                "query": "美股行情",
+                "delta": -27.67
+              },
+              {
+                "query": "欧美股票",
+                "delta": -20.0
+              },
+              {
+                "query": "美股行情最新走势",
+                "delta": -17.66
+              }
+            ]
+          }
+        },
+        {
+          "label": "大盘走势查询",
+          "rows_a": 19,
+          "rows_b": 157,
+          "row_share_a": 0.00647,
+          "row_share_b": 0.00785,
+          "row_share_delta_pp": 0.138,
+          "weight_share_a": 0.00723,
+          "weight_share_b": 0.01184,
+          "weight_share_delta_pp": 0.461,
+          "z_row_share": 0.8,
+          "delta_concentration": {
+            "n_distinct_queries": 110,
+            "top1_share_of_delta": 0.087,
+            "top5_share_of_delta": 0.3053,
+            "hhi_of_delta": 0.0335,
+            "top_queries": [
+              {
+                "query": "分析大盘走势",
+                "delta": -17.27
+              },
+              {
+                "query": "大盘指数",
+                "delta": 14.71
+              },
+              {
+                "query": "外盘",
+                "delta": -10.0
+              },
+              {
+                "query": "炒股票到底是以个股为准还是以大盘为准",
+                "delta": -10.0
+              },
+              {
+                "query": "大盘股连续涨停后如何操作",
+                "delta": -8.64
+              }
+            ]
+          }
+        },
+        {
+          "label": "关闭花呗",
+          "rows_a": 21,
+          "rows_b": 58,
+          "row_share_a": 0.00715,
+          "row_share_b": 0.0029,
+          "row_share_delta_pp": -0.425,
+          "weight_share_a": 0.00647,
+          "weight_share_b": 0.00202,
+          "weight_share_delta_pp": -0.445,
+          "z_row_share": -3.67,
+          "delta_concentration": {
+            "n_distinct_queries": 59,
+            "top1_share_of_delta": 0.2165,
+            "top5_share_of_delta": 0.4365,
+            "hhi_of_delta": 0.0782,
+            "top_queries": [
+              {
+                "query": "如何关闭花呗",
+                "delta": -49.22
+              },
+              {
+                "query": "放心借怎么关闭",
+                "delta": -20.0
+              },
+              {
+                "query": "零元付的信息应该怎么关闭",
+                "delta": -10.0
+              },
+              {
+                "query": "支付有礼怎么关闭",
+                "delta": -10.0
+              },
+              {
+                "query": "关闭京东白条从哪里关闭",
+                "delta": -10.0
+              }
+            ]
+          }
+        },
+        {
+          "label": "查询A股股票及板块信息",
+          "rows_a": 27,
+          "rows_b": 261,
+          "row_share_a": 0.00919,
+          "row_share_b": 0.01305,
+          "row_share_delta_pp": 0.386,
+          "weight_share_a": 0.00977,
+          "weight_share_b": 0.01404,
+          "weight_share_delta_pp": 0.426,
+          "z_row_share": 1.75,
+          "delta_concentration": {
+            "n_distinct_queries": 208,
+            "top1_share_of_delta": 0.0497,
+            "top5_share_of_delta": 0.2063,
+            "hhi_of_delta": 0.0204,
+            "top_queries": [
+              {
+                "query": "国泰君安",
+                "delta": -18.44
+              },
+              {
+                "query": "京投发展重组",
+                "delta": -17.27
+              },
+              {
+                "query": "京东方a",
+                "delta": 16.99
+              },
+              {
+                "query": "ai板块",
+                "delta": -12.78
+              },
+              {
+                "query": "科创50",
+                "delta": 11.11
+              }
+            ]
+          }
+        },
+        {
+          "label": "银行股票信息查询",
+          "rows_a": 8,
+          "rows_b": 113,
+          "row_share_a": 0.00272,
+          "row_share_b": 0.00565,
+          "row_share_delta_pp": 0.293,
+          "weight_share_a": 0.00195,
+          "weight_share_b": 0.0061,
+          "weight_share_delta_pp": 0.414,
+          "z_row_share": 2.04,
+          "delta_concentration": {
+            "n_distinct_queries": 75,
+            "top1_share_of_delta": 0.1279,
+            "top5_share_of_delta": 0.4097,
+            "hhi_of_delta": 0.049,
+            "top_queries": [
+              {
+                "query": "渤海银行 股票",
+                "delta": -17.27
+              },
+              {
+                "query": "工商银行股票",
+                "delta": 10.13
+              },
+              {
+                "query": "交通银行股票行情",
+                "delta": -10.0
+              },
+              {
+                "query": "农业银行股票",
+                "delta": 9.3
+              },
+              {
+                "query": "A股和港股银行股哪个更值得投资",
+                "delta": -8.64
+              }
+            ]
+          }
+        },
+        {
+          "label": "查询概念板块龙头股",
+          "rows_a": 29,
+          "rows_b": 117,
+          "row_share_a": 0.00987,
+          "row_share_b": 0.00585,
+          "row_share_delta_pp": -0.402,
+          "weight_share_a": 0.00706,
+          "weight_share_b": 0.00319,
+          "weight_share_delta_pp": -0.387,
+          "z_row_share": -2.56,
+          "delta_concentration": {
+            "n_distinct_queries": 131,
+            "top1_share_of_delta": 0.1094,
+            "top5_share_of_delta": 0.2841,
+            "hhi_of_delta": 0.034,
+            "top_queries": [
+              {
+                "query": "ai股票龙头一览表",
+                "delta": -30.0
+              },
+              {
+                "query": "长鑫存储概念龙头股票",
+                "delta": -17.27
+              },
+              {
+                "query": "液冷龙头股",
+                "delta": -10.63
+              },
+              {
+                "query": "A股军工龙头有哪些",
+                "delta": -10.0
+              },
+              {
+                "query": "优质可转债一览表",
+                "delta": -10.0
+              }
+            ]
+          }
+        },
+        {
+          "label": "术语含义查询",
+          "rows_a": 24,
+          "rows_b": 137,
+          "row_share_a": 0.00817,
+          "row_share_b": 0.00685,
+          "row_share_delta_pp": -0.132,
+          "weight_share_a": 0.00683,
+          "weight_share_b": 0.00296,
+          "weight_share_delta_pp": -0.387,
+          "z_row_share": -0.8,
+          "delta_concentration": {
+            "n_distinct_queries": 129,
+            "top1_share_of_delta": 0.0411,
+            "top5_share_of_delta": 0.1956,
+            "hhi_of_delta": 0.0288,
+            "top_queries": [
+              {
+                "query": "9920短期解控是什么意思",
+                "delta": -10.63
+              },
+              {
+                "query": "5%的利息是什么意思",
+                "delta": -10.0
+              },
+              {
+                "query": "这个月刚开始手机费用就用完了然后还显示透支的额度也已用完什么意思",
+                "delta": -10.0
+              },
+              {
+                "query": "网银在线备付金账户是什么意思",
+                "delta": -10.0
+              },
+              {
+                "query": "网上老说农商行退市什么意思啊人心惶惶的",
+                "delta": -10.0
+              }
+            ]
+          }
+        },
+        {
+          "label": "财经网站查询",
+          "rows_a": 18,
+          "rows_b": 153,
+          "row_share_a": 0.00613,
+          "row_share_b": 0.00765,
+          "row_share_delta_pp": 0.152,
+          "weight_share_a": 0.00499,
+          "weight_share_b": 0.00883,
+          "weight_share_delta_pp": 0.384,
+          "z_row_share": 0.9,
+          "delta_concentration": {
+            "n_distinct_queries": 126,
+            "top1_share_of_delta": 0.2442,
+            "top5_share_of_delta": 0.4212,
+            "hhi_of_delta": 0.0786,
+            "top_queries": [
+              {
+                "query": "新浪财经",
+                "delta": 72.24
+              },
+              {
+                "query": "免费行情的网站WWW/大全百度搜索",
+                "delta": -19.48
+              },
+              {
+                "query": "文华财经随身行",
+                "delta": -12.9
+              },
+              {
+                "query": "发展民间融资推动金融改革市场经济研究2003年第6期",
+                "delta": -10.0
+              },
+              {
+                "query": "绿色金融航报金融",
+                "delta": -10.0
+              }
+            ]
+          }
+        },
+        {
+          "label": "车险保险公司电话查询",
+          "rows_a": 16,
+          "rows_b": 103,
+          "row_share_a": 0.00545,
+          "row_share_b": 0.00515,
+          "row_share_delta_pp": -0.03,
+          "weight_share_a": 0.00924,
+          "weight_share_b": 0.00541,
+          "weight_share_delta_pp": -0.383,
+          "z_row_share": -0.21,
+          "delta_concentration": {
+            "n_distinct_queries": 87,
+            "top1_share_of_delta": 0.2253,
+            "top5_share_of_delta": 0.5027,
+            "hhi_of_delta": 0.0819,
+            "top_queries": [
+              {
+                "query": "买保险留电话入口",
+                "delta": -84.92
+              },
+              {
+                "query": "平安车险电话",
+                "delta": -28.51
+              },
+              {
+                "query": "平安车险在线投保官网",
+                "delta": -28.45
+              },
+              {
+                "query": "平安保险雇主责任险电话",
+                "delta": -25.91
+              },
+              {
+                "query": "平安保险车险电话",
+                "delta": 21.69
+              }
+            ]
+          }
+        },
+        {
+          "label": "银行客服电话查询",
+          "rows_a": 23,
+          "rows_b": 215,
+          "row_share_a": 0.00783,
+          "row_share_b": 0.01075,
+          "row_share_delta_pp": 0.292,
+          "weight_share_a": 0.00602,
+          "weight_share_b": 0.00953,
+          "weight_share_delta_pp": 0.351,
+          "z_row_share": 1.46,
+          "delta_concentration": {
+            "n_distinct_queries": 177,
+            "top1_share_of_delta": 0.0448,
+            "top5_share_of_delta": 0.1869,
+            "hhi_of_delta": 0.0212,
+            "top_queries": [
+              {
+                "query": "中国银行人工客服电话",
+                "delta": 15.18
+              },
+              {
+                "query": "建行客服电话",
+                "delta": 14.92
+              },
+              {
+                "query": "农业银行客服电话",
+                "delta": 13.18
+              },
+              {
+                "query": "浦发银行售后电话",
+                "delta": -10.0
+              },
+              {
+                "query": "中国银行客户服务电话",
+                "delta": -10.0
+              }
+            ]
+          }
+        },
+        {
+          "label": "黄金价格与行情查询",
+          "rows_a": 44,
+          "rows_b": 453,
+          "row_share_a": 0.01498,
+          "row_share_b": 0.02265,
+          "row_share_delta_pp": 0.767,
+          "weight_share_a": 0.01643,
+          "weight_share_b": 0.01951,
+          "weight_share_delta_pp": 0.308,
+          "z_row_share": 2.67,
+          "delta_concentration": {
+            "n_distinct_queries": 352,
+            "top1_share_of_delta": 0.1993,
+            "top5_share_of_delta": 0.3388,
+            "hhi_of_delta": 0.0496,
+            "top_queries": [
+              {
+                "query": "今日大盘价黄金多少",
+                "delta": -142.34
+              },
+              {
+                "query": "2026今日金价多少一克",
+                "delta": -33.4
+              },
+              {
+                "query": "金价现在多少钱一克",
+                "delta": -30.0
+              },
+              {
+                "query": "黄金今日价钱多少一克",
+                "delta": -19.45
+              },
+              {
+                "query": "黄金大盘的价格",
+                "delta": -16.76
+              }
+            ]
+          }
+        },
+        {
+          "label": "加密货币交易所App官方下载地址查询",
+          "rows_a": 14,
+          "rows_b": 122,
+          "row_share_a": 0.00477,
+          "row_share_b": 0.0061,
+          "row_share_delta_pp": 0.133,
+          "weight_share_a": 0.00592,
+          "weight_share_b": 0.00284,
+          "weight_share_delta_pp": -0.308,
+          "z_row_share": 0.88,
+          "delta_concentration": {
+            "n_distinct_queries": 118,
+            "top1_share_of_delta": 0.3441,
+            "top5_share_of_delta": 0.553,
+            "hhi_of_delta": 0.1383,
+            "top_queries": [
+              {
+                "query": "指南针炒股软件手机版官方下载",
+                "delta": -75.34
+              },
+              {
+                "query": "行情网站www无需下载/百度搜索",
+                "delta": -17.84
+              },
+              {
+                "query": "大额交易可以交易报告",
+                "delta": -10.0
+              },
+              {
+                "query": "行情网站www无需下载直接打开/百度搜索",
+                "delta": -9.28
+              },
+              {
+                "query": "如何判断下载的指南针版本是否官方正版",
+                "delta": -8.64
+              }
+            ]
+          }
+        },
+        {
+          "label": "借款平台正规性查询",
+          "rows_a": 19,
+          "rows_b": 123,
+          "row_share_a": 0.00647,
+          "row_share_b": 0.00615,
+          "row_share_delta_pp": -0.032,
+          "weight_share_a": 0.00551,
+          "weight_share_b": 0.0026,
+          "weight_share_delta_pp": -0.291,
+          "z_row_share": -0.21,
+          "delta_concentration": {
+            "n_distinct_queries": 118,
+            "top1_share_of_delta": 0.1091,
+            "top5_share_of_delta": 0.3507,
+            "hhi_of_delta": 0.0435,
+            "top_queries": [
+              {
+                "query": "期货哪个平台最正规",
+                "delta": -23.23
+              },
+              {
+                "query": "征信烂急用钱5000有哪些平台",
+                "delta": -17.27
+              },
+              {
+                "query": "现货黄金交易正规平台",
+                "delta": -14.2
+              },
+              {
+                "query": "哪个平台不看征信可以贷点款",
+                "delta": -10.0
+              },
+              {
+                "query": "分期乐发票找哪个平台",
+                "delta": -10.0
+              }
+            ]
+          }
+        },
+        {
+          "label": "ST股票信息查询",
+          "rows_a": 10,
+          "rows_b": 78,
+          "row_share_a": 0.0034,
+          "row_share_b": 0.0039,
+          "row_share_delta_pp": 0.05,
+          "weight_share_a": 0.0033,
+          "weight_share_b": 0.00121,
+          "weight_share_delta_pp": -0.209,
+          "z_row_share": 0.41,
+          "delta_concentration": {
+            "n_distinct_queries": 81,
+            "top1_share_of_delta": 0.14,
+            "top5_share_of_delta": 0.4531,
+            "hhi_of_delta": 0.0694,
+            "top_queries": [
+              {
+                "query": "*ST萃华股票还能卖吗",
+                "delta": -17.27
+              },
+              {
+                "query": "天际股份是不是一调查就ST了",
+                "delta": -10.0
+              },
+              {
+                "query": "st北信源股票",
+                "delta": -10.0
+              },
+              {
+                "query": "ST柳树的柳柳化是干什么的ST柳化",
+                "delta": -10.0
+              },
+              {
+                "query": "ST康佳退市后，公司会重组吗",
+                "delta": -8.64
+              }
+            ]
+          }
+        },
+        {
+          "label": "蚂蚁庄园今日答案查询",
+          "rows_a": 46,
+          "rows_b": 171,
+          "row_share_a": 0.01566,
+          "row_share_b": 0.00855,
+          "row_share_delta_pp": -0.711,
+          "weight_share_a": 0.01064,
+          "weight_share_b": 0.00859,
+          "weight_share_delta_pp": -0.205,
+          "z_row_share": -3.72,
+          "delta_concentration": {
+            "n_distinct_queries": 169,
+            "top1_share_of_delta": 0.0959,
+            "top5_share_of_delta": 0.3078,
+            "hhi_of_delta": 0.0313,
+            "top_queries": [
+              {
+                "query": "黄色信号灯蚂蚁庄园",
+                "delta": -40.0
+              },
+              {
+                "query": "蚂蚁庄园今日答案",
+                "delta": 38.44
+              },
+              {
+                "query": "低血糖表现蚂蚁庄园",
+                "delta": -20.0
+              },
+              {
+                "query": "为什么黄色交通信号灯蚂蚁庄园",
+                "delta": -20.0
+              },
+              {
+                "query": "马蚁庄园今日答案",
+                "delta": -10.0
+              }
+            ]
+          }
+        },
+        {
+          "label": "加密货币价格行情查询",
+          "rows_a": 21,
+          "rows_b": 214,
+          "row_share_a": 0.00715,
+          "row_share_b": 0.0107,
+          "row_share_delta_pp": 0.355,
+          "weight_share_a": 0.00733,
+          "weight_share_b": 0.00932,
+          "weight_share_delta_pp": 0.199,
+          "z_row_share": 1.78,
+          "delta_concentration": {
+            "n_distinct_queries": 179,
+            "top1_share_of_delta": 0.0683,
+            "top5_share_of_delta": 0.2336,
+            "hhi_of_delta": 0.0242,
+            "top_queries": [
+              {
+                "query": "比特币行情",
+                "delta": -19.97
+              },
+              {
+                "query": "比特币怎么持有",
+                "delta": -17.27
+              },
+              {
+                "query": "比特币的最新价格",
+                "delta": -11.07
+              },
+              {
+                "query": "near币",
+                "delta": -10.0
+              },
+              {
+                "query": "辅币是主币的",
+                "delta": -10.0
+              }
+            ]
+          }
+        },
+        {
+          "label": "个人征信查询与信用报告获取",
+          "rows_a": 19,
+          "rows_b": 84,
+          "row_share_a": 0.00647,
+          "row_share_b": 0.0042,
+          "row_share_delta_pp": -0.227,
+          "weight_share_a": 0.00556,
+          "weight_share_b": 0.0038,
+          "weight_share_delta_pp": -0.176,
+          "z_row_share": -1.72,
+          "delta_concentration": {
+            "n_distinct_queries": 84,
+            "top1_share_of_delta": 0.0868,
+            "top5_share_of_delta": 0.2941,
+            "hhi_of_delta": 0.0383,
+            "top_queries": [
+              {
+                "query": "国家企业信息信用信息系统",
+                "delta": 21.06
+              },
+              {
+                "query": "路征",
+                "delta": -20.34
+              },
+              {
+                "query": "信托收费标准",
+                "delta": -10.0
+              },
+              {
+                "query": "催收公司会查你的个人征信吗",
+                "delta": -10.0
+              },
+              {
+                "query": "用了微信分付能上征信吗",
+                "delta": -10.0
+              }
+            ]
+          }
+        },
+        {
+          "label": "查询白银价格行情",
+          "rows_a": 16,
+          "rows_b": 78,
+          "row_share_a": 0.00545,
+          "row_share_b": 0.0039,
+          "row_share_delta_pp": -0.155,
+          "weight_share_a": 0.00569,
+          "weight_share_b": 0.00745,
+          "weight_share_delta_pp": 0.175,
+          "z_row_share": -1.23,
+          "delta_concentration": {
+            "n_distinct_queries": 64,
+            "top1_share_of_delta": 0.1264,
+            "top5_share_of_delta": 0.414,
+            "hhi_of_delta": 0.0541,
+            "top_queries": [
+              {
+                "query": "白银价格",
+                "delta": 20.09
+              },
+              {
+                "query": "2026年银价预测是多少",
+                "delta": -17.27
+              },
+              {
+                "query": "持仓大白话解释",
+                "delta": -10.0
+              },
+              {
+                "query": "白银今日银价",
+                "delta": -9.82
+              },
+              {
+                "query": "白银有色这只股票短期内走势将怎么样",
+                "delta": -8.64
+              }
+            ]
+          }
+        },
+        {
+          "label": "黄金价格及黄金股票行情查询",
+          "rows_a": 30,
+          "rows_b": 128,
+          "row_share_a": 0.01021,
+          "row_share_b": 0.0064,
+          "row_share_delta_pp": -0.381,
+          "weight_share_a": 0.00822,
+          "weight_share_b": 0.00659,
+          "weight_share_delta_pp": -0.164,
+          "z_row_share": -2.33,
+          "delta_concentration": {
+            "n_distinct_queries": 112,
+            "top1_share_of_delta": 0.1065,
+            "top5_share_of_delta": 0.2854,
+            "hhi_of_delta": 0.034,
+            "top_queries": [
+              {
+                "query": "黄金",
+                "delta": -33.0
+              },
+              {
+                "query": "伦敦金",
+                "delta": 17.93
+              },
+              {
+                "query": "我认为黄金还会回调到4100美元附近",
+                "delta": -17.27
+              },
+              {
+                "query": "炒黄金",
+                "delta": -10.2
+              },
+              {
+                "query": "2026黄金会跌到650吗",
+                "delta": -10.0
+              }
+            ]
+          }
+        },
+        {
+          "label": "金属行情报价查询",
+          "rows_a": 6,
+          "rows_b": 79,
+          "row_share_a": 0.00204,
+          "row_share_b": 0.00395,
+          "row_share_delta_pp": 0.191,
+          "weight_share_a": 0.00299,
+          "weight_share_b": 0.00397,
+          "weight_share_delta_pp": 0.098,
+          "z_row_share": 1.59,
+          "delta_concentration": {
+            "n_distinct_queries": 62,
+            "top1_share_of_delta": 0.4012,
+            "top5_share_of_delta": 0.7947,
+            "hhi_of_delta": 0.2077,
+            "top_queries": [
+              {
+                "query": "领峰贵金属",
+                "delta": -59.94
+              },
+              {
+                "query": "长江有色金属网",
+                "delta": 19.83
+              },
+              {
+                "query": "上海有色金属网",
+                "delta": 17.28
+              },
+              {
+                "query": "贵金属交易软件",
+                "delta": -17.21
+              },
+              {
+                "query": "铜陵有色股票",
+                "delta": 4.46
+              }
+            ]
+          }
+        },
+        {
+          "label": "查询金融品种价格走势图",
+          "rows_a": 31,
+          "rows_b": 159,
+          "row_share_a": 0.01055,
+          "row_share_b": 0.00795,
+          "row_share_delta_pp": -0.26,
+          "weight_share_a": 0.00779,
+          "weight_share_b": 0.00687,
+          "weight_share_delta_pp": -0.092,
+          "z_row_share": -1.45,
+          "delta_concentration": {
+            "n_distinct_queries": 147,
+            "top1_share_of_delta": 0.0935,
+            "top5_share_of_delta": 0.2433,
+            "hhi_of_delta": 0.0281,
+            "top_queries": [
+              {
+                "query": "光环新网走势",
+                "delta": -25.91
+              },
+              {
+                "query": "黄金价格走势图",
+                "delta": 11.5
+              },
+              {
+                "query": "下周黄金短期走势预测",
+                "delta": -10.0
+              },
+              {
+                "query": "矿业紫金矿业礼拜一走势怎么样",
+                "delta": -10.0
+              },
+              {
+                "query": "汇绿生态的走势",
+                "delta": -10.0
+              }
+            ]
+          }
+        },
+        {
+          "label": "钢铁股票查询",
+          "rows_a": 5,
+          "rows_b": 69,
+          "row_share_a": 0.0017,
+          "row_share_b": 0.00345,
+          "row_share_delta_pp": 0.175,
+          "weight_share_a": 0.00168,
+          "weight_share_b": 0.00249,
+          "weight_share_delta_pp": 0.08,
+          "z_row_share": 1.56,
+          "delta_concentration": {
+            "n_distinct_queries": 47,
+            "top1_share_of_delta": 0.2017,
+            "top5_share_of_delta": 0.593,
+            "hhi_of_delta": 0.0872,
+            "top_queries": [
+              {
+                "query": "包钢股份8月26日开盘后走势如何",
+                "delta": -17.27
+              },
+              {
+                "query": "鞍钢股份2026年上半年财务报告详细解读",
+                "delta": -8.64
+              },
+              {
+                "query": "包钢股价多少钱",
+                "delta": -8.64
+              },
+              {
+                "query": "各钢铁股比较也有鞍钢股份",
+                "delta": -8.64
+              },
+              {
+                "query": "包钢股份",
+                "delta": 7.6
+              }
+            ]
+          }
+        },
+        {
+          "label": "查询证券股票与券商信息",
+          "rows_a": 15,
+          "rows_b": 214,
+          "row_share_a": 0.00511,
+          "row_share_b": 0.0107,
+          "row_share_delta_pp": 0.559,
+          "weight_share_a": 0.01026,
+          "weight_share_b": 0.00957,
+          "weight_share_delta_pp": -0.069,
+          "z_row_share": 2.85,
+          "delta_concentration": {
+            "n_distinct_queries": 139,
+            "top1_share_of_delta": 0.2995,
+            "top5_share_of_delta": 0.5253,
+            "hhi_of_delta": 0.1109,
+            "top_queries": [
+              {
+                "query": "券商最好的10只股",
+                "delta": -146.8
+              },
+              {
+                "query": "广发证券官网",
+                "delta": -44.21
+              },
+              {
+                "query": "国盛证券",
+                "delta": -39.14
+              },
+              {
+                "query": "中信证券",
+                "delta": 13.66
+              },
+              {
+                "query": "天风证券",
+                "delta": 13.66
+              }
+            ]
+          }
+        },
+        {
+          "label": "港股休市查询",
+          "rows_a": 15,
+          "rows_b": 116,
+          "row_share_a": 0.00511,
+          "row_share_b": 0.0058,
+          "row_share_delta_pp": 0.069,
+          "weight_share_a": 0.00475,
+          "weight_share_b": 0.00535,
+          "weight_share_delta_pp": 0.06,
+          "z_row_share": 0.47,
+          "delta_concentration": {
+            "n_distinct_queries": 94,
+            "top1_share_of_delta": 0.1105,
+            "top5_share_of_delta": 0.3512,
+            "hhi_of_delta": 0.0428,
+            "top_queries": [
+              {
+                "query": "港股通交易时间",
+                "delta": -25.91
+              },
+              {
+                "query": "五元的香港硬币值钱吗",
+                "delta": -20.0
+              },
+              {
+                "query": "港股今日休市吗",
+                "delta": 16.44
+              },
+              {
+                "query": "香港稳定币是派币吗",
+                "delta": -10.0
+              },
+              {
+                "query": "日照港业绩预告",
+                "delta": -10.0
+              }
+            ]
+          }
+        },
+        {
+          "label": "货币兑换查询",
+          "rows_a": 43,
+          "rows_b": 366,
+          "row_share_a": 0.01464,
+          "row_share_b": 0.0183,
+          "row_share_delta_pp": 0.366,
+          "weight_share_a": 0.01079,
+          "weight_share_b": 0.01132,
+          "weight_share_delta_pp": 0.053,
+          "z_row_share": 1.4,
+          "delta_concentration": {
+            "n_distinct_queries": 280,
+            "top1_share_of_delta": 0.0653,
+            "top5_share_of_delta": 0.1525,
+            "hhi_of_delta": 0.0162,
+            "top_queries": [
+              {
+                "query": "第五套人民币",
+                "delta": -30.0
+              },
+              {
+                "query": "只有一张百元美钞也银行也给换取人民币吧",
+                "delta": -10.0
+              },
+              {
+                "query": "台币30台币兑换多少人民币",
+                "delta": -10.0
+              },
+              {
+                "query": "1980年版二元人民币",
+                "delta": -10.0
+              },
+              {
+                "query": "人民币新版一元的动物",
+                "delta": -10.0
+              }
+            ]
+          }
+        },
+        {
+          "label": "银行信用卡客服电话查询",
+          "rows_a": 26,
+          "rows_b": 146,
+          "row_share_a": 0.00885,
+          "row_share_b": 0.0073,
+          "row_share_delta_pp": -0.155,
+          "weight_share_a": 0.00826,
+          "weight_share_b": 0.00841,
+          "weight_share_delta_pp": 0.015,
+          "z_row_share": -0.91,
+          "delta_concentration": {
+            "n_distinct_queries": 135,
+            "top1_share_of_delta": 0.0533,
+            "top5_share_of_delta": 0.1528,
+            "hhi_of_delta": 0.0208,
+            "top_queries": [
+              {
+                "query": "中信银行信用卡中心电话",
+                "delta": 22.18
+              },
+              {
+                "query": "广发银行信用卡电话",
+                "delta": 11.38
+              },
+              {
+                "query": "四川分行信用卡活动参与入口为",
+                "delta": -10.0
+              },
+              {
+                "query": "信用卡还款是账单出了钱还好还是账单出来后还好",
+                "delta": -10.0
+              },
+              {
+                "query": "农业银行信用卡的客服电话多少",
+                "delta": -10.0
+              }
+            ]
+          }
+        }
+      ],
+      "emergent": [
+        {
+          "label": "股票股吧查询",
+          "rows_a": 36,
+          "rows_b": 2282,
+          "row_share_a": 0.01226,
+          "row_share_b": 0.11412,
+          "row_share_delta_pp": 10.186,
+          "weight_share_a": 0.01129,
+          "weight_share_b": 0.04386,
+          "weight_share_delta_pp": 3.258,
+          "z_row_share": 17.1,
+          "delta_concentration": {
+            "n_distinct_queries": 1898,
+            "top1_share_of_delta": 0.0166,
+            "top5_share_of_delta": 0.0705,
+            "hhi_of_delta": 0.0032,
+            "top_queries": [
+              {
+                "query": "东鹏特饮2020的peg",
+                "delta": -20.0
+              },
+              {
+                "query": "永辉超市股吧",
+                "delta": -19.61
+              },
+              {
+                "query": "10转10送10股派10元",
+                "delta": -18.13
+              },
+              {
+                "query": "中科仪2026中报",
+                "delta": -17.27
+              },
+              {
+                "query": "000676智度股份它的核心技术比例高吗未来股值和业绩成长空间大吗",
+                "delta": -10.0
+              }
+            ]
+          }
+        },
+        {
+          "label": "查询个股股票信息",
+          "rows_a": 29,
+          "rows_b": 722,
+          "row_share_a": 0.00987,
+          "row_share_b": 0.03611,
+          "row_share_delta_pp": 2.623,
+          "weight_share_a": 0.00691,
+          "weight_share_b": 0.03052,
+          "weight_share_delta_pp": 2.36,
+          "z_row_share": 7.46,
+          "delta_concentration": {
+            "n_distinct_queries": 524,
+            "top1_share_of_delta": 0.0457,
+            "top5_share_of_delta": 0.1333,
+            "hhi_of_delta": 0.0088,
+            "top_queries": [
+              {
+                "query": "宇树股份股票",
+                "delta": -31.03
+              },
+              {
+                "query": "东阳光股票",
+                "delta": -25.92
+              },
+              {
+                "query": "台积电股票",
+                "delta": 12.39
+              },
+              {
+                "query": "大唐发电股票",
+                "delta": 11.11
+              },
+              {
+                "query": "国腾量子股票代码",
+                "delta": -10.0
+              }
+            ]
+          }
+        },
+        {
+          "label": "股票代码查询",
+          "rows_a": 27,
+          "rows_b": 1407,
+          "row_share_a": 0.00919,
+          "row_share_b": 0.07036,
+          "row_share_delta_pp": 6.117,
+          "weight_share_a": 0.00814,
+          "weight_share_b": 0.02856,
+          "weight_share_delta_pp": 2.042,
+          "z_row_share": 12.79,
+          "delta_concentration": {
+            "n_distinct_queries": 1015,
+            "top1_share_of_delta": 0.0139,
+            "top5_share_of_delta": 0.0639,
+            "hhi_of_delta": 0.0046,
+            "top_queries": [
+              {
+                "query": "沪深300",
+                "delta": 11.16
+              },
+              {
+                "query": "603986是主板还是科创板",
+                "delta": -10.0
+              },
+              {
+                "query": "1665",
+                "delta": -10.0
+              },
+              {
+                "query": "2026最新邮票发行计划",
+                "delta": -10.0
+              },
+              {
+                "query": "2012年浙江女强人吴英融资亏损8亿本人照片",
+                "delta": -10.0
+              }
+            ]
+          }
+        },
+        {
+          "label": "东方财富官方入口查询",
+          "rows_a": 7,
+          "rows_b": 140,
+          "row_share_a": 0.00238,
+          "row_share_b": 0.007,
+          "row_share_delta_pp": 0.462,
+          "weight_share_a": 0.0019,
+          "weight_share_b": 0.02124,
+          "weight_share_delta_pp": 1.934,
+          "z_row_share": 2.93,
+          "delta_concentration": {
+            "n_distinct_queries": 98,
+            "top1_share_of_delta": 0.4511,
+            "top5_share_of_delta": 0.7403,
+            "hhi_of_delta": 0.2314,
+            "top_queries": [
+              {
+                "query": "东方财富网",
+                "delta": 181.5
+              },
+              {
+                "query": "东方财富网首页",
+                "delta": 47.05
+              },
+              {
+                "query": "东方财富",
+                "delta": 36.58
+              },
+              {
+                "query": "东方财富股票",
+                "delta": 21.69
+              },
+              {
+                "query": "东方财富网官方网",
+                "delta": 11.06
+              }
+            ]
+          }
+        },
+        {
+          "label": "查询新材类股票及股吧信息",
+          "rows_a": 8,
+          "rows_b": 228,
+          "row_share_a": 0.00272,
+          "row_share_b": 0.0114,
+          "row_share_delta_pp": 0.868,
+          "weight_share_a": 0.00195,
+          "weight_share_b": 0.00807,
+          "weight_share_delta_pp": 0.612,
+          "z_row_share": 4.35,
+          "delta_concentration": {
+            "n_distinct_queries": 183,
+            "top1_share_of_delta": 0.0521,
+            "top5_share_of_delta": 0.2321,
+            "hhi_of_delta": 0.021,
+            "top_queries": [
+              {
+                "query": "博迁新材现状",
+                "delta": -10.0
+              },
+              {
+                "query": "回天新材下修后适合立即买入吗",
+                "delta": -8.64
+              },
+              {
+                "query": "易成新能是否属于高端材料股",
+                "delta": -8.64
+              },
+              {
+                "query": "如何查询苏讯新材北交所上会结果",
+                "delta": -8.64
+              },
+              {
+                "query": "双星新材重组或资产注入的可能性大吗",
+                "delta": -8.64
+              }
+            ]
+          }
+        },
+        {
+          "label": "查询金融机构24小时人工客服电话",
+          "rows_a": 4,
+          "rows_b": 158,
+          "row_share_a": 0.00136,
+          "row_share_b": 0.0079,
+          "row_share_delta_pp": 0.654,
+          "weight_share_a": 0.00124,
+          "weight_share_b": 0.00677,
+          "weight_share_delta_pp": 0.553,
+          "z_row_share": 3.95,
+          "delta_concentration": {
+            "n_distinct_queries": 124,
+            "top1_share_of_delta": 0.0842,
+            "top5_share_of_delta": 0.3,
+            "hhi_of_delta": 0.0302,
+            "top_queries": [
+              {
+                "query": "建设银行客服24小时人工服务电话",
+                "delta": 14.53
+              },
+              {
+                "query": "民丰银行24小时人工客服电话",
+                "delta": -10.0
+              },
+              {
+                "query": "农村信用社24服务热线电话",
+                "delta": -10.0
+              },
+              {
+                "query": "中华联合24小时人工客服电话怎么转接",
+                "delta": -8.64
+              },
+              {
+                "query": "华鑫信托客服电话人工服务怎么转接",
+                "delta": -8.64
+              }
+            ]
+          }
+        },
+        {
+          "label": "能源资源类股票查询",
+          "rows_a": 6,
+          "rows_b": 160,
+          "row_share_a": 0.00204,
+          "row_share_b": 0.008,
+          "row_share_delta_pp": 0.596,
+          "weight_share_a": 0.00187,
+          "weight_share_b": 0.00483,
+          "weight_share_delta_pp": 0.296,
+          "z_row_share": 3.56,
+          "delta_concentration": {
+            "n_distinct_queries": 112,
+            "top1_share_of_delta": 0.1986,
+            "top5_share_of_delta": 0.4216,
+            "hhi_of_delta": 0.0581,
+            "top_queries": [
+              {
+                "query": "阳光电源股票为什么暴跌",
+                "delta": -25.91
+              },
+              {
+                "query": "永泰能源半年报股东人数",
+                "delta": -8.64
+              },
+              {
+                "query": "宁波能源算强势？",
+                "delta": -8.64
+              },
+              {
+                "query": "阳光电源股票",
+                "delta": 7.26
+              },
+              {
+                "query": "盛和资源股票",
+                "delta": 4.55
+              }
+            ]
+          }
+        },
+        {
+          "label": "国际原油价格行情查询",
+          "rows_a": 4,
+          "rows_b": 116,
+          "row_share_a": 0.00136,
+          "row_share_b": 0.0058,
+          "row_share_delta_pp": 0.444,
+          "weight_share_a": 0.00083,
+          "weight_share_b": 0.00363,
+          "weight_share_delta_pp": 0.281,
+          "z_row_share": 3.11,
+          "delta_concentration": {
+            "n_distinct_queries": 82,
+            "top1_share_of_delta": 0.1336,
+            "top5_share_of_delta": 0.3176,
+            "hhi_of_delta": 0.038,
+            "top_queries": [
+              {
+                "query": "美原油暗盘",
+                "delta": -10.0
+              },
+              {
+                "query": "国际油价实时走势图",
+                "delta": 3.95
+              },
+              {
+                "query": "国际油价未来走势如何",
+                "delta": -3.5
+              },
+              {
+                "query": "原油价格",
+                "delta": 3.28
+              },
+              {
+                "query": "原油期货",
+                "delta": 3.04
+              }
+            ]
+          }
+        },
+        {
+          "label": "数字串含义查询",
+          "rows_a": 2,
+          "rows_b": 157,
+          "row_share_a": 0.00068,
+          "row_share_b": 0.00785,
+          "row_share_delta_pp": 0.717,
+          "weight_share_a": 0.00058,
+          "weight_share_b": 0.00314,
+          "weight_share_delta_pp": 0.256,
+          "z_row_share": 4.37,
+          "delta_concentration": {
+            "n_distinct_queries": 115,
+            "top1_share_of_delta": 0.1079,
+            "top5_share_of_delta": 0.3814,
+            "hhi_of_delta": 0.0414,
+            "top_queries": [
+              {
+                "query": "8月28日夜盘玻璃2701走势预测",
+                "delta": -8.64
+              },
+              {
+                "query": "丰汇00727业绩预告全文",
+                "delta": -8.64
+              },
+              {
+                "query": "725",
+                "delta": 8.41
+              },
+              {
+                "query": "七月流火",
+                "delta": 3.43
+              },
+              {
+                "query": "977",
+                "delta": 1.4
+              }
+            ]
+          }
+        },
+        {
+          "label": "电话号码归属与用途查询",
+          "rows_a": 8,
+          "rows_b": 161,
+          "row_share_a": 0.00272,
+          "row_share_b": 0.00805,
+          "row_share_delta_pp": 0.533,
+          "weight_share_a": 0.00225,
+          "weight_share_b": 0.00468,
+          "weight_share_delta_pp": 0.243,
+          "z_row_share": 3.15,
+          "delta_concentration": {
+            "n_distinct_queries": 146,
+            "top1_share_of_delta": 0.0718,
+            "top5_share_of_delta": 0.3302,
+            "hhi_of_delta": 0.0338,
+            "top_queries": [
+              {
+                "query": "95126一般打过来干嘛的",
+                "delta": -11.12
+              },
+              {
+                "query": "9540375是什么号",
+                "delta": -10.0
+              },
+              {
+                "query": "9547111是什么电话",
+                "delta": -10.0
+              },
+              {
+                "query": "80652024什么电话",
+                "delta": -10.0
+              },
+              {
+                "query": "952785是哪的电话",
+                "delta": -10.0
+              }
+            ]
+          }
+        },
+        {
+          "label": "含龙字股票信息查询",
+          "rows_a": 5,
+          "rows_b": 103,
+          "row_share_a": 0.0017,
+          "row_share_b": 0.00515,
+          "row_share_delta_pp": 0.345,
+          "weight_share_a": 0.00153,
+          "weight_share_b": 0.00389,
+          "weight_share_delta_pp": 0.236,
+          "z_row_share": 2.55,
+          "delta_concentration": {
+            "n_distinct_queries": 73,
+            "top1_share_of_delta": 0.2398,
+            "top5_share_of_delta": 0.4898,
+            "hhi_of_delta": 0.0816,
+            "top_queries": [
+              {
+                "query": "盛龙股份股票的目标价是多少",
+                "delta": -25.91
+              },
+              {
+                "query": "万向德龙股票",
+                "delta": -10.0
+              },
+              {
+                "query": "金龙羽股票",
+                "delta": 6.31
+              },
+              {
+                "query": "江波龙 股票",
+                "delta": 6.24
+              },
+              {
+                "query": "楚天龙股票",
+                "delta": 4.45
+              }
+            ]
+          }
+        },
+        {
+          "label": "银行客服短号查询",
+          "rows_a": 6,
+          "rows_b": 122,
+          "row_share_a": 0.00204,
+          "row_share_b": 0.0061,
+          "row_share_delta_pp": 0.406,
+          "weight_share_a": 0.00185,
+          "weight_share_b": 0.00407,
+          "weight_share_delta_pp": 0.222,
+          "z_row_share": 2.76,
+          "delta_concentration": {
+            "n_distinct_queries": 84,
+            "top1_share_of_delta": 0.1113,
+            "top5_share_of_delta": 0.4364,
+            "hhi_of_delta": 0.0477,
+            "top_queries": [
+              {
+                "query": "95588可以协商还本金吗",
+                "delta": -15.24
+              },
+              {
+                "query": "95566来电不接没事吧",
+                "delta": -13.4
+              },
+              {
+                "query": "工商逾期后95588催收",
+                "delta": -11.74
+              },
+              {
+                "query": "95588",
+                "delta": 10.77
+              },
+              {
+                "query": "95580客服如何转接至三家镇网点",
+                "delta": -8.64
+              }
+            ]
+          }
+        },
+        {
+          "label": "金融代码行情查询",
+          "rows_a": 2,
+          "rows_b": 140,
+          "row_share_a": 0.00068,
+          "row_share_b": 0.007,
+          "row_share_delta_pp": 0.632,
+          "weight_share_a": 0.00067,
+          "weight_share_b": 0.00268,
+          "weight_share_delta_pp": 0.201,
+          "z_row_share": 4.08,
+          "delta_concentration": {
+            "n_distinct_queries": 100,
+            "top1_share_of_delta": 0.1385,
+            "top5_share_of_delta": 0.3305,
+            "hhi_of_delta": 0.0439,
+            "top_queries": [
+              {
+                "query": "深圳机场主力净流入243.28万",
+                "delta": -10.0
+              },
+              {
+                "query": "2460",
+                "delta": -9.29
+              },
+              {
+                "query": "1248",
+                "delta": 1.62
+              },
+              {
+                "query": "2354",
+                "delta": 1.58
+              },
+              {
+                "query": "2465",
+                "delta": 1.37
+              }
+            ]
+          }
+        },
+        {
+          "label": "期货行情查询",
+          "rows_a": 10,
+          "rows_b": 207,
+          "row_share_a": 0.0034,
+          "row_share_b": 0.01035,
+          "row_share_delta_pp": 0.695,
+          "weight_share_a": 0.00328,
+          "weight_share_b": 0.00483,
+          "weight_share_delta_pp": 0.156,
+          "z_row_share": 3.63,
+          "delta_concentration": {
+            "n_distinct_queries": 157,
+            "top1_share_of_delta": 0.1037,
+            "top5_share_of_delta": 0.3266,
+            "hhi_of_delta": 0.0351,
+            "top_queries": [
+              {
+                "query": "沪铜沪铝黄金白银期货今日铜价行情",
+                "delta": -19.73
+              },
+              {
+                "query": "美原油黄金白银铜铝期货价格最新行情查询表",
+                "delta": -15.12
+              },
+              {
+                "query": "铁矿石期货价格为什么连年下降",
+                "delta": -10.0
+              },
+              {
+                "query": "2026年4月30日生猪期货为何冲高",
+                "delta": -8.64
+              },
+              {
+                "query": "长安期货的高层管理人员中谁最年轻",
+                "delta": -8.64
+              }
+            ]
+          }
+        },
+        {
+          "label": "数字代码查询",
+          "rows_a": 6,
+          "rows_b": 156,
+          "row_share_a": 0.00204,
+          "row_share_b": 0.0078,
+          "row_share_delta_pp": 0.576,
+          "weight_share_a": 0.00177,
+          "weight_share_b": 0.00276,
+          "weight_share_delta_pp": 0.099,
+          "z_row_share": 3.48,
+          "delta_concentration": {
+            "n_distinct_queries": 124,
+            "top1_share_of_delta": 0.1847,
+            "top5_share_of_delta": 0.4906,
+            "hhi_of_delta": 0.0649,
+            "top_queries": [
+              {
+                "query": "2019年版",
+                "delta": -20.0
+              },
+              {
+                "query": "工行9920代码严重吗",
+                "delta": -11.25
+              },
+              {
+                "query": "中航信托·天信(2019)35号第29期是否已兑付",
+                "delta": -8.64
+              },
+              {
+                "query": "99990E错误代码的含义是什么",
+                "delta": -8.64
+              },
+              {
+                "query": "工商9920紧急支付",
+                "delta": -4.61
+              }
+            ]
+          }
+        },
+        {
+          "label": "证券代码行情查询",
+          "rows_a": 8,
+          "rows_b": 157,
+          "row_share_a": 0.00272,
+          "row_share_b": 0.00785,
+          "row_share_delta_pp": 0.513,
+          "weight_share_a": 0.00226,
+          "weight_share_b": 0.00263,
+          "weight_share_delta_pp": 0.038,
+          "z_row_share": 3.07,
+          "delta_concentration": {
+            "n_distinct_queries": 129,
+            "top1_share_of_delta": 0.1434,
+            "top5_share_of_delta": 0.4416,
+            "hhi_of_delta": 0.0523,
+            "top_queries": [
+              {
+                "query": "8月31号",
+                "delta": -17.27
+              },
+              {
+                "query": "将持仓做18年",
+                "delta": -10.0
+              },
+              {
+                "query": "008888几天赎回不需要手续费",
+                "delta": -8.64
+              },
+              {
+                "query": "688717最新消息",
+                "delta": -8.64
+              },
+              {
+                "query": "10.84呢",
+                "delta": -8.64
+              }
+            ]
+          }
+        }
+      ],
+      "receded": [],
+      "too_thin_to_compare": []
+    },
+    "bu_family_final": {
+      "comparable": true,
+      "snapshot_a": "AI助手",
+      "snapshot_b": "搜索",
+      "rows_a": 2937,
+      "rows_b": 19997,
+      "n_classes": 55,
+      "cramers_v": 0.4507,
+      "total_variation_weight": 0.4769,
+      "total_variation_rows": 0.4453,
+      "n_comparisons": 41,
+      "stable": [
+        {
+          "label": "#11 股票信息查询",
+          "rows_a": 242,
+          "rows_b": 4122,
+          "row_share_a": 0.0824,
+          "row_share_b": 0.20613,
+          "row_share_delta_pp": 12.373,
+          "weight_share_a": 0.0659,
+          "weight_share_b": 0.20124,
+          "weight_share_delta_pp": 13.534,
+          "z_row_share": 15.95,
+          "delta_concentration": {
+            "n_distinct_queries": 2831,
+            "top1_share_of_delta": 0.0174,
+            "top5_share_of_delta": 0.0665,
+            "hhi_of_delta": 0.0023,
+            "top_queries": [
+              {
+                "query": "思维列控股票",
+                "delta": -80.0
+              },
+              {
+                "query": "金荣中国",
+                "delta": -79.4
+              },
+              {
+                "query": "特斯拉股票",
+                "delta": 60.41
+              },
+              {
+                "query": "海欧住工股票",
+                "delta": -43.18
+              },
+              {
+                "query": "星宇股份",
+                "delta": -42.82
+              }
+            ]
+          }
+        },
+        {
+          "label": "#44 A股个股推荐与走势预测查询",
+          "rows_a": 413,
+          "rows_b": 97,
+          "row_share_a": 0.14062,
+          "row_share_b": 0.00485,
+          "row_share_delta_pp": -13.577,
+          "weight_share_a": 0.12904,
+          "weight_share_b": 0.00188,
+          "weight_share_delta_pp": -12.716,
+          "z_row_share": -46.59,
+          "delta_concentration": {
+            "n_distinct_queries": 489,
+            "top1_share_of_delta": 0.0221,
+            "top5_share_of_delta": 0.0769,
+            "hhi_of_delta": 0.0036,
+            "top_queries": [
+              {
+                "query": "国债逆回购哪个品种收益最高",
+                "delta": -86.36
+              },
+              {
+                "query": "近三年AI创业公司在国内融资情况如何",
+                "delta": -73.25
+              },
+              {
+                "query": "重组期间股票还能正常交易吗",
+                "delta": -51.81
+              },
+              {
+                "query": "天原股份未来有上涨空间吗",
+                "delta": -51.81
+              },
+              {
+                "query": "这些股票中哪只最有潜力",
+                "delta": -37.18
+              }
+            ]
+          }
+        },
+        {
+          "label": "#23 保险信息查询",
+          "rows_a": 153,
+          "rows_b": 369,
+          "row_share_a": 0.05209,
+          "row_share_b": 0.01845,
+          "row_share_delta_pp": -3.364,
+          "weight_share_a": 0.0627,
+          "weight_share_b": 0.01259,
+          "weight_share_delta_pp": -5.012,
+          "z_row_share": -11.41,
+          "delta_concentration": {
+            "n_distinct_queries": 420,
+            "top1_share_of_delta": 0.0495,
+            "top5_share_of_delta": 0.2069,
+            "hhi_of_delta": 0.0134,
+            "top_queries": [
+              {
+                "query": "2026年交强险最低保费是多少",
+                "delta": -103.63
+              },
+              {
+                "query": "平安保险雇主责任险",
+                "delta": -86.71
+              },
+              {
+                "query": "买保险留电话入口",
+                "delta": -84.92
+              },
+              {
+                "query": "元保保险",
+                "delta": -79.91
+              },
+              {
+                "query": "安盛天平车险有哪些缺点",
+                "delta": -77.72
+              }
+            ]
+          }
+        },
+        {
+          "label": "#7 个人金融支付与征信业务查询",
+          "rows_a": 175,
+          "rows_b": 380,
+          "row_share_a": 0.05958,
+          "row_share_b": 0.019,
+          "row_share_delta_pp": -4.058,
+          "weight_share_a": 0.06013,
+          "weight_share_b": 0.01256,
+          "weight_share_delta_pp": -4.757,
+          "z_row_share": -13.36,
+          "delta_concentration": {
+            "n_distinct_queries": 450,
+            "top1_share_of_delta": 0.0561,
+            "top5_share_of_delta": 0.1532,
+            "hhi_of_delta": 0.0097,
+            "top_queries": [
+              {
+                "query": "免密支付怎么关",
+                "delta": -112.26
+              },
+              {
+                "query": "易宝支付北海云华扣29.9",
+                "delta": -59.91
+              },
+              {
+                "query": "如何关闭花呗",
+                "delta": -49.22
+              },
+              {
+                "query": "怎样取消免密支付功能",
+                "delta": -43.18
+              },
+              {
+                "query": "工行转账出现9078是怎么回事",
+                "delta": -41.73
+              }
+            ]
+          }
+        },
+        {
+          "label": "#60 今日金价查询",
+          "rows_a": 30,
+          "rows_b": 197,
+          "row_share_a": 0.01021,
+          "row_share_b": 0.00985,
+          "row_share_delta_pp": -0.036,
+          "weight_share_a": 0.03165,
+          "weight_share_b": 0.07749,
+          "weight_share_delta_pp": 4.584,
+          "z_row_share": -0.19,
+          "delta_concentration": {
+            "n_distinct_queries": 161,
+            "top1_share_of_delta": 0.6477,
+            "top5_share_of_delta": 0.7465,
+            "hhi_of_delta": 0.4242,
+            "top_queries": [
+              {
+                "query": "今日金价",
+                "delta": 640.94
+              },
+              {
+                "query": "今天金价",
+                "delta": -47.4
+              },
+              {
+                "query": "2026年成都梨花街今日金价",
+                "delta": -20.0
+              },
+              {
+                "query": "融通金今日报价",
+                "delta": -18.97
+              },
+              {
+                "query": "金价今天什么价格",
+                "delta": 11.35
+              }
+            ]
+          }
+        },
+        {
+          "label": "#17 股票与指数行情查询",
+          "rows_a": 88,
+          "rows_b": 567,
+          "row_share_a": 0.02996,
+          "row_share_b": 0.02835,
+          "row_share_delta_pp": -0.161,
+          "weight_share_a": 0.03603,
+          "weight_share_b": 0.08056,
+          "weight_share_delta_pp": 4.453,
+          "z_row_share": -0.49,
+          "delta_concentration": {
+            "n_distinct_queries": 427,
+            "top1_share_of_delta": 0.2768,
+            "top5_share_of_delta": 0.3999,
+            "hhi_of_delta": 0.0847,
+            "top_queries": [
+              {
+                "query": "上证指数",
+                "delta": 531.1
+              },
+              {
+                "query": "美股",
+                "delta": -94.92
+              },
+              {
+                "query": "纳斯达克指数",
+                "delta": 51.13
+              },
+              {
+                "query": "深证指数",
+                "delta": 49.31
+              },
+              {
+                "query": "创业板指",
+                "delta": 40.83
+              }
+            ]
+          }
+        },
+        {
+          "label": "#46 查询资金产品安全性及存取借贷规则",
+          "rows_a": 145,
+          "rows_b": 122,
+          "row_share_a": 0.04937,
+          "row_share_b": 0.0061,
+          "row_share_delta_pp": -4.327,
+          "weight_share_a": 0.04405,
+          "weight_share_b": 0.00241,
+          "weight_share_delta_pp": -4.165,
+          "z_row_share": -20.41,
+          "delta_concentration": {
+            "n_distinct_queries": 239,
+            "top1_share_of_delta": 0.0219,
+            "top5_share_of_delta": 0.0919,
+            "hhi_of_delta": 0.0078,
+            "top_queries": [
+              {
+                "query": "零钱通3大忌",
+                "delta": -30.0
+              },
+              {
+                "query": "借款5000元马上放款微信",
+                "delta": -30.0
+              },
+              {
+                "query": "这种是不是分期不能用了",
+                "delta": -25.91
+              },
+              {
+                "query": "银联POS机第1笔钱刷的是民生银行的是到账了第2笔钱刷的是嗯第2笔钱刷的是另外",
+                "delta": -20.0
+              },
+              {
+                "query": "美团月付一旦开通了就取消吗",
+                "delta": -20.0
+              }
+            ]
+          }
+        },
+        {
+          "label": "#3 汇率换算查询",
+          "rows_a": 191,
+          "rows_b": 1364,
+          "row_share_a": 0.06503,
+          "row_share_b": 0.06821,
+          "row_share_delta_pp": 0.318,
+          "weight_share_a": 0.05653,
+          "weight_share_b": 0.09013,
+          "weight_share_delta_pp": 3.36,
+          "z_row_share": 0.64,
+          "delta_concentration": {
+            "n_distinct_queries": 1060,
+            "top1_share_of_delta": 0.0323,
+            "top5_share_of_delta": 0.102,
+            "hhi_of_delta": 0.0058,
+            "top_queries": [
+              {
+                "query": "日元对人民币汇率",
+                "delta": 95.69
+              },
+              {
+                "query": "美元兑人民币汇率",
+                "delta": 82.69
+              },
+              {
+                "query": "汇率",
+                "delta": 41.74
+              },
+              {
+                "query": "港币对人民币汇率",
+                "delta": 41.12
+              },
+              {
+                "query": "美元兑换人民币汇率",
+                "delta": 40.84
+              }
+            ]
+          }
+        },
+        {
+          "label": "#18 财经网站与证券股票信息查询",
+          "rows_a": 48,
+          "rows_b": 735,
+          "row_share_a": 0.01634,
+          "row_share_b": 0.03676,
+          "row_share_delta_pp": 2.041,
+          "weight_share_a": 0.0191,
+          "weight_share_b": 0.0477,
+          "weight_share_delta_pp": 2.86,
+          "z_row_share": 5.69,
+          "delta_concentration": {
+            "n_distinct_queries": 546,
+            "top1_share_of_delta": 0.1315,
+            "top5_share_of_delta": 0.3563,
+            "hhi_of_delta": 0.0377,
+            "top_queries": [
+              {
+                "query": "东方财富网",
+                "delta": 181.5
+              },
+              {
+                "query": "券商最好的10只股",
+                "delta": -146.8
+              },
+              {
+                "query": "新浪财经",
+                "delta": 72.24
+              },
+              {
+                "query": "东方财富网首页",
+                "delta": 47.05
+              },
+              {
+                "query": "广发证券官网",
+                "delta": -44.21
+              }
+            ]
+          }
+        },
+        {
+          "label": "#79 银行服务信息查询",
+          "rows_a": 79,
+          "rows_b": 78,
+          "row_share_a": 0.0269,
+          "row_share_b": 0.0039,
+          "row_share_delta_pp": -2.3,
+          "weight_share_a": 0.03021,
+          "weight_share_b": 0.00507,
+          "weight_share_delta_pp": -2.514,
+          "z_row_share": -14.11,
+          "delta_concentration": {
+            "n_distinct_queries": 133,
+            "top1_share_of_delta": 0.0619,
+            "top5_share_of_delta": 0.239,
+            "hhi_of_delta": 0.0218,
+            "top_queries": [
+              {
+                "query": "工商银行95588短信提醒怎么开通",
+                "delta": -59.61
+              },
+              {
+                "query": "工商银行9920只收不付",
+                "delta": -57.52
+              },
+              {
+                "query": "工商银行卡扣费 30 元余额不足会怎样",
+                "delta": -45.9
+              },
+              {
+                "query": "工商银行9920能自动解冻吗",
+                "delta": -36.75
+              },
+              {
+                "query": "工商银行客户电话",
+                "delta": 30.43
+              }
+            ]
+          }
+        },
+        {
+          "label": "#19 银行存贷款利率与利息查询",
+          "rows_a": 88,
+          "rows_b": 234,
+          "row_share_a": 0.02996,
+          "row_share_b": 0.0117,
+          "row_share_delta_pp": -1.826,
+          "weight_share_a": 0.03036,
+          "weight_share_b": 0.00565,
+          "weight_share_delta_pp": -2.472,
+          "z_row_share": -7.85,
+          "delta_concentration": {
+            "n_distinct_queries": 278,
+            "top1_share_of_delta": 0.0676,
+            "top5_share_of_delta": 0.1849,
+            "hhi_of_delta": 0.0159,
+            "top_queries": [
+              {
+                "query": "2026贷款利息表",
+                "delta": -69.08
+              },
+              {
+                "query": "等额本息和等额本金哪个划算",
+                "delta": -59.9
+              },
+              {
+                "query": "两年多少钱利息",
+                "delta": -20.0
+              },
+              {
+                "query": "五年的存款利息定期有没有什么手续",
+                "delta": -20.0
+              },
+              {
+                "query": "今年春节开门红银行一万元定期存款利率是多少呢",
+                "delta": -20.0
+              }
+            ]
+          }
+        },
+        {
+          "label": "#61 实时国际金价查询",
+          "rows_a": 18,
+          "rows_b": 146,
+          "row_share_a": 0.00613,
+          "row_share_b": 0.0073,
+          "row_share_delta_pp": 0.117,
+          "weight_share_a": 0.012,
+          "weight_share_b": 0.036,
+          "weight_share_delta_pp": 2.4,
+          "z_row_share": 0.7,
+          "delta_concentration": {
+            "n_distinct_queries": 115,
+            "top1_share_of_delta": 0.4292,
+            "top5_share_of_delta": 0.7487,
+            "hhi_of_delta": 0.2417,
+            "top_queries": [
+              {
+                "query": "金价",
+                "delta": 241.1
+              },
+              {
+                "query": "国际金价",
+                "delta": 128.71
+              },
+              {
+                "query": "实时金价行情",
+                "delta": -23.75
+              },
+              {
+                "query": "实时金价",
+                "delta": 15.37
+              },
+              {
+                "query": "金价还会继续下跌吗",
+                "delta": -11.61
+              }
+            ]
+          }
+        },
+        {
+          "label": "#22 银行及业务信息查询",
+          "rows_a": 105,
+          "rows_b": 242,
+          "row_share_a": 0.03575,
+          "row_share_b": 0.0121,
+          "row_share_delta_pp": -2.365,
+          "weight_share_a": 0.03292,
+          "weight_share_b": 0.00901,
+          "weight_share_delta_pp": -2.391,
+          "z_row_share": -9.8,
+          "delta_concentration": {
+            "n_distinct_queries": 260,
+            "top1_share_of_delta": 0.0416,
+            "top5_share_of_delta": 0.1106,
+            "hhi_of_delta": 0.0097,
+            "top_queries": [
+              {
+                "query": "预选行",
+                "delta": -46.21
+              },
+              {
+                "query": "100万存银行一年，哪个银行最划算",
+                "delta": -25.91
+              },
+              {
+                "query": "中国银行6个月内无呃资金往来需到柜台呃解封需要拿什么手续",
+                "delta": -20.0
+              },
+              {
+                "query": "银行最害怕三个投诉",
+                "delta": -20.0
+              },
+              {
+                "query": "邮政储蓄银行扣除短信费30元",
+                "delta": -10.57
+              }
+            ]
+          }
+        },
+        {
+          "label": "#76 金融术语与行情原因查询",
+          "rows_a": 90,
+          "rows_b": 136,
+          "row_share_a": 0.03064,
+          "row_share_b": 0.0068,
+          "row_share_delta_pp": -2.384,
+          "weight_share_a": 0.02669,
+          "weight_share_b": 0.00304,
+          "weight_share_delta_pp": -2.365,
+          "z_row_share": -12.21,
+          "delta_concentration": {
+            "n_distinct_queries": 200,
+            "top1_share_of_delta": 0.0232,
+            "top5_share_of_delta": 0.1161,
+            "hhi_of_delta": 0.0115,
+            "top_queries": [
+              {
+                "query": "爱美客有什么利空",
+                "delta": -20.0
+              },
+              {
+                "query": "伊顿属于什么板块",
+                "delta": -20.0
+              },
+              {
+                "query": "什么叫数字人民币",
+                "delta": -20.0
+              },
+              {
+                "query": "上市公司西部矿业主要是做什么业务为什么业绩相对好",
+                "delta": -20.0
+              },
+              {
+                "query": "银行36个月存单法是什什么回事",
+                "delta": -20.0
+              }
+            ]
+          }
+        },
+        {
+          "label": "#48 查询农业银行及农村金融机构信息",
+          "rows_a": 64,
+          "rows_b": 67,
+          "row_share_a": 0.02179,
+          "row_share_b": 0.00335,
+          "row_share_delta_pp": -1.844,
+          "weight_share_a": 0.0266,
+          "weight_share_b": 0.00314,
+          "weight_share_delta_pp": -2.345,
+          "z_row_share": -12.38,
+          "delta_concentration": {
+            "n_distinct_queries": 111,
+            "top1_share_of_delta": 0.1166,
+            "top5_share_of_delta": 0.3283,
+            "hhi_of_delta": 0.0337,
+            "top_queries": [
+              {
+                "query": "农业银行账户余额200可用余额0是什么",
+                "delta": -96.23
+              },
+              {
+                "query": "农业银行卡自动扣80是扣什么",
+                "delta": -55.74
+              },
+              {
+                "query": "农业银行卡uc批扣240是怎么回事",
+                "delta": -49.28
+              },
+              {
+                "query": "农业银行账户被冻结账户余额为0",
+                "delta": -40.43
+              },
+              {
+                "query": "农业银行凌晨自动扣钱3001元",
+                "delta": -29.25
+              }
+            ]
+          }
+        },
+        {
+          "label": "#45 银行卡业务办理与异常处理",
+          "rows_a": 79,
+          "rows_b": 120,
+          "row_share_a": 0.0269,
+          "row_share_b": 0.006,
+          "row_share_delta_pp": -2.09,
+          "weight_share_a": 0.02356,
+          "weight_share_b": 0.00243,
+          "weight_share_delta_pp": -2.114,
+          "z_row_share": -11.4,
+          "delta_concentration": {
+            "n_distinct_queries": 175,
+            "top1_share_of_delta": 0.0265,
+            "top5_share_of_delta": 0.0951,
+            "hhi_of_delta": 0.0124,
+            "top_queries": [
+              {
+                "query": "卡APP显示正常但是就是转账显示银行卡状态不正确是什么原因",
+                "delta": -20.0
+              },
+              {
+                "query": "为什么我的银行卡上取钱信息就旁人发到旁人身上",
+                "delta": -20.0
+              },
+              {
+                "query": "工商银行卡余额不足扣不了管理费怎么办",
+                "delta": -11.8
+              },
+              {
+                "query": "微信银行卡在哪里删除银行卡",
+                "delta": -10.0
+              },
+              {
+                "query": "小朋友搞银行卡的目的是",
+                "delta": -10.0
+              }
+            ]
+          }
+        },
+        {
+          "label": "#47 贷款信息查询与办理",
+          "rows_a": 73,
+          "rows_b": 140,
+          "row_share_a": 0.02486,
+          "row_share_b": 0.007,
+          "row_share_delta_pp": -1.785,
+          "weight_share_a": 0.02606,
+          "weight_share_b": 0.00555,
+          "weight_share_delta_pp": -2.051,
+          "z_row_share": -9.42,
+          "delta_concentration": {
+            "n_distinct_queries": 176,
+            "top1_share_of_delta": 0.1215,
+            "top5_share_of_delta": 0.2108,
+            "hhi_of_delta": 0.0248,
+            "top_queries": [
+              {
+                "query": "拍拍贷",
+                "delta": -99.75
+              },
+              {
+                "query": "2026年8月1号起实施的个人贷款新规",
+                "delta": -20.0
+              },
+              {
+                "query": "房地产信贷迎来重磅新政策",
+                "delta": -18.68
+              },
+              {
+                "query": "招贷分多少可以申请闪电贷",
+                "delta": -17.27
+              },
+              {
+                "query": "生源地助学贷款指定账户",
+                "delta": -17.27
+              }
+            ]
+          }
+        },
+        {
+          "label": "#55 黄金价格查询",
+          "rows_a": 21,
+          "rows_b": 105,
+          "row_share_a": 0.00715,
+          "row_share_b": 0.00525,
+          "row_share_delta_pp": -0.19,
+          "weight_share_a": 0.01422,
+          "weight_share_b": 0.03463,
+          "weight_share_delta_pp": 2.041,
+          "z_row_share": -1.3,
+          "delta_concentration": {
+            "n_distinct_queries": 89,
+            "top1_share_of_delta": 0.6315,
+            "top5_share_of_delta": 0.778,
+            "hhi_of_delta": 0.4066,
+            "top_queries": [
+              {
+                "query": "黄金价格",
+                "delta": 324.29
+              },
+              {
+                "query": "市场价格",
+                "delta": -27.28
+              },
+              {
+                "query": "黄金价格落吗",
+                "delta": -20.0
+              },
+              {
+                "query": "今日黄金价格",
+                "delta": 18.0
+              },
+              {
+                "query": "今日中国黄金价格",
+                "delta": -10.0
+              }
+            ]
+          }
+        },
+        {
+          "label": "#21 科技类股票行情查询",
+          "rows_a": 43,
+          "rows_b": 592,
+          "row_share_a": 0.01464,
+          "row_share_b": 0.0296,
+          "row_share_delta_pp": 1.496,
+          "weight_share_a": 0.01353,
+          "weight_share_b": 0.02969,
+          "weight_share_delta_pp": 1.616,
+          "z_row_share": 4.62,
+          "delta_concentration": {
+            "n_distinct_queries": 441,
+            "top1_share_of_delta": 0.0437,
+            "top5_share_of_delta": 0.1821,
+            "hhi_of_delta": 0.0131,
+            "top_queries": [
+              {
+                "query": "光迅科技股票值得买入吗",
+                "delta": -34.54
+              },
+              {
+                "query": "长鑫科技股票",
+                "delta": -31.88
+              },
+              {
+                "query": "美光科技股票",
+                "delta": 26.47
+              },
+              {
+                "query": "宇树科技股票今日行情",
+                "delta": -25.69
+              },
+              {
+                "query": "长电科技股票",
+                "delta": 25.24
+              }
+            ]
+          }
+        },
+        {
+          "label": "#49 股票行情查询",
+          "rows_a": 142,
+          "rows_b": 642,
+          "row_share_a": 0.04835,
+          "row_share_b": 0.0321,
+          "row_share_delta_pp": -1.624,
+          "weight_share_a": 0.0586,
+          "weight_share_b": 0.04713,
+          "weight_share_delta_pp": -1.147,
+          "z_row_share": -4.52,
+          "delta_concentration": {
+            "n_distinct_queries": 548,
+            "top1_share_of_delta": 0.0641,
+            "top5_share_of_delta": 0.1929,
+            "hhi_of_delta": 0.0135,
+            "top_queries": [
+              {
+                "query": "美国股市行情",
+                "delta": -106.82
+              },
+              {
+                "query": "股市信息上百度",
+                "delta": -73.43
+              },
+              {
+                "query": "美股实时行情",
+                "delta": -61.56
+              },
+              {
+                "query": "下周一股市最新预测",
+                "delta": -40.0
+              },
+              {
+                "query": "今日股市行情",
+                "delta": 39.81
+              }
+            ]
+          }
+        },
+        {
+          "label": "#1 板块与基金核心数据查询",
+          "rows_a": 55,
+          "rows_b": 231,
+          "row_share_a": 0.01873,
+          "row_share_b": 0.01155,
+          "row_share_delta_pp": -0.717,
+          "weight_share_a": 0.01486,
+          "weight_share_b": 0.00481,
+          "weight_share_delta_pp": -1.005,
+          "z_row_share": -3.27,
+          "delta_concentration": {
+            "n_distinct_queries": 252,
+            "top1_share_of_delta": 0.0555,
+            "top5_share_of_delta": 0.1625,
+            "hhi_of_delta": 0.0169,
+            "top_queries": [
+              {
+                "query": "ai股票龙头一览表",
+                "delta": -30.0
+              },
+              {
+                "query": "512400基金含哪些股票",
+                "delta": -20.0
+              },
+              {
+                "query": "长鑫存储概念龙头股票",
+                "delta": -17.27
+              },
+              {
+                "query": "液冷龙头股",
+                "delta": -10.63
+              },
+              {
+                "query": "A股军工龙头有哪些",
+                "delta": -10.0
+              }
+            ]
+          }
+        },
+        {
+          "label": "#73 金融类App下载查询",
+          "rows_a": 30,
+          "rows_b": 194,
+          "row_share_a": 0.01021,
+          "row_share_b": 0.0097,
+          "row_share_delta_pp": -0.051,
+          "weight_share_a": 0.01442,
+          "weight_share_b": 0.0048,
+          "weight_share_delta_pp": -0.962,
+          "z_row_share": -0.26,
+          "delta_concentration": {
+            "n_distinct_queries": 170,
+            "top1_share_of_delta": 0.2418,
+            "top5_share_of_delta": 0.4406,
+            "hhi_of_delta": 0.0764,
+            "top_queries": [
+              {
+                "query": "paypal",
+                "delta": -125.14
+              },
+              {
+                "query": "通达信app手机版下载",
+                "delta": -32.27
+              },
+              {
+                "query": "金融中国app官方正版下载",
+                "delta": -31.65
+              },
+              {
+                "query": "中国邮政银行手机APP我失了怎样自己解挂解",
+                "delta": -20.0
+              },
+              {
+                "query": "度小满金融app下载",
+                "delta": -19.0
+              }
+            ]
+          }
+        },
+        {
+          "label": "#57 大盘走势查询",
+          "rows_a": 19,
+          "rows_b": 157,
+          "row_share_a": 0.00647,
+          "row_share_b": 0.00785,
+          "row_share_delta_pp": 0.138,
+          "weight_share_a": 0.00723,
+          "weight_share_b": 0.01184,
+          "weight_share_delta_pp": 0.461,
+          "z_row_share": 0.8,
+          "delta_concentration": {
+            "n_distinct_queries": 110,
+            "top1_share_of_delta": 0.087,
+            "top5_share_of_delta": 0.3053,
+            "hhi_of_delta": 0.0335,
+            "top_queries": [
+              {
+                "query": "分析大盘走势",
+                "delta": -17.27
+              },
+              {
+                "query": "大盘指数",
+                "delta": 14.71
+              },
+              {
+                "query": "外盘",
+                "delta": -10.0
+              },
+              {
+                "query": "炒股票到底是以个股为准还是以大盘为准",
+                "delta": -10.0
+              },
+              {
+                "query": "大盘股连续涨停后如何操作",
+                "delta": -8.64
+              }
+            ]
+          }
+        },
+        {
+          "label": "#40 查询A股股票及板块信息",
+          "rows_a": 27,
+          "rows_b": 261,
+          "row_share_a": 0.00919,
+          "row_share_b": 0.01305,
+          "row_share_delta_pp": 0.386,
+          "weight_share_a": 0.00977,
+          "weight_share_b": 0.01404,
+          "weight_share_delta_pp": 0.426,
+          "z_row_share": 1.75,
+          "delta_concentration": {
+            "n_distinct_queries": 208,
+            "top1_share_of_delta": 0.0497,
+            "top5_share_of_delta": 0.2063,
+            "hhi_of_delta": 0.0204,
+            "top_queries": [
+              {
+                "query": "国泰君安",
+                "delta": -18.44
+              },
+              {
+                "query": "京投发展重组",
+                "delta": -17.27
+              },
+              {
+                "query": "京东方a",
+                "delta": 16.99
+              },
+              {
+                "query": "ai板块",
+                "delta": -12.78
+              },
+              {
+                "query": "科创50",
+                "delta": 11.11
+              }
+            ]
+          }
+        },
+        {
+          "label": "#80 银行股票信息查询",
+          "rows_a": 8,
+          "rows_b": 113,
+          "row_share_a": 0.00272,
+          "row_share_b": 0.00565,
+          "row_share_delta_pp": 0.293,
+          "weight_share_a": 0.00195,
+          "weight_share_b": 0.0061,
+          "weight_share_delta_pp": 0.414,
+          "z_row_share": 2.04,
+          "delta_concentration": {
+            "n_distinct_queries": 75,
+            "top1_share_of_delta": 0.1279,
+            "top5_share_of_delta": 0.4097,
+            "hhi_of_delta": 0.049,
+            "top_queries": [
+              {
+                "query": "渤海银行 股票",
+                "delta": -17.27
+              },
+              {
+                "query": "工商银行股票",
+                "delta": 10.13
+              },
+              {
+                "query": "交通银行股票行情",
+                "delta": -10.0
+              },
+              {
+                "query": "农业银行股票",
+                "delta": 9.3
+              },
+              {
+                "query": "A股和港股银行股哪个更值得投资",
+                "delta": -8.64
+              }
+            ]
+          }
+        },
+        {
+          "label": "#2 术语含义查询",
+          "rows_a": 24,
+          "rows_b": 137,
+          "row_share_a": 0.00817,
+          "row_share_b": 0.00685,
+          "row_share_delta_pp": -0.132,
+          "weight_share_a": 0.00683,
+          "weight_share_b": 0.00296,
+          "weight_share_delta_pp": -0.387,
+          "z_row_share": -0.8,
+          "delta_concentration": {
+            "n_distinct_queries": 129,
+            "top1_share_of_delta": 0.0411,
+            "top5_share_of_delta": 0.1956,
+            "hhi_of_delta": 0.0288,
+            "top_queries": [
+              {
+                "query": "9920短期解控是什么意思",
+                "delta": -10.63
+              },
+              {
+                "query": "5%的利息是什么意思",
+                "delta": -10.0
+              },
+              {
+                "query": "这个月刚开始手机费用就用完了然后还显示透支的额度也已用完什么意思",
+                "delta": -10.0
+              },
+              {
+                "query": "网银在线备付金账户是什么意思",
+                "delta": -10.0
+              },
+              {
+                "query": "网上老说农商行退市什么意思啊人心惶惶的",
+                "delta": -10.0
+              }
+            ]
+          }
+        },
+        {
+          "label": "#66 银行客服电话查询",
+          "rows_a": 23,
+          "rows_b": 215,
+          "row_share_a": 0.00783,
+          "row_share_b": 0.01075,
+          "row_share_delta_pp": 0.292,
+          "weight_share_a": 0.00602,
+          "weight_share_b": 0.00953,
+          "weight_share_delta_pp": 0.351,
+          "z_row_share": 1.46,
+          "delta_concentration": {
+            "n_distinct_queries": 177,
+            "top1_share_of_delta": 0.0448,
+            "top5_share_of_delta": 0.1869,
+            "hhi_of_delta": 0.0212,
+            "top_queries": [
+              {
+                "query": "中国银行人工客服电话",
+                "delta": 15.18
+              },
+              {
+                "query": "建行客服电话",
+                "delta": 14.92
+              },
+              {
+                "query": "农业银行客服电话",
+                "delta": 13.18
+              },
+              {
+                "query": "浦发银行售后电话",
+                "delta": -10.0
+              },
+              {
+                "query": "中国银行客户服务电话",
+                "delta": -10.0
+              }
+            ]
+          }
+        },
+        {
+          "label": "#13 特定股票查询",
+          "rows_a": 10,
+          "rows_b": 172,
+          "row_share_a": 0.0034,
+          "row_share_b": 0.0086,
+          "row_share_delta_pp": 0.52,
+          "weight_share_a": 0.00321,
+          "weight_share_b": 0.00638,
+          "weight_share_delta_pp": 0.317,
+          "z_row_share": 2.96,
+          "delta_concentration": {
+            "n_distinct_queries": 120,
+            "top1_share_of_delta": 0.1338,
+            "top5_share_of_delta": 0.3638,
+            "hhi_of_delta": 0.0424,
+            "top_queries": [
+              {
+                "query": "盛龙股份股票的目标价是多少",
+                "delta": -25.91
+              },
+              {
+                "query": "包钢股份8月26日开盘后走势如何",
+                "delta": -17.27
+              },
+              {
+                "query": "万向德龙股票",
+                "delta": -10.0
+              },
+              {
+                "query": "各钢铁股比较也有鞍钢股份",
+                "delta": -8.64
+              },
+              {
+                "query": "鞍钢股份2026年上半年财务报告详细解读",
+                "delta": -8.64
+              }
+            ]
+          }
+        },
+        {
+          "label": "#10 黄金价格与行情查询",
+          "rows_a": 44,
+          "rows_b": 453,
+          "row_share_a": 0.01498,
+          "row_share_b": 0.02265,
+          "row_share_delta_pp": 0.767,
+          "weight_share_a": 0.01643,
+          "weight_share_b": 0.01951,
+          "weight_share_delta_pp": 0.308,
+          "z_row_share": 2.67,
+          "delta_concentration": {
+            "n_distinct_queries": 352,
+            "top1_share_of_delta": 0.1993,
+            "top5_share_of_delta": 0.3388,
+            "hhi_of_delta": 0.0496,
+            "top_queries": [
+              {
+                "query": "今日大盘价黄金多少",
+                "delta": -142.34
+              },
+              {
+                "query": "2026今日金价多少一克",
+                "delta": -33.4
+              },
+              {
+                "query": "金价现在多少钱一克",
+                "delta": -30.0
+              },
+              {
+                "query": "黄金今日价钱多少一克",
+                "delta": -19.45
+              },
+              {
+                "query": "黄金大盘的价格",
+                "delta": -16.76
+              }
+            ]
+          }
+        },
+        {
+          "label": "#39 加密货币交易所App官方下载地址查询",
+          "rows_a": 14,
+          "rows_b": 122,
+          "row_share_a": 0.00477,
+          "row_share_b": 0.0061,
+          "row_share_delta_pp": 0.133,
+          "weight_share_a": 0.00592,
+          "weight_share_b": 0.00284,
+          "weight_share_delta_pp": -0.308,
+          "z_row_share": 0.88,
+          "delta_concentration": {
+            "n_distinct_queries": 118,
+            "top1_share_of_delta": 0.3441,
+            "top5_share_of_delta": 0.553,
+            "hhi_of_delta": 0.1383,
+            "top_queries": [
+              {
+                "query": "指南针炒股软件手机版官方下载",
+                "delta": -75.34
+              },
+              {
+                "query": "行情网站www无需下载/百度搜索",
+                "delta": -17.84
+              },
+              {
+                "query": "大额交易可以交易报告",
+                "delta": -10.0
+              },
+              {
+                "query": "行情网站www无需下载直接打开/百度搜索",
+                "delta": -9.28
+              },
+              {
+                "query": "如何判断下载的指南针版本是否官方正版",
+                "delta": -8.64
+              }
+            ]
+          }
+        },
+        {
+          "label": "#42 借款平台正规性查询",
+          "rows_a": 19,
+          "rows_b": 123,
+          "row_share_a": 0.00647,
+          "row_share_b": 0.00615,
+          "row_share_delta_pp": -0.032,
+          "weight_share_a": 0.00551,
+          "weight_share_b": 0.0026,
+          "weight_share_delta_pp": -0.291,
+          "z_row_share": -0.21,
+          "delta_concentration": {
+            "n_distinct_queries": 118,
+            "top1_share_of_delta": 0.1091,
+            "top5_share_of_delta": 0.3507,
+            "hhi_of_delta": 0.0435,
+            "top_queries": [
+              {
+                "query": "期货哪个平台最正规",
+                "delta": -23.23
+              },
+              {
+                "query": "征信烂急用钱5000有哪些平台",
+                "delta": -17.27
+              },
+              {
+                "query": "现货黄金交易正规平台",
+                "delta": -14.2
+              },
+              {
+                "query": "哪个平台不看征信可以贷点款",
+                "delta": -10.0
+              },
+              {
+                "query": "分期乐发票找哪个平台",
+                "delta": -10.0
+              }
+            ]
+          }
+        },
+        {
+          "label": "#58 ST股票信息查询",
+          "rows_a": 10,
+          "rows_b": 78,
+          "row_share_a": 0.0034,
+          "row_share_b": 0.0039,
+          "row_share_delta_pp": 0.05,
+          "weight_share_a": 0.0033,
+          "weight_share_b": 0.00121,
+          "weight_share_delta_pp": -0.209,
+          "z_row_share": 0.41,
+          "delta_concentration": {
+            "n_distinct_queries": 81,
+            "top1_share_of_delta": 0.14,
+            "top5_share_of_delta": 0.4531,
+            "hhi_of_delta": 0.0694,
+            "top_queries": [
+              {
+                "query": "*ST萃华股票还能卖吗",
+                "delta": -17.27
+              },
+              {
+                "query": "天际股份是不是一调查就ST了",
+                "delta": -10.0
+              },
+              {
+                "query": "st北信源股票",
+                "delta": -10.0
+              },
+              {
+                "query": "ST柳树的柳柳化是干什么的ST柳化",
+                "delta": -10.0
+              },
+              {
+                "query": "ST康佳退市后，公司会重组吗",
+                "delta": -8.64
+              }
+            ]
+          }
+        },
+        {
+          "label": "#75 每日答题活动答案查询",
+          "rows_a": 46,
+          "rows_b": 171,
+          "row_share_a": 0.01566,
+          "row_share_b": 0.00855,
+          "row_share_delta_pp": -0.711,
+          "weight_share_a": 0.01064,
+          "weight_share_b": 0.00859,
+          "weight_share_delta_pp": -0.205,
+          "z_row_share": -3.72,
+          "delta_concentration": {
+            "n_distinct_queries": 169,
+            "top1_share_of_delta": 0.0959,
+            "top5_share_of_delta": 0.3078,
+            "hhi_of_delta": 0.0313,
+            "top_queries": [
+              {
+                "query": "黄色信号灯蚂蚁庄园",
+                "delta": -40.0
+              },
+              {
+                "query": "蚂蚁庄园今日答案",
+                "delta": 38.44
+              },
+              {
+                "query": "低血糖表现蚂蚁庄园",
+                "delta": -20.0
+              },
+              {
+                "query": "为什么黄色交通信号灯蚂蚁庄园",
+                "delta": -20.0
+              },
+              {
+                "query": "马蚁庄园今日答案",
+                "delta": -10.0
+              }
+            ]
+          }
+        },
+        {
+          "label": "#38 加密货币价格行情查询",
+          "rows_a": 21,
+          "rows_b": 214,
+          "row_share_a": 0.00715,
+          "row_share_b": 0.0107,
+          "row_share_delta_pp": 0.355,
+          "weight_share_a": 0.00733,
+          "weight_share_b": 0.00932,
+          "weight_share_delta_pp": 0.199,
+          "z_row_share": 1.78,
+          "delta_concentration": {
+            "n_distinct_queries": 179,
+            "top1_share_of_delta": 0.0683,
+            "top5_share_of_delta": 0.2336,
+            "hhi_of_delta": 0.0242,
+            "top_queries": [
+              {
+                "query": "比特币行情",
+                "delta": -19.97
+              },
+              {
+                "query": "比特币怎么持有",
+                "delta": -17.27
+              },
+              {
+                "query": "比特币的最新价格",
+                "delta": -11.07
+              },
+              {
+                "query": "near币",
+                "delta": -10.0
+              },
+              {
+                "query": "辅币是主币的",
+                "delta": -10.0
+              }
+            ]
+          }
+        },
+        {
+          "label": "#59 白银价格行情查询",
+          "rows_a": 16,
+          "rows_b": 78,
+          "row_share_a": 0.00545,
+          "row_share_b": 0.0039,
+          "row_share_delta_pp": -0.155,
+          "weight_share_a": 0.00569,
+          "weight_share_b": 0.00745,
+          "weight_share_delta_pp": 0.175,
+          "z_row_share": -1.23,
+          "delta_concentration": {
+            "n_distinct_queries": 64,
+            "top1_share_of_delta": 0.1264,
+            "top5_share_of_delta": 0.414,
+            "hhi_of_delta": 0.0541,
+            "top_queries": [
+              {
+                "query": "白银价格",
+                "delta": 20.09
+              },
+              {
+                "query": "2026年银价预测是多少",
+                "delta": -17.27
+              },
+              {
+                "query": "持仓大白话解释",
+                "delta": -10.0
+              },
+              {
+                "query": "白银今日银价",
+                "delta": -9.82
+              },
+              {
+                "query": "白银有色这只股票短期内走势将怎么样",
+                "delta": -8.64
+              }
+            ]
+          }
+        },
+        {
+          "label": "#74 黄金价格及黄金股票行情查询",
+          "rows_a": 30,
+          "rows_b": 128,
+          "row_share_a": 0.01021,
+          "row_share_b": 0.0064,
+          "row_share_delta_pp": -0.381,
+          "weight_share_a": 0.00822,
+          "weight_share_b": 0.00659,
+          "weight_share_delta_pp": -0.164,
+          "z_row_share": -2.33,
+          "delta_concentration": {
+            "n_distinct_queries": 112,
+            "top1_share_of_delta": 0.1065,
+            "top5_share_of_delta": 0.2854,
+            "hhi_of_delta": 0.034,
+            "top_queries": [
+              {
+                "query": "黄金",
+                "delta": -33.0
+              },
+              {
+                "query": "伦敦金",
+                "delta": 17.93
+              },
+              {
+                "query": "我认为黄金还会回调到4100美元附近",
+                "delta": -17.27
+              },
+              {
+                "query": "炒黄金",
+                "delta": -10.2
+              },
+              {
+                "query": "2026黄金会跌到650吗",
+                "delta": -10.0
+              }
+            ]
+          }
+        },
+        {
+          "label": "#62 金属行情报价查询",
+          "rows_a": 6,
+          "rows_b": 79,
+          "row_share_a": 0.00204,
+          "row_share_b": 0.00395,
+          "row_share_delta_pp": 0.191,
+          "weight_share_a": 0.00299,
+          "weight_share_b": 0.00397,
+          "weight_share_delta_pp": 0.098,
+          "z_row_share": 1.59,
+          "delta_concentration": {
+            "n_distinct_queries": 62,
+            "top1_share_of_delta": 0.4012,
+            "top5_share_of_delta": 0.7947,
+            "hhi_of_delta": 0.2077,
+            "top_queries": [
+              {
+                "query": "领峰贵金属",
+                "delta": -59.94
+              },
+              {
+                "query": "长江有色金属网",
+                "delta": 19.83
+              },
+              {
+                "query": "上海有色金属网",
+                "delta": 17.28
+              },
+              {
+                "query": "贵金属交易软件",
+                "delta": -17.21
+              },
+              {
+                "query": "铜陵有色股票",
+                "delta": 4.46
+              }
+            ]
+          }
+        },
+        {
+          "label": "#78 查询金融品种价格走势图",
+          "rows_a": 31,
+          "rows_b": 159,
+          "row_share_a": 0.01055,
+          "row_share_b": 0.00795,
+          "row_share_delta_pp": -0.26,
+          "weight_share_a": 0.00779,
+          "weight_share_b": 0.00687,
+          "weight_share_delta_pp": -0.092,
+          "z_row_share": -1.45,
+          "delta_concentration": {
+            "n_distinct_queries": 147,
+            "top1_share_of_delta": 0.0935,
+            "top5_share_of_delta": 0.2433,
+            "hhi_of_delta": 0.0281,
+            "top_queries": [
+              {
+                "query": "光环新网走势",
+                "delta": -25.91
+              },
+              {
+                "query": "黄金价格走势图",
+                "delta": 11.5
+              },
+              {
+                "query": "下周黄金短期走势预测",
+                "delta": -10.0
+              },
+              {
+                "query": "矿业紫金矿业礼拜一走势怎么样",
+                "delta": -10.0
+              },
+              {
+                "query": "汇绿生态的走势",
+                "delta": -10.0
+              }
+            ]
+          }
+        },
+        {
+          "label": "#50 货币兑换查询",
+          "rows_a": 43,
+          "rows_b": 366,
+          "row_share_a": 0.01464,
+          "row_share_b": 0.0183,
+          "row_share_delta_pp": 0.366,
+          "weight_share_a": 0.01079,
+          "weight_share_b": 0.01132,
+          "weight_share_delta_pp": 0.053,
+          "z_row_share": 1.4,
+          "delta_concentration": {
+            "n_distinct_queries": 280,
+            "top1_share_of_delta": 0.0653,
+            "top5_share_of_delta": 0.1525,
+            "hhi_of_delta": 0.0162,
+            "top_queries": [
+              {
+                "query": "第五套人民币",
+                "delta": -30.0
+              },
+              {
+                "query": "只有一张百元美钞也银行也给换取人民币吧",
+                "delta": -10.0
+              },
+              {
+                "query": "台币30台币兑换多少人民币",
+                "delta": -10.0
+              },
+              {
+                "query": "1980年版二元人民币",
+                "delta": -10.0
+              },
+              {
+                "query": "人民币新版一元的动物",
+                "delta": -10.0
+              }
+            ]
+          }
+        },
+        {
+          "label": "#72 股票代码查询",
+          "rows_a": 16,
+          "rows_b": 192,
+          "row_share_a": 0.00545,
+          "row_share_b": 0.0096,
+          "row_share_delta_pp": 0.415,
+          "weight_share_a": 0.00471,
+          "weight_share_b": 0.00448,
+          "weight_share_delta_pp": -0.023,
+          "z_row_share": 2.22,
+          "delta_concentration": {
+            "n_distinct_queries": 149,
+            "top1_share_of_delta": 0.046,
+            "top5_share_of_delta": 0.2298,
+            "hhi_of_delta": 0.0286,
+            "top_queries": [
+              {
+                "query": "2026最新邮票发行计划",
+                "delta": -10.0
+              },
+              {
+                "query": "中邮理财同心2号景洪封闭式2026年第25期",
+                "delta": -10.0
+              },
+              {
+                "query": "1665",
+                "delta": -10.0
+              },
+              {
+                "query": "2386",
+                "delta": -10.0
+              },
+              {
+                "query": "2012年浙江女强人吴英融资亏损8亿本人照片",
+                "delta": -10.0
+              }
+            ]
+          }
+        },
+        {
+          "label": "#67 银行信用卡客服电话查询",
+          "rows_a": 26,
+          "rows_b": 146,
+          "row_share_a": 0.00885,
+          "row_share_b": 0.0073,
+          "row_share_delta_pp": -0.155,
+          "weight_share_a": 0.00826,
+          "weight_share_b": 0.00841,
+          "weight_share_delta_pp": 0.015,
+          "z_row_share": -0.91,
+          "delta_concentration": {
+            "n_distinct_queries": 135,
+            "top1_share_of_delta": 0.0533,
+            "top5_share_of_delta": 0.1528,
+            "hhi_of_delta": 0.0208,
+            "top_queries": [
+              {
+                "query": "中信银行信用卡中心电话",
+                "delta": 22.18
+              },
+              {
+                "query": "广发银行信用卡电话",
+                "delta": 11.38
+              },
+              {
+                "query": "四川分行信用卡活动参与入口为",
+                "delta": -10.0
+              },
+              {
+                "query": "信用卡还款是账单出了钱还好还是账单出来后还好",
+                "delta": -10.0
+              },
+              {
+                "query": "农业银行信用卡的客服电话多少",
+                "delta": -10.0
+              }
+            ]
+          }
+        }
+      ],
+      "emergent": [
+        {
+          "label": "#6 股票股吧查询",
+          "rows_a": 36,
+          "rows_b": 2282,
+          "row_share_a": 0.01226,
+          "row_share_b": 0.11412,
+          "row_share_delta_pp": 10.186,
+          "weight_share_a": 0.01129,
+          "weight_share_b": 0.04386,
+          "weight_share_delta_pp": 3.258,
+          "z_row_share": 17.1,
+          "delta_concentration": {
+            "n_distinct_queries": 1898,
+            "top1_share_of_delta": 0.0166,
+            "top5_share_of_delta": 0.0705,
+            "hhi_of_delta": 0.0032,
+            "top_queries": [
+              {
+                "query": "东鹏特饮2020的peg",
+                "delta": -20.0
+              },
+              {
+                "query": "永辉超市股吧",
+                "delta": -19.61
+              },
+              {
+                "query": "10转10送10股派10元",
+                "delta": -18.13
+              },
+              {
+                "query": "中科仪2026中报",
+                "delta": -17.27
+              },
+              {
+                "query": "000676智度股份它的核心技术比例高吗未来股值和业绩成长空间大吗",
+                "delta": -10.0
+              }
+            ]
+          }
+        },
+        {
+          "label": "#51 股票代码查询",
+          "rows_a": 11,
+          "rows_b": 1215,
+          "row_share_a": 0.00375,
+          "row_share_b": 0.06076,
+          "row_share_delta_pp": 5.701,
+          "weight_share_a": 0.00343,
+          "weight_share_b": 0.02408,
+          "weight_share_delta_pp": 2.065,
+          "z_row_share": 12.83,
+          "delta_concentration": {
+            "n_distinct_queries": 866,
+            "top1_share_of_delta": 0.0191,
+            "top5_share_of_delta": 0.0877,
+            "hhi_of_delta": 0.0047,
+            "top_queries": [
+              {
+                "query": "沪深300",
+                "delta": 11.16
+              },
+              {
+                "query": "300瑞",
+                "delta": -10.0
+              },
+              {
+                "query": "600206历史资金流向",
+                "delta": -10.0
+              },
+              {
+                "query": "174000美元",
+                "delta": -10.0
+              },
+              {
+                "query": "603986是主板还是科创板",
+                "delta": -10.0
+              }
+            ]
+          }
+        },
+        {
+          "label": "#53 个股股票信息查询",
+          "rows_a": 21,
+          "rows_b": 406,
+          "row_share_a": 0.00715,
+          "row_share_b": 0.0203,
+          "row_share_delta_pp": 1.315,
+          "weight_share_a": 0.00486,
+          "weight_share_b": 0.0198,
+          "weight_share_delta_pp": 1.494,
+          "z_row_share": 4.92,
+          "delta_concentration": {
+            "n_distinct_queries": 282,
+            "top1_share_of_delta": 0.0605,
+            "top5_share_of_delta": 0.1621,
+            "hhi_of_delta": 0.0138,
+            "top_queries": [
+              {
+                "query": "东阳光股票",
+                "delta": -25.92
+              },
+              {
+                "query": "台积电股票",
+                "delta": 12.39
+              },
+              {
+                "query": "大唐发电股票",
+                "delta": 11.11
+              },
+              {
+                "query": "三安光电最近行",
+                "delta": -10.0
+              },
+              {
+                "query": "国腾量子股票代码",
+                "delta": -10.0
+              }
+            ]
+          }
+        },
+        {
+          "label": "#77 个股资料与行情查询",
+          "rows_a": 8,
+          "rows_b": 316,
+          "row_share_a": 0.00272,
+          "row_share_b": 0.0158,
+          "row_share_delta_pp": 1.308,
+          "weight_share_a": 0.00205,
+          "weight_share_b": 0.01071,
+          "weight_share_delta_pp": 0.866,
+          "z_row_share": 5.61,
+          "delta_concentration": {
+            "n_distinct_queries": 242,
+            "top1_share_of_delta": 0.124,
+            "top5_share_of_delta": 0.2332,
+            "hhi_of_delta": 0.0242,
+            "top_queries": [
+              {
+                "query": "宇树股份股票",
+                "delta": -31.03
+              },
+              {
+                "query": "广信股份股价近期会反弹吗",
+                "delta": -8.64
+              },
+              {
+                "query": "彩虹股份股票",
+                "delta": 7.36
+              },
+              {
+                "query": "牧原股份股票",
+                "delta": 5.71
+              },
+              {
+                "query": "沪电股份股票",
+                "delta": 5.64
+              }
+            ]
+          }
+        },
+        {
+          "label": "#65 金融机构24小时人工客服电话查询",
+          "rows_a": 4,
+          "rows_b": 158,
+          "row_share_a": 0.00136,
+          "row_share_b": 0.0079,
+          "row_share_delta_pp": 0.654,
+          "weight_share_a": 0.00124,
+          "weight_share_b": 0.00677,
+          "weight_share_delta_pp": 0.553,
+          "z_row_share": 3.95,
+          "delta_concentration": {
+            "n_distinct_queries": 124,
+            "top1_share_of_delta": 0.0842,
+            "top5_share_of_delta": 0.3,
+            "hhi_of_delta": 0.0302,
+            "top_queries": [
+              {
+                "query": "建设银行客服24小时人工服务电话",
+                "delta": 14.53
+              },
+              {
+                "query": "民丰银行24小时人工客服电话",
+                "delta": -10.0
+              },
+              {
+                "query": "农村信用社24服务热线电话",
+                "delta": -10.0
+              },
+              {
+                "query": "中华联合24小时人工客服电话怎么转接",
+                "delta": -8.64
+              },
+              {
+                "query": "华鑫信托客服电话人工服务怎么转接",
+                "delta": -8.64
+              }
+            ]
+          }
+        },
+        {
+          "label": "#52 能源资源类股票查询",
+          "rows_a": 6,
+          "rows_b": 160,
+          "row_share_a": 0.00204,
+          "row_share_b": 0.008,
+          "row_share_delta_pp": 0.596,
+          "weight_share_a": 0.00187,
+          "weight_share_b": 0.00483,
+          "weight_share_delta_pp": 0.296,
+          "z_row_share": 3.56,
+          "delta_concentration": {
+            "n_distinct_queries": 112,
+            "top1_share_of_delta": 0.1986,
+            "top5_share_of_delta": 0.4216,
+            "hhi_of_delta": 0.0581,
+            "top_queries": [
+              {
+                "query": "阳光电源股票为什么暴跌",
+                "delta": -25.91
+              },
+              {
+                "query": "永泰能源半年报股东人数",
+                "delta": -8.64
+              },
+              {
+                "query": "宁波能源算强势？",
+                "delta": -8.64
+              },
+              {
+                "query": "阳光电源股票",
+                "delta": 7.26
+              },
+              {
+                "query": "盛和资源股票",
+                "delta": 4.55
+              }
+            ]
+          }
+        },
+        {
+          "label": "#4 国际原油价格行情查询",
+          "rows_a": 4,
+          "rows_b": 116,
+          "row_share_a": 0.00136,
+          "row_share_b": 0.0058,
+          "row_share_delta_pp": 0.444,
+          "weight_share_a": 0.00083,
+          "weight_share_b": 0.00363,
+          "weight_share_delta_pp": 0.281,
+          "z_row_share": 3.11,
+          "delta_concentration": {
+            "n_distinct_queries": 82,
+            "top1_share_of_delta": 0.1336,
+            "top5_share_of_delta": 0.3176,
+            "hhi_of_delta": 0.038,
+            "top_queries": [
+              {
+                "query": "美原油暗盘",
+                "delta": -10.0
+              },
+              {
+                "query": "国际油价实时走势图",
+                "delta": 3.95
+              },
+              {
+                "query": "国际油价未来走势如何",
+                "delta": -3.5
+              },
+              {
+                "query": "原油价格",
+                "delta": 3.28
+              },
+              {
+                "query": "原油期货",
+                "delta": 3.04
+              }
+            ]
+          }
+        },
+        {
+          "label": "#68 数字串含义查询",
+          "rows_a": 2,
+          "rows_b": 157,
+          "row_share_a": 0.00068,
+          "row_share_b": 0.00785,
+          "row_share_delta_pp": 0.717,
+          "weight_share_a": 0.00058,
+          "weight_share_b": 0.00314,
+          "weight_share_delta_pp": 0.256,
+          "z_row_share": 4.37,
+          "delta_concentration": {
+            "n_distinct_queries": 115,
+            "top1_share_of_delta": 0.1079,
+            "top5_share_of_delta": 0.3814,
+            "hhi_of_delta": 0.0414,
+            "top_queries": [
+              {
+                "query": "8月28日夜盘玻璃2701走势预测",
+                "delta": -8.64
+              },
+              {
+                "query": "丰汇00727业绩预告全文",
+                "delta": -8.64
+              },
+              {
+                "query": "725",
+                "delta": 8.41
+              },
+              {
+                "query": "七月流火",
+                "delta": 3.43
+              },
+              {
+                "query": "977",
+                "delta": 1.4
+              }
+            ]
+          }
+        },
+        {
+          "label": "#63 电话号码归属与用途查询",
+          "rows_a": 8,
+          "rows_b": 161,
+          "row_share_a": 0.00272,
+          "row_share_b": 0.00805,
+          "row_share_delta_pp": 0.533,
+          "weight_share_a": 0.00225,
+          "weight_share_b": 0.00468,
+          "weight_share_delta_pp": 0.243,
+          "z_row_share": 3.15,
+          "delta_concentration": {
+            "n_distinct_queries": 146,
+            "top1_share_of_delta": 0.0718,
+            "top5_share_of_delta": 0.3302,
+            "hhi_of_delta": 0.0338,
+            "top_queries": [
+              {
+                "query": "95126一般打过来干嘛的",
+                "delta": -11.12
+              },
+              {
+                "query": "9540375是什么号",
+                "delta": -10.0
+              },
+              {
+                "query": "9547111是什么电话",
+                "delta": -10.0
+              },
+              {
+                "query": "80652024什么电话",
+                "delta": -10.0
+              },
+              {
+                "query": "952785是哪的电话",
+                "delta": -10.0
+              }
+            ]
+          }
+        },
+        {
+          "label": "#64 银行客服短号查询",
+          "rows_a": 6,
+          "rows_b": 122,
+          "row_share_a": 0.00204,
+          "row_share_b": 0.0061,
+          "row_share_delta_pp": 0.406,
+          "weight_share_a": 0.00185,
+          "weight_share_b": 0.00407,
+          "weight_share_delta_pp": 0.222,
+          "z_row_share": 2.76,
+          "delta_concentration": {
+            "n_distinct_queries": 84,
+            "top1_share_of_delta": 0.1113,
+            "top5_share_of_delta": 0.4364,
+            "hhi_of_delta": 0.0477,
+            "top_queries": [
+              {
+                "query": "95588可以协商还本金吗",
+                "delta": -15.24
+              },
+              {
+                "query": "95566来电不接没事吧",
+                "delta": -13.4
+              },
+              {
+                "query": "工商逾期后95588催收",
+                "delta": -11.74
+              },
+              {
+                "query": "95588",
+                "delta": 10.77
+              },
+              {
+                "query": "95580客服如何转接至三家镇网点",
+                "delta": -8.64
+              }
+            ]
+          }
+        },
+        {
+          "label": "#70 金融代码行情查询",
+          "rows_a": 2,
+          "rows_b": 140,
+          "row_share_a": 0.00068,
+          "row_share_b": 0.007,
+          "row_share_delta_pp": 0.632,
+          "weight_share_a": 0.00067,
+          "weight_share_b": 0.00268,
+          "weight_share_delta_pp": 0.201,
+          "z_row_share": 4.08,
+          "delta_concentration": {
+            "n_distinct_queries": 100,
+            "top1_share_of_delta": 0.1385,
+            "top5_share_of_delta": 0.3305,
+            "hhi_of_delta": 0.0439,
+            "top_queries": [
+              {
+                "query": "深圳机场主力净流入243.28万",
+                "delta": -10.0
+              },
+              {
+                "query": "2460",
+                "delta": -9.29
+              },
+              {
+                "query": "1248",
+                "delta": 1.62
+              },
+              {
+                "query": "2354",
+                "delta": 1.58
+              },
+              {
+                "query": "2465",
+                "delta": 1.37
+              }
+            ]
+          }
+        },
+        {
+          "label": "#9 期货行情查询",
+          "rows_a": 10,
+          "rows_b": 207,
+          "row_share_a": 0.0034,
+          "row_share_b": 0.01035,
+          "row_share_delta_pp": 0.695,
+          "weight_share_a": 0.00328,
+          "weight_share_b": 0.00483,
+          "weight_share_delta_pp": 0.156,
+          "z_row_share": 3.63,
+          "delta_concentration": {
+            "n_distinct_queries": 157,
+            "top1_share_of_delta": 0.1037,
+            "top5_share_of_delta": 0.3266,
+            "hhi_of_delta": 0.0351,
+            "top_queries": [
+              {
+                "query": "沪铜沪铝黄金白银期货今日铜价行情",
+                "delta": -19.73
+              },
+              {
+                "query": "美原油黄金白银铜铝期货价格最新行情查询表",
+                "delta": -15.12
+              },
+              {
+                "query": "铁矿石期货价格为什么连年下降",
+                "delta": -10.0
+              },
+              {
+                "query": "2026年4月30日生猪期货为何冲高",
+                "delta": -8.64
+              },
+              {
+                "query": "长安期货的高层管理人员中谁最年轻",
+                "delta": -8.64
+              }
+            ]
+          }
+        },
+        {
+          "label": "#71 数字代码查询",
+          "rows_a": 6,
+          "rows_b": 156,
+          "row_share_a": 0.00204,
+          "row_share_b": 0.0078,
+          "row_share_delta_pp": 0.576,
+          "weight_share_a": 0.00177,
+          "weight_share_b": 0.00276,
+          "weight_share_delta_pp": 0.099,
+          "z_row_share": 3.48,
+          "delta_concentration": {
+            "n_distinct_queries": 124,
+            "top1_share_of_delta": 0.1847,
+            "top5_share_of_delta": 0.4906,
+            "hhi_of_delta": 0.0649,
+            "top_queries": [
+              {
+                "query": "2019年版",
+                "delta": -20.0
+              },
+              {
+                "query": "工行9920代码严重吗",
+                "delta": -11.25
+              },
+              {
+                "query": "中航信托·天信(2019)35号第29期是否已兑付",
+                "delta": -8.64
+              },
+              {
+                "query": "99990E错误代码的含义是什么",
+                "delta": -8.64
+              },
+              {
+                "query": "工商9920紧急支付",
+                "delta": -4.61
+              }
+            ]
+          }
+        },
+        {
+          "label": "#69 证券代码行情查询",
+          "rows_a": 8,
+          "rows_b": 157,
+          "row_share_a": 0.00272,
+          "row_share_b": 0.00785,
+          "row_share_delta_pp": 0.513,
+          "weight_share_a": 0.00226,
+          "weight_share_b": 0.00263,
+          "weight_share_delta_pp": 0.038,
+          "z_row_share": 3.07,
+          "delta_concentration": {
+            "n_distinct_queries": 129,
+            "top1_share_of_delta": 0.1434,
+            "top5_share_of_delta": 0.4416,
+            "hhi_of_delta": 0.0523,
+            "top_queries": [
+              {
+                "query": "8月31号",
+                "delta": -17.27
+              },
+              {
+                "query": "将持仓做18年",
+                "delta": -10.0
+              },
+              {
+                "query": "008888几天赎回不需要手续费",
+                "delta": -8.64
+              },
+              {
+                "query": "688717最新消息",
+                "delta": -8.64
+              },
+              {
+                "query": "10.84呢",
+                "delta": -8.64
+              }
+            ]
+          }
+        }
+      ],
+      "receded": [],
+      "too_thin_to_compare": []
+    }
+  },
+  "purity": {
+    "td_l1": {
+      "checked": true,
+      "n_groups": 18,
+      "n_single_snapshot": 1,
+      "single_snapshot": [
+        {
+          "label": "STOCK_FORUM_VISIT",
+          "share_of_AI助手": 0.005,
+          "rows": 2499
+        }
+      ],
+      "share_min": 0.005,
+      "share_median": 0.21,
+      "share_max": 0.702
+    },
+    "bu_leaf_name": {
+      "checked": true,
+      "n_groups": 66,
+      "n_single_snapshot": 16,
+      "single_snapshot": [
+        {
+          "label": "东方财富官方入口查询",
+          "share_of_AI助手": 0.048,
+          "rows": 147
+        },
+        {
+          "label": "含龙字股票信息查询",
+          "share_of_AI助手": 0.046,
+          "rows": 108
+        },
+        {
+          "label": "国际原油价格行情查询",
+          "share_of_AI助手": 0.033,
+          "rows": 120
+        },
+        {
+          "label": "数字串含义查询",
+          "share_of_AI助手": 0.013,
+          "rows": 159
+        },
+        {
+          "label": "数字代码查询",
+          "share_of_AI助手": 0.037,
+          "rows": 162
+        },
+        {
+          "label": "期货行情查询",
+          "share_of_AI助手": 0.046,
+          "rows": 217
+        },
+        {
+          "label": "查询个股股票信息",
+          "share_of_AI助手": 0.039,
+          "rows": 751
+        },
+        {
+          "label": "查询新材类股票及股吧信息",
+          "share_of_AI助手": 0.034,
+          "rows": 236
+        },
+        {
+          "label": "查询金融机构24小时人工客服电话",
+          "share_of_AI助手": 0.025,
+          "rows": 162
+        },
+        {
+          "label": "电话号码归属与用途查询",
+          "share_of_AI助手": 0.047,
+          "rows": 169
+        },
+        {
+          "label": "股票代码查询",
+          "share_of_AI助手": 0.019,
+          "rows": 1434
+        },
+        {
+          "label": "股票股吧查询",
+          "share_of_AI助手": 0.016,
+          "rows": 2318
+        },
+        {
+          "label": "能源资源类股票查询",
+          "share_of_AI助手": 0.036,
+          "rows": 166
+        },
+        {
+          "label": "证券代码行情查询",
+          "share_of_AI助手": 0.048,
+          "rows": 165
+        },
+        {
+          "label": "金融代码行情查询",
+          "share_of_AI助手": 0.014,
+          "rows": 142
+        },
+        {
+          "label": "银行客服短号查询",
+          "share_of_AI助手": 0.047,
+          "rows": 128
+        }
+      ],
+      "share_min": 0.013,
+      "share_median": 0.114,
+      "share_max": 0.81
+    },
+    "bu_family_final": {
+      "checked": true,
+      "n_groups": 55,
+      "n_single_snapshot": 14,
+      "single_snapshot": [
+        {
+          "label": "#4 国际原油价格行情查询",
+          "share_of_AI助手": 0.033,
+          "rows": 120
+        },
+        {
+          "label": "#51 股票代码查询",
+          "share_of_AI助手": 0.009,
+          "rows": 1226
+        },
+        {
+          "label": "#52 能源资源类股票查询",
+          "share_of_AI助手": 0.036,
+          "rows": 166
+        },
+        {
+          "label": "#53 个股股票信息查询",
+          "share_of_AI助手": 0.049,
+          "rows": 427
+        },
+        {
+          "label": "#6 股票股吧查询",
+          "share_of_AI助手": 0.016,
+          "rows": 2318
+        },
+        {
+          "label": "#63 电话号码归属与用途查询",
+          "share_of_AI助手": 0.047,
+          "rows": 169
+        },
+        {
+          "label": "#64 银行客服短号查询",
+          "share_of_AI助手": 0.047,
+          "rows": 128
+        },
+        {
+          "label": "#65 金融机构24小时人工客服电话查询",
+          "share_of_AI助手": 0.025,
+          "rows": 162
+        },
+        {
+          "label": "#68 数字串含义查询",
+          "share_of_AI助手": 0.013,
+          "rows": 159
+        },
+        {
+          "label": "#69 证券代码行情查询",
+          "share_of_AI助手": 0.048,
+          "rows": 165
+        },
+        {
+          "label": "#70 金融代码行情查询",
+          "share_of_AI助手": 0.014,
+          "rows": 142
+        },
+        {
+          "label": "#71 数字代码查询",
+          "share_of_AI助手": 0.037,
+          "rows": 162
+        },
+        {
+          "label": "#77 个股资料与行情查询",
+          "share_of_AI助手": 0.025,
+          "rows": 324
+        },
+        {
+          "label": "#9 期货行情查询",
+          "share_of_AI助手": 0.046,
+          "rows": 217
+        }
+      ],
+      "share_min": 0.009,
+      "share_median": 0.108,
+      "share_max": 0.81
+    }
+  },
+  "note": "Shares are WITHIN-SNAPSHOT. The snapshots differ in total weight, so raw counts would report every class as declining. Both periods were labelled by ONE taxonomy and ONE tree in this run, which is what excludes 'the taxonomy changed' as an explanation."
+}
