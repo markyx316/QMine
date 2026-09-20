@@ -515,6 +515,9 @@ def _p11_fast(state: PipelineState, deps: Deps) -> dict[str, Any]:
     _expected = ["report_fast_topdown", "report_fast_bottomup", "workbook"]
     if deps.has("drift_analysis"):
         _expected.append("report_drift")
+    for _k in _pooled_refs(deps):
+        _expected.append(_k)
+        refs.setdefault(_k, deps.store.get(_k))
     n_delivered = sum(1 for k in _expected if k in refs)
     return {
         "phase": "p12",
@@ -530,6 +533,29 @@ def _p11_fast(state: PipelineState, deps: Deps) -> dict[str, Any]:
                    + ("" if n_delivered == len(_expected) else
                       "  ⚠ a deliverable did not build — see the warnings above")],
     }
+
+
+def _pooled_refs(deps: Deps) -> list[str]:
+    """p10c's files, but only when THIS generation actually has them.
+
+    A generation inherits its predecessor's artifact index, so after a render
+    `deps.has("report_pooled")` is true while the file itself sits one directory
+    up — and the index, whose links are relative, would point a reader at a path
+    that does not exist. p10c does not run on a render (it is not in the render
+    path), so a rendered generation simply has no comparison, and saying so is
+    correct. `qmine compare` rebuilds it when it is wanted.
+    """
+    out = []
+    for key in ("report_pooled", "workbook_pooled", "workbook_pooled_rows"):
+        if not deps.has(key):
+            continue
+        try:
+            here = Path(deps.store.get(key).path).resolve()
+        except Exception:  # noqa: BLE001
+            continue
+        if here.exists() and Path(deps.store.gen_dir).resolve() in here.parents:
+            out.append(key)
+    return out
 
 
 def _drift_document(state: PipelineState, deps: Deps, refs: dict[str, Any]) -> None:
@@ -733,6 +759,9 @@ def p11_report(state: PipelineState, deps: Deps) -> dict[str, Any]:
 
     refs = build_all_reports(state, deps)
     _drift_document(state, deps, refs)
+    # Same as the fast path: p10c's files are this run's deliverables.
+    for _k in _pooled_refs(deps):
+        refs.setdefault(_k, deps.store.get(_k))
 
     # THE DOCUMENT A READER OPENS FIRST, AND THE ONLY ONE NOT ASSEMBLED BY PYTHON.
     #
@@ -985,3 +1014,189 @@ def _previous_baseline(deps: Any) -> dict[str, Any] | None:
         return None
     candidates.sort(key=lambda t: -t[0])
     return candidates[0][1]
+
+
+def _pooled_options(deps: Deps) -> "Any":
+    """Translate config + domain profile into the comparison's options.
+
+    The profile's SELECTED risk patterns become quote-block patterns — the ones
+    whose own policy says reproducing the text is the harm, not the ones about
+    how a system should answer. `quote_patterns_from_profile` holds that
+    distinction and the measurement behind it.
+    """
+    from ...pooled import PooledOptions
+
+    pc = getattr(deps.cfg, "pooled", None)
+    if pc is None:
+        return PooledOptions()
+    from ...pooled.guards import quote_patterns_from_profile
+
+    patterns = list(pc.extra_quote_patterns) + quote_patterns_from_profile(deps.cfg.domain)
+    return PooledOptions(
+        axis=getattr(deps.cfg.data, "comparison_axis", "time"),
+        labels=dict(pc.snapshot_labels), surfaces=dict(pc.snapshot_groups),
+        contrasts=[list(c) for c in pc.contrasts],
+        # NOT `cfg.data.weight_column` — that names a column of the RAW FILE
+        # (`wise_pv`, `total_pv`), and `build_frame` renamed it to `weight` at
+        # p1. Forwarding it hands `load_frame` a column the frame does not have,
+        # every snapshot falls back to uniform weights, and every "traffic
+        # share" silently becomes the row share. `_guess_weight` finds `weight`.
+        weight_column=pc.weight_column or None,
+        extra_quote_patterns=patterns,
+        never_quote_classes=list(pc.never_quote_classes),
+        extra_hard_rules=dict(pc.hard_rules),
+        screened_quote_block=pc.screened_quote_block,
+        title=pc.title or deps.cfg.domain.key,
+        n_boot=pc.bootstrap_draws, n_null=pc.null_draws,
+        min_conditional_n=pc.min_conditional_n)
+
+
+def p10c_pooled(state: PipelineState, deps: Deps) -> dict[str, Any]:
+    """Build the cross-snapshot comparison — ONLY when there is more than one.
+
+    A no-op on a single-snapshot corpus, which is every single-input run.
+
+    THIS PHASE MAY NOT KILL A FINISHED RUN. It happens after the labels are
+    delivered and it makes no model call; a failure here costs a set of extra
+    documents, not the run. So everything is caught and turned into a warned
+    gate, rather than being allowed to reach `_wrap`, which would halt.
+    """
+    pc = getattr(deps.cfg, "pooled", None)
+    if pc is not None and not pc.enabled:
+        deps.emit("P10c: cross-snapshot comparison disabled in config")
+        return {"phase": "p11", "completed_phases": ["p10c"],
+                "events": ["P10c: cross-snapshot comparison disabled in config"]}
+    # `deps.df` is a PROPERTY. Calling it returned a DataFrame and then tried to
+    # call that, and the broad `except` below turned a TypeError in this very
+    # function into "corpus unavailable" — a programming error wearing the
+    # costume of a graceful skip, with nothing in the log to notice. Every skip
+    # here now says so out loud.
+    try:
+        df = deps.df
+    except Exception as exc:  # noqa: BLE001
+        deps.emit(f"P10c skipped — corpus artifact unavailable ({type(exc).__name__}: {exc})")
+        return {"phase": "p11", "completed_phases": ["p10c"],
+                "events": [f"P10c skipped: corpus unavailable ({type(exc).__name__})"]}
+    if "snapshot" not in df.columns or df["snapshot"].nunique() < 2:
+        deps.emit("P10c: single snapshot — no cross-snapshot comparison")
+        return {"phase": "p11", "completed_phases": ["p10c"],
+                "events": ["P10c: single snapshot — no cross-snapshot comparison"]}
+
+    from ...pooled import DepsSource, run_comparison
+
+    deps.emit(f"P10c cross-snapshot comparison — {df['snapshot'].nunique()} snapshots")
+    try:
+        res = run_comparison(DepsSource(deps), _pooled_options(deps))
+    except Exception as exc:  # noqa: BLE001
+        deps.emit(f"  comparison not built ({type(exc).__name__}: {exc})")
+        gate = deps.gate(
+            "p10c_comparison_built", "p10c", passed=False, warn_only=True,
+            observed={"error": f"{type(exc).__name__}: {exc}"},
+            threshold={"error": "none"},
+            message="the cross-snapshot comparison could not be built",
+            remediation="Run `qmine compare <run-id>` to see the failure in full. "
+                        "The run's own deliverables are unaffected.")
+        return {"phase": "p11", "gates": {gate.name: gate},
+                "completed_phases": ["p10c"],
+                "events": [f"P10c failed: {type(exc).__name__}"]}
+
+    s = res.summary
+    ref = deps.store.put_json(
+        "pooled_comparison", s, producer="p10c",
+        summary=(f"{len(res.manifest.snapshots)} snapshots × "
+                 f"{len(s['levels'])} levels; {len(res.figures)} figures"))
+    refs = {"pooled_comparison": ref}
+    try:
+        # `markdown`, not `report`: ArtifactKind is a Literal and an invalid kind
+        # raises inside `register_file`, which the except below would have turned
+        # into "files not registered" — the documents on disk, and no artifact
+        # pointing at them.
+        refs["report_pooled"] = deps.store.register_file(
+            "report_pooled", res.report_path, "markdown", producer="p10c",
+            summary="每个意图、每个聚类叶在每个快照上的逐类对照")
+        refs["workbook_pooled"] = deps.store.register_file(
+            "workbook_pooled", res.tables_workbook, "table", producer="p10c",
+            summary="跨快照对照表（每层一页）")
+        refs["workbook_pooled_rows"] = deps.store.register_file(
+            "workbook_pooled_rows", res.rows_workbook, "table", producer="p10c",
+            summary="逐行标注，带快照与分组")
+    except Exception as exc:  # noqa: BLE001
+        deps.emit(f"  comparison files not registered ({type(exc).__name__})")
+
+    hr = s.get("hard_rule", {})
+    printed_hits = int(hr.get("已印进报告", 0))
+    # A hard-rule hit that reached a document needs a person, not a rerun. The
+    # gate warns so a finished run still ships; the finding is run-level and
+    # closes only when its own check passes, so it cannot quietly age out.
+    gate = deps.gate(
+        "p10c_no_hard_rule_string_printed", "p10c",
+        passed=printed_hits == 0,
+        # Nothing quoted means the check did not run. A pass here would read
+        # exactly like one that examined 2,000 printed strings and found none.
+        skipped=not hr.get("已检查", True),
+        warn_only=True,
+        observed={"printed_hard_rule_hits": printed_hits,
+                  "hard_rule_hits": int(hr.get("命中行", 0)),
+                  "still_quotable": int(hr.get("其中仍可引", 0)),
+                  "corpus_strings_quoted_in_report": int(hr.get("报告里引用的语料串", 0))},
+        threshold={"printed_hard_rule_hits": 0},
+        message=("the report quoted no corpus row, so nothing was checked"
+                 if not hr.get("已检查", True) else
+                 "no string matching a hard rule was printed"
+                 if printed_hits == 0 else
+                 f"{printed_hits} string(s) matching a hard rule were printed into the "
+                 "comparison report"),
+        remediation="Read the rows in `pooled/硬规则命中.csv`, add the ones that should "
+                    "never be quoted to a JSON list, point `pooled.screened_quote_block` "
+                    "at it, and re-run `qmine compare`. The list only ever grows.")
+    gates = {gate.name: gate}
+    if printed_hits:
+        try:
+            from pathlib import Path as _P
+
+            from ...ops.findings import FINDINGS_FILE, FindingLedger
+
+            with FindingLedger.open(_P(deps.store.root) / FINDINGS_FILE) as led:
+                led.record(
+                    phase="p10c", severity="blocking",
+                    claim=f"{printed_hits} hard-rule string(s) printed into the "
+                          "cross-snapshot report",
+                    artifact_key="pooled_comparison",
+                    evidence="pooled/硬规则命中.csv",
+                    check="pooled_comparison.hard_rule['已印进报告'] == 0",
+                    verdict="confirmed",
+                    seen_at=f"{getattr(deps, 'run_id', '')}/"
+                            f"{Path(deps.store.gen_dir).name}")
+        except Exception as exc:  # noqa: BLE001
+            deps.emit(f"  finding not recorded ({type(exc).__name__})")
+
+    # An authored narrative is optional. With none, there is nothing to ground,
+    # and a PASS here would be indistinguishable from a run whose prose was
+    # actually checked.
+    ver = s.get("verification", {})
+    gate2 = deps.gate(
+        "p10c_narrative_grounded", "p10c",
+        passed=(ver.get("未匹配数字", 0) == 0 and ver.get("问题引文", 0) == 0),
+        skipped=not ver.get("叙述字数"),
+        warn_only=True,
+        observed={"unmatched_numbers": ver.get("未匹配数字", 0),
+                  "bad_quotes": ver.get("问题引文", 0),
+                  "narrative_chars": ver.get("叙述字数", 0)},
+        threshold={"unmatched_numbers": 0, "bad_quotes": 0},
+        message=("no narrative was authored, so there is nothing to ground"
+                 if not ver.get("叙述字数") else
+                 f"{ver.get('未匹配数字', 0)} unmatched number(s), "
+                 f"{ver.get('问题引文', 0)} bad quotation(s)"),
+        remediation="Every figure in an authored paragraph must appear in "
+                    "`pooled/tables/`; every 「」 must be a real, quotable row.")
+    gates[gate2.name] = gate2
+
+    deps.emit(f"  {len(res.figures)} figures, "
+              f"{len(s['tables_written'])} tables, report {res.report_path.name}")
+    return {
+        "phase": "p11", "artifacts": refs, "gates": gates,
+        "completed_phases": ["p10c"],
+        "events": [f"P10c: {len(res.manifest.snapshots)} snapshots compared across "
+                   f"{len(s['levels'])} levels; {len(s['tables_written'])} tables, "
+                   f"{len(res.figures)} figures; {printed_hits} hard-rule string(s) printed"],
+    }

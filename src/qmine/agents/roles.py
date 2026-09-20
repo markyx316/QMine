@@ -963,6 +963,23 @@ class DomainScoutAgent(Agent):
 
 ALL_ROLES["domain_scout"] = DomainScoutAgent
 
+# The corpus-preparation planner lives in `qmine.prepare` (it is about inputs,
+# not about the taxonomy) but must appear in the role registry like any other,
+# so routing, the cost estimate and the prompt manifest all see it.
+try:  # pragma: no cover - import cycle guard
+    from ..prepare.agent import CorpusPrepAgent as _CorpusPrepAgent
+
+    ALL_ROLES["corpus_prep"] = _CorpusPrepAgent
+except ImportError:  # pragma: no cover
+    pass
+
+try:  # pragma: no cover - import cycle guard
+    from ..chat.intent import ChatRouterAgent as _ChatRouterAgent
+
+    ALL_ROLES["chat_router"] = _ChatRouterAgent
+except ImportError:  # pragma: no cover
+    pass
+
 
 # ==========================================================================
 # Phase 11 — the pre-delivery audit

@@ -88,6 +88,14 @@ PHASE_NODES: list[tuple[str, Callable]] = [
     # otherwise, which is every single-input run. Placed here because it reads
     # the DELIVERED labels (p10) and its artifact becomes a p11 document.
     ("p10b_drift", delivery.p10b_drift),
+    # The cross-snapshot comparison: p10b's summary distance expanded into the
+    # per-class tables, figures, report and workbooks a reader asks for next.
+    # Same trigger as p10b (more than one snapshot), same position (after the
+    # DELIVERED labels, before p11 turns artifacts into documents), and it makes
+    # no model call, so fast mode ships it too — fast removes the checking, not
+    # the analysis. The `p10c` id is a suffix of `p10`, so the dashboard folds it
+    # onto that row without a new PhaseSpec.
+    ("p10c_pooled", delivery.p10c_pooled),
     ("p11_report", delivery.p11_report),
     ("p12_maintain", delivery.p12_maintain),
 ]

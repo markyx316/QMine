@@ -350,6 +350,24 @@ ROLE_REQUIREMENTS: dict[str, RoleRequirement] = {
                   "vertical propagates into every later phase without being re-checked, so "
                   "this is cheap to run and expensive to get wrong.",
     ),
+    "chat_router": RoleRequirement(
+        role="chat_router", reasoning="standard", blast_radius="contained",
+        min_context_tokens=32_000, typical_calls=0, output_tokens_per_call=800,
+        multilingual_critical=True,
+        rationale="Turns a sentence into a choice from a fixed action list. It cannot "
+                  "act, and every spending or writing action it picks is confirmed by a "
+                  "person first, so a wrong choice costs one turn. `typical_calls` is 0 "
+                  "because the conversation is not part of a run's cost.",
+    ),
+    "corpus_prep": RoleRequirement(
+        role="corpus_prep", reasoning="strong", blast_radius="run",
+        min_context_tokens=64_000, typical_calls=1, output_tokens_per_call=6000,
+        multilingual_critical=True,
+        rationale="Reads measured profiles of several exports and proposes how to pool "
+                  "them. It cannot execute anything, but a wrong snapshot tag or a wrong "
+                  "text column propagates into every table the run produces, and the "
+                  "call happens once.",
+    ),
     "l2_interpreter": RoleRequirement(
         role="l2_interpreter", reasoning="standard", blast_radius="contained",
         min_context_tokens=32_000, typical_calls=20, output_tokens_per_call=1200,

@@ -483,6 +483,60 @@ class DeploymentConfig(BaseModel):
     live_demo_n: int = 8
 
 
+class PooledConfig(BaseModel):
+    """The cross-snapshot comparison a pooled run produces after it delivers.
+
+    Everything here is OPTIONAL and every default works untouched: the snapshots,
+    their sizes, the classes and the risk layer are all read off the run's own
+    artifacts. What a user can add is editorial — what to call each snapshot,
+    how to group them, which pairs to put in front of the reader — because
+    nothing in the data determines those.
+
+    It is analysis, not checking, so **fast mode does not drop it**; `smoke_mode`
+    shrinks its resampling the way it shrinks every other grid.
+    """
+
+    enabled: bool = Field(
+        default=True,
+        description="Produce the comparison. Ignored unless the run pooled more "
+                    "than one input — a single-snapshot run has nothing to compare.")
+    #: Snapshot tag -> what a reader should see. The tag `p0` derives is a date or
+    #: a filename stem, which is honest and frequently unreadable.
+    snapshot_labels: dict[str, str] = Field(default_factory=dict)
+    #: Snapshot tag -> group (an interface, a product, a collection method).
+    #: EITHER EVERY SNAPSHOT IS ASSIGNED OR NONE IS: a partial assignment drops
+    #: the unassigned snapshots out of the group tables while their rows still
+    #: count toward the n that gets reported, which is how a study once printed
+    #: 19,997 for a side that actually had 39,996.
+    snapshot_groups: dict[str, str] = Field(default_factory=dict)
+    #: Explicit pairs, each `[a, b]`, `[a, b, "what differs"]` or
+    #: `[a, b, "what differs", false]` where false means the pair is confounded
+    #: and the difference cannot be attributed to one cause. Empty means: derive
+    #: them from `data.comparison_axis`.
+    contrasts: list[list[Any]] = Field(default_factory=list)
+    #: Which column is traffic. Unset means: the run's own weight column.
+    weight_column: str | None = None
+    #: Report title. Unset means the run id.
+    title: str = ""
+    #: Extra never-quote regexes for this corpus, on top of the universal rules.
+    #: A domain profile's `risk_categories[].patterns` are added automatically.
+    extra_quote_patterns: list[str] = Field(default_factory=list)
+    #: L1 codes whose rows may never be quoted, beyond those derived from the
+    #: run's own risk flags.
+    never_quote_classes: list[str] = Field(default_factory=list)
+    #: Extra named rules for the printed-text scan: `{name: regex}`, or
+    #: `{name: "NAMED_DOCTOR"}` to switch on a shipped preset.
+    hard_rules: dict[str, str] = Field(default_factory=dict)
+    #: Path to a JSON list of strings a reader screened one by one (guard layer 7).
+    #: Absent file == empty layer, which is exactly how the layer behaves on a
+    #: first run.
+    screened_quote_block: str | None = None
+    bootstrap_draws: int = 400
+    null_draws: int = 300
+    #: Below this many rows on either side, an inner-composition TVD is noise.
+    min_conditional_n: int = 30
+
+
 class QMineConfig(BaseModel):
     """The whole configuration for one run."""
 
@@ -501,6 +555,7 @@ class QMineConfig(BaseModel):
     gates: GateConfig = Field(default_factory=GateConfig)
     llm: LLMConfig = Field(default_factory=LLMConfig)
     deployment: DeploymentConfig = Field(default_factory=DeploymentConfig)
+    pooled: PooledConfig = Field(default_factory=PooledConfig)
 
     seed_metric: int = SEED_METRIC
     seed_viz: int = SEED_VIZ
@@ -609,6 +664,12 @@ class QMineConfig(BaseModel):
             self.clustering.refine_rounds = 2
             self.taxonomy.gold_sample_size = min(self.taxonomy.gold_sample_size or 120, 120)
             self.taxonomy.n_researchers = 3
+            # The comparison's resampling is a grid like any other: a wiring
+            # check does not need 400 bootstrap draws per snapshot pair. Fast
+            # mode leaves these alone — shrinking them there would change the
+            # interval endpoints rather than leave a result unchecked.
+            self.pooled.bootstrap_draws = min(self.pooled.bootstrap_draws, 60)
+            self.pooled.null_draws = min(self.pooled.null_draws, 40)
         return self
 
     @model_validator(mode="after")

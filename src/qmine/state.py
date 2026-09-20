@@ -41,7 +41,7 @@ from .records import (
 #: `graph.build` because state must not depend on the graph.
 _PHASE_ORDER = (
     "p0", "p1", "p2a", "p2b", "p3", "p4", "p5", "p6",
-    "p2c", "p2d", "p2e", "p7", "p8", "p9", "p10", "p11", "p12",
+    "p2c", "p2d", "p2e", "p7", "p8", "p9", "p10", "p10b", "p10c", "p11", "p12",
 )
 
 

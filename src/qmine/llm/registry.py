@@ -52,6 +52,8 @@ ROLE_TIER: dict[str, Tier] = {
     "tree_auditor": "deep",
     "risk_sentinel": "deep",
     "domain_scout": "deep",
+    "corpus_prep": "deep",
+    "chat_router": "fast",
     "reporter": "deep",
     "maintainer": "deep",
     # fast — high volume, narrow judgment

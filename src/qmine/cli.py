@@ -6,7 +6,7 @@ import json
 import logging
 import time
 from pathlib import Path
-from typing import Optional
+from typing import Any, Optional
 
 import typer
 import yaml
@@ -151,6 +151,15 @@ def run(
     run_root: str = typer.Option("runs", "--run-root"),
     run_id: Optional[str] = typer.Option(None, "--run-id"),
     smoke: bool = typer.Option(False, "--smoke", help="Shrink grids for a wiring smoke test."),
+    prepare_inputs: bool = typer.Option(
+        False, "--prepare",
+        help="Pool and clean the inputs first: measure each file, derive a plan of "
+             "named operations, execute it, and mine the prepared corpus. Needs "
+             "--run-id. Add --prepare-agent to let a model propose the plan."),
+    prepare_agent: bool = typer.Option(
+        False, "--prepare-agent",
+        help="With --prepare: a model reads the measured profiles and proposes the "
+             "plan. PAID. Without it the plan is derived mechanically."),
     fast: bool = typer.Option(
         False, "--fast",
         help="Fast mode: same analysis, no second-opinion layer. One annotator "
@@ -258,11 +267,26 @@ def run(
     # to diff. Pooling derives ONE taxonomy over both periods and splits after.
     # A single path is unchanged in every respect.
     _paths = [x.strip() for x in str(input).split(",") if x.strip()]
-    if len(_paths) > 1:
+    if prepare_inputs:
+        # PREPARE FIRST, THEN MINE ONE FILE. The prepared corpus lands inside the
+        # run directory, so what was mined is evidence of the run rather than a
+        # step someone took beforehand and has to remember.
+        if not run_id:
+            console.print("[red]--prepare needs --run-id[/red] — the prepared corpus is "
+                          "written into the run's own directory so it stays with the run.")
+            raise typer.Exit(2)
+        cfg = _prepare_into_run(cfg, _paths, Path(run_root) / run_id / "prepared",
+                                config=config, use_agent=prepare_agent,
+                                text_column=text_column)
+        # The prepared corpus's text column is `query` by construction. A
+        # `--text-column` meant for the RAW files would rename it to something
+        # the corpus does not have, and p1 halts with a KeyError.
+        text_column = None
+    elif len(_paths) > 1:
         cfg.data.input_paths = _paths
         cfg.data.input_path = _paths[0]
         console.print(f"[dim]{len(_paths)} snapshots will be pooled into one run; "
-                      f"drift is compared inside it (phase p10b)[/dim]")
+                      f"they are compared inside it (phases p10b, p10c)[/dim]")
     else:
         cfg.data.input_path = input
     # AN UNSET FLAG MUST NOT OVERRULE THE CONFIG — the same defect as `provider`
@@ -329,6 +353,88 @@ def run(
         dash.finish(ok=not result["summary"].get("halted", False))
     _console_level(logging.INFO)
     _print_summary(result["summary"])
+
+
+def _throwaway_ctx(cfg: "QMineConfig") -> Any:
+    """An `AgentContext` for an agent that is not part of a run.
+
+    The preparation planner and the conversation router both need a context, and
+    neither belongs to a run: there is no artifact store to write to and no
+    memory to consult. Both get scratch ones in a temp directory rather than
+    being handed a run's, so a conversation can never write into a run's
+    generation or read a memory it was not given.
+    """
+    import tempfile
+
+    from .agents.base import AgentContext
+    from .artifacts import ArtifactStore
+    from .llm.registry import ModelRegistry
+    from .memory.store import QMineMemory
+
+    tmp = Path(tempfile.mkdtemp(prefix="qmine-ctx-"))
+    try:
+        from langgraph.store.memory import InMemoryStore
+
+        mem = QMineMemory(InMemoryStore(), project="chat", domain=cfg.domain.key)
+    except Exception:  # noqa: BLE001
+        mem = None  # type: ignore[assignment]
+    return AgentContext(cfg=cfg, registry=ModelRegistry(cfg.llm, cache_dir=tmp / "llm"),
+                        store=ArtifactStore(tmp / "store"), memory=mem)
+
+
+def _prepare_into_run(cfg: "QMineConfig", paths: list[str], out: Path, *,
+                      config: Optional[str], use_agent: bool,
+                      text_column: Optional[str] = None) -> "QMineConfig":
+    """Measure, plan, execute — then point the run at the single prepared corpus.
+
+    The snapshot labels and groups the plan settled on are copied into
+    `cfg.pooled`, so the comparison at p10c calls each snapshot what the
+    preparation decided to call it rather than making the user say it twice.
+    """
+    from .prepare import execute, profile_inputs
+    from .prepare.agent import plan_corpus
+
+    console.rule("[bold]准备语料[/bold]")
+    profiles = profile_inputs(paths, text_column=text_column)
+    ctx = None
+    if use_agent:
+        ctx = _throwaway_ctx(cfg)
+    # ONLY PASS THE AXIS WHEN SOMEONE SET IT. `comparison_axis` defaults to
+    # `time`, so forwarding it unconditionally made every plan "declared",
+    # silenced the inference, dropped the concern that says the axis is an
+    # assumption, and reported `confidence: high` for a guess.
+    declared_axis = ("comparison_axis" in cfg.data.model_fields_set
+                     and cfg.data.comparison_axis or None)
+    plan, meta = plan_corpus(profiles, ctx, axis=declared_axis,
+                             text_column=text_column)
+    console.print(f"方案来源 [bold]{meta['source']}[/bold]"
+                  + (f"（{meta['agent']}）" if meta.get("agent") else ""))
+    for pr in meta.get("problems", []):
+        console.print(f"  [red]agent 方案被拒[/red]: {pr}")
+    for c in plan.concerns:
+        console.print(f"[yellow]⚠[/yellow] {c}")
+    rep = execute(plan, out, max_drop_share=0.25)
+    for i in rep["inputs"]:
+        console.print(f"  {Path(i['path']).name}: {i['原始行数']:,} → "
+                      f"{i['进入挖掘']:,}（剔除 {i['剔除占比%']}%）")
+        for r in i["拒绝执行"]:
+            console.print(f"    [yellow]⛔ 拒绝执行[/yellow] {r['op']}: {r['reason']}")
+
+    cfg.data.input_paths = []
+    cfg.data.input_path = rep["corpus"]
+    cfg.data.text_column = "query"
+    cfg.data.weight_column = "pv_norm"
+    cfg.data.snapshot_column = "snapshot"
+    cfg.data.comparison_axis = plan.comparison_axis  # type: ignore[assignment]
+    for spec in plan.inputs:
+        if spec.display:
+            cfg.pooled.snapshot_labels.setdefault(spec.snapshot, spec.display)
+        if spec.group:
+            cfg.pooled.snapshot_groups.setdefault(spec.snapshot, spec.group)
+    console.print(f"[green]→ {rep['corpus']}[/green] "
+                  f"（{rep['n_mined']:,} 行，{len(rep['snapshots'])} 个快照，"
+                  f"对比轴 {plan.comparison_axis}）")
+    return cfg
 
 
 def _attach_dashboard(cfg: "QMineConfig", run_id: str, run_root: str, *, enabled: bool):
@@ -1164,6 +1270,308 @@ def render(
                          f"${u.get('estimated_cost_usd', 0)}")
     console.print(t)
     console.print("\n".join(f"  {d}" for d in out["documents"]))
+
+
+@app.command()
+def chat(
+    message: Optional[str] = typer.Argument(
+        None, help="Say it in one go instead of opening a session."),
+    run_root: str = typer.Option("runs", "--run-root"),
+    config: Optional[str] = typer.Option(None, "--config", "-c"),
+    domain: Optional[str] = typer.Option(None, "--domain", "-d"),
+    router: bool = typer.Option(
+        True, "--router/--keywords",
+        help="Use a model to understand what you said. --keywords is the "
+             "deterministic fallback: no model, no cost, fewer phrasings."),
+    yes: bool = typer.Option(
+        False, "--yes",
+        help="Do not stop for confirmation. Only for scripted use — the whole "
+             "point of the prompts is that a paid run is agreed to first."),
+    verbose: bool = typer.Option(False, "--verbose/--quiet"),
+) -> None:
+    """Talk to it instead of remembering the flags.
+
+    Free, reversible steps just happen. Anything that spends money or writes a
+    file stops and shows you the exact command first — so you can say no, and so
+    you end up learning the command line rather than depending on this.
+    """
+    _load_env()
+    _setup_logging(verbose)
+    from .chat import ChatState, Session
+
+    ctx = None
+    if router:
+        try:
+            ctx = _throwaway_ctx(_load_config(config, domain))
+        except Exception as exc:  # noqa: BLE001
+            console.print(f"[yellow]没有可用的模型路由（{type(exc).__name__}: {exc}）——"
+                          f"改用关键词路由。[/yellow]")
+
+    state = ChatState(run_root=run_root, config=config or "", domain=domain or "")
+    session = Session(console=console, state=state, ctx=ctx, auto_confirm=yes)
+    if message:
+        session.handle(message)
+        return
+
+    console.rule("[bold]QMine[/bold]")
+    console.print("说你想做什么就行。花钱的和会写文件的我会先问你；其它的直接做。")
+    console.print("[dim]每一步都会把等价的命令行打出来。输入 quit 退出。[/dim]\n")
+    while True:
+        try:
+            line = typer.prompt("你", prompt_suffix=" › ")
+        except (EOFError, KeyboardInterrupt):
+            console.print("\n[dim]再见。[/dim]")
+            return
+        if line.strip().lower() in ("quit", "exit", "q", "退出", "再见"):
+            console.print("[dim]再见。[/dim]")
+            return
+        if not line.strip():
+            continue
+        try:
+            session.handle(line)
+        except Exception as exc:  # noqa: BLE001
+            console.print(f"[red]{type(exc).__name__}[/red]: {exc}")
+        console.print("")
+
+
+@app.command()
+def prepare(
+    inputs: str = typer.Argument(
+        ..., help="Comma-separated files to pool into one corpus."),
+    out: str = typer.Option("prepared", "--out", "-o", help="Output directory."),
+    text_column: Optional[str] = typer.Option(
+        None, "--text-column", help="Force the query column. Unset: detected per file."),
+    axis: Optional[str] = typer.Option(
+        None, "--axis", help="time | stratum. Unset: inferred, and flagged as inferred."),
+    label: list[str] = typer.Option([], "--label", help="TAG=显示名. Repeatable."),
+    group: list[str] = typer.Option(
+        [], "--group", help="TAG=组名 (interface/product/sampling). Repeatable."),
+    agent: bool = typer.Option(
+        False, "--agent/--no-agent",
+        help="Let a model read the measured profiles and propose the plan. "
+             "PAID. Without it, the plan is derived mechanically."),
+    config: Optional[str] = typer.Option(None, "--config", "-c"),
+    max_drop_share: float = typer.Option(
+        0.25, "--max-drop-share",
+        help="A single rule may not tier away more than this share of an input; "
+             "one that would is applied as a flag instead and recorded as refused."),
+    previous: Optional[str] = typer.Option(
+        None, "--previous",
+        help="An already-delivered corpus. The shared snapshots must come out "
+             "identical, or a study already written describes different rows."),
+    dry_run: bool = typer.Option(
+        False, "--dry-run", help="Print the plan and stop. Nothing is written."),
+    verbose: bool = typer.Option(True, "--verbose/--quiet"),
+) -> None:
+    """Inspect several exports and pool them into ONE corpus, reviewably.
+
+    Measures every file first, derives a plan of named operations from those
+    measurements, and executes it. Nothing is ever deleted: every removal assigns
+    a tier and the removed rows ship beside the corpus.
+    """
+    _load_env()
+    _setup_logging(verbose)
+    from .prepare import execute, profile_inputs
+    from .prepare.agent import plan_corpus
+
+    paths = [x.strip() for x in inputs.split(",") if x.strip()]
+    missing = [p for p in paths if not Path(p).exists()]
+    if missing:
+        console.print(f"[red]no such file(s)[/red]: {missing}")
+        raise typer.Exit(2)
+    if len(paths) < 2:
+        console.print("[yellow]only one input[/yellow] — preparation still runs, but "
+                      "there is nothing to compare afterwards.")
+
+    console.rule("[bold]测量[/bold]")
+    profiles = profile_inputs(paths, text_column=text_column)
+    for pr in profiles:
+        console.print(f"[cyan]{Path(pr.path).name}[/cyan]  {pr.n_rows:,} 行  "
+                      f"文本列 {pr.text_candidates[:1] or '?'}  "
+                      f"权重列 {pr.weight_candidates[:1] or '无'}  "
+                      f"快照名 {pr.suggested_tag}")
+        for n in pr.notes:
+            console.print(f"    · {n}")
+
+    ctx = None
+    if agent:
+        ctx = _throwaway_ctx(_load_config(config, None))
+    plan, meta = plan_corpus(profiles, ctx, text_column=text_column, axis=axis)
+    for kv in label:
+        k, _, v = kv.partition("=")
+        for spec in plan.inputs:
+            if spec.snapshot == k.strip() or Path(spec.path).name == k.strip():
+                spec.display = v.strip()
+    for kv in group:
+        k, _, v = kv.partition("=")
+        for spec in plan.inputs:
+            if spec.snapshot == k.strip() or Path(spec.path).name == k.strip():
+                spec.group = v.strip()
+
+    console.rule("[bold]方案[/bold]")
+    console.print(f"来源：[bold]{meta['source']}[/bold]"
+                  + (f"（agent: {meta['agent']}）" if meta.get("agent") else ""))
+    for pr in meta.get("problems", []):
+        console.print(f"  [red]agent 方案被拒[/red]: {pr}")
+    for dif in meta.get("differences", []):
+        console.print(f"  agent 改动: {dif}")
+    console.print(f"对比轴 [bold]{plan.comparison_axis}[/bold] · 信心 {plan.confidence}")
+    console.print(f"[dim]{plan.rationale}[/dim]")
+    for spec in plan.inputs:
+        console.print(f"\n[cyan]{Path(spec.path).name}[/cyan] → 快照 "
+                      f"[bold]{spec.snapshot}[/bold]"
+                      + (f"（{spec.display}）" if spec.display != spec.snapshot else "")
+                      + (f" · 组 {spec.group}" if spec.group else ""))
+        console.print(f"  文本列 {spec.text_column} · 权重列 {spec.weight_column or '无'}")
+        for op in spec.ops:
+            console.print(f"  · [bold]{op.op}[/bold]"
+                          + (f" `{op.pattern}`" if op.pattern else "")
+                          + (f" — {op.why}" if op.why else ""))
+    for c in plan.concerns:
+        console.print(f"[yellow]⚠[/yellow] {c}")
+    if dry_run:
+        console.print("\n[dim]--dry-run：什么都没写。[/dim]")
+        return
+
+    console.rule("[bold]执行[/bold]")
+    try:
+        rep = execute(plan, out, max_drop_share=max_drop_share, previous=previous)
+    except Exception as exc:  # noqa: BLE001
+        console.print(f"[red]{type(exc).__name__}[/red]: {exc}")
+        raise typer.Exit(1) from exc
+    for i in rep["inputs"]:
+        console.print(f"{Path(i['path']).name}: {i['原始行数']:,} → 进入挖掘 "
+                      f"{i['进入挖掘']:,}（剔除 {i['剔除占比%']}%）")
+        for r in i["拒绝执行"]:
+            console.print(f"  [yellow]⛔ 拒绝执行[/yellow] {r['op']}: {r['reason']}")
+    sup = rep.get("superset_check")
+    if sup and not sup.get("ran"):
+        # Silence here reads as "reproduced". It is not: the check never ran.
+        console.print(f"[yellow]⚠ --previous 没能读出来[/yellow]（{sup.get('why')}）——"
+                      "复现检查**没有跑**，不要当成通过了。")
+    if sup and sup.get("ran"):
+        ok = sup.get("all_reproduced")
+        console.print(("[green]已交付的快照逐行复现[/green]" if ok else
+                       "[red]已交付的快照没有复现——之前写过的表会对不上[/red]")
+                      + f"：{sup['snapshots']}")
+    console.print(f"[green]→ {rep['corpus']}[/green]  "
+                  f"{rep['n_mined']:,} 行进入挖掘，{rep['n_all']:,} 行全量留档")
+    console.print(f"[dim]接下来：qmine run --input {rep['corpus']} "
+                  f"--config <corpus config> --run-id <id>[/dim]")
+
+
+@app.command()
+def compare(
+    run_id: str = typer.Argument(..., help="A finished run that pooled several inputs."),
+    generation: Optional[str] = typer.Option(
+        None, "--generation", "-g",
+        help="Which generation to read (genNN). Default: the newest."),
+    run_root: str = typer.Option("runs", "--run-root"),
+    config: Optional[str] = typer.Option(
+        None, "--config", "-c",
+        help="Config supplying the `pooled:` section. Default: the run's own resolved config."),
+    axis: Optional[str] = typer.Option(
+        None, "--axis", help="time | stratum. Default: whatever the run declared."),
+    label: list[str] = typer.Option(
+        [], "--label", help="Rename a snapshot for the reader: TAG=显示名. Repeatable."),
+    group: list[str] = typer.Option(
+        [], "--group",
+        help="Assign a snapshot to a group (interface, product, sampling): TAG=组名. "
+             "Repeatable. Either every snapshot is assigned or none is."),
+    contrast: list[str] = typer.Option(
+        [], "--contrast",
+        help="A pair to put in front of the reader: A,B,what differs. Repeatable."),
+    title: Optional[str] = typer.Option(None, "--title", help="Report title."),
+    out: Optional[str] = typer.Option(
+        None, "--out", help="Output directory. Default: <generation>/pooled."),
+) -> None:
+    """Compare the snapshots of a finished pooled run — tables, figures, report, workbooks.
+
+    Makes NO model call: everything is computed from the run's own artifacts. Safe
+    to re-run, and the way to rebuild the comparison after adding a screened
+    quote list or renaming a snapshot.
+    """
+    from .artifacts import latest_generation, resolved_config_path
+    from .pooled import DirSource, PooledOptions, run_comparison
+
+    root = Path(run_root) / run_id
+    if not root.is_dir():
+        console.print(f"[red]no run at {root}[/red]")
+        raise typer.Exit(2)
+    gen = generation or f"gen{latest_generation(root):02d}"
+    gen_dir = root / gen
+    if not gen_dir.is_dir():
+        console.print(f"[red]{gen_dir} does not exist[/red] — generations present: "
+                      f"{', '.join(sorted(p.name for p in root.glob('gen*')))}")
+        raise typer.Exit(2)
+
+    # The run's OWN config, so a `pooled:` section written for this corpus is
+    # honoured without being restated on the command line.
+    cfg = None
+    src_cfg = config or resolved_config_path(root, int(gen.replace("gen", "")))
+    if src_cfg is not None:
+        try:
+            cfg = QMineConfig.load(src_cfg)
+        except Exception as exc:  # noqa: BLE001
+            console.print(f"[yellow]could not read {src_cfg} ({type(exc).__name__}); "
+                          f"using defaults[/yellow]")
+    pc = getattr(cfg, "pooled", None) if cfg else None
+    opts = PooledOptions(
+        axis=axis or (getattr(cfg.data, "comparison_axis", "time") if cfg else "time"),
+        labels=dict(pc.snapshot_labels) if pc else {},
+        surfaces=dict(pc.snapshot_groups) if pc else {},
+        contrasts=[list(c) for c in pc.contrasts] if pc else [],
+        weight_column=(pc.weight_column if pc else None),
+        extra_quote_patterns=list(pc.extra_quote_patterns) if pc else [],
+        never_quote_classes=list(pc.never_quote_classes) if pc else [],
+        extra_hard_rules=dict(pc.hard_rules) if pc else {},
+        screened_quote_block=(pc.screened_quote_block if pc else None),
+        title=title or (pc.title if pc and pc.title else "") or (cfg.domain.key if cfg else run_id),
+        n_boot=(pc.bootstrap_draws if pc else 400),
+        n_null=(pc.null_draws if pc else 300),
+        min_conditional_n=(pc.min_conditional_n if pc else 30))
+    if cfg is not None:
+        from .pooled.guards import quote_patterns_from_profile
+
+        opts.extra_quote_patterns += quote_patterns_from_profile(cfg.domain)
+    for kv in label:
+        k, _, v = kv.partition("=")
+        if v:
+            opts.labels[k.strip()] = v.strip()
+    for kv in group:
+        k, _, v = kv.partition("=")
+        if v:
+            opts.surfaces[k.strip()] = v.strip()
+    for c in contrast:
+        parts = [x.strip() for x in c.split(",")]
+        if len(parts) >= 2:
+            opts.contrasts.append(parts[:3])
+
+    try:
+        res = run_comparison(DirSource(gen_dir), opts,
+                             out_dir=Path(out) if out else None)
+    except Exception as exc:  # noqa: BLE001
+        console.print(f"[red]{type(exc).__name__}[/red]: {exc}")
+        raise typer.Exit(1) from exc
+
+    m = res.manifest
+    console.rule(f"[bold]跨快照对比[/bold] · {run_id}/{gen}")
+    console.print(f"快照 {len(m.snapshots)} 个：" +
+                  "、".join(f"{m.display(s)} {m.sizes[s]:,} 行" for s in m.snapshots))
+    for zh, d in res.summary["levels"].items():
+        console.print(f"  {zh}: {d['n_classes']} 类，显著变动 "
+                      f"{d['显著变动对']}/{d['比较对数']} 对，特征类 {d['特征类条目']} 项")
+    hr = res.summary.get("hard_rule", {})
+    console.print(f"引用护栏：拦下 {res.summary['quote_guard']['任一层拦下']:,} 行，"
+                  f"可引 {res.summary['quote_guard']['可引行数']:,} 行；"
+                  f"硬规则命中 {hr.get('命中行', 0)}，印进报告 {hr.get('已印进报告', 0)}")
+    if hr.get("已印进报告"):
+        console.print("[red]有命中硬规则的串被印进了报告[/red] — 见 "
+                      f"{res.out_dir / '硬规则命中.csv'}，把它们加进 "
+                      "`pooled.screened_quote_block` 指向的名单后重跑。")
+    console.print(f"[green]→ {res.out_dir}[/green]  "
+                  f"({res.report_path.name}, {len(res.figures)} figures, "
+                  f"{len(res.summary['tables_written'])} tables)")
 
 
 def _print_summary(s: dict) -> None:
