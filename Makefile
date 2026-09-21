@@ -4,7 +4,7 @@ PY   := $(VENV)/bin/python
 QM   := $(VENV)/bin/qmine
 export HF_HOME := $(CURDIR)/.hf
 
-.PHONY: help install install-min doctor demo full test test-fast lint clean clean-runs chat chat-setup
+.PHONY: help install install-min doctor demo full test test-fast lint clean clean-runs chat chat-setup chat-stop
 
 help:
 	@grep -E '^[a-z-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN{FS=":.*?## "}{printf "  \033[36m%-14s\033[0m %s\n",$$1,$$2}'
@@ -28,6 +28,9 @@ doctor:  ## check packages, credentials, fonts, profiles
 # against a moved checkout or a renamed venv.
 DSH_DIR ?= $(HOME)/dsh
 DSH_PORT ?= 3080
+#: refuse | ask | 1. `ask` = the assistant may start a run, gated by the approval
+#: dialog the preset's hook raises. Override: `QMINE_SPEND=0 make chat`.
+QMINE_SPEND ?= ask
 
 chat-setup:  ## install/refresh the DeepSeek Harness web app in $(DSH_DIR)
 	@mkdir -p $(DSH_DIR)
@@ -38,6 +41,20 @@ chat-setup:  ## install/refresh the DeepSeek Harness web app in $(DSH_DIR)
 
 chat:  ## open the chat web app with QMine attached (needs `make chat-setup` once)
 	@test -x $(DSH_DIR)/node_modules/.bin/dsh || { echo "no harness at $(DSH_DIR) — run: make chat-setup"; exit 1; }
+	@# A SECOND `make chat` IS THE COMMON MISTAKE, and node answers it with a
+	@# 40-line EADDRINUSE stack trace that names neither the process holding the
+	@# port nor the way out. Checked BEFORE the patch and preset are written, so a
+	@# refused launch changes nothing on disk.
+	@pid=$$(lsof -nP -tiTCP:$(DSH_PORT) -sTCP:LISTEN 2>/dev/null | head -1); \
+	if [ -n "$$pid" ]; then \
+	  echo "already serving on http://127.0.0.1:$(DSH_PORT)  (pid $$pid)"; \
+	  echo ""; \
+	  echo "  just open it             it is up and working"; \
+	  echo "  make chat-stop           then 'make chat' — REQUIRED to pick up an edited"; \
+	  echo "                           preset or persona: a preset mounts once per process"; \
+	  echo "  DSH_PORT=3081 make chat  run a second one alongside this"; \
+	  exit 1; \
+	fi
 	@$(QM) mcp --print-dsh-config > $(DSH_DIR)/qmine.patch.yml
 	@# The PRESET is what the chat model knows before anyone asks it anything —
 	@# the persona, the workspace instructions and the skills. Rewritten every
@@ -48,7 +65,22 @@ chat:  ## open the chat web app with QMine attached (needs `make chat-setup` onc
 	@# QMine/.env is sourced so dsh's OWN provider adapters find the same keys the
 	@# mining run uses — its DeepSeek adapter defaults to DEEPSEEK_API_KEY. The key
 	@# stays in .env; nothing is copied into the harness's own credential store.
-	@cd $(DSH_DIR) && set -a; [ -f "$(CURDIR)/.env" ] && . "$(CURDIR)/.env"; set +a; DSH_HOME=$(DSH_DIR)/home ./node_modules/.bin/dsh web --patch ./qmine.patch.yml --port $(DSH_PORT)
+	@# QMINE_MCP_ALLOW_SPEND=ask lets the assistant START a run — but every start is
+	@# preflighted first, and the preset's PreToolUse hook holds the call at dsh's own
+	@# approval dialog until a person clicks. That dialog is the consent: it is not
+	@# model context and nothing the model emits can answer it. Set it to 1 for
+	@# unattended use (no click), or 0 to go back to refusing outright.
+	@cd $(DSH_DIR) && set -a; [ -f "$(CURDIR)/.env" ] && . "$(CURDIR)/.env"; set +a; QMINE_MCP_ALLOW_SPEND=$(QMINE_SPEND) DSH_HOME=$(DSH_DIR)/home ./node_modules/.bin/dsh web --patch ./qmine.patch.yml --port $(DSH_PORT)
+
+chat-stop:  ## stop the chat web app running on $(DSH_PORT), if any
+	@pid=$$(lsof -nP -tiTCP:$(DSH_PORT) -sTCP:LISTEN 2>/dev/null | head -1); \
+	if [ -z "$$pid" ]; then echo "nothing is listening on $(DSH_PORT)"; exit 0; fi; \
+	echo "stopping the harness on $(DSH_PORT) (pid $$pid)"; kill $$pid 2>/dev/null || true; \
+	for i in 1 2 3 4 5 6 7 8; do \
+	  lsof -nP -tiTCP:$(DSH_PORT) -sTCP:LISTEN >/dev/null 2>&1 || { echo "stopped"; exit 0; }; \
+	  sleep 1; \
+	done; \
+	echo "still listening after 8s — it may be wedged: kill -9 $$pid"; exit 1
 
 demo:  ## bundled K12 corpus, 8k rows, shrunken grids (~2 min)
 	$(QM) demo

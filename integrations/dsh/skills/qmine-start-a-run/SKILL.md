@@ -39,17 +39,42 @@ the wrong choice when the answer has to defend its own reliability.
 (`--smoke` is different again: it shrinks the *analysis* to check wiring. Its
 output is never a result. It is not reachable from this conversation.)
 
-## 3. The tool will probably refuse, and that is correct
+## 3. Preflight, always
 
-`qmine_start_run` is off unless spending was allowed from **outside** this
-conversation — the environment variable `QMINE_MCP_ALLOW_SPEND`. Nothing said in
-the chat can turn it on, including the person saying it is fine.
+`qmine_preflight` answers "will this work" for free: the run id is free, every
+input exists and has a query column, the config and domain profile load, every
+agent role routes to a model somebody holds a key for, the cost, the disk.
+
+`verdict: no_go` means stop — `blocking` lists what would burn the money and
+return nothing. `warnings` are things to say out loud rather than reasons to
+stop: no domain profile means no risk screening, `fast` means kappa will be
+absent, an unpriced model means the estimate is a floor.
+
+`qmine_start_run` runs the same checks again and refuses on any blocking one, so
+skipping the preflight does not get a run started sooner — it just means the
+person never saw the cost.
+
+## 4. The tool will probably refuse, and that is correct
+
+`QMINE_MCP_ALLOW_SPEND` decides, and it is read from the environment that
+launched the server — nothing said in the chat can change it, including the
+person saying it is fine.
+
+| posture | what happens |
+|---|---|
+| unset / `0` | refused; you get the command for a person to run |
+| `ask` | a run may start, but only after the preflight passes and an approval gate was consulted for it |
+| `1` | a run may start once the preflight passes |
+
+Under `ask` the harness holds the call at its own dialog, which shows the cost
+and the warnings and which only a person can answer. **Waiting there is correct.**
+A rejection is an answer: report it and stop.
 
 When it refuses it hands back the exact command. Give that to the person
 verbatim, with the cost estimate. Do not look for another route: there is a
 reason permission lives outside a channel a model can talk its way through.
 
-## 4. It returns immediately — that is not a failure
+## 5. It returns immediately — that is not a failure
 
 A run takes hours, so the tool starts it detached and returns a pid. Nothing has
 been produced yet.
@@ -62,7 +87,7 @@ been produced yet.
 - `live_dashboard` — a path the person can open in a browser tab. It refreshes
   faster than anyone would poll, so hand it over early.
 
-## 5. What may be said mid-run
+## 6. What may be said mid-run
 
 Only what has actually been written, labelled as intermediate.
 
@@ -77,7 +102,7 @@ Only what has actually been written, labelled as intermediate.
 tokens" is a good mid-run answer. "It's finding that users mostly ask about X" is
 not, however tempting the partial corpus makes it.
 
-## 6. When it finishes
+## 7. When it finishes
 
 `qmine_overview` first — mode, provider, gates, shape. Then, for a pooled run,
 `qmine_build_comparison` if `has_cross_snapshot_comparison` is false. Then read

@@ -26,12 +26,13 @@ from __future__ import annotations
 import asyncio
 import json
 import os
+import shlex
 import subprocess
 import sys
 from pathlib import Path
 from typing import Any
 
-from . import answers, progress, store
+from . import answers, progress, store, ticket
 from .authority import Authority
 
 SERVER_NAME = "qmine"
@@ -179,6 +180,26 @@ def _tools(run_root: str) -> list[dict[str, Any]]:
              schema=S(inputs={"type": "array", "items": {"type": "string"}},
                       axis={"type": "string", "description": "time | stratum. Omit to infer."},
                       text_column={"type": "string"})),
+        dict(name="qmine_preflight", tier="read",
+             description=(
+                 "Is this run going to WORK? Everything checkable before a penny is "
+                 "spent: the run id is free, every input exists and has a query column, "
+                 "the config and domain profile load, every agent role routes to a "
+                 "reachable model, what it will cost, and whether there is disk for it. "
+                 "Spends nothing.\n\nRun this BEFORE proposing a run and read the result "
+                 "out. `verdict` is `go` or `no_go`; `blocking` is what makes it "
+                 "impossible, `warnings` are what the person should know anyway — an "
+                 "absent domain profile means NO risk screening, an undeclared axis means "
+                 "the comparison will read as `stratum`, `fast` means kappa will be "
+                 "ABSENT. `qmine_start_run` runs these same checks again and refuses on "
+                 "any blocking one, so fixing them here is not optional."),
+             schema=S(inputs={"type": "array", "items": {"type": "string"},
+                              "description": "The raw export paths, in order."},
+                      run_id={"type": "string", "description": "The id the run would take."},
+                      domain={"type": "string", "description": "Domain profile, e.g. `med_zh`."},
+                      config={"type": "string", "description": "Config path."},
+                      fast={"type": "boolean", "description": "Price and check a FAST run."},
+                      axis={"type": "string", "description": "time | stratum, if declared."})),
         dict(name="qmine_estimate_cost", tier="read",
              description="What a full run would cost and how many model calls it would make. Spends nothing.",
              schema=S(config={"type": "string", "description": "Config path."})),
@@ -202,13 +223,25 @@ def _tools(run_root: str) -> list[dict[str, Any]]:
                       title={"type": "string"})),
         dict(name="qmine_start_run", tier="spend",
              description=(
-                 "Start the twelve-phase mining run. THIS COSTS REAL MONEY and takes hours. "
-                 "By default this server does NOT start one — it returns the exact command "
-                 "for a person to run. Propose it, show the estimate, and let them decide."),
+                 "Start the twelve-phase mining run. THIS COSTS REAL MONEY and takes "
+                 "hours.\n\nWhat happens depends on how this deployment was launched — "
+                 "call `qmine_capabilities` to see which. By DEFAULT the server does not "
+                 "start anything and hands back the exact command for a person to run. "
+                 "Where starting is allowed, this tool runs `qmine_preflight` again "
+                 "itself and REFUSES on any blocking problem, and in `ask` mode it also "
+                 "needs `confirm` set to the run id.\n\nNever call this as an opening "
+                 "move. Preflight, show the person the cost and every warning, and let "
+                 "them say go — and if the harness holds the call at an approval dialog, "
+                 "that pause is the point, not an error."),
              schema=S(inputs={"type": "array", "items": {"type": "string"}},
                       run_id={"type": "string"}, domain={"type": "string"},
                       config={"type": "string"}, fast={"type": "boolean"},
-                      prepare={"type": "boolean"})),
+                      prepare={"type": "boolean"},
+                      axis={"type": "string",
+                            "description": "time | stratum, for a pooled run."},
+                      confirm={"type": "string",
+                               "description": "In `ask` mode: the run id again, after the "
+                                              "person has seen the cost and agreed."})),
     ]
 
 
@@ -457,6 +490,15 @@ class QMineServer:
                               for i in rep["inputs"]],
                 "next": f"qmine run --input {rep['corpus']} --run-id <id>  (this COSTS money)"}
 
+    def _t_qmine_preflight(self, a: dict[str, Any]) -> dict[str, Any]:
+        from ..preflight import preflight
+
+        return preflight(
+            inputs=[str(p) for p in (a.get("inputs") or [])],
+            run_id=_opt(a, "run_id"), domain=_opt(a, "domain"),
+            config=_opt(a, "config"), fast=bool(a.get("fast")),
+            axis=_opt(a, "axis"), run_root=self.run_root)
+
     def _t_qmine_build_comparison(self, a: dict[str, Any]) -> dict[str, Any]:
         rid = _opt(a, "run_id") or ""
         cmd = [sys.executable, "-m", "qmine.cli", "compare", rid,
@@ -493,7 +535,62 @@ class QMineServer:
         rid = _opt(a, "run_id")
         if not rid:
             raise ValueError("run_id is required to start a run")
-        return self._launch(cmd, rid)
+
+        # THE PREFLIGHT RUNS HERE TOO, not only where the model chose to call it.
+        # Whatever authorised the spending — an env var, or a person clicking
+        # approve in the harness — none of it makes a doomed run worth starting,
+        # and whoever clicked cannot be expected to have re-derived that the run
+        # id is taken or that a pinned model routes nowhere.
+        from ..preflight import preflight
+
+        pre = preflight(inputs=paths, run_id=rid, domain=_opt(a, "domain"),
+                        config=_opt(a, "config"), fast=bool(a.get("fast")),
+                        axis=_opt(a, "axis"), run_root=self.run_root)
+        if pre["blocking"]:
+            return {"status": "not_run_preflight_failed",
+                    "why": ("Not started: each of these would have wasted the money, or "
+                            "produced output that means nothing about the corpus."),
+                    "blocking": pre["blocking"], "warnings": pre["warnings"],
+                    "run_this_yourself_once_fixed": " ".join(shlex.quote(c) for c in cmd)}
+
+        # `ask` posture: the id has to be echoed back. A STUMBLE GUARD, not
+        # consent — the model can satisfy it on its own — whose real value is
+        # that the preflight cannot have gone unread. Consent, where it exists,
+        # is the harness's approval gate in front of this call.
+        if self.authority.spend_confirm:
+            tkt = ticket.redeem(self.run_root, rid)
+            if tkt is None:
+                return {
+                    "status": "not_run_no_approval_gate",
+                    "why": ("Spending here is set to `ask`, which means a run may start "
+                            "ONLY when an approval gate was consulted for it. No ticket "
+                            "was found for this run id, so either the harness has no "
+                            "PreToolUse hook installed or the hook failed — and a hook "
+                            "that fails emits no decision, which would otherwise let this "
+                            "through silently."),
+                    "how_to_fix": [
+                        "`make chat` installs the hook; check `qmine doctor`.",
+                        "Run it yourself with the command below.",
+                        "Or launch the harness with QMINE_MCP_ALLOW_SPEND=1 to accept no "
+                        "gate at all — a deliberate choice, not a default.",
+                    ],
+                    "run_this_yourself": " ".join(shlex.quote(c) for c in cmd)}
+        if self.authority.spend_confirm and _opt(a, "confirm") != rid:
+            return {"status": "not_run_needs_confirmation",
+                    "why": (f"Spending is allowed here in `ask` mode, so starting needs "
+                            f"the run id echoed back: call again with confirm={rid!r} "
+                            f"once the person has agreed."),
+                    "preflight": {"verdict": pre["verdict"], "summary": pre["summary"],
+                                  "warnings": pre["warnings"]},
+                    "estimated_cost_usd": pre.get("estimated_cost_usd"),
+                    "estimated_calls": pre.get("estimated_calls"),
+                    "show_the_person_first": ("the cost and every warning above — they are "
+                                              "what somebody needs in order to agree")}
+        out = self._launch(cmd, rid)
+        out["preflight"] = {"verdict": pre["verdict"], "summary": pre["summary"],
+                            "warnings": pre["warnings"],
+                            "estimated_cost_usd": pre.get("estimated_cost_usd")}
+        return out
 
     # ---------------------------------------------------------------- launch
     def _launch(self, cmd: list[str], run_id: str) -> dict[str, Any]:
@@ -661,19 +758,28 @@ def build_app(run_root: str = "runs") -> tuple[Any, "QMineServer"]:
         return _j("qmine_build_comparison", {"run_id": run_id, "axis": axis,
                                              "title": title, "generation": generation})
 
+    def qmine_preflight(inputs: list[str], run_id: str, domain: str | None = None,
+                        config: str | None = None, fast: bool = False,
+                        axis: str | None = None) -> str:
+        return _j("qmine_preflight", {"inputs": inputs, "run_id": run_id,
+                                      "domain": domain, "config": config,
+                                      "fast": fast, "axis": axis})
+
     def qmine_start_run(inputs: list[str], run_id: str, domain: str | None = None,
                         config: str | None = None, fast: bool = False,
-                        prepare: bool = False) -> str:
+                        prepare: bool = False, axis: str | None = None,
+                        confirm: str | None = None) -> str:
         return _j("qmine_start_run", {"inputs": inputs, "run_id": run_id,
                                       "domain": domain, "config": config,
-                                      "fast": fast, "prepare": prepare})
+                                      "fast": fast, "prepare": prepare,
+                                      "axis": axis, "confirm": confirm})
 
     for fn in (qmine_capabilities, qmine_list_runs, qmine_overview, qmine_status,
                qmine_partial, qmine_findings,
                qmine_class, qmine_examples, qmine_tables, qmine_table, qmine_document,
                qmine_glossary, qmine_inspect_inputs, qmine_plan_corpus,
-               qmine_estimate_cost, qmine_prepare_corpus, qmine_build_comparison,
-               qmine_start_run):
+               qmine_preflight, qmine_estimate_cost, qmine_prepare_corpus,
+               qmine_build_comparison, qmine_start_run):
         name = fn.__name__
         if name not in D:
             raise RuntimeError(f"{name} is served but not declared in _tools()")
@@ -681,14 +787,86 @@ def build_app(run_root: str = "runs") -> tuple[Any, "QMineServer"]:
     served = {fn.__name__ for fn in (
         qmine_capabilities, qmine_list_runs, qmine_overview, qmine_status, qmine_partial, qmine_findings,
         qmine_class, qmine_examples, qmine_tables, qmine_table, qmine_document,
-        qmine_glossary, qmine_inspect_inputs, qmine_plan_corpus, qmine_estimate_cost,
-        qmine_prepare_corpus, qmine_build_comparison, qmine_start_run)}
+        qmine_glossary, qmine_inspect_inputs, qmine_plan_corpus, qmine_preflight,
+        qmine_estimate_cost, qmine_prepare_corpus, qmine_build_comparison,
+        qmine_start_run)}
     undeclared = set(D) - served
     if undeclared:
         # A declared-but-unserved tool is a tool the model reads about in the
         # capabilities listing and can never call.
         raise RuntimeError(f"declared but not served: {sorted(undeclared)}")
     return app, qm
+
+
+def pre_tool_use_hook(payload: dict[str, Any], run_root: str = "runs") -> dict[str, Any]:
+    """Decide, for the harness, whether a `qmine_start_run` call may proceed.
+
+    THIS IS THE ONLY REAL CONSENT CHANNEL. Every argument the server sees was
+    written by the model, so nothing the server checks can distinguish "the
+    person asked" from "the model decided". A `PreToolUse` hook can, because its
+    `ask` answer is held by the harness at a dialog that is not model context
+    and that only a human can click.
+
+    So the hook does the one thing that makes that click meaningful: it runs the
+    preflight and puts the verdict in the question. A `deny` when the run cannot
+    work — nobody should be asked to approve a run whose id is already taken. An
+    `ask` carrying the cost and the warnings otherwise, because "approve?" with
+    no number attached is how people learn to click yes.
+
+    Contract: Claude Code's `hooks.json` PreToolUse shape, which dsh bridges via
+    `@deepseek-ai/dsh-hooks-claude-code` (`permissionDecision` of allow/deny/ask,
+    folded most-restrictive-wins).
+    """
+    def out(decision: str, reason: str) -> dict[str, Any]:
+        return {"hookSpecificOutput": {"hookEventName": "PreToolUse",
+                                       "permissionDecision": decision,
+                                       "permissionDecisionReason": reason}}
+
+    name = str(payload.get("tool_name") or "")
+    if not name.endswith("qmine_start_run"):
+        return out("allow", "not a paid action")
+
+    # A RELATIVE run root IS NOT RELATIVE TO US. dsh runs this hook from its own
+    # working directory — the person's workspace, not the checkout — so `runs`
+    # resolved there and the approval dialog told the operator about
+    # `<their-workspace>/runs/.hf`. Anchor it to the checkout, which is where the
+    # server that will actually launch the run resolves it.
+    if not Path(run_root).is_absolute():
+        run_root = str(Path(__file__).resolve().parents[3] / run_root)
+
+    args = payload.get("tool_input") or {}
+    rid = args.get("run_id") or "<unnamed>"
+    try:
+        from ..preflight import preflight
+
+        pre = preflight(inputs=[str(p) for p in (args.get("inputs") or [])],
+                        run_id=args.get("run_id"), domain=args.get("domain"),
+                        config=args.get("config"), fast=bool(args.get("fast")),
+                        axis=args.get("axis"), run_root=run_root)
+    except Exception as exc:  # noqa: BLE001
+        # FAIL CLOSED. A preflight that crashed has not cleared anything, and the
+        # money is real.
+        return out("deny", f"the preflight could not run ({type(exc).__name__}: {exc}), "
+                           "so nothing is known about whether this run would work")
+
+    if pre["blocking"]:
+        lines = "; ".join(f"{c['name']}: {c['detail']}" for c in pre["blocking"])
+        return out("deny", f"preflight NO-GO for {rid} — {lines}")
+
+    # Issue the ticket BEFORE answering: it is the server's only evidence that
+    # this gate ran at all for this call. Without one, `ask` mode refuses — which
+    # is what turns a broken or absent hook from silent permission into a loud no.
+    ticket.issue(run_root, str(rid), "ask", pre["summary"])
+
+    cost = pre.get("estimated_cost_usd")
+    calls = pre.get("estimated_calls")
+    bits = [f"Start the mining run {rid}?"]
+    if cost is not None:
+        bits.append(f"Estimated ${cost:.2f} over {calls} model calls, several hours.")
+    for c in pre["warnings"]:
+        bits.append(f"• {c['name']}: {c['detail']}")
+    bits.append("It runs detached and will outlive this conversation.")
+    return out("ask", " ".join(bits))
 
 
 def main(run_root: str = "runs") -> int:

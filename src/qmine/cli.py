@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import io
 import json
 import logging
 import os
@@ -1370,6 +1371,11 @@ def mcp_cmd(
         help="Let the model START A PAID RUN from the conversation. Off by default: "
              "the server returns the command for a person to run instead. Equivalent "
              "to QMINE_MCP_ALLOW_SPEND=1."),
+    hook: bool = typer.Option(
+        False, "--hook",
+        help="Read one Claude-Code PreToolUse payload on stdin and print the "
+             "permission decision on stdout. This is what holds a paid run at the "
+             "harness's approval dialog with its cost attached."),
     install_preset: Optional[str] = typer.Option(
         None, "--install-preset", metavar="DIR",
         help="Write the QMine agent preset into DIR/qmine/ (normally "
@@ -1395,6 +1401,32 @@ def mcp_cmd(
         # wrong directory. Machine-readable output does not go through the
         # pretty printer.
         print(_dsh_config(run_root))
+        return
+    if hook:
+        # STDOUT IS THE DECISION HERE, exactly as it is the protocol in serve
+        # mode: one JSON object and nothing else. `_load_env` and the config
+        # loader both print, so everything human-readable goes to stderr for the
+        # life of the call — a stray line makes the decision unparseable, and an
+        # unparseable decision is silently ignored, which fails OPEN.
+        import contextlib
+
+        from .mcp.server import pre_tool_use_hook
+
+        try:
+            payload = json.loads(sys.stdin.read() or "{}")
+        except Exception:  # noqa: BLE001
+            payload = {}
+        buf = io.StringIO()
+        try:
+            with contextlib.redirect_stdout(buf):
+                decision = pre_tool_use_hook(payload, run_root=run_root)
+        except Exception as exc:  # noqa: BLE001
+            decision = {"hookSpecificOutput": {
+                "hookEventName": "PreToolUse", "permissionDecision": "deny",
+                "permissionDecisionReason": f"QMine preflight hook failed: {exc}"}}
+        if buf.getvalue():
+            print(buf.getvalue(), file=sys.stderr)
+        print(json.dumps(decision, ensure_ascii=False))
         return
     if install_preset:
         for name, body in _dsh_preset().items():
@@ -1458,10 +1490,15 @@ def _dsh_preset() -> dict[str, str]:
     indent = " " * 6
     block = "\n".join(indent + ln if ln.strip() else "" for ln in persona.rstrip().splitlines())
 
-    assert "__QMINE_PERSONA__" in composition, "preset template lost its persona token"
-    assert "__QMINE_SKILLS_DIR__" in composition, "preset template lost its skills token"
+    root = Path(__file__).resolve().parents[2]
+    for token in ("__QMINE_PERSONA__", "__QMINE_SKILLS_DIR__",
+                  "__QMINE_HOOKS_JSON__", "__QMINE_ROOT__"):
+        assert token in composition, f"preset template lost {token}"
     composition = composition.replace("__QMINE_PERSONA__", block)
     composition = composition.replace("__QMINE_SKILLS_DIR__", str(DSH_SKILLS_DIR))
+    composition = composition.replace(
+        "__QMINE_HOOKS_JSON__", str(root / "integrations" / "dsh" / "hooks.json"))
+    composition = composition.replace("__QMINE_ROOT__", str(root))
     assert "__QMINE_" not in composition, "a token survived rendering"
     return {"preset.yml": meta, "agent.cordis.yml": composition}
 
@@ -1718,6 +1755,39 @@ def prepare(
                   f"{rep['n_mined']:,} 行进入挖掘，{rep['n_all']:,} 行全量留档")
     console.print(f"[dim]接下来：qmine run --input {rep['corpus']} "
                   f"--config <corpus config> --run-id <id>[/dim]")
+
+
+@app.command()
+def preflight(
+    inputs: str = typer.Argument(..., help="Comma-separated raw export paths."),
+    run_id: str = typer.Option(..., "--run-id", help="The id the run would take."),
+    domain: Optional[str] = typer.Option(None, "--domain", "-d"),
+    config: Optional[str] = typer.Option(None, "--config", "-c"),
+    fast: bool = typer.Option(False, "--fast", help="Check and price a FAST run."),
+    axis: Optional[str] = typer.Option(None, "--axis", help="time | stratum."),
+    run_root: str = typer.Option("runs", "--run-root"),
+) -> None:
+    """Will this run work? Everything checkable before any money is spent."""
+    from .preflight import preflight as _pre
+
+    rep = _pre(inputs=[p.strip() for p in inputs.split(",") if p.strip()],
+               run_id=run_id, domain=domain, config=config, fast=fast,
+               axis=axis, run_root=run_root)
+    t = Table("check", "verdict", "detail", show_lines=False)
+    colour = {"blocking": "red", "warning": "yellow"}
+    for group in ("blocking", "warnings"):
+        for c in rep[group]:
+            t.add_row(c["name"], f"[{colour[c['severity']]}]{c['severity']}[/]",
+                      c["detail"] + (f"\n[dim]→ {c['fix']}[/dim]" if c.get("fix") else ""))
+    for name in rep["passed"]:
+        t.add_row(name, "[green]ok[/green]", "")
+    console.print(t)
+    if rep.get("estimated_cost_usd") is not None:
+        console.print(f"\nestimated [bold]${rep['estimated_cost_usd']:.2f}[/bold] over "
+                      f"{rep.get('estimated_calls')} model calls")
+    console.print(("\n[green]" if rep["verdict"] == "go" else "\n[red]")
+                  + rep["summary"] + "[/]")
+    raise typer.Exit(0 if rep["verdict"] == "go" else 1)
 
 
 @app.command()

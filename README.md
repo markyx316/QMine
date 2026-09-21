@@ -349,12 +349,16 @@ Two commands, then it is one command forever after:
 ```bash
 make chat-setup          # installs the harness into ~/dsh, wires QMine in, writes the preset
 make chat                # opens the web app with QMine attached
+make chat-stop           # stops it — needed before `make chat` picks up an edited preset
 ```
 
 `make chat` rewrites the harness config **and** the agent preset on every launch,
 so neither can go stale against a moved checkout or a renamed venv, and it sources
 `.env` so the harness's own adapter finds the key the mining run already uses.
-`DSH_DIR` and `DSH_PORT` override where and on which port. On first use the
+`DSH_DIR` and `DSH_PORT` override where and on which port. A preset mounts **once
+per process**, so editing the persona or a skill needs `make chat-stop` and a
+relaunch — `make chat` refuses a second launch on a busy port and says so in a
+sentence rather than leaving you to read node's `EADDRINUSE` stack trace. On first use the
 harness asks you to **choose a workspace folder** — a native dialog; point it at
 this checkout, and the assistant picks up `AGENTS.md` with it.
 

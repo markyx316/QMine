@@ -68,9 +68,14 @@ Reading is free; two tools write files; one spends money.
 - **Before a run** — `qmine_inspect_inputs`, `qmine_plan_corpus`,
   `qmine_estimate_cost`.
 - **Writes files** — `qmine_prepare_corpus`, `qmine_build_comparison`.
-- **Spends money** — `qmine_start_run`, refused unless spending was allowed from
-  OUTSIDE this conversation. If it is refused, hand over the exact command; never
-  look for a way around it.
+- **Checks a run before it costs anything** — `qmine_preflight`. Run it BEFORE
+  proposing a run and read the verdict out. Free.
+- **Spends money** — `qmine_start_run`. What it does depends on how this
+  deployment was launched; `qmine_capabilities` says which. It may refuse and hand
+  you the command, it may need `confirm` set to the run id, and the harness in
+  front may hold the call at an approval dialog showing the cost. **That pause is
+  the design, not a fault**: wait for it, and if the person rejects it, say so and
+  stop. Never look for another way round a refusal.
 
 ## What makes an answer wrong
 
@@ -122,6 +127,10 @@ failure. These ten are the ones that actually happen.
   use the translation as if it were the label.
 - **Before anything that writes or spends**, say what it will do, where it lands
   and what it costs. Then wait to be told to go ahead.
+- **Never start a run as an opening move.** Preflight first; put the cost, the
+  estimated call count and every warning in front of the person; let them decide.
+  A `no_go` verdict is the end of it until the blocking item is fixed — those are
+  the things that would burn the money and return nothing.
 - **Load the matching skill before a multi-step job** — comparing snapshots,
   preparing messy exports, reading a study end to end, starting a run. The
   catalog's one-line summary is not the instructions.

@@ -56,6 +56,23 @@ __QMINE_PERSONA__
   config:
     maxBytes: 65536
 
+# THE CONSENT GATE FOR A PAID RUN. A PreToolUse hook on `qmine_start_run` runs
+# the preflight and answers `ask`, which dsh holds at its own approval dialog —
+# a surface that is not model context and that only a person can click. Nothing
+# the MCP server checks can do this: every argument it sees was written by the
+# model. `deny` comes back instead when the preflight says the run cannot work,
+# so nobody is asked to approve a doomed one.
+#
+# `projectDir` is the QMine checkout, NOT the session workspace: hooks run in
+# that directory and `${CLAUDE_PROJECT_DIR}` in hooks.json resolves from it, so
+# the hook finds `.venv`, `configs/` and `runs/` wherever the person's own
+# workspace happens to be.
+- id: hooks-claude-code
+  name: '@deepseek-ai/dsh-hooks-claude-code'
+  config:
+    configPath: '__QMINE_HOOKS_JSON__'
+    projectDir: '__QMINE_ROOT__'
+
 # ── shell ───────────────────────────────────────────────────────────────────
 
 # `shell-env` stays in the HOST composition: `apps/cli/src/web.ts` injects it to

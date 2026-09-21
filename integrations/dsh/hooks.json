@@ -1,0 +1,27 @@
+{
+  "_comment": [
+    "Holds a PAID QMine run at the harness's own approval dialog, with its cost attached.",
+    "Claude Code `hooks.json` shape; dsh runs it through @deepseek-ai/dsh-hooks-claude-code.",
+    "This is the only channel that can carry real consent: every argument the MCP server",
+    "sees was written by the model, so nothing it checks can tell 'the person asked' from",
+    "'the model decided'. A PreToolUse `ask` is held at a dialog that is not model context.",
+    "QUOTE ${CLAUDE_PROJECT_DIR}. It is a real filesystem path and it may contain spaces —",
+    "this checkout's does. Unquoted, the shell split it mid-path, qmine never ran, the hook",
+    "emitted nothing, and a decisionless hook FAILS OPEN: dsh falls through to allow and the",
+    "paid run starts with no dialog. That is exactly what happened on 2026-09-21."
+  ],
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "mcp__qmine__qmine_start_run",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "HF_HOME=\"${CLAUDE_PROJECT_DIR}/.hf\" \"${CLAUDE_PROJECT_DIR}/.venv/bin/qmine\" mcp --hook",
+            "timeout": 180
+          }
+        ]
+      }
+    ]
+  }
+}

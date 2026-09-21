@@ -12,7 +12,7 @@
 
 ---
 
-## 1. Status — last updated 2026-09-20
+## 1. Status — last updated 2026-09-21
 
 **稳定。四个层次都能独立使用，只有 Mine 花钱。**
 
@@ -20,7 +20,7 @@
 |---|---|
 | 测试 | **873** 通过 / 0 失败（约 3.5 分钟）；`ruff --select F src/qmine/ tools/` clean |
 | 四层 | prepare · mine · compare · ask — 只有 **mine** 花钱、花几个小时 |
-| 对话入口 | `make chat-setup` 一次，之后 `make chat`；对 dsh 0.1.5-rc.2 端到端验证过 |
+| 对话入口 | `make chat-setup` 一次，之后 `make chat` / `make chat-stop`；对 dsh 0.1.5-rc.2 端到端验证过 |
 | 运行目录 | `runs/` 下 96 个；其中只有 `health-pool3/gen01` 建过跨快照对比 |
 | 区域规则 | `.claude/rules/` 12 个，按 `paths:` 绑定的文件才加载 |
 | 未解决 | 见 §2；最新一条是引用护栏漏掉 `机构 + 人名` 这一形状 |
@@ -41,6 +41,25 @@ persona 补了「护栏放行不等于可引」与「绝不示范你略去的东
 > [状态归档（2026-09-10 → 2026-09-20）](#状态归档2026-09-10--2026-09-20)，一个字没删。
 
 ## 2. Open questions — EDIT THIS SECTION, DO NOT APPEND
+
+### preflight 还差 25 条已验证的检查（2026-09-21）
+
+三个并行审计 + 对抗验证给出 **30 条**可在花钱前检出的失败模式（15 条 blocking），
+已实现 5 条：空路由计划、pin 到没有 key 的 provider、encoder 缓存目录、providers 缺失、磁盘。
+**其中两条是我自己代码里被实测出来的假 GO**：审计员把空目录的 catalogue 喂给
+`_check_routing`，它返回 `verdict: go`（`unrouted` 在 assignments 本身为空时也为空）。
+
+未实现、按价值排序的前几条（每条都带实测证据与假阳性验证，全文在
+`/private/tmp/.../wpn8k81zk.output`，若已清理则重跑 workflow）：
+`snapshot_column_present_in_input`（pooled run 静默退化成单快照）、
+`weight_column_is_numeric_and_usable`（p1 不做数值强转）、
+`row_count_supports_the_k_sweep`（KMeans 拒绝 K > n，p456 停机）、
+`declared_columns_resolve_against_the_real_headers`、`text_column_empty_rate`（p1 自己 >5% 就 raise）、
+`resume_falls_through_to_a_fresh_run_over_a_used_run_directory`、
+`late_phase_internal_imports_are_not_exercised_until_the_last_phase`（p11 到最后才 import）。
+审计员明确警告**不要**对 `cat.degraded` 做断言：陈旧缓存会置位 degraded 但仍带完整 2216 模型目录，
+拿它拦人是保证会响的假警报。
+
 
 ### 引用护栏漏掉 `机构 + 人名` 这一形状（已量化，未改正则）
 
@@ -984,6 +1003,67 @@ about the distinction but was not touched.
 (halted: truncation defect), `ai03` $0.55 (halted: lost the log_reading angle),
 `ai04` $7.91 delivered. **$11.14 total.**
 
+
+## 4. Session (2026-09-21, 续) — 放开「助手可以启动付费 run」，但要真的有同意
+
+**目标**：让助手能替用户启动并监控 run，前提是每次都要有**明确同意**，并在启动前把所有会
+让 run 崩掉的前置条件查一遍。
+
+**唯一能承载「同意」的通道是 harness 的审批弹窗。** MCP server 看到的每个参数都是模型写的，
+所以它没有任何办法区分「人要求的」和「模型自己决定的」——`confirm` 回显只是防手滑，不是同意。
+dsh 的 `PreToolUse` hook 可以：它返回 `ask`，dsh 就把调用扣在自己的审批对话框上，
+那个界面不是模型上下文，模型点不了。
+
+**做法**：
+- `src/qmine/preflight.py` —— 花钱前能查的全部：run id 是否被占、输入是否存在且有文本列、
+  config 与 domain profile 是否加载、**每个角色是否都路由到你持有 key 的 provider**、成本、磁盘。
+- `QMINE_MCP_ALLOW_SPEND` 三态：未设/`0` 拒绝；**`ask`**（`make chat` 现在设这个）允许启动但
+  必须先过 preflight 且必须有审批票据；`1` 直接允许（无人值守）。
+- `integrations/dsh/hooks.json` + preset 挂 `dsh-hooks-claude-code`：hook 跑 preflight，
+  有 blocking 就 `deny`（没人该被要求批准一个必然失败的 run），否则 `ask` 并把**成本与全部
+  warning 写进审批提示**——「同意吗」后面不带数字，就是在训练人乱点。
+
+**实测发现的四个真缺陷，全部是我自己写进去的：**
+1. **hook 命令没给 `${CLAUDE_PROJECT_DIR}` 加引号。** 本 checkout 路径含空格，shell 从中间劈开，
+   `qmine` 根本没跑，hook 输出为空——**而没有决定的 hook 不拦任何东西**，dsh 直接 `next()` = allow。
+   付费 run 连着两次在没有任何弹窗的情况下启动了（所幸 0 调用 0 token）。
+2. **preflight 从 cwd 往上找 `.env`。** dsh 不在 checkout 里跑 hook，于是 hook 认为「没有凭据」，
+   把健康的 run 全部 `deny`。改成从包根加载。
+3. **票据写在 `runs/` 下。** hook 是**沙箱**里跑的，`[Errno 1] Operation not permitted: 'runs'`，
+   于是 hook 落进自己的异常分支——好消息是它 **fail closed**，坏消息是它拒绝一切。改到按用户隔离的临时目录。
+4. **hook 里相对 run_root 按它自己的 cwd 解析**，审批框里告诉用户的是**用户工作区**下的 `runs/.hf`。
+
+**端到端实测通过**：模型调 `qmine_start_run` → hook 跑 preflight → 弹出
+「Start the mining run gate-test-06? Estimated **$5.01 over 222 model calls** … Reject / Allow once」
+→ 点 Reject → 工具没有执行、一分钱没花、模型如实汇报且没有绕路重试。
+
+**缺陷设计的要点：不是「网关说不」，是「网关不在」。** 所以 `ask` 模式要求一张只有 hook 会写的
+一次性票据，没有票据就拒绝并说明原因。它挡的是**网关缺席**，不是凭证——真正的同意在那个对话框里。
+
+**测试**：`tests/test_spend_gate.py` 11 条，6 个变异全杀（含复现 2026-09-21 那条未加引号的缺陷）。
+**过程中自己也踩了一个**：变异测试把 spend 守卫改掉之后，测试真的去启动了一个付费 run——
+「证明变异被抓到」的方式是把守卫保护的钱花掉。已把 `_launch` 打桩，断言改成「启动器根本没被调用」，
+既更安全也是更强的断言。
+
+## 4. Session (2026-09-21) — `make chat` 第二次启动给的是 node 的堆栈，不是一句话
+
+**现象**：用户重新 `make chat`，拿到 40 行 `EADDRINUSE: address already in use 127.0.0.1:3080`。
+
+**成因不是 QMine 的**：上一次会话里我用 `(make chat &)` detach 起的那个进程（`Sun Sep 20
+20:24:01` 起的）一直活着占着 3080。**但那条难读的报错是我们的责任**：`chat` 目标会检查
+dsh 二进制在不在（不在就给一句话），却从不检查端口，于是第二次启动直接摔给 node 自己去报。
+而且 patch 与 preset 是在启动**之前**写的，所以一次失败的启动仍然改了磁盘。
+
+**改法**：`chat` 增加端口预检，放在任何写入**之前**——失败就什么都不动；报错给三个出路
+（直接打开 / `make chat-stop` 后重启 / `DSH_PORT=3081` 并行跑一个）。新增 `make chat-stop`
+按端口找 pid、`kill`、最多等 8 秒确认端口真的放开。
+
+**为什么必须有 chat-stop**：preset 是**每进程挂载一次**的，改了 persona 或技能不重启就不生效。
+在此之前，「我改了 persona 怎么没反应」的正确答案是「自己找 pid kill 掉」。
+
+**测试**：`tests/test_front_door_knowledge.py` 新增两条，3 个变异全杀。其中一条我自己写松了——
+`any("kill" in l)` 会被 recipe 里那句提示用的 `kill -9 <pid>` 满足，于是一个只**提到** kill
+的 chat-stop 也能过；变异测试当场抓到，改成正则要求真的对 pid 调用 kill。
 
 ## 4. Session (2026-09-20, 夜二) — 把 CLAUDE.md / 两份 README / GUIDE / HANDOFF 对齐到事实
 

@@ -220,3 +220,56 @@ def test_rendering_the_preset_twice_gives_the_same_bytes():
     forever, which is how a real staleness check gets ignored.
     """
     assert _dsh_preset() == _dsh_preset()
+
+
+# ------------------------------------------------------- launching it twice
+
+def _make_recipe(target: str) -> list[str]:
+    """The shell lines of one Makefile target, in order."""
+    lines = (DSH_PRESET_DIR.parents[3] / "Makefile").read_text(encoding="utf-8").splitlines()
+    out, seen = [], False
+    for line in lines:
+        if line.startswith(f"{target}:"):
+            seen = True
+            continue
+        if seen:
+            if line and not line.startswith(("\t", " ")):
+                break
+            out.append(line)
+    assert out, f"no recipe for {target}"
+    return out
+
+
+def test_a_second_launch_is_refused_before_anything_is_written():
+    """`make chat` twice is the common mistake and node answers it badly.
+
+    The second launch dies on `EADDRINUSE` with a 40-line stack trace naming
+    neither the process holding the port nor the way out — which is exactly what
+    happened. Two things have to hold: the port is checked at all, and it is
+    checked BEFORE the patch and the preset are rewritten, so a refused launch
+    leaves nothing half-written on disk.
+    """
+    recipe = _make_recipe("chat")
+    guard = [i for i, l in enumerate(recipe) if "lsof" in l and "DSH_PORT" in l]
+    assert guard, "`make chat` does not check whether the port is already served"
+
+    writes = [i for i, l in enumerate(recipe)
+              if "--install-preset" in l or "--print-dsh-config" in l or "dsh web" in l]
+    assert writes, "the chat recipe stopped writing the config — this test is stale"
+    assert guard[0] < min(writes), (
+        "the port guard runs after the config is rewritten: a refused launch would "
+        "still mutate the harness directory")
+
+
+def test_there_is_a_way_to_stop_the_harness():
+    """A preset mounts ONCE PER PROCESS, so an edited persona reaches the model
+    only after a restart. Without a stop target the documented fix for "I edited
+    the persona and nothing changed" is `kill` on a pid the person has to find."""
+    recipe = _make_recipe("chat-stop")
+    # `"kill" in line` is NOT enough: the recipe also PRINTS `kill -9 <pid>` as a
+    # hint for a wedged process, so a chat-stop that only talks about killing
+    # would pass. Require an actual invocation.
+    assert any(re.search(r"(?:^|;)\s*kill\s+\$\$pid", l) for l in recipe), \
+        "chat-stop mentions kill but never invokes it on the pid"
+    assert any("lsof" in l and "DSH_PORT" in l for l in recipe), \
+        "chat-stop does not find the process by port"

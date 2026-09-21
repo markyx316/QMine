@@ -18,10 +18,29 @@ THREE TIERS.
   returns the exact command instead, so the assistant does the thinking and a
   person presses go.
 
-Turning spending on is a deliberate act OUTSIDE the conversation —
-`QMINE_MCP_ALLOW_SPEND=1` in the environment that launched the server. It cannot
-be done by anything the model says, which is the property that matters: a token
-handed back through a tool result is a token the model can read and repeat.
+`QMINE_MCP_ALLOW_SPEND` chooses between three postures, and it is read from the
+environment that launched the server because that is the one place a person can
+set it that the model cannot reach:
+
+| value | posture |
+|---|---|
+| unset / `0` | refuse; hand back the command for a person to run |
+| `ask` | a run may start, but only after a preflight passes AND the caller echoes the run id |
+| `1` | a run may start once the preflight passes — for scripted, unattended use |
+
+WHAT `ask` IS AND IS NOT. Inside one tool call this server cannot tell "the
+person asked for this" from "the model decided to". Every argument it sees was
+written by the model, so the `confirm` echo is a STUMBLE GUARD — it stops a run
+being started as an opening move, and it proves the preflight was in context —
+and it is **not consent**. Real per-run consent comes from the harness in front:
+`make chat` installs a `PreToolUse` hook that returns `ask`, and dsh then holds
+the call at its own approval dialog until a human clicks. That dialog is not
+model context and cannot be answered by anything the model emits.
+
+So the two layers answer different questions. This one answers *may this
+deployment spend at all, and is the run even viable* — the preflight runs on
+BOTH `ask` and `1`, because a click should never be able to start a doomed run.
+The harness answers *may this particular run start, now*.
 """
 
 from __future__ import annotations
@@ -42,7 +61,11 @@ def _flag(name: str, default: bool = False) -> bool:
 
 @dataclass
 class Authority:
+    #: May this deployment spend at all? False is the default and the refusal.
     allow_spend: bool = False
+    #: `ask` mode: each start must echo its run id. A stumble guard, not consent
+    #: — see the module docstring. Harmless to leave on; the model can satisfy it.
+    spend_confirm: bool = False
     allow_write: bool = True
     #: Roots a `write` tool may write into. Anything else is refused by path,
     #: before the tool runs.
@@ -53,7 +76,10 @@ class Authority:
         roots = [Path.cwd().resolve(), Path(run_root).resolve()]
         extra = os.environ.get("QMINE_MCP_WRITE_ROOTS", "")
         roots += [Path(p).expanduser().resolve() for p in extra.split(os.pathsep) if p.strip()]
-        return cls(allow_spend=_flag("QMINE_MCP_ALLOW_SPEND", False),
+        raw = (os.environ.get("QMINE_MCP_ALLOW_SPEND") or "").strip().lower()
+        ask = raw == "ask"
+        return cls(allow_spend=ask or _flag("QMINE_MCP_ALLOW_SPEND", False),
+                   spend_confirm=ask,
                    allow_write=_flag("QMINE_MCP_ALLOW_WRITE", True),
                    write_roots=tuple(dict.fromkeys(roots)))
 
@@ -75,9 +101,10 @@ class Authority:
                                "server does not start one on a model's say-so."),
                 "run_this_yourself": cmd,
                 "to_allow_it_here_instead": (
-                    "restart the harness with QMINE_MCP_ALLOW_SPEND=1 in its environment "
-                    "— a deliberate act outside the conversation, not something that can "
-                    "be granted inside it"),
+                    "restart the harness with QMINE_MCP_ALLOW_SPEND=ask in its environment "
+                    "(`make chat` does this, and installs the approval gate that holds each "
+                    "run until a person clicks) — a deliberate act outside the conversation, "
+                    "not something that can be granted inside it"),
                 "what_you_can_do_now": [
                     "qmine_estimate_cost — what it would cost, spends nothing",
                     "qmine_plan_corpus — the preparation plan, spends nothing",
@@ -109,8 +136,12 @@ class Authority:
         return {
             "read": "always allowed",
             "write": "allowed" if self.allow_write else "disabled (QMINE_MCP_ALLOW_WRITE=0)",
-            "spend": ("ALLOWED — QMINE_MCP_ALLOW_SPEND is set, so a run can start from "
-                      "this conversation" if self.allow_spend else
-                      "refused — a run is proposed as a command for a person to run"),
+            "spend": (
+                ("allowed, and every start is preflighted first; each one must echo its "
+                 "run id, and the harness in front may also hold it for a human click"
+                 if self.spend_confirm else
+                 "allowed outright once the preflight passes (QMINE_MCP_ALLOW_SPEND=1)")
+                if self.allow_spend else
+                "refused — a run is proposed as a command for a person to run"),
             "write_roots": [str(r) for r in self.write_roots],
         }

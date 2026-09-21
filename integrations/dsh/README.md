@@ -82,7 +82,10 @@ cd ~/dsh && DSH_HOME=~/dsh/home ./node_modules/.bin/dsh web --patch ./qmine.patc
 ```
 
 `make chat-setup` then `make chat`, from the QMine checkout, does all four and
-rewrites steps 2 and 3 on every launch so neither can go stale.
+rewrites steps 2 and 3 on every launch so neither can go stale. `make chat-stop`
+stops it. **A preset mounts once per process**: an edited persona or skill reaches
+the model only after a restart, and a second `make chat` on a busy port is refused
+with one line instead of node's `EADDRINUSE` trace.
 
 To make it permanent instead of passing `--patch` each time, put the same
 content in `$DSH_HOME/profiles/web/cordis.patch.yml` (it ships as `[]`).
@@ -178,6 +181,19 @@ dsh --profile web --patch ./qmine.patch.yml --dump-config | grep -A3 'id: agent-
 ```
 
 ## What the model may set in motion
+
+**`QMINE_MCP_ALLOW_SPEND` has three postures.** Unset or `0` refuses and hands
+back the command. `ask` — what `make chat` sets — lets a run start, but only
+after `qmine_preflight` passes AND an approval gate was consulted for it: the
+preset installs a `PreToolUse` hook that runs the preflight and answers `ask`,
+and dsh then holds the call at its own dialog showing the cost, which only a
+person can answer. `1` allows it outright, for unattended use.
+
+**A missing gate fails CLOSED.** A hook that fails emits no decision, and a
+decisionless hook does not block anything — dsh falls through to allow. So the
+hook issues a one-shot ticket and the server refuses in `ask` mode without one.
+That is a guard against the gate being ABSENT; it is not a credential, and the
+consent itself is the dialog, which no process here can answer.
 
 | tier | tools | behaviour |
 |---|---|---|
